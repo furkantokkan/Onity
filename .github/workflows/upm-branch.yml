@@ -1,0 +1,47 @@
+name: Publish upm branch
+
+# Mirrors the package subtree (Packages/com.onity.framework) to a dedicated `upm`
+# branch whose ROOT is package.json, so it can be installed with the short URL
+#   https://github.com/furkantokkan/Onity.git#upm
+# (no ?path= query needed).
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Packages/com.onity.framework/**"
+      - ".github/workflows/upm-branch.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: upm-branch
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish package to upm branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Mirror package subtree to the upm branch
+        env:
+          PKG: Packages/com.onity.framework
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          cp -a "$PKG/." "$tmp/"
+          cd "$tmp"
+          git init -q
+          git checkout -q -b upm
+          git add -A
+          git -c user.email='github-actions[bot]@users.noreply.github.com' \
+              -c user.name='github-actions[bot]' \
+              commit -q -m "Publish UPM package (source ${GITHUB_SHA})"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" upm

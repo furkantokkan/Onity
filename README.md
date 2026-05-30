@@ -10,13 +10,7 @@
 ![AI-indexed docs](https://img.shields.io/badge/docs-AI--indexed-blueviolet)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
 
-**Install** — in Unity, open *Window → Package Manager → `+` → Add package from git URL…* and paste:
-
-```
-https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework
-```
-
-Append `#v0.2.0` to pin a release. Requires Git on your machine. Onity's Unity layer also needs **ZLinq** (its only third-party runtime dependency) — install it via NuGetForUnity. See [Install](#install) for the full steps and alternatives.
+**📖 [Documentation, guides & API reference](https://furkantokkan.github.io/Onity/)**  ·  [Install](#install)  ·  [AI usage guide](docs/Onity-AI-Usage-Guide.md)  ·  [Onity vs VContainer / Zenject](docs/Onity-vs-VContainer-Zenject.md)
 
 ---
 
@@ -142,23 +136,29 @@ The speed comes from a process-wide compiled-activator cache (`Expression.Compil
 
 ### Option A — UPM git URL (recommended)
 
-In Unity, open **Window → Package Manager → `+` → Add package from git URL…** and paste:
+In Unity, open **Window → Package Manager → `+` → Add package from git URL…** and paste the short URL:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework
+https://github.com/furkantokkan/Onity.git#upm
 ```
 
-…or add it to your project's `Packages/manifest.json` directly:
+The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
+
+```
+https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.2.0
+```
+
+…or in `Packages/manifest.json`:
 
 ```json
 {
   "dependencies": {
-    "com.onity.framework": "https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework"
+    "com.onity.framework": "https://github.com/furkantokkan/Onity.git#upm"
   }
 }
 ```
 
-(Pin a release by appending `#v0.2.0` to the URL.)
+(`#upm` tracks the latest package; use the `?path=…#v0.2.0` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 
