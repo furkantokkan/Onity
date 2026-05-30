@@ -45,9 +45,9 @@ out of scope). Changes are internal only; the public API is unchanged.
 - **Generic `Resolve<T>()` / `TryResolve<T>()`**: skip the `Resolve(Type)` box/cast
   round trip by calling `TryResolveInternal` directly.
 - **Guard-test fix** (`OnityContainerTests.OnitySources_DoNotUseSystemLinq`): now
-  bans `System.Linq` / `System.Linq.*` (LINQ-to-objects; ZLinq is the project
-  default) while allowing `System.Linq.Expressions`, which the compiled activator
-  needs. The prior `Contains("System.Linq")` check false-failed on Phase 1.1.
+  bans `System.Linq` / `System.Linq.*` (LINQ-to-objects; plain loops are the
+  project default) while allowing `System.Linq.Expressions`, which the compiled
+  activator needs. The prior `Contains("System.Linq")` check false-failed on Phase 1.1.
 
 Competitor parity test suites ported onto `OnityContainer` (public API only):
 

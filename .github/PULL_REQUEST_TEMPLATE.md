@@ -1,7 +1,7 @@
 <!--
 Thanks for contributing to Onity. Please fill in the sections below.
 See CONTRIBUTING.md for build/test instructions and the honesty rules
-(ZLinq is a real dependency; no verified zero-allocation claims).
+(no third-party runtime dependencies; no verified zero-allocation claims).
 -->
 
 ## Summary
@@ -38,7 +38,7 @@ added. Note whether it was verified in EditMode, PlayMode, or both.
 - [ ] Engine-free core assemblies stay free of `UnityEngine`
 - [ ] Hot paths stay allocation-conscious (no per-emit/per-resolve allocations
       introduced)
-- [ ] Claims in code/docs are accurate (ZLinq is a real dependency; no verified
-      zero-allocation/"0 B/op" resolve claims; timing numbers carry the
+- [ ] Claims in code/docs are accurate (no third-party runtime dependencies; no
+      verified zero-allocation/"0 B/op" resolve claims; timing numbers carry the
       "indicative, not guaranteed" caveat)
 - [ ] Changes are surgical (no unrelated reformatting/renames)

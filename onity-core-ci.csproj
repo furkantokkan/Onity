@@ -3,8 +3,8 @@
   <!--
     License-free CI compile check for Onity's engine-free assemblies.
     These five layers (Core, DI, Reactive, Messaging, Factory) carry no UnityEngine
-    reference and no ZLinq usage, so they compile on a plain .NET SDK with no Unity
-    install and no Unity license. Targets the Unity 2022.3 language level (C# 9).
+    reference and no third-party dependencies, so they compile on a plain .NET SDK
+    with no Unity install and no Unity license. Targets the Unity 2022.3 language level (C# 9).
     Used by the build-core job in .github/workflows/onity-ci.yml.
   -->
 

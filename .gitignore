@@ -8,7 +8,7 @@
 [Uu]serSettings/
 [Mm]emoryCaptures/
 
-# NuGetForUnity-restored packages (e.g. ZLinq DLLs); restored from packages.config
+# NuGetForUnity-restored packages (Onity ships none; kept ignored for safety)
 [Aa]ssets/[Pp]ackages/
 
 # IDE / tooling

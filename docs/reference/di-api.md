@@ -20,7 +20,7 @@ A lifetime call (`AsSingle()` / `AsTransient()`) is **required** to actually reg
 
 The resolve machinery is designed to avoid per-call managed allocation (compiled constructor activators on JIT runtimes, pooled argument arrays, cached injection plans, an optional dense-id baked graph). A transient resolve still allocates the instance it returns. On IL2CPP/AOT the container falls back to reflection-based activation and constructs correctly either way — read `OnityContainer.IsCompiledActivationSupported` to see which path is live.
 
-> Onity depends on ZLinq for the `Onity.Unity` layer; the DI core does not use `System.Linq`.
+> Onity has no third-party runtime dependencies; the DI core does not use `System.Linq`.
 
 ---
 

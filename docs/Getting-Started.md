@@ -82,14 +82,11 @@ That folder contains everything: `Runtime/` (the assemblies), `Editor/`
 (Inspector and menu tooling), `Tests/`, and `Samples/`. If you cloned this
 repository, it is already there.
 
-### Required dependency — ZLinq
+### No third-party dependencies
 
-Onity's Unity layer uses [ZLinq](https://github.com/Cysharp/ZLinq), its only
-third-party runtime dependency (the engine-free core uses no `System.Linq`).
-Install ZLinq with **NuGetForUnity** (*Window → NuGet → Manage NuGet Packages*,
-search `ZLinq`, Install). If you cloned this repository, NuGetForUnity restores it
-automatically from the committed `Assets/packages.config` the first time the
-project opens — nothing to do.
+Onity has no third-party runtime dependencies — the engine-free core uses no
+`System.Linq`, and the Unity layer ships with no external runtime dependency.
+There is nothing extra to install.
 
 ### Referencing the assemblies
 

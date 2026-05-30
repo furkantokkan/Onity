@@ -21,16 +21,7 @@ Unity project, so you can clone and open it directly.
 1. Install **Unity 2022.3 LTS or newer** (CI runs on `2022.3.62f3`).
 2. Open the repository root as a Unity project.
 
-### 2. Install ZLinq (required)
-
-**ZLinq is the only third-party runtime dependency.** Onity's Unity layer
-(`Onity.Unity`) uses it; the engine-free core uses no `System.Linq` at all.
-Install [ZLinq](https://github.com/Cysharp/ZLinq) via
-[NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity) (package id
-`ZLinq`) before the Unity layer will compile. The repository already vendors a
-copy under `Assets/Packages/` for local development.
-
-### 3. Run the tests
+### 2. Run the tests
 
 Run the test suite through Unity's **Test Runner** (`Window > General > Test
 Runner`):
@@ -44,7 +35,7 @@ CI runs both EditMode and PlayMode on every push and pull request to `main` and
 `master` via [`game-ci/unity-test-runner`](.github/workflows/onity-ci.yml). Keep
 both modes green.
 
-### 4. Quick engine-free checks with `dotnet`
+### 3. Quick engine-free checks with `dotnet`
 
 The core assemblies carry no `UnityEngine` reference
 (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`,
@@ -76,9 +67,9 @@ Onity uses Unity C# conventions. Match the surrounding code.
     `Bind`, `Resolve`, `Publish`, `Subscribe`).
 - **Braces** — Allman style (opening brace on its own line).
 - **XML docs** — public types and members carry XML documentation comments.
-- **No `System.Linq`** — never add `using System.Linq;` in runtime code. Use
-  ZLinq (`AsValueEnumerable` chains) where a query pipeline helps; otherwise
-  write a plain loop.
+- **No `System.Linq`** — never add `using System.Linq;` in runtime code. Onity
+  has no third-party runtime dependencies, so write a plain loop where a query
+  pipeline would otherwise help.
 - **Engine-free core** — the core asmdefs are `noEngineReferences`. Do not pull
   `UnityEngine` into `Onity.Core`, `Onity.DI`, `Onity.Reactive`,
   `Onity.Messaging`, or `Onity.Factory`. Unity-specific code belongs in
@@ -123,8 +114,8 @@ The analyzer has its own test project under
   CI.
 - **Honest claims.** Documentation, commit messages, and code comments must be
   accurate. In particular:
-  - ZLinq **is** a third-party runtime dependency — do not describe Onity as
-    having no third-party dependencies.
+  - Onity has **no** third-party runtime dependencies — do not reintroduce one
+    (the core uses no `System.Linq`; write plain loops).
   - Do not claim a verified zero-allocation / "0 B/op" resolve. The accurate
     framing is that the resolve machinery and the reactive/messaging emit paths
     are **designed** to avoid per-call managed allocation, but a transient
