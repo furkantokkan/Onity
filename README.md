@@ -56,7 +56,7 @@ The DI fast path compiles constructor activators and member setters with `Expres
 - Unity bridges (`Onity.Unity.Reactive`): `OnityUnityObservable.EveryUpdate()` / `EveryFixedUpdate()` / `EveryLateUpdate()`, `Timer`, `Interval`; lifetime helpers `AddTo(Component)` / `TakeUntilDestroy(Component)` / `TakeUntilDisable(Behaviour)`.
 - Input System reactive bridge (`Onity.Unity.Input`): `PerformedAsObservable()` / `StartedAsObservable()` / `CanceledAsObservable()` and long-press observables.
 
-### Events — `Onity.Messaging` (replaces MessagePipe)
+### Events — `Onity.Messaging` (replaces MessagePipe and the UniRx `MessageBroker`)
 
 - Typed pub/sub: `IPublisher<T>` / `ISubscriber<T>` from `IMessageBroker`; 0-alloc steady-state `Publish`, re-entrancy-safe (unsubscribe inside a handler is OK).
 - `OnityEventHub` facade — `Publish<T>` / `Subscribe<T>` / `Observe<T>()` — **auto-bound in every scope**, no installer line required.
