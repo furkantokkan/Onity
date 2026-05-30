@@ -52,6 +52,7 @@ Split-ready optional modules are documented in:
   - `Where`, `Select`, `FromEvent`
   - `Debounce`, `ThrottleLast`, `TakeUntil(Task/Token)`
   - `SelectAwait`, `WhereAwait`
+  - `ObserveOnThreadPool`, `SelectOnThreadPool`
   - `EveryUpdate`, `EveryFixedUpdate`, `EveryLateUpdate`
   - Optional thread mode for frame streams:
     - `OnityUnityThreadMode.SingleThread`
@@ -169,6 +170,8 @@ What is already covered in Onity:
 - Unity loop-driven async waits (`NextFrameAsync`, fixed frame waits, provider-based delays).
 - Unity `AsyncOperation` await support with task/cancellation bridge.
 - Reactive + async bridge (`SelectAwait`, `WhereAwait`, `TakeUntil(Task/Token)`).
+- Reactive thread-pool hops for pure managed work (`ObserveOnThreadPool`,
+  `SelectOnThreadPool`) with `ObserveOnMainThread()` as the Unity API return hop.
 - Task tracking window for long-running/leaking tasks.
 - Reusable timeout flow with `CancelAfterSlim` and `OnityTimeoutController`.
 

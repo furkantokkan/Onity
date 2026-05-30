@@ -5,6 +5,34 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-05-30
+
+### Added
+
+- Added engine-free reactive thread-pool scheduling:
+  - `ObserveOnThreadPool()` re-posts values to a .NET thread-pool worker while
+    preserving source order.
+  - `SelectOnThreadPool(...)` runs CPU-bound selectors on the .NET thread pool
+    with configurable max concurrency.
+- Added EditMode coverage for thread-pool scheduling, configured parallelism,
+  source-order preservation when concurrency is one, and invalid argument
+  validation.
+- Added ADR 0002 documenting the managed thread-pool boundary and why Unity
+  Job/Burst modes remain separate from managed reactive operator execution.
+
+### Changed
+
+- Updated reactive architecture and migration docs to distinguish real managed
+  thread-pool operators from the experimental Unity job/Burst frame boundary.
+- Bumped package version to `0.3.0`.
+- Updated UPM install documentation and release pin examples to `v0.3.0`.
+
+### Tested
+
+- `dotnet build onity-core-ci.csproj -c Release`
+- Focused reactive thread-pool smoke coverage for ordered thread hops and
+  configured selector parallelism.
+
 ## [0.2.1] - 2026-05-30
 
 ### Changed
@@ -112,5 +140,6 @@ dependency (used by the `Onity.Unity` layer).
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.0]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.0
 [0.2.1]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.2.1
 [0.1.0]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.1.0
