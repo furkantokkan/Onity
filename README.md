@@ -245,6 +245,8 @@ public sealed class HealthHud : MonoBehaviour
 
 Wire it in the scene: add a context (`ProjectContext` / `SceneContext` / `GameObjectContext` from `Onity.Unity.Contexts`), assign `GameInstaller` to its installer list, and place `HealthHud` under the context root. The context creates the container, registers default bindings, runs installers, builds, and auto-injects the hierarchy.
 
+> **Two DI styles, on purpose.** `GameClock` is a plain C# service: it receives its dependencies through its **constructor** (`GameClock(IScoreService score)`), so it needs **no `[Inject]`** — binding it is enough for the container to construct it with its dependencies and run `Initialize`/`Tick` automatically. `HealthHud` uses **`[Inject]` fields** only because it is a `MonoBehaviour` — Unity instantiates those, so the container can't call a constructor and instead fills `[Inject]`-marked members when the context injects the hierarchy. Rule of thumb: **put logic in constructor-injected services (no `[Inject]`); keep MonoBehaviours thin views that `[Inject]` only what they render.** ([Getting Started](docs/Getting-Started.md) walks through both styles in depth.)
+
 For the complete, source-verified API across all three pillars, read the [Onity AI Usage Guide](docs/Onity-AI-Usage-Guide.md).
 
 ---
