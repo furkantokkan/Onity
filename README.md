@@ -182,23 +182,37 @@ What remains intentionally scoped:
 
 ## Benchmark Snapshot
 
-Latest published DI run: `2026-05-30T18:32:48Z`, Unity 2022.3.62f3,
-Windows Editor/Mono, 512 warmup iterations, 8 measured samples, mean ns/op.
-See `Benchmarks/Results/di-benchmark-summary.md` for the full report.
+Latest published DI runs: Unity 2022.3.62f3, Windows, 512 warmup iterations,
+8 measured samples, mean ns/op. See `Benchmarks/Results/di-benchmark-summary.md`
+and `Benchmarks/Results/di-benchmark-player-latest.md` for full reports.
+
+Editor / Mono (`2026-05-30T19:38:06Z`):
 
 | Scenario | Onity Baked | VContainer | Zenject | Onity vs VContainer |
 | --- | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~94 ns | ~202 ns | ~3,137 ns | ~+53% |
-| Resolve Transient | ~775 ns | ~1,697 ns | ~11,681 ns | ~+54% |
-| Resolve Combined | ~896 ns | ~1,712 ns | ~15,400 ns | ~+48% |
-| Resolve Complex (6-level) | ~22,787 ns | ~57,995 ns | ~285,394 ns | ~+61% |
-| Prepare & Register Complex | ~47,243 ns | ~135,140 ns | ~197,132 ns | ~+65% |
+| Resolve Singleton | ~63 ns | ~214 ns | ~2,866 ns | ~+71% |
+| Resolve Transient | ~1,083 ns | ~1,879 ns | ~12,356 ns | ~+42% |
+| Resolve Combined | ~972 ns | ~2,079 ns | ~17,248 ns | ~+53% |
+| Resolve Complex (6-level) | ~22,905 ns | ~42,158 ns | ~289,823 ns | ~+46% |
+| Prepare & Register Complex | ~61,044 ns | ~150,730 ns | ~215,537 ns | ~+60% |
 
-Timing numbers are Editor/Mono results from one machine. The committed
-allocation columns are withdrawn until the allocation harness is corrected,
-because the same run reported 0 B for every container. On IL2CPP, Onity uses the
-safe reflection fallback instead of the Mono compiled activator path; measure a
-player build before making IL2CPP speed claims.
+Windows IL2CPP Player (`2026-05-30T20:09:24Z`):
+
+| Scenario | Onity Baked | VContainer | Zenject | Result |
+| --- | ---: | ---: | ---: | --- |
+| Resolve Singleton | ~17 ns | ~86 ns | ~469 ns | Onity faster |
+| Resolve Transient | ~1,431 ns | ~580 ns | ~2,458 ns | VContainer faster |
+| Resolve Combined | ~1,263 ns | ~602 ns | ~3,525 ns | VContainer faster |
+| Resolve Complex (6-level) | ~34,729 ns | ~12,918 ns | ~62,689 ns | VContainer faster |
+| Prepare & Register Complex | ~23,872 ns | ~38,465 ns | ~61,060 ns | Onity faster |
+
+Timing numbers are from one machine and are indicative, not a guarantee. The
+committed allocation columns are withdrawn until the allocation harness is
+corrected, because the earlier Editor harness reported 0 B for every container.
+Onity is ahead on every measured Editor/Mono timing path, but the current IL2CPP
+player run shows VContainer ahead on transient, combined, and complex resolve
+paths. A source-generated/AOT-specialized activator is required before Onity can
+claim an IL2CPP speed lead across every scenario.
 
 ## Build and Test
 

@@ -9,9 +9,11 @@ This folder contains benchmark tooling for comparing:
 
 From the Unity menu:
 - `Onity/Benchmarks/Run DI Benchmarks (Editor)`
+- `Onity/Benchmarks/Build and Run DI Benchmarks (IL2CPP Player)`
 
 Command line (batchmode) entry point:
 - `Onity.Editor.Benchmarks.OnityDiBenchmarkRunner.RunBenchmarksFromCommandLine`
+- `Onity.Editor.Benchmarks.OnityDiBenchmarkPlayerBuildRunner.BuildAndRunFromCommandLine`
 
 Example:
 
@@ -31,10 +33,17 @@ Output files are generated at:
 - `Benchmarks/Results/di-benchmark-latest.csv`
 - `Benchmarks/Results/di-benchmark-latest.md`
 - `Benchmarks/Results/di-benchmark-summary.md`
+- `Benchmarks/Results/di-benchmark-player-latest.json`
+- `Benchmarks/Results/di-benchmark-player-latest.csv`
+- `Benchmarks/Results/di-benchmark-player-latest.md`
 
-When this package is opened from the development project, the full local path is
-`Assets/Onity-Packages/Onity/Benchmarks/Results/...`. On GitHub `main`, the
-published package copy is under `Packages/com.onity.framework/Benchmarks`.
+On GitHub `main`, the package copy is under
+`Packages/com.onity.framework/Benchmarks`. On the `upm` branch, these paths are
+at the package root.
+
+The player build runner accepts `-onityBenchmarkOutput <absolute-path>`, which is
+useful when writing IL2CPP output outside `Packages` to avoid importing benchmark
+artifacts during the build session.
 
 Scenarios:
 - Resolve (Singleton)
@@ -43,28 +52,42 @@ Scenarios:
 - Resolve (Complex)
 - Prepare & Register (Complex)
 
-## 2. Latest Published DI Result
+## 2. Latest Published DI Results
 
-Latest published run: `2026-05-30T18:32:48Z`, Unity 2022.3.62f3, Windows
+Latest Editor/Mono run: `2026-05-30T19:38:06Z`, Unity 2022.3.62f3, Windows
 Editor/Mono, 512 warmup iterations, 8 measured samples, arithmetic mean.
 
 | Scenario | Onity Baked | Onity Reflection | VContainer | Zenject | Onity Baked vs VContainer |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~94 ns | ~215 ns | ~202 ns | ~3,137 ns | ~+53% |
-| Resolve Transient | ~775 ns | ~1,725 ns | ~1,697 ns | ~11,681 ns | ~+54% |
-| Resolve Combined | ~896 ns | ~1,059 ns | ~1,712 ns | ~15,400 ns | ~+48% |
-| Resolve Complex (6-level) | ~22,787 ns | ~26,502 ns | ~57,995 ns | ~285,394 ns | ~+61% |
-| Prepare & Register Complex | ~47,243 ns | ~35,837 ns | ~135,140 ns | ~197,132 ns | ~+65% |
+| Resolve Singleton | ~63 ns | ~164 ns | ~214 ns | ~2,866 ns | ~+71% |
+| Resolve Transient | ~1,083 ns | ~943 ns | ~1,879 ns | ~12,356 ns | ~+42% |
+| Resolve Combined | ~972 ns | ~1,233 ns | ~2,079 ns | ~17,248 ns | ~+53% |
+| Resolve Complex (6-level) | ~22,905 ns | ~25,940 ns | ~42,158 ns | ~289,823 ns | ~+46% |
+| Prepare & Register Complex | ~61,044 ns | ~42,929 ns | ~150,730 ns | ~215,537 ns | ~+60% |
+
+Latest Windows IL2CPP Player run: `2026-05-30T20:09:24Z`, Unity 2022.3.62f3,
+512 warmup iterations, 8 measured samples, arithmetic mean.
+
+| Scenario | Onity Baked | Onity Reflection | VContainer | Zenject | Result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Resolve Singleton | ~17 ns | ~102 ns | ~86 ns | ~469 ns | Onity faster |
+| Resolve Transient | ~1,431 ns | ~1,581 ns | ~580 ns | ~2,458 ns | VContainer faster |
+| Resolve Combined | ~1,263 ns | ~1,505 ns | ~602 ns | ~3,525 ns | VContainer faster |
+| Resolve Complex (6-level) | ~34,729 ns | ~37,379 ns | ~12,918 ns | ~62,689 ns | VContainer faster |
+| Prepare & Register Complex | ~23,872 ns | ~20,939 ns | ~38,465 ns | ~61,060 ns | Onity faster |
 
 These timings are indicative, not a guarantee. They were captured in the Editor
-on one machine; hardware, Unity version, scripting backend, and graph shape will
-change the absolute numbers. The allocation columns currently emitted by the
-runner are not reliable and should not be used for public claims until the
-allocation harness is corrected.
+and in a Windows IL2CPP player on one machine; hardware, Unity version, scripting
+backend, and graph shape will change the absolute numbers. The allocation
+columns currently emitted by the Editor runner are not reliable and should not
+be used for public claims until the allocation harness is corrected. The player
+runner marks allocation measurement unavailable because Unity 2022 IL2CPP crashed
+when reading managed allocation counters from the benchmark loop.
 
-IL2CPP note: Onity's Mono/JIT speed path uses compiled activators. On AOT/IL2CPP
-that path falls back to reflection so the container runs safely, but IL2CPP
-player timings still need a separate benchmark run.
+IL2CPP note: Onity runs correctly in the player benchmark, but the current
+IL2CPP timing order differs from Editor/Mono. VContainer is faster on transient,
+combined, and complex resolve until Onity has a source-generated/AOT-specialized
+activation path.
 
 ## 3. Render Charts
 
@@ -77,9 +100,9 @@ pip install matplotlib numpy
 Generate charts:
 
 ```bash
-python Assets/Onity-Packages/Onity/Benchmarks/Tools/render_di_benchmark_charts.py \
-  --input Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-latest.json \
-  --output-dir Assets/Onity-Packages/Onity/Benchmarks/Results
+python Packages/com.onity.framework/Benchmarks/Tools/render_di_benchmark_charts.py \
+  --input Packages/com.onity.framework/Benchmarks/Results/di-benchmark-latest.json \
+  --output-dir Packages/com.onity.framework/Benchmarks/Results
 ```
 
 If you are currently inside `Benchmarks/Tools`, run:
