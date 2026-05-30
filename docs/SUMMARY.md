@@ -13,6 +13,9 @@
 
 ## Reference
 
+* [Reactive Operators](reference/reactive-operators.md)
+* [DI API](reference/di-api.md)
+* [Messaging API](reference/messaging-api.md)
 * [Comparison: Onity vs VContainer / Zenject](Onity-vs-VContainer-Zenject.md)
 * [AI Usage Guide](Onity-AI-Usage-Guide.md)
 * [Architecture Review](Architecture-Review.md)

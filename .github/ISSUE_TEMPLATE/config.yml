@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & discussion
+    url: https://github.com/furkantokkan/Onity/discussions
+    about: Ask usage questions or discuss ideas before filing an issue.
+  - name: Security report
+    url: https://github.com/furkantokkan/Onity/security/advisories/new
+    about: Report a vulnerability privately. Do not open a public issue.

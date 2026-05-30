@@ -1,6 +1,6 @@
 # Migrating from Zenject / Extenject to Onity
 
-Onity's DI surface is intentionally Zenject-familiar: you still `Bind<TContract>().To<TConcrete>().AsSingle()`, you still mark injection points with `[Inject]`, and child containers still inherit parent bindings. The mechanical translation below is therefore mostly one-to-one on the common paths. The differences that matter are: Onity's lifetime enum is exactly `{ Singleton, Transient }` (no `Scoped`/`AsCached`/`AsTransient`-with-id distinctions), Onity uses **last-binding-wins** instead of throwing on duplicate binds, Onity selects the **greediest public constructor** (or the single `[Inject]` ctor) rather than Zenject's fewest-argument rule, circular dependencies are detected at **resolve time** rather than build time, and a number of Zenject features (conditions, ids, memory pools, signals, sub-container facades) are deliberate non-goals — see the last section. Every mapping below is verified against the shipped Onity public API (`Onity.DI`, `Onity.Factory`); do not assume any Zenject API exists on Onity unless it appears here.
+Onity's DI surface is intentionally Zenject-familiar: you still `Bind<TContract>().To<TConcrete>().AsSingle()`, you still mark injection points with `[Inject]`, and child containers still inherit parent bindings. The mechanical translation below is therefore mostly one-to-one on the common paths. The differences that matter are: Onity's lifetime enum is exactly `{ Singleton, Transient }` (no `Scoped`/`AsCached`/`AsTransient`-with-id distinctions), Onity uses **last-binding-wins** instead of throwing on duplicate binds, Onity selects the **greediest public constructor** (or the single `[Inject]` ctor) rather than Zenject's fewest-argument rule, and circular dependencies are detected at **resolve time** rather than build time. Three features that older drafts of this guide listed as missing now ship: **collection injection** (`IEnumerable<T>`/`IReadOnlyList<T>`/`T[]`/`List<T>` of every binding of `T`), **open-generic binds** (`Bind(typeof(IRepo<>)).To(typeof(Repo<>))`), and an **automatic lifecycle** (`IOnityInitializable`/`IOnityTickable`/`IOnityFixedTickable`/`IOnityLateTickable`) where binding a type is enough to be initialized and ticked — no manual entry-point registration. The features that remain deliberate non-goals (conditions, ids, `Unbind`, memory pools, signals, sub-container facades, `Instantiate(args)`) are listed in the last section. Every mapping below is verified against the shipped Onity public API (`Onity.DI`, `Onity.Factory`, `Onity.Unity.Reactive`); do not assume any Zenject API exists on Onity unless it appears here.
 
 ## Binding
 
@@ -47,7 +47,8 @@ Member-injection order is base class → derived class, and within a type **fiel
 | `container.TryResolve<IFoo>()` (null on miss) | `container.TryResolve<IFoo>(out IFoo foo)` | Returns `bool`; `out` is null on miss (no exception). |
 | `container.TryResolve(typeof(IFoo))` | `container.TryResolve(typeof(IFoo), out object foo)` | Runtime-type `TryResolve`. |
 | `container.HasBinding(typeof(IFoo))` | `container.CanResolve(typeof(IFoo))` | Check without instantiating. |
-| `container.ResolveAll<IFoo>()` / `IEnumerable<IFoo>` inject | *(no equivalent — non-goal)* | No collection/multi injection. Inject a single registry or factory and resolve a known set. |
+| `container.ResolveAll<IFoo>()` | `container.Resolve<IReadOnlyList<IFoo>>()` (or `IEnumerable<IFoo>` / `IFoo[]` / `List<IFoo>`) | Resolves every explicit `IFoo` binding in this scope and its ancestors. There is no separate `ResolveAll` method — request a collection type. |
+| `[Inject] List<IFoo> all` (collection inject) | `[Inject] private IReadOnlyList<IFoo> m_all;` (or ctor param) | Collection injection is supported. See the collection example below. |
 | Self-resolve `DiContainer` | `container.Resolve<OnityContainer>()` / `Resolve<IResolver>()` | The active container self-resolves to itself and to `IResolver`. Inject `IResolver` to do manual resolves (e.g. inside a factory). |
 
 ## Factories
@@ -76,6 +77,65 @@ public sealed class EnemyFactory : IFactory<string, Enemy>
 // container.Resolve<IFactory<string, Enemy>>().Create("goblin");
 ```
 
+## Automatic lifecycle (replaces `IInitializable` / `ITickable` registration)
+
+In Zenject you declare the lifecycle interface and then register the type as an entry point (`BindInterfacesAndSelfTo<...>()` plus the entry-point binding). In Onity, binding a singleton that implements an `IOnity*` lifecycle interface is enough — the container collects and drives it. The context pumps `Tick`/`FixedTick`/`LateTick` for you.
+
+```csharp
+// Zenject
+public sealed class WaveSpawner : IInitializable, ITickable
+{
+    public void Initialize() { /* ... */ }
+    public void Tick() { /* ... */ }
+}
+// Container.BindInterfacesAndSelfTo<WaveSpawner>().AsSingle(); // + entry-point wiring
+
+// Onity
+using Onity.DI;
+
+public sealed class WaveSpawner : IOnityInitializable, IOnityTickable
+{
+    public void Initialize() { /* runs once at Build(), in registration order */ }
+    public void Tick() { /* runs every Update from the owning context */ }
+}
+// container.Bind<WaveSpawner>().AsSingle();          // binding is the whole wiring
+// (or BindInterfacesAndSelfTo<WaveSpawner>().AsSingle() to also resolve by interface)
+```
+
+## Collection injection (replaces `ResolveAll` / hand-rolled registries)
+
+Bind several implementations of one contract, then inject the whole set as `IReadOnlyList<T>` (or `IEnumerable<T>` / `T[]` / `List<T>`). The set is gathered from every explicit binding in this scope and its ancestors, in registration order.
+
+```csharp
+// Zenject
+// Container.Bind<IDamageRule>().To<CritRule>().AsSingle();
+// Container.Bind<IDamageRule>().To<ArmorRule>().AsSingle();
+public DamagePipeline(List<IDamageRule> rules) { /* Zenject collects all binds */ }
+
+// Onity
+container.Bind<IDamageRule>().To<CritRule>().AsSingle();
+container.Bind<IDamageRule>().To<ArmorRule>().AsSingle();
+
+public sealed class DamagePipeline
+{
+    private readonly IReadOnlyList<IDamageRule> m_rules;
+    public DamagePipeline(IReadOnlyList<IDamageRule> rules) { m_rules = rules; }
+}
+```
+
+> A plain `Resolve<IDamageRule>()` still returns the **last** binding (last-binding-wins), so existing single-resolve call sites are unchanged; only a collection-typed request gathers all of them.
+
+## Open-generic binds (replaces per-closed-type binding boilerplate)
+
+Bind an open generic once and let any closed form resolve on demand:
+
+```csharp
+// container.Bind(typeof(IRepository<>)).To(typeof(Repository<>)).AsSingle();
+// container.Resolve<IRepository<Player>>();   // builds Repository<Player> on first resolve
+```
+
+The first resolve of `IRepository<Player>` builds the closed `Repository<Player>` and caches it as a normal binding, so later resolves take the fast path. On IL2CPP the closed type must survive AOT stripping (reference it statically or preserve it). `NonLazy()` is not supported on an open-generic binding — the closed type is unknown until resolve.
+
 ## Scopes / sub-containers / lifecycle
 
 | Zenject | Onity | Notes |
@@ -84,9 +144,11 @@ public sealed class EnemyFactory : IFactory<string, Enemy>
 | `GameObjectContext` / sub-container facade | child `OnityContainer` (no facade type) | No `FromSubContainerResolve` / facade binding. Compose with a plain child container. |
 | `MonoInstaller.InstallBindings()` | `MonoInstaller.InstallBindings(OnityContainer container)` (`Onity.Unity.Installers`) | Same idea; you receive the `OnityContainer` to bind into. |
 | `ProjectContext` / `SceneContext` | `ProjectContext` / `SceneContext` / `GameObjectContext` (`Onity.Unity.Contexts`) | Context creates the container, registers defaults (container, `IResolver`, `MessageBroker`, `OnityEventHub`), runs installers, builds, auto-injects. |
-| `IInitializable.Initialize()` | `container.RegisterBuildCallback(r => …)` or `[Inject]` method or `NonLazy()` | Sync startup work runs in `Build()` via a build callback or a post-inject method. |
-| `ITickable.Tick()` | `OnityUnityObservable.EveryUpdate().Subscribe(...)` (`Onity.Unity.Reactive`) | Ticking lives in Reactive, not the DI layer — subscribe to the frame loop and `AddTo(this)`. |
-| `IDisposable` / `OnDestroy` cleanup | `container.Dispose()` | Disposes owned singletons in reverse registration order. |
+| `IInitializable.Initialize()` | `IOnityInitializable.Initialize()` (`Onity.DI`) | Automatic, like Zenject: bind a singleton/instance implementing it and `Build()` calls `Initialize()` once, in binding-registration order. No entry-point registration. (A `RegisterBuildCallback(r => …)`, an `[Inject]` method, or `NonLazy()` are still available for ad-hoc startup work.) |
+| `ITickable.Tick()` | `IOnityTickable.Tick()` (`Onity.DI`) | Automatic: bind a singleton/instance implementing it and the owning Unity context pumps it every `Update`. Binding the type is enough — no registration. **Transients are not ticked** (no single stable instance). |
+| `IFixedTickable.FixedTick()` / `ILateTickable.LateTick()` | `IOnityFixedTickable.FixedTick()` / `IOnityLateTickable.LateTick()` | Pumped from the context's `FixedUpdate` / `LateUpdate`. Same automatic, singleton-only rule. |
+| Tick a plain stream / non-singleton per frame | `OnityUnityObservable.EveryUpdate().Subscribe(...).AddTo(this)` (`Onity.Unity.Reactive`) | For per-frame work that is not a bound singleton, subscribe the frame loop directly. |
+| `IDisposable` / `OnDestroy` cleanup | `container.Dispose()` | Disposes owned singletons (including lifecycle singletons) in reverse registration order. |
 | *(none)* | `container.Build()` / `await container.BuildAsync(ct)` | Runs build callbacks (sync, then async). Bindings cannot be added after build is finalized (throws `OnityBindingException`). Note: a bare `Resolve` works without an explicit build, unlike a strict builder ceremony. |
 
 ## Errors
@@ -105,7 +167,7 @@ These Zenject features are deliberate Onity non-goals (see `docs/Plan/07-Competi
 | Signals (`SignalBus`, `DeclareSignal`, `BindSignal`) | Messaging is a separate pillar with one model. | Use `Onity.Messaging` — `IPublisher<T>`/`ISubscriber<T>` via the auto-bound `MessageBroker`/`OnityEventHub`, and `broker.Observe<T>()` for reactive chains. |
 | Sub-container facades (`FromSubContainerResolve`, `ByInstaller`) | Adds facade indirection; child containers already cover scoping. | Compose a child `new OnityContainer(parent)` and bind into it directly. |
 | `Container.Instantiate<T>(args)` | No runtime-arg construction on the container. | Author an `IFactory<TParam, TValue>` and `BindFactory`. |
-| Open-generic binds (`Bind(typeof(Repository<>))`) | Requires on-demand closed-activator construction — an AOT/IL2CPP and hot-path complication. | Bind **closed** generics explicitly: `Bind<Repository<int>>()…`. Unbound interfaces/abstracts/open-generics throw `OnityResolveException`. |
 | Unbind / Rebind API | Conflicts with the "no bindings after Build" rule and the cached resolution model. | Rely on last-binding-wins to override a binding before `Build()`. |
-| `IInitializable`/`ITickable` auto-tick inside the DI layer | Per-frame dispatch in the engine-free DI core couples it to the Unity loop. | Sync init via `RegisterBuildCallback`/`NonLazy`; per-frame work via `EveryUpdate()` in `Onity.Unity.Reactive`. |
-| Collection injection (`List<T>`/`IEnumerable<T>` of all bindings) | Last-binding-wins overwrites; no closed `IEnumerable<T>` resolve. | Inject a single registry/factory; resolve a known set explicitly. |
+| `IInitializable`/`ITickable` auto-tick **inside the `Onity.DI` core** | Per-frame dispatch in the engine-free DI core would couple it to the Unity loop. | The interfaces themselves **are supported** (`IOnityInitializable`/`IOnityTickable`/…) — they live in `Onity.DI` but are pumped by the Unity **context**, not by the core in isolation. See the lifecycle section above. |
+
+> **Now supported (no longer non-goals):** **collection injection** and **open-generic binds** ship today — see the dedicated sections above. The roadmap (`docs/Plan/07-Competitive-And-AI-Roadmap.md`) marks both as *Adopt*, and they are implemented in the shipped `Onity.DI`.

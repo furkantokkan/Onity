@@ -61,9 +61,23 @@ Each takes an optional `OnityTimeProvider` (deterministic in tests; pass a Unity
 | `ThrottleLast(interval)` | `ThrottleLast(TimeSpan interval, OnityTimeProvider = null)` | Emit the latest value once per interval. |
 | `Throttle(dueTime)` (leading/trailing edge in some libs) | **no `Throttle`** | Divergence: only `ThrottleLast` ships. There is **no** leading-edge `Throttle`. Use `ThrottleLast` (trailing/sampled) or `Debounce`. |
 | `TakeUntil(otherObservable)` | `TakeUntil(CancellationToken)` / `TakeUntil(Task)` | Signal is a token or a task, not another observable. |
-| `SelectAwait(async selector)` | `SelectAwait(Func<T, CancellationToken, ValueTask<TResult>>)` | Sequential async projection. **Resumes on a threadpool thread** — do not touch `UnityEngine` directly in a `Subscribe` after it. |
-| `WhereAwait(async predicate)` | `WhereAwait(Func<T, CancellationToken, ValueTask<bool>>)` | Sequential async filter; same off-main-thread caveat. |
-| `ObserveOn(mainThread)` | *(not shipped yet)* | No main-thread hop operator yet. Keep async results pure or marshal back yourself. |
+| `SelectAwait(async selector)` | `SelectAwait(Func<T, CancellationToken, ValueTask<TResult>>)` | Sequential async projection. **Resumes on a threadpool thread** — follow it with `ObserveOnMainThread()` before any `Subscribe` that touches `UnityEngine`. |
+| `WhereAwait(async predicate)` | `WhereAwait(Func<T, CancellationToken, ValueTask<bool>>)` | Sequential async filter; same off-main-thread caveat — re-marshal with `ObserveOnMainThread()`. |
+| `ObserveOn(scheduler)` | `ObserveOn(OnityFrameProvider)` (`Onity.Reactive`) | Re-posts each value onto the provider's frame loop (buffered, replayed on the next tick). Pass `OnityFrameProviders.Update` / `FixedUpdate` / `LateUpdate`. |
+| `ObserveOnMainThreadDispatcher()` | `ObserveOnMainThread()` / `ObserveOnMainThread(OnityUnityFrameProvider)` (`Onity.Unity.Reactive`) | Convenience hop onto the Unity Update loop (or a chosen phase). This is the documented re-marshal after `SelectAwait`/`WhereAwait`. |
+
+`SelectAwait`/`WhereAwait` resume off the Unity main thread, so re-marshal before touching Unity API:
+
+```csharp
+using Onity.Reactive;            // SelectAwait, Subscribe
+using Onity.Unity.Reactive;      // ObserveOnMainThread, AddTo
+
+m_requests
+    .SelectAwait((id, ct) => LoadProfileAsync(id, ct))   // runs on a threadpool thread
+    .ObserveOnMainThread()                               // hop back to the Update loop
+    .Subscribe(profile => m_nameLabel.text = profile.Name)
+    .AddTo(this);
+```
 
 ## Unity bridges — frame loops, timers, lifetime (`Onity.Unity.Reactive`)
 
@@ -141,5 +155,5 @@ These R3 / UniRx features are deliberate Onity non-goals (see `docs/Plan/07-Comp
 | `Buffer` / `Window` / `Zip` / `Switch` / `Concat` | Not shipped yet (planned). | Compose with shipped operators (`Scan`/`Pairwise`/`Merge`/`CombineLatest`/`Sample`), or accumulate in a `ReactiveProperty<T>`. |
 | Error-flow `Catch` / `Retry` / `Timeout` | The model does not yet carry a rich `OnError` channel through operators. | Handle failures in the `Subscribe(onNext, onError, onCompleted)` overload, or guard inside the operator delegate. |
 | `IObservable<T>` (System.Reactive) compatibility adapters | Explicitly not shipped to avoid a third-party type leak. | Stay on `IOnityObservable<T>`; bridge events via `Observe<T>()`. |
-| Off-thread `ObserveOn` / real Job/Burst parallel operators | The Job/Burst/Dots thread modes currently schedule a marker job only; operator work stays single-threaded (labeled experimental). | Keep reactive work on the Unity main thread; for async, keep results pure after `SelectAwait`/`WhereAwait` (they resume off the main thread) and marshal back yourself. |
+| Real Job/Burst/DOTS **parallel** operator execution | The Job/Burst/DOTS thread modes currently schedule a marker job only; operator work stays single-threaded (labeled experimental). | Keep reactive operator work on the Unity main thread. (A main-thread/frame-loop **hop** — `ObserveOn` / `ObserveOnMainThread` — *is* shipped; it is the re-marshal after `SelectAwait`/`WhereAwait`, not parallel execution.) |
 | `AddTo(gameObject)` | Lifetime helpers extend `IDisposable` and take `Component`/`Behaviour`. | `AddTo(this)` / `TakeUntilDestroy(this)` (Component), `TakeUntilDisable(this)` (Behaviour), or `AddTo(compositeDisposable)`. |
