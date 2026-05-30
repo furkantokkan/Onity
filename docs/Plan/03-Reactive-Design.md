@@ -30,7 +30,7 @@ the public API contract.
 - `OnityObservableExtensions` (`Where`, `Select`, `DistinctUntilChanged`, `Skip`,
   `SkipWhile`, `Take`, `TakeWhile`, `StartWith`, `Merge`, `CombineLatest`,
   `Sample`, `Scan`, `Pairwise`, `Subscribe`, `TakeUntilCancellation`,
-  `FirstAsync`, `ToTask`)
+  `FirstAsync`, `ToTask`, `ObserveOnThreadPool`, `SelectOnThreadPool`)
 - `OnityObservableAsyncExtensions` (`SelectAwait`, `WhereAwait`, `ThrottleLast`,
   `Debounce`, `TakeUntil`). The async/time operators are authored on the
   internal `IOnityObservableV2<T>` and re-exposed as public
@@ -71,6 +71,9 @@ the public API contract.
 5. **Allocation-free in steady state.** `OnNext` paths inside `Subject<T>`
    and `ReactiveProperty<T>` allocate zero bytes after warmup.
 6. **No third-party deps.** R3 / UniRx are reference only.
+7. **Threading is explicit.** Managed thread-pool work is opt-in through
+   `ObserveOnThreadPool` / `SelectOnThreadPool`; Unity API consumers must hop
+   back to the main thread through `ObserveOnMainThread`.
 
 ## 3. Operator catalog
 
@@ -98,6 +101,9 @@ Core operators (`OnityObservableExtensions`, on `IOnityObservable<T>`):
 - `TakeUntilCancellation(CancellationToken)`
 - `FirstAsync(CancellationToken = default) -> Task<T>`
 - `ToTask(CancellationToken = default)` (on `IOnityObservable<Unit>`)
+- `ObserveOnThreadPool()` (ordered thread-pool re-post)
+- `SelectOnThreadPool(Func<TSource, TResult>, int maxConcurrency = 0)`
+- `SelectOnThreadPool(Func<TSource, CancellationToken, TResult>, int maxConcurrency = 0)`
 
 Async/time operators (`OnityObservableAsyncExtensions`, on `IOnityObservable<T>`):
 
@@ -112,6 +118,21 @@ Async/time operators (`OnityObservableAsyncExtensions`, on `IOnityObservable<T>`
 > `SelectAwait`/`WhereAwait` run the user callback on the thread pool (via
 > `Task.Run`) and therefore **resume off the main thread**. Do not touch
 > `UnityEngine` members directly in a `Subscribe` placed immediately after them.
+
+Thread-pool scheduling operators (`OnityObservableExtensions`, on
+`IOnityObservable<T>`):
+
+- `ObserveOnThreadPool()` re-posts each source value onto a .NET thread-pool
+  worker while preserving source order.
+- `SelectOnThreadPool(...)` runs CPU-bound selectors on the .NET thread pool
+  with configurable max concurrency. When max concurrency is greater than one,
+  results emit as workers complete; use `maxConcurrency: 1` when source order is
+  required.
+
+These operators are for pure managed work. Downstream observers run off the
+Unity main thread, so chains that touch UnityEngine must use
+`ObserveOnMainThread()` from `Onity.Unity.Reactive` before the Unity-facing
+subscriber.
 
 Unity lifetime helpers (`ReactiveLifetimeExtensions` in `Onity.Unity.Reactive`,
 on `IDisposable`):
@@ -211,10 +232,14 @@ OnityUnityObservable.EveryUpdate(OnityUnityThreadMode.SingleThread);
 OnityUnityObservable.EveryUpdate(OnityUnityThreadMode.JobMultiThread);
 ```
 
-`SingleThread` is the only one fully implemented today. The Job variants are
-Phase 2-3 work. They batch payloads at the frame boundary into a `NativeArray`
-buffer, run an `IJob` (or `IJobParallelFor` where the operator is safe), and
-emit results back to managed subscribers on the next frame.
+Managed thread-pool scheduling is implemented in `Onity.Reactive` through
+`ObserveOnThreadPool` and `SelectOnThreadPool`.
+
+`OnityUnityThreadMode` is a separate Unity frame-stream boundary. `SingleThread`
+emits directly from the frame pump. The Job/Burst/DOTS modes currently insert a
+Unity job or DOTS accumulator boundary around frame ticks; they do not move
+managed `Where` / `Select` / `Subscribe` operator execution into Burst jobs.
+Managed DI and managed reactive observer callbacks remain outside Burst.
 
 ### 4.2 PlayerLoop hooks
 
@@ -404,7 +429,8 @@ public static class OnityObservableExtensions
     // Shipped today:
     Where, Select, DistinctUntilChanged, Skip, SkipWhile, Take, TakeWhile,
     StartWith, Merge, CombineLatest (2-arity), Sample, Scan, Pairwise,
-    Subscribe, TakeUntilCancellation, FirstAsync, ToTask
+    Subscribe, TakeUntilCancellation, FirstAsync, ToTask,
+    ObserveOnThreadPool, SelectOnThreadPool
     // Phase 2 (not yet shipped): Concat, CombineLatest (3-4 arity), Zip,
     //   Switch, Aggregate, Buffer, Window, Timeout, Catch, Retry
 }
@@ -464,9 +490,11 @@ Phase 2 ships when:
   sources.
 - `OnityObservableTracker` correctly shows subscription leaks in the
   diagnostics window for a sample scene that creates a leak intentionally.
-- All Unity threading modes for `EveryUpdate` are at least documented; full
-  `JobMultiThread` and `BurstJobMultiThread` implementation may slip to
-  Phase 4 if Phase 2 runs over.
+- Managed thread-pool operators have focused EditMode coverage for thread hop,
+  configured parallelism, ordering with max concurrency one, and argument
+  validation.
+- Unity Job/Burst frame modes are documented as explicit frame boundaries, not
+  managed operator parallelism.
 
 ## 10. Out of scope for Phase 2
 

@@ -55,6 +55,7 @@ The DI fast path compiles constructor activators and member setters with `Expres
 - `Subject<T>` (steady-state `OnNext` designed allocation-free) and `ReactiveProperty<T>` (built-in `DistinctUntilChanged`, emits current value on subscribe, `SetValue(T) -> bool`).
 - Synchronous operators: `Where`, `Select`, `DistinctUntilChanged`, `Skip`/`SkipWhile`, `Take`/`TakeWhile`, `StartWith`, `Scan`, `Pairwise`, `Merge`, `CombineLatest`, `Sample` — emit paths designed allocation-free (subscribe-time wrapper only).
 - Async / time operators: `Debounce`, `ThrottleLast`, `TakeUntil(CancellationToken)` / `TakeUntil(Task)`, `SelectAwait`, `WhereAwait`, plus `FirstAsync` / `ToTask` reactive-to-async bridges.
+- Thread-pool scheduling for pure managed work: `ObserveOnThreadPool()` and `SelectOnThreadPool(selector, maxConcurrency)`, followed by `ObserveOnMainThread()` before touching Unity APIs.
 - Deterministic time testing via pluggable `OnityTimeProvider`.
 - Unity bridges (`Onity.Unity.Reactive`): `OnityUnityObservable.EveryUpdate()` / `EveryFixedUpdate()` / `EveryLateUpdate()`, `Timer`, `Interval`; lifetime helpers `AddTo(Component)` / `TakeUntilDestroy(Component)` / `TakeUntilDisable(Behaviour)`.
 - Input System reactive bridge (`Onity.Unity.Input`): `PerformedAsObservable()` / `StartedAsObservable()` / `CanceledAsObservable()` and long-press observables.
@@ -124,7 +125,7 @@ The **timing** numbers above are the trustworthy part. The committed allocation 
 
 On Mono/JIT, the speed comes from a process-wide compiled-activator cache (`Expression.Compile` once per `ConstructorInfo`), compiled member setters, a `[ThreadStatic]` lock-free argument-array pool, and a per-plan per-slot constructor-dependency cache — with no `builder.Build()` ceremony before resolve and no engine coupling (`Onity.DI` is `noEngineReferences: true`). On AOT/IL2CPP these compiled paths automatically fall back to reflection so the container runs safely, but IL2CPP player timings must be measured separately and should not be inferred from the Editor-Mono table. Full numbers and deltas: [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md).
 
-0.2.1 verification: `dotnet build Onity.DI.csproj`, `dotnet build Onity.Tests.EditMode.csproj`, Unity EditMode baked parity suite (`15/15`), and Unity batchmode DI benchmark. CI runs EditMode and PlayMode on every push — see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
+0.3.0 verification: `dotnet build onity-core-ci.csproj -c Release` plus focused reactive thread-pool smoke coverage. CI runs EditMode and PlayMode on every push — see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
 
 ---
 
@@ -145,7 +146,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.2.1
+https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.0
 ```
 
 …or in `Packages/manifest.json`:
@@ -158,7 +159,7 @@ https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.2
 }
 ```
 
-(`#upm` tracks the latest package; use the `?path=…#v0.2.1` form to pin a specific release.)
+(`#upm` tracks the latest package; use the `?path=…#v0.3.0` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 

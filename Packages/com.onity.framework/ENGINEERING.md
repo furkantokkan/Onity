@@ -154,13 +154,19 @@ sync and prefer the design doc when they disagree.
 - `SelectAwait`/`WhereAwait` run the user callback on the thread pool (via
   `Task.Run`) and therefore **resume off the main thread**. Do not touch
   `UnityEngine` members directly in a `Subscribe` placed immediately after them.
+- Shipped thread-pool operators (`OnityObservableExtensions`):
+  `ObserveOnThreadPool` and `SelectOnThreadPool`. They are for pure managed work;
+  any downstream code that touches `UnityEngine` must re-marshal with
+  `ObserveOnMainThread()` in `Onity.Unity.Reactive`.
+- `SelectOnThreadPool` emits results as worker tasks finish when max concurrency
+  is greater than one. Use `maxConcurrency: 1` when source order matters.
 - Unity streams (`OnityUnityObservable`): `EveryUpdate`, `EveryFixedUpdate`,
   `EveryLateUpdate`, `Timer`, `Interval`.
   - Unity stream threading mode (`OnityUnityThreadMode`):
-    - `SingleThread` (the only mode fully implemented today)
-    - `JobMultiThread` (job boundary between frame ticks; Phase 2-3)
-    - `BurstJobMultiThread` (Phase 2-3)
-    - `DotsEventDriven` (Phase 2-3)
+    - `SingleThread`
+    - `JobMultiThread` (Unity job boundary between frame ticks; not managed operator parallelism)
+    - `BurstJobMultiThread` (Burst-friendly marker job boundary)
+    - `DotsEventDriven` (DOTS accumulator boundary)
 - Unity lifetime helpers (`ReactiveLifetimeExtensions`) extend `IDisposable`,
   not `IOnityObservable<T>`, and take `Component`/`Behaviour`:
   `AddTo(this IDisposable, Component)` (alias for `TakeUntilDestroy`),

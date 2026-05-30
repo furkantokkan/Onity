@@ -8,14 +8,14 @@ nav_order: 2
 
 A complete catalog of every reactive operator shipped by Onity. The everyday contract is `IOnityObservable<T>`: `Subject<T>`, `ReactiveProperty<T>`, every operator below, and the messaging bridge `broker.Observe<T>()` all return the same interface, so one operator chain composes over state, raw streams, and events alike.
 
-The synchronous core lives in `Onity.Reactive` and is engine-free. The async/time operators are also engine-free (they take an injectable `OnityTimeProvider`), while the frame-loop scheduling operators (`ObserveOnMainThread`, `Delay`) live in the Unity bridge layer `Onity.Unity.Reactive` and depend on `UnityEngine`. The reactive emit path is designed to avoid per-call managed allocation: a synchronous operator allocates only at subscribe time and forwards each value without allocating. (Onity itself depends on ZLinq for the `Onity.Unity` layer; the reactive core does not use `System.Linq`.)
+The synchronous core lives in `Onity.Reactive` and is engine-free. The async/time operators are also engine-free (they take an injectable `OnityTimeProvider`), and the managed thread-pool scheduling operators (`ObserveOnThreadPool`, `SelectOnThreadPool`) also live in the core. Frame-loop scheduling operators (`ObserveOnMainThread`, `Delay`) live in the Unity bridge layer `Onity.Unity.Reactive` and depend on `UnityEngine`. The reactive emit path is designed to avoid per-call managed allocation: a synchronous operator allocates only at subscribe time and forwards each value without allocating. (Onity itself depends on ZLinq for the `Onity.Unity` layer; the reactive core does not use `System.Linq`.)
 
 Conventions used in the tables below:
 
 - **Operator** — the method name as you call it.
 - **Signature** — the public signature (extension `this` receiver omitted for brevity; `source`/`first` is the receiver).
 - **Description** — what it does.
-- **Kind** — `Sync` (forwards synchronously, no timers/threads), `Time` (uses an `OnityTimeProvider` timer), `Async` (awaits a delegate / completes a `Task`), or `Schedule` (re-posts onto a Unity frame loop).
+- **Kind** — `Sync` (forwards synchronously, no timers/threads), `Time` (uses an `OnityTimeProvider` timer), `Async` (awaits a delegate / completes a `Task`), `Thread` (uses the .NET thread pool), or `Schedule` (re-posts onto a Unity frame loop).
 
 > Disposal is mandatory. Every `Subscribe` returns an `IDisposable`; an undisposed subscription leaks. Scope it with `AddTo(this)` in a MonoBehaviour or `AddTo(compositeDisposable)` in plain C#.
 
@@ -72,6 +72,22 @@ These operators take an optional `OnityTimeProvider` (deterministic in EditMode 
 | `SelectAwait` | `SelectAwait<TSource, TResult>(Func<TSource, CancellationToken, ValueTask<TResult>> selector) -> IOnityObservable<TResult>` | Sequential async projection. Each value is projected via the awaited `selector` before the next is processed. | Async |
 | `WhereAwait` | `WhereAwait<T>(Func<T, CancellationToken, ValueTask<bool>> predicate) -> IOnityObservable<T>` | Sequential async filter. Forwards a value only when the awaited `predicate` returns true. | Async |
 
+## Thread-pool scheduling (`Onity.Reactive`)
+
+These operators move pure managed work onto the .NET thread pool. They must not
+touch UnityEngine APIs directly; re-marshal with `ObserveOnMainThread()` before
+Unity-facing subscribers.
+
+| Operator | Signature | Description | Kind |
+| --- | --- | --- | --- |
+| `ObserveOnThreadPool` | `ObserveOnThreadPool<T>() -> IOnityObservable<T>` | Re-posts each value onto a thread-pool worker while preserving source order. | Thread |
+| `SelectOnThreadPool` | `SelectOnThreadPool<TSource, TResult>(Func<TSource, TResult> selector, int maxConcurrency = 0) -> IOnityObservable<TResult>` | Runs a CPU-bound projection on the thread pool. `maxConcurrency == 0` uses the processor count. Results emit as workers complete when concurrency is greater than one. | Thread |
+| `SelectOnThreadPool` (token) | `SelectOnThreadPool<TSource, TResult>(Func<TSource, CancellationToken, TResult> selector, int maxConcurrency = 0) -> IOnityObservable<TResult>` | Cancellation-aware CPU-bound projection. Disposal cancels queued/running selectors that observe the token. | Thread |
+
+Use `maxConcurrency: 1` when result order must match source order. For
+sequential async workflows where ordering is always required, `SelectAwait`
+remains the simpler operator.
+
 ## Completion signals
 
 | Operator | Signature | Description | Kind |
@@ -95,7 +111,7 @@ These operators move emission back onto a Unity loop. They are the required hop 
 | `ObserveOnMainThread` (phase) | `ObserveOnMainThread<T>(OnityUnityFrameProvider frameProvider) -> IOnityObservable<T>` | Re-posts onto a chosen Unity loop phase (e.g. `OnityFrameProviders.FixedUpdate` / `LateUpdate`). | Schedule |
 | `Delay` | `Delay<T>(float delaySeconds, bool useUnscaledTime = false) -> IOnityObservable<T>` | Delays each value by `delaySeconds` using a Unity countdown timer. `delaySeconds <= 0` returns the source unchanged; negative throws. | Schedule |
 
-> `ObserveOn` is defined on the abstract `OnityFrameProvider` in the core, so it is available wherever a frame provider is; `ObserveOnMainThread` and `Delay` are the Unity-specific conveniences. There is currently no separate post-back operator beyond these — keep async results pure, or marshal back with `ObserveOnMainThread`.
+> `ObserveOn` is defined on the abstract `OnityFrameProvider` in the core, so it is available wherever a frame provider is; `ObserveOnMainThread` and `Delay` are the Unity-specific conveniences. Thread-pool hops are separate (`ObserveOnThreadPool` / `SelectOnThreadPool`) and still require `ObserveOnMainThread` before Unity API access.
 
 ---
 
@@ -154,7 +170,7 @@ Frame and timer sources that feed the operators above. They are pumped by a hidd
 
 ## At a glance: what is and is not shipped
 
-Shipped: `Where`, `Select`, `DistinctUntilChanged`, `Skip`, `SkipWhile`, `Take`, `TakeWhile`, `StartWith`, `Scan`, `Pairwise`, `Merge`, `CombineLatest`, `Sample`, `Buffer` (count + time), `Debounce`, `ThrottleLast`, `Throttle` (leading edge), `SelectAwait`, `WhereAwait`, `TakeUntil` (token + task), `TakeUntilCancellation`, `FirstAsync`, `ToTask`, `ObserveOn`, `ObserveOnMainThread`, `Delay`.
+Shipped: `Where`, `Select`, `DistinctUntilChanged`, `Skip`, `SkipWhile`, `Take`, `TakeWhile`, `StartWith`, `Scan`, `Pairwise`, `Merge`, `CombineLatest`, `Sample`, `Buffer` (count + time), `Debounce`, `ThrottleLast`, `Throttle` (leading edge), `SelectAwait`, `WhereAwait`, `ObserveOnThreadPool`, `SelectOnThreadPool`, `TakeUntil` (token + task), `TakeUntilCancellation`, `FirstAsync`, `ToTask`, `ObserveOn`, `ObserveOnMainThread`, `Delay`.
 
 Not shipped: `Window`, `Zip`, `Switch`, `Concat`, `Publish`, `Share`, `RefCount`; factories `Never` / `Create` / `Defer`. Model current state with `ReactiveProperty<T>` and transient notifications with messages (see [Messaging API](messaging-api.html)).
 

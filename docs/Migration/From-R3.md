@@ -70,6 +70,8 @@ Each takes an optional `OnityTimeProvider` (deterministic in tests; pass a Unity
 | `SelectAwait(async selector)` | `SelectAwait(Func<T, CancellationToken, ValueTask<TResult>>)` | Sequential async projection. **Resumes on a threadpool thread** — follow it with `ObserveOnMainThread()` before any `Subscribe` that touches `UnityEngine`. |
 | `WhereAwait(async predicate)` | `WhereAwait(Func<T, CancellationToken, ValueTask<bool>>)` | Sequential async filter; same off-main-thread caveat — re-marshal with `ObserveOnMainThread()`. |
 | `ObserveOn(scheduler)` | `ObserveOn(OnityFrameProvider)` (`Onity.Reactive`) | Re-posts each value onto the provider's frame loop (buffered, replayed on the next tick). Pass `OnityFrameProviders.Update` / `FixedUpdate` / `LateUpdate`. |
+| `ObserveOn(ThreadPoolScheduler)` / thread-pool scheduler hop | `ObserveOnThreadPool()` (`Onity.Reactive`) | Re-posts values onto a .NET thread-pool worker while preserving source order. |
+| `Observable.Start` / CPU work on thread pool | `SelectOnThreadPool(selector, maxConcurrency)` (`Onity.Reactive`) | Runs pure managed CPU-bound projection on the .NET thread pool. Results emit as workers finish when concurrency is greater than one. |
 | `ObserveOnMainThreadDispatcher()` | `ObserveOnMainThread()` / `ObserveOnMainThread(OnityUnityFrameProvider)` (`Onity.Unity.Reactive`) | Convenience hop onto the Unity Update loop (or a chosen phase). This is the documented re-marshal after `SelectAwait`/`WhereAwait`. |
 
 `SelectAwait`/`WhereAwait` resume off the Unity main thread, so re-marshal before touching Unity API:
@@ -82,6 +84,17 @@ m_requests
     .SelectAwait((id, ct) => LoadProfileAsync(id, ct))   // runs on a threadpool thread
     .ObserveOnMainThread()                               // hop back to the Update loop
     .Subscribe(profile => m_nameLabel.text = profile.Name)
+    .AddTo(this);
+```
+
+For CPU-bound pure managed work that should run concurrently, use
+`SelectOnThreadPool` and then re-marshal before Unity API access:
+
+```csharp
+m_damageEvents
+    .SelectOnThreadPool((damage, ct) => CalculateScoreDelta(damage), maxConcurrency: 4)
+    .ObserveOnMainThread()
+    .Subscribe(delta => m_scoreLabel.text = delta.ToString())
     .AddTo(this);
 ```
 
@@ -161,5 +174,5 @@ These R3 / UniRx features are deliberate Onity non-goals (see `docs/Plan/07-Comp
 | `Buffer` / `Window` / `Zip` / `Switch` / `Concat` | Not shipped yet (planned). | Compose with shipped operators (`Scan`/`Pairwise`/`Merge`/`CombineLatest`/`Sample`), or accumulate in a `ReactiveProperty<T>`. |
 | Error-flow `Catch` / `Retry` / `Timeout` | The model does not yet carry a rich `OnError` channel through operators. | Handle failures in the `Subscribe(onNext, onError, onCompleted)` overload, or guard inside the operator delegate. |
 | `IObservable<T>` (System.Reactive) compatibility adapters | Explicitly not shipped to avoid a third-party type leak. | Stay on `IOnityObservable<T>`; bridge events via `Observe<T>()`. |
-| Real Job/Burst/DOTS **parallel** operator execution | The Job/Burst/DOTS thread modes currently schedule a marker job only; operator work stays single-threaded (labeled experimental). | Keep reactive operator work on the Unity main thread. (A main-thread/frame-loop **hop** — `ObserveOn` / `ObserveOnMainThread` — *is* shipped; it is the re-marshal after `SelectAwait`/`WhereAwait`, not parallel execution.) |
+| Job/Burst/DOTS **parallel** managed operator execution | Unity Job/Burst frame modes are frame boundaries, not a way to run managed observers or DI inside Burst. | Use `SelectOnThreadPool` for pure managed CPU work, `ObserveOnThreadPool` for ordered thread-pool hops, and `ObserveOnMainThread` before Unity API access. Keep Burst/DOTS work in blittable bridge modules. |
 | `AddTo(gameObject)` | Lifetime helpers extend `IDisposable` and take `Component`/`Behaviour`. | `AddTo(this)` / `TakeUntilDestroy(this)` (Component), `TakeUntilDisable(this)` (Behaviour), or `AddTo(compositeDisposable)`. |
