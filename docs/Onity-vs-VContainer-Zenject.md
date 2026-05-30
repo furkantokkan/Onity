@@ -1,9 +1,12 @@
 # Onity vs VContainer / Zenject
 
-An honest, per-axis comparison of Onity's dependency-injection container against
-the two containers it most directly competes with: **VContainer** and
-**Zenject / Extenject**. The goal here is accuracy, not marketing. Where a
-competitor wins, this document says so.
+A per-axis comparison of three Unity dependency-injection containers — **Onity**,
+**VContainer**, and **Zenject / Extenject** — written to read as an external
+evaluation rather than marketing copy. It is maintained in the Onity repository,
+so treat it as a self-assessment that discloses its sources and invites
+verification: where VContainer or Zenject is the stronger choice, that is stated
+plainly, and every benchmark number can be reproduced with the runner included in
+this repository.
 
 ## Read this first — scope and caveats
 
@@ -17,7 +20,9 @@ competitor wins, this document says so.
   reported. Your hardware, Unity version, IL2CPP vs Mono backend, and graph shape
   will produce different absolute numbers and possibly different relative ordering.
   Treat the numbers as "this is what one machine measured," not "Onity is always
-  faster."
+  faster." They were produced by the Onity project's own `OnityDiBenchmarkRunner`
+  and have **not been independently audited** — the runner ships in this
+  repository specifically so any reader can reproduce, or challenge, them.
 - **The published allocation figures were unreliable.** The committed run
   reported 0 B for VContainer and Zenject as well, which cannot be correct (a
   transient resolve allocates the instance it returns, and Zenject is
@@ -39,8 +44,8 @@ competitor wins, this document says so.
 
 | Axis | Onity | VContainer | Zenject / Extenject |
 | --- | --- | --- | --- |
-| Resolve speed (Editor-Mono, indicative) | **Fastest measured** on this machine | Fast | Slowest of the three |
-| Build / registration speed (indicative) | **Fastest measured** | Slower than Onity here | Slow |
+| Resolve speed (Editor-Mono, indicative) | Fastest in this run (~1.2–1.4× VContainer, ~10–15× Zenject) | Close behind Onity | Slowest of the three |
+| Build / registration speed (indicative) | Fastest in this run (~4.9× VContainer) | Slower than Onity | Slow |
 | Steady-state resolve allocation | resolve machinery designed allocation-free (a transient allocates the returned instance; alloc figures pending a corrected re-measure) | Low (codegen mode) | Higher |
 | DI feature breadth | Feature-complete for common Unity needs | Broad | Broadest |
 | Entry-point lifecycle | **Automatic, no registration** | Manual `RegisterEntryPoint` | Automatic |
@@ -202,9 +207,10 @@ Onity is **one package** spanning all three:
   with `AddTo(this)` (Unity) or `AddTo(CompositeDisposable)` (plain C#).
 
 If you only need a DI container and already have a reactive/event stack you like,
-this axis is irrelevant to you. If you want one coherent stack, it is Onity's
-biggest structural advantage over a VContainer/Zenject + R3 + MessagePipe
-combination.
+this axis is irrelevant to you. If you want one coherent stack, it is the main
+structural difference between Onity and a VContainer/Zenject + R3 + MessagePipe
+combination — and the clearest reason a project would pick Onity over assembling
+the three libraries separately.
 
 ### 8. AI-friendliness and compile-time analyzer
 
@@ -223,8 +229,10 @@ current public API) and a [Roslyn analyzer pack](../tools/Onity.Analyzers)
 
 Neither VContainer nor Zenject bundles a usage-guide-plus-analyzer pair like
 this. Zenject offers a `ValidateAll` runtime/edit validation pass, which catches
-missing bindings but is not a compile-time analyzer with inline fixes. This axis
-is an Onity advantage, particularly for AI-assisted or large-team development.
+missing bindings but is not a compile-time analyzer with inline fixes. Onity is
+the only one of the three with this pairing; it matters most for AI-assisted or
+large-team development, and is largely irrelevant to a solo developer who uses
+neither AI assistance nor frequent onboarding.
 
 ### 9. Production maturity
 

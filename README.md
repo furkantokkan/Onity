@@ -6,6 +6,8 @@
 ![Unity 2022.3+](https://img.shields.io/badge/Unity-2022.3%2B-black?logo=unity)
 ![EditMode tests green](https://img.shields.io/badge/EditMode%20tests-green-brightgreen)
 ![IL2CPP validated](https://img.shields.io/badge/IL2CPP-validated-blue)
+![DOTS / ECS bridge](https://img.shields.io/badge/DOTS%2FECS-Burst%20event%20bridge-orange)
+![AI-indexed docs](https://img.shields.io/badge/docs-AI--indexed-blueviolet)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
 
 ---
@@ -63,6 +65,19 @@ The DI fast path compiles constructor activators and member setters with `Expres
 - Allocation-free diagnostics: `GetDiagnostics(List<...>)` and `ChannelCount` built into the core type.
 - `BindMessageChannel<T>()` when you want to inject a typed `IPublisher<T>` / `ISubscriber<T>` directly.
 
+### DOTS / ECS — `Onity.DOTS` (Burst-compiled bridge)
+
+- A Burst-compiled `ISystem` layer bridges Onity's managed event broker into **Entities**: publish a message and a `[BurstCompile]` system drains it off an entity event queue, so managed gameplay and DOTS systems share one event model instead of a hand-written sync layer.
+- DOTS-side helpers: entity pooling (`OnityDotsPoolEntityUtils`, with `IEnableableComponent` tags) and an ECS session bridge, built on `Unity.Entities` / `Unity.Burst` / `Unity.Collections` / `Unity.Mathematics`.
+- The bridge activates under the `ONITY_ENTITIES` define (when `com.unity.entities` ≥ 1.0 is installed). The engine-free core (DI, Reactive, Events) carries no DOTS coupling.
+
+### Built for AI-assisted development
+
+- **AI-indexed docs.** A source-verified, [machine-readable usage guide](docs/Onity-AI-Usage-Guide.md) plus a [GitBook reference](docs/SUMMARY.md): one place an AI agent reads to emit correct, compiling code across DI, Reactive, and Events.
+- **One idiom, one disposal model.** Far less for an agent — or a new teammate — to guess wrong than stitching four libraries with four mental models together.
+- **A Roslyn analyzer (`ONITY001`–`ONITY006`)** turns the most common mistakes into inline compiler diagnostics, catching a slip at compile time rather than at runtime.
+- **XML docs on every public API**, so editor/agent IntelliSense surfaces the right call and signature.
+
 ---
 
 ## Onity vs Zenject / VContainer / R3 / MessagePipe
@@ -79,6 +94,7 @@ The DI fast path compiles constructor activators and member setters with `Expres
 | Entry-point lifecycle | automatic (Zenject); manual wiring (VContainer) | **automatic** — `IOnityTickable` etc. need no registration |
 | Collection / open-generic binds | yes (both) | **yes** — `IEnumerable<T>`…`T[]` and `Bind(typeof(IRepo<>))` |
 | IL2CPP / AOT | mature, broadly shipped | compiled fast path + automatic reflection fallback; validated on one IL2CPP build |
+| DOTS / ECS event bridge | not built in | **yes** — Burst `ISystem`s drain the event broker into Entities |
 | Engine-free, scene-free testing | no (Zenject); partial (VContainer) | **yes** — `new OnityContainer()` in EditMode |
 | Compile-time analyzer | partial (Zenject validation) | **yes** — `ONITY001`–`ONITY006` with code fixes |
 | Machine-readable AI usage guide | none | **yes** — verified against source |
