@@ -10,7 +10,7 @@ machine-readable usage guide.
 
 It is grounded in the real shipped surface (see per-file reads in the pillar
 analyses), the measured DI benchmark
-(`Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-summary.md`),
+(`Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md`),
 the performance gates in `04-Performance-Targets.md`, the architecture rules in
 `01-Architecture.md`, and `EVENT_HUB_PLAN.md`.
 
@@ -22,7 +22,7 @@ the performance gates in `04-Performance-Targets.md`, the architecture rules in
 
 | Pillar | Competitor target | Status | One-line verdict |
 |---|---|---|---|
-| DI | Zenject, VContainer | **Leads on every measured path** | Faster than both on all 5 timing scenarios with baked resolve; allocation figures are pending corrected re-measurement; ship-quality core, with IL2CPP/source-gen hardening still planned |
+| DI | Zenject, VContainer | **Editor lead; IL2CPP split** | Faster than both on all 5 Editor/Mono timing scenarios with baked resolve; Windows IL2CPP player is faster than VContainer on singleton and prepare/register, but VContainer leads transient/combined/complex resolve until Onity gets source-generated/AOT-specialized activation |
 | Reactive | R3, UniRx | **Strong core, still maturing** | Subject/ReactiveProperty are re-entrancy-correct and allocation-aware; core combinators, error isolation, and Unity timing bridges are present, with broader operator/perf proof still planned |
 | Events | MessagePipe | **On-philosophy, smaller surface** | Same algebra as reactive, DI-native auto-bind, keyed channels, async channels, and broker examples; no published MessagePipe publish microbenchmark yet |
 | Cross-cutting | (all three combined) | **Unified DX now documented** | DI is the spine; broker + hub auto-bound in every scope; events bridge into reactive operators; AI usage guide and analyzer scaffold exist, with compile-time guidance still expanding |
@@ -32,19 +32,21 @@ the performance gates in `04-Performance-Targets.md`, the architecture rules in
 From `di-benchmark-summary.md` (Unity 2022.3.62f3, Windows, Mono editor,
 512 warmup / 8 samples / mean). The allocation figures from this runner are
 withdrawn pending corrected gross-allocation measurement; the timing numbers
-remain the current published comparison. Onity baked resolve beats **both**
-VContainer and Zenject on every measured timing scenario:
+remain the current published Editor/Mono comparison. Onity baked resolve beats
+**both** VContainer and Zenject on every measured Editor/Mono timing scenario:
 
 | Scenario | Onity Baked (ns/op) | VContainer (ns/op) | Zenject (ns/op) | Onity vs VContainer |
 |---|---:|---:|---:|---:|
-| Resolve Singleton | 94 | 202 | 3,137 | **+53%** |
-| Resolve Transient | 775 | 1,697 | 11,681 | **+54%** |
-| Resolve Combined | 896 | 1,712 | 15,400 | **+48%** |
-| Resolve Complex (6-level) | 22,787 | 57,995 | 285,394 | **+61%** |
-| Prepare & Register Complex | 47,243 | 135,140 | 197,132 | **+65%** |
+| Resolve Singleton | 63 | 214 | 2,866 | **+71%** |
+| Resolve Transient | 1,083 | 1,879 | 12,356 | **+42%** |
+| Resolve Combined | 972 | 2,079 | 17,248 | **+53%** |
+| Resolve Complex (6-level) | 22,905 | 42,158 | 289,823 | **+46%** |
+| Prepare & Register Complex | 61,044 | 150,730 | 215,537 | **+60%** |
 
-The "beats VContainer everywhere" claim is true **including build**, not just
-resolve. The speed comes from a process-wide compiled-activator cache
+The Editor/Mono "beats VContainer everywhere" claim is true **including build**,
+not just resolve. The Windows IL2CPP player run is split: Onity wins singleton
+resolve and prepare/register, while VContainer wins transient, combined, and
+complex resolve. The speed comes from a process-wide compiled-activator cache
 (`Expression.Compile` once per `ConstructorInfo`), compiled member setters, a
 `[ThreadStatic]` lock-free `ArgumentArrayPool`, per-plan constructor-dependency
 caches, and a baked provider-slot map - all without an explicit
@@ -175,24 +177,19 @@ DI already meets its competitive goal. The gates in
 
 | Scenario | Onity baked now (ns/op) | Phase 1 gate | Stretch | Gate status |
 |---|---:|---:|---:|---|
-| Resolve Singleton | 94 | <= 150 | <= 130 | **Beats stretch** |
-| Resolve Transient | 775 | <= 1,500 | <= 1,200 | **Beats stretch** |
-| Resolve Combined | 896 | <= 1,550 | <= 1,250 | **Beats stretch** |
-| Resolve Complex | 22,787 | <= 35,000 | <= 28,000 | **Beats stretch** |
-| Prepare & Register Complex | 47,243 | <= 15,000 | <= 12,000 | **Missed internal gate** (still ~2.9x faster than VContainer) |
+| Resolve Singleton | 63 | <= 150 | <= 130 | **Beats stretch** |
+| Resolve Transient | 1,083 | <= 1,500 | <= 1,200 | **Passes gate** |
+| Resolve Combined | 972 | <= 1,550 | <= 1,250 | **Beats stretch** |
+| Resolve Complex | 22,905 | <= 35,000 | <= 28,000 | **Beats stretch** |
+| Prepare & Register Complex | 61,044 | <= 15,000 | <= 12,000 | **Missed internal gate** (still ~60% faster than VContainer) |
 | Resolve alloc / sample (B) | Pending | 0 | 0 | Re-measure with corrected allocation harness |
 
-Honest note: Onity wins every timing head-to-head, but the internal
+Honest note: Onity wins every Editor/Mono timing head-to-head, but the internal
 `Prepare & Register Complex` gate is still not met and the allocation table
-needs a corrected harness. The build-time closer is no longer another managed
-graph rewrite; the next meaningful step is IL2CPP-safe source-generated or
-post-processed activators so baked build can avoid runtime reflection setup
-entirely.
-
-**Platform risk:** IL2CPP correctness is validated through the reflection
-fallback, but only Mono-editor timing numbers are published. The next platform
-proof is an IL2CPP benchmark run plus source-generated activators if reflection
-cannot hold the speed lead on AOT.
+needs a corrected harness. The Windows IL2CPP player benchmark now proves the
+benchmark graph runs without crashing, but it also shows VContainer ahead on
+transient, combined, and complex resolve. The next meaningful step is
+IL2CPP-safe source-generated or post-processed activators.
 
 ### 3.2 Reactive - strong primitives, prove the rest
 
@@ -219,7 +216,7 @@ Gaps that must be fixed before claiming R3 parity in production:
 
 Proposed reactive gates (already specified qualitatively in `04` section 4.1;
 make them numeric when the runner lands in
-`Assets/Onity-Packages/Onity/Benchmarks/Results/reactive-benchmark-summary.md`):
+`Packages/com.onity.framework/Benchmarks/Results/reactive-benchmark-summary.md`):
 
 | Scenario | Gate |
 |---|---|
@@ -446,13 +443,13 @@ fix.
 | Keep the provider-slot baked graph and parity suite green while adding regression tests around build/resolve timing thresholds | M | Adopt |
 | Correct the allocation harness and publish gross managed allocation deltas for singleton, transient, and complex resolves | M | Adopt |
 | Reduce baked `Prepare & Register Complex` under 15,000 ns with source-generated or IL post-processed activators | M | Adopt |
-| Validate `Expression.Compile` activators on IL2CPP/WebGL; add source-generated activator fallback if the interpreter path misses the 1.5x Mono bound | L | Adopt (platform hardening) |
+| Keep Windows IL2CPP benchmark coverage green, add Android/WebGL coverage, and add source-generated or IL-postprocessed activators for IL2CPP resolve speed | L | Adopt (platform hardening) |
 | Replace per-subscribe closure+`DisposableAction` in `Subject<T>`/`ReactiveProperty` with `struct Subscription { owner, id } : IDisposable` | M | Adopt |
 | Pool async-operator state (`Queue<T>`/CTS) in `SelectAwait/WhereAwait/Debounce/ThrottleLast`; default Debounce/ThrottleLast to a Unity time provider in the Unity bridge | M | Adopt |
 
 **Exit gate:** baked resolve remains parity-green; the corrected allocation
-harness is published; IL2CPP benchmark runs without throwing and shows whether
-source-generated activators are required; `Prepare & Register Complex` is either
+harness is published; IL2CPP benchmark runs without throwing and source-generated
+activators close the transient/combined/complex resolve gap; `Prepare & Register Complex` is either
 below the 15,000 ns internal gate or the remaining build-time gap is explicitly
 scoped into the source-generation milestone; subscribe-time GC drops measurably
 on a spawn/despawn benchmark.
@@ -505,7 +502,7 @@ already covered more cleanly by another Onity pillar.
 - Messaging sources: `Assets/Onity-Packages/Onity/Runtime/Messaging/Scripts/` (`MessageBroker.cs`, `MessageChannel.cs`) and `Runtime/Unity/Scripts/Messaging/` (`OnityEventHub.cs`, `OnityMessageReactiveExtensions.cs`, `OnityMessageBindingExtensions.cs`)
 - Unity wiring: `Assets/Onity-Packages/Onity/Runtime/Unity/Scripts/Contexts/OnityContext.cs`, `Installers/MonoInstaller.cs`
 - Parity tests (divergence source of truth): `Assets/Onity-Packages/Onity/Tests/EditMode/Scripts/OnityZenject*ParityTests.cs`, `OnityVContainerParityTests.cs`, `OnityBakedContainerTests.cs`
-- Benchmarks: `Assets/Onity-Packages/Onity/Benchmarks/Editor/Scripts/OnityDiBenchmarkRunner.cs`, results in `Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-summary.md`
+- Benchmarks: `Packages/com.onity.framework/Benchmarks/Editor/Scripts/OnityDiBenchmarkRunner.cs`, results in `Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md`
 - Plan docs: `docs/Plan/00-Overview.md` .. `06-Agent-Playbook.md`, `04-Performance-Targets.md`, `05-Implementation-Phases.md`
 - Engineering rules: `Assets/Onity-Packages/Onity/ENGINEERING.md`
 - Event hub plan: `EVENT_HUB_PLAN.md`

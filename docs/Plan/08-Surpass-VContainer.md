@@ -1,9 +1,10 @@
 # 08 - Surpass VContainer in Every Aspect
 
-Onity already beats VContainer on measured resolve/build speed (Editor-Mono),
-0-alloc parity, scope (DI+Reactive+Events), and AI-friendliness. This plan closes
-the remaining axes where VContainer is still ahead, so Onity is **>= VContainer in
-every aspect**. Each track names the exact VContainer advantage it neutralizes.
+Onity already beats VContainer on measured Editor/Mono resolve speed,
+Editor/Mono and IL2CPP prepare/register speed, scope (DI+Reactive+Events), and
+AI-friendliness. The current Windows IL2CPP player benchmark still has VContainer
+ahead on transient, combined, and complex resolve, so this plan now treats
+source-generated or IL-postprocessed activation as the remaining speed gap.
 
 Honest framing: one gap — *real production battle-testing* — cannot be fully
 engineered; it accrues with adoption. Everything else below is concrete work.
@@ -12,11 +13,11 @@ engineered; it accrues with adoption. Everything else below is concrete work.
 
 | Axis | Winner today | Track to close |
 |---|---|---|
-| Resolve / build speed | **Onity** (measured) | hold + P0-2 |
-| Steady-state allocation | tie (0 B/op) | hold |
+| Resolve / build speed | Split: **Onity** on Editor/Mono and IL2CPP prepare/register; **VContainer** on IL2CPP transient/combined/complex resolve | P0-1 + P0-2 |
+| Steady-state allocation | pending corrected harness | allocation re-measure |
 | Scope (DI+Reactive+Events) | **Onity** | n/a |
 | AI-friendliness / analyzer | **Onity** | n/a |
-| IL2CPP / AOT / console proven | VContainer | **P0-1** |
+| IL2CPP / AOT / console proven | VContainer for resolve speed; Onity correctness now proven on Windows IL2CPP | **P0-1** |
 | Collection / `IEnumerable<T>` injection | **Onity** (P1-1 shipped) | — |
 | Open-generic registration | **Onity** (P1-2 shipped; IL2CPP caveat) | — |
 | Entry-point lifecycle (auto-run) | **Onity** (P1-3 shipped; pump needs PlayMode test) | — |
@@ -29,17 +30,16 @@ engineered; it accrues with adoption. Everything else below is concrete work.
 
 ### P0-1 Validate (and guarantee) IL2CPP / AOT
 **Closes:** "VContainer is proven on device; Onity's `Expression.Compile` is unverified on IL2CPP."
-> **Status 2026-05-30 — runtime fallback shipped (half done).** `RuntimeCompileSupport`
-> probes Expression.Compile (compile + invoke) once per process; both compilers gate on it
-> + try/catch to a reflection delegate, so the container can no longer crash on IL2CPP — it
-> degrades to reflection (VContainer's no-codegen mode). `OnityContainer.ForceReflectionActivation`
-> + `OnityAotFallbackTests` (5) added; verified on a net8 harness (8/8). **Remaining:** device
-> IL2CPP smoke+benchmark, and optional `Onity.SourceGen` to keep the *speed* lead on IL2CPP.
-- Build an IL2CPP player (Windows standalone + Android) that runs a resolve smoke
-  scene exercising every path (singleton/transient/complex/child/inject/factory).
-- Confirm compiled activators + member-setters do not throw under IL2CPP; measure
-  Transient stays <= 1.5x the Mono baseline.
-- If the interpreter path is too slow or throws: add **`Onity.SourceGen`** - a Roslyn
+> **Status 2026-05-30 — Windows IL2CPP benchmark now runs.** `RuntimeCompileSupport`
+> probes `Expression.Compile` (compile + invoke) once per process; both compilers gate on it
+> plus try/catch to a reflection delegate. A Windows IL2CPP player benchmark now completes
+> and records timings. **Remaining:** `Onity.SourceGen` or IL post-process activators are
+> required to beat VContainer's IL2CPP transient/combined/complex resolve path.
+- Keep the Windows IL2CPP player benchmark green and add Android/device coverage
+  for the same singleton/transient/complex/child/inject/factory smoke surface.
+- Confirm compiled activators + member-setters do not throw under IL2CPP; use the
+  benchmark result as the source-gen gate instead of assuming Editor/Mono ordering.
+- Add **`Onity.SourceGen`** or an IL post-processor - a Roslyn
   source generator that emits `ActivatorDelegate` + member setters per type at compile
   time (AOT-safe, no runtime `Expression.Compile`), registered via `[ModuleInitializer]`.
   The runtime resolve code path is unchanged.

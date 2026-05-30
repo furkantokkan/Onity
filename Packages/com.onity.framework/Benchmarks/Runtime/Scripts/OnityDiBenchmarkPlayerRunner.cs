@@ -1,55 +1,47 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using Onity.DI;
-using UnityEditor;
 using UnityEngine;
 using VContainer;
 using Zenject;
 
-namespace Onity.Editor.Benchmarks
+namespace Onity.Benchmarks
 {
     /// <summary>
-    /// Runs DI benchmark scenarios for Onity, VContainer, and Zenject.
+    /// Player-side DI benchmark entry point. Runs only when the player receives
+    /// <c>-onityRunDiBenchmark</c>.
     /// </summary>
-    public static class OnityDiBenchmarkRunner
+    public static class OnityDiBenchmarkPlayerRunner
     {
         private const int k_warmupIterations = 512;
         private const int k_samplesPerCase = 8;
-        private const string k_resultsDirectory = "Packages/com.onity.framework/Benchmarks/Results";
-        private const string k_latestJsonFileName = "di-benchmark-latest.json";
-        private const string k_latestCsvFileName = "di-benchmark-latest.csv";
-        private const string k_latestMarkdownFileName = "di-benchmark-latest.md";
+        private const string k_runArgument = "-onityRunDiBenchmark";
+        private const string k_outputArgument = "-onityBenchmarkOutput";
+        private const string k_latestJsonFileName = "di-benchmark-player-latest.json";
 
-        private static readonly BenchmarkContainerKind[] k_containers =
+        private static readonly BenchmarkContainerKind[] s_containers =
         {
             BenchmarkContainerKind.Onity,
             BenchmarkContainerKind.VContainer,
             BenchmarkContainerKind.Zenject
         };
 
-        // Onity is measured on both resolve paths so the baked fast path can be
-        // compared side by side against the proven reflection path. The other
-        // containers expose no such toggle and are measured once.
-        private static readonly OnityResolveMode[] k_onityResolveModes =
+        private static readonly OnityResolveMode[] s_onityResolveModes =
         {
             OnityResolveMode.Reflection,
             OnityResolveMode.Baked
         };
 
-        // OnityContainer.UseBakedResolve is internal; it is reflected exactly as
-        // the parity test suite does so the benchmark can flip the path without a
-        // public API. Captured per pass and restored in a finally.
         private static readonly PropertyInfo s_useBakedResolveProperty =
             typeof(OnityContainer).GetProperty(
                 "UseBakedResolve",
                 BindingFlags.Static | BindingFlags.NonPublic);
 
-        private static readonly ScenarioConfig[] k_scenarios =
+        private static readonly ScenarioConfig[] s_scenarios =
         {
             new ScenarioConfig(BenchmarkScenario.ResolveSingleton, "Resolve (Singleton)", 10000),
             new ScenarioConfig(BenchmarkScenario.ResolveTransient, "Resolve (Transient)", 10000),
@@ -58,40 +50,52 @@ namespace Onity.Editor.Benchmarks
             new ScenarioConfig(BenchmarkScenario.PrepareAndRegisterComplex, "Prepare & Register (Complex)", 10000)
         };
 
-        [MenuItem("Onity/Benchmarks/Run DI Benchmarks (Editor)")]
-        private static void RunBenchmarksFromMenu()
-        {
-            BenchmarkReport report = RunBenchmarks();
-            SaveReport(report);
-            AssetDatabase.Refresh();
+        private static readonly MethodInfo s_getTotalAllocatedBytesMethod =
+            typeof(GC).GetMethod(
+                "GetTotalAllocatedBytes",
+                BindingFlags.Static | BindingFlags.Public,
+                binder: null,
+                types: new[] { typeof(bool) },
+                modifiers: null);
 
-            string jsonPath = Path.Combine(k_resultsDirectory, k_latestJsonFileName);
-            UnityEngine.Debug.Log($"Onity DI benchmark completed. Latest report: {jsonPath}");
+        private static readonly object[] s_preciseArgs = { true };
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void RunFromCommandLine()
+        {
+            string[] args = Environment.GetCommandLineArgs();
+
+            if (!HasArgument(args, k_runArgument))
+            {
+                return;
+            }
+
+            int exitCode = 0;
+
+            try
+            {
+                string jsonPath = GetOutputPath(args);
+                BenchmarkReport report = RunBenchmarks();
+                SaveReport(report, jsonPath);
+                UnityEngine.Debug.Log($"Onity DI player benchmark completed. Latest report: {jsonPath}");
+            }
+            catch (Exception exception)
+            {
+                exitCode = 1;
+                UnityEngine.Debug.LogException(exception);
+            }
+            finally
+            {
+                Application.Quit(exitCode);
+            }
         }
 
-        /// <summary>
-        /// Command-line entry point for Unity batchmode benchmark generation.
-        /// </summary>
-        public static void RunBenchmarksFromCommandLine()
-        {
-            BenchmarkReport report = RunBenchmarks();
-            SaveReport(report);
-            AssetDatabase.Refresh();
-
-            string jsonPath = Path.Combine(k_resultsDirectory, k_latestJsonFileName);
-            UnityEngine.Debug.Log($"Onity DI benchmark completed in batchmode. Latest report: {jsonPath}");
-        }
-
-        /// <summary>
-        /// Runs all benchmark scenarios and returns report data.
-        /// </summary>
-        /// <returns>Benchmark report.</returns>
         private static BenchmarkReport RunBenchmarks()
         {
             if (s_useBakedResolveProperty == null)
             {
                 throw new InvalidOperationException(
-                    "Internal OnityContainer.UseBakedResolve flag was not found; the baked-vs-reflection benchmark cannot toggle the resolve path.");
+                    "Internal OnityContainer.UseBakedResolve flag was not found; the baked-vs-reflection player benchmark cannot toggle the resolve path.");
             }
 
             BenchmarkReport report = new BenchmarkReport
@@ -99,44 +103,55 @@ namespace Onity.Editor.Benchmarks
                 generatedAtUtc = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture),
                 unityVersion = Application.unityVersion,
                 platform = Application.platform.ToString(),
+                scriptingBackend = GetScriptingBackendLabel(),
+                compiledActivationSupported = OnityContainer.IsCompiledActivationSupported,
+                allocationMeasurementAvailable = IsAllocationMeasurementAvailable(),
                 samplesPerCase = k_samplesPerCase,
                 warmupIterations = k_warmupIterations,
-                scenarios = new ScenarioReport[k_scenarios.Length]
+                scenarios = new ScenarioReport[s_scenarios.Length]
             };
 
-            List<MetricReport> metrics = new List<MetricReport>(k_containers.Length + 1);
+            MetricReport[] metrics = new MetricReport[s_containers.Length + 1];
 
-            for (int scenarioIndex = 0; scenarioIndex < k_scenarios.Length; scenarioIndex++)
+            for (int scenarioIndex = 0; scenarioIndex < s_scenarios.Length; scenarioIndex++)
             {
-                ScenarioConfig config = k_scenarios[scenarioIndex];
-                metrics.Clear();
+                ScenarioConfig config = s_scenarios[scenarioIndex];
+                int metricCount = 0;
 
-                for (int containerIndex = 0; containerIndex < k_containers.Length; containerIndex++)
+                for (int containerIndex = 0; containerIndex < s_containers.Length; containerIndex++)
                 {
-                    BenchmarkContainerKind containerKind = k_containers[containerIndex];
+                    BenchmarkContainerKind containerKind = s_containers[containerIndex];
 
                     if (containerKind == BenchmarkContainerKind.Onity)
                     {
-                        // Onity runs once per resolve mode so the reflection and
-                        // baked paths appear as separate, clearly labeled rows.
-                        for (int modeIndex = 0; modeIndex < k_onityResolveModes.Length; modeIndex++)
+                        for (int modeIndex = 0; modeIndex < s_onityResolveModes.Length; modeIndex++)
                         {
-                            OnityResolveMode resolveMode = k_onityResolveModes[modeIndex];
-                            metrics.Add(MeasureScenario(containerKind, config, resolveMode));
+                            metrics[metricCount] = MeasureScenario(
+                                containerKind,
+                                config,
+                                s_onityResolveModes[modeIndex]);
+                            metricCount++;
                         }
                     }
                     else
                     {
-                        metrics.Add(MeasureScenario(containerKind, config, OnityResolveMode.Reflection));
+                        metrics[metricCount] = MeasureScenario(
+                            containerKind,
+                            config,
+                            OnityResolveMode.Reflection);
+                        metricCount++;
                     }
                 }
+
+                MetricReport[] scenarioMetrics = new MetricReport[metricCount];
+                Array.Copy(metrics, scenarioMetrics, metricCount);
 
                 report.scenarios[scenarioIndex] = new ScenarioReport
                 {
                     scenario = config.scenario.ToString(),
                     displayName = config.displayName,
                     iterationsPerSample = config.iterationsPerSample,
-                    results = metrics.ToArray()
+                    results = scenarioMetrics
                 };
             }
 
@@ -149,18 +164,13 @@ namespace Onity.Editor.Benchmarks
             OnityResolveMode resolveMode)
         {
             bool isOnity = containerKind == BenchmarkContainerKind.Onity;
-
-            // Only Onity flips the internal baked-resolve flag. The flag wraps the
-            // entire measurement because CreateOperation builds the container (and
-            // its baked graph) inside the sample loop, so Build() must observe it.
-            // The original value is restored in the finally below.
             object originalFlag = isOnity ? s_useBakedResolveProperty.GetValue(null) : null;
 
             try
             {
                 if (isOnity)
                 {
-                    SetUseBakedResolve(resolveMode == OnityResolveMode.Baked);
+                    s_useBakedResolveProperty.SetValue(null, resolveMode == OnityResolveMode.Baked);
                 }
 
                 double[] elapsedMsSamples = new double[k_samplesPerCase];
@@ -169,7 +179,6 @@ namespace Onity.Editor.Benchmarks
                 for (int sampleIndex = 0; sampleIndex < k_samplesPerCase; sampleIndex++)
                 {
                     using BenchmarkOperation operation = CreateOperation(containerKind, config.scenario);
-
                     int warmup = Math.Min(k_warmupIterations, config.iterationsPerSample);
 
                     for (int i = 0; i < warmup; i++)
@@ -191,8 +200,6 @@ namespace Onity.Editor.Benchmarks
                     long allocAfter = ReadGrossAllocatedBytes();
 
                     elapsedMsSamples[sampleIndex] = stopwatch.Elapsed.TotalMilliseconds;
-
-                    // Process-wide gross managed-allocation delta for the measured loop.
                     allocSamples[sampleIndex] = Math.Max(0, allocAfter - allocBefore);
                 }
 
@@ -218,21 +225,6 @@ namespace Onity.Editor.Benchmarks
                     s_useBakedResolveProperty.SetValue(null, originalFlag);
                 }
             }
-        }
-
-        private static void SetUseBakedResolve(bool value)
-        {
-            s_useBakedResolveProperty.SetValue(null, value);
-        }
-
-        private static string BuildContainerLabel(BenchmarkContainerKind containerKind, OnityResolveMode resolveMode)
-        {
-            if (containerKind != BenchmarkContainerKind.Onity)
-            {
-                return containerKind.ToString();
-            }
-
-            return resolveMode == OnityResolveMode.Baked ? "Onity (Baked)" : "Onity (Reflection)";
         }
 
         private static BenchmarkOperation CreateOperation(BenchmarkContainerKind containerKind, BenchmarkScenario scenario)
@@ -262,11 +254,7 @@ namespace Onity.Editor.Benchmarks
                     OnityContainer container = new OnityContainer();
                     RegisterSimpleOnity(container);
                     return new BenchmarkOperation(
-                        () =>
-                        {
-                            IBenchmarkSingletonService service = container.Resolve<IBenchmarkSingletonService>();
-                            BenchmarkBlackhole.Consume(service);
-                        },
+                        () => BenchmarkBlackhole.Consume(container.Resolve<IBenchmarkSingletonService>()),
                         container.Dispose);
                 }
 
@@ -275,11 +263,7 @@ namespace Onity.Editor.Benchmarks
                     OnityContainer container = new OnityContainer();
                     RegisterSimpleOnity(container);
                     return new BenchmarkOperation(
-                        () =>
-                        {
-                            IBenchmarkTransientService service = container.Resolve<IBenchmarkTransientService>();
-                            BenchmarkBlackhole.Consume(service);
-                        },
+                        () => BenchmarkBlackhole.Consume(container.Resolve<IBenchmarkTransientService>()),
                         container.Dispose);
                 }
 
@@ -290,10 +274,8 @@ namespace Onity.Editor.Benchmarks
                     return new BenchmarkOperation(
                         () =>
                         {
-                            IBenchmarkSingletonService singleton = container.Resolve<IBenchmarkSingletonService>();
-                            IBenchmarkTransientService transient = container.Resolve<IBenchmarkTransientService>();
-                            BenchmarkBlackhole.Consume(singleton);
-                            BenchmarkBlackhole.Consume(transient);
+                            BenchmarkBlackhole.Consume(container.Resolve<IBenchmarkSingletonService>());
+                            BenchmarkBlackhole.Consume(container.Resolve<IBenchmarkTransientService>());
                         },
                         container.Dispose);
                 }
@@ -303,23 +285,17 @@ namespace Onity.Editor.Benchmarks
                     OnityContainer container = new OnityContainer();
                     RegisterComplexOnity(container);
                     return new BenchmarkOperation(
-                        () =>
-                        {
-                            IComplexRoot root = container.Resolve<IComplexRoot>();
-                            BenchmarkBlackhole.Consume(root);
-                        },
+                        () => BenchmarkBlackhole.Consume(container.Resolve<IComplexRoot>()),
                         container.Dispose);
                 }
 
                 case BenchmarkScenario.PrepareAndRegisterComplex:
-                {
                     return new BenchmarkOperation(
                         () =>
                         {
                             using OnityContainer container = new OnityContainer();
                             RegisterComplexOnity(container);
                         });
-                }
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "Unknown benchmark scenario.");
@@ -334,11 +310,7 @@ namespace Onity.Editor.Benchmarks
                 {
                     IObjectResolver resolver = BuildSimpleVContainer();
                     return new BenchmarkOperation(
-                        () =>
-                        {
-                            IBenchmarkSingletonService service = resolver.Resolve<IBenchmarkSingletonService>();
-                            BenchmarkBlackhole.Consume(service);
-                        },
+                        () => BenchmarkBlackhole.Consume(resolver.Resolve<IBenchmarkSingletonService>()),
                         resolver.Dispose);
                 }
 
@@ -346,11 +318,7 @@ namespace Onity.Editor.Benchmarks
                 {
                     IObjectResolver resolver = BuildSimpleVContainer();
                     return new BenchmarkOperation(
-                        () =>
-                        {
-                            IBenchmarkTransientService service = resolver.Resolve<IBenchmarkTransientService>();
-                            BenchmarkBlackhole.Consume(service);
-                        },
+                        () => BenchmarkBlackhole.Consume(resolver.Resolve<IBenchmarkTransientService>()),
                         resolver.Dispose);
                 }
 
@@ -360,10 +328,8 @@ namespace Onity.Editor.Benchmarks
                     return new BenchmarkOperation(
                         () =>
                         {
-                            IBenchmarkSingletonService singleton = resolver.Resolve<IBenchmarkSingletonService>();
-                            IBenchmarkTransientService transient = resolver.Resolve<IBenchmarkTransientService>();
-                            BenchmarkBlackhole.Consume(singleton);
-                            BenchmarkBlackhole.Consume(transient);
+                            BenchmarkBlackhole.Consume(resolver.Resolve<IBenchmarkSingletonService>());
+                            BenchmarkBlackhole.Consume(resolver.Resolve<IBenchmarkTransientService>());
                         },
                         resolver.Dispose);
                 }
@@ -372,16 +338,11 @@ namespace Onity.Editor.Benchmarks
                 {
                     IObjectResolver resolver = BuildComplexVContainer();
                     return new BenchmarkOperation(
-                        () =>
-                        {
-                            IComplexRoot root = resolver.Resolve<IComplexRoot>();
-                            BenchmarkBlackhole.Consume(root);
-                        },
+                        () => BenchmarkBlackhole.Consume(resolver.Resolve<IComplexRoot>()),
                         resolver.Dispose);
                 }
 
                 case BenchmarkScenario.PrepareAndRegisterComplex:
-                {
                     return new BenchmarkOperation(
                         () =>
                         {
@@ -390,7 +351,6 @@ namespace Onity.Editor.Benchmarks
                             IObjectResolver resolver = builder.Build();
                             resolver.Dispose();
                         });
-                }
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "Unknown benchmark scenario.");
@@ -406,11 +366,7 @@ namespace Onity.Editor.Benchmarks
                     DiContainer container = new DiContainer();
                     RegisterSimpleZenject(container);
                     return new BenchmarkOperation(
-                        () =>
-                        {
-                            IBenchmarkSingletonService service = container.Resolve<IBenchmarkSingletonService>();
-                            BenchmarkBlackhole.Consume(service);
-                        });
+                        () => BenchmarkBlackhole.Consume(container.Resolve<IBenchmarkSingletonService>()));
                 }
 
                 case BenchmarkScenario.ResolveTransient:
@@ -418,11 +374,7 @@ namespace Onity.Editor.Benchmarks
                     DiContainer container = new DiContainer();
                     RegisterSimpleZenject(container);
                     return new BenchmarkOperation(
-                        () =>
-                        {
-                            IBenchmarkTransientService service = container.Resolve<IBenchmarkTransientService>();
-                            BenchmarkBlackhole.Consume(service);
-                        });
+                        () => BenchmarkBlackhole.Consume(container.Resolve<IBenchmarkTransientService>()));
                 }
 
                 case BenchmarkScenario.ResolveCombined:
@@ -432,10 +384,8 @@ namespace Onity.Editor.Benchmarks
                     return new BenchmarkOperation(
                         () =>
                         {
-                            IBenchmarkSingletonService singleton = container.Resolve<IBenchmarkSingletonService>();
-                            IBenchmarkTransientService transient = container.Resolve<IBenchmarkTransientService>();
-                            BenchmarkBlackhole.Consume(singleton);
-                            BenchmarkBlackhole.Consume(transient);
+                            BenchmarkBlackhole.Consume(container.Resolve<IBenchmarkSingletonService>());
+                            BenchmarkBlackhole.Consume(container.Resolve<IBenchmarkTransientService>());
                         });
                 }
 
@@ -444,15 +394,10 @@ namespace Onity.Editor.Benchmarks
                     DiContainer container = new DiContainer();
                     RegisterComplexZenject(container);
                     return new BenchmarkOperation(
-                        () =>
-                        {
-                            IComplexRoot root = container.Resolve<IComplexRoot>();
-                            BenchmarkBlackhole.Consume(root);
-                        });
+                        () => BenchmarkBlackhole.Consume(container.Resolve<IComplexRoot>()));
                 }
 
                 case BenchmarkScenario.PrepareAndRegisterComplex:
-                {
                     return new BenchmarkOperation(
                         () =>
                         {
@@ -460,7 +405,6 @@ namespace Onity.Editor.Benchmarks
                             RegisterComplexZenject(container);
                             BenchmarkBlackhole.Consume(container);
                         });
-                }
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "Unknown benchmark scenario.");
@@ -471,25 +415,7 @@ namespace Onity.Editor.Benchmarks
         {
             container.Bind<IBenchmarkSingletonService>().To<BenchmarkSingletonService>().AsSingle();
             container.Bind<IBenchmarkTransientService>().To<BenchmarkTransientService>().AsTransient();
-            // Build commits the registrations and, when UseBakedResolve is true,
-            // compiles the baked graph the resolve hot path reads. Required so the
-            // baked pass actually exercises the fast path instead of staying on
-            // the reflection fallback.
             container.Build();
-        }
-
-        private static IObjectResolver BuildSimpleVContainer()
-        {
-            ContainerBuilder builder = new ContainerBuilder();
-            builder.Register<IBenchmarkSingletonService, BenchmarkSingletonService>(VContainer.Lifetime.Singleton);
-            builder.Register<IBenchmarkTransientService, BenchmarkTransientService>(VContainer.Lifetime.Transient);
-            return builder.Build();
-        }
-
-        private static void RegisterSimpleZenject(DiContainer container)
-        {
-            container.Bind<IBenchmarkSingletonService>().To<BenchmarkSingletonService>().AsSingle();
-            container.Bind<IBenchmarkTransientService>().To<BenchmarkTransientService>().AsTransient();
         }
 
         private static void RegisterComplexOnity(OnityContainer container)
@@ -516,11 +442,22 @@ namespace Onity.Editor.Benchmarks
             container.Bind<IComplexServiceD>().To<ComplexServiceD>().AsTransient();
             container.Bind<IComplexServiceE>().To<ComplexServiceE>().AsTransient();
             container.Bind<IComplexRoot>().To<ComplexRoot>().AsTransient();
-            // Build commits the registrations and, when UseBakedResolve is true,
-            // compiles the baked graph the resolve hot path reads. For the
-            // prepare/register scenario this also makes baked-graph construction
-            // part of the measured build cost, matching VContainer's builder.Build.
             container.Build();
+        }
+
+        private static IObjectResolver BuildSimpleVContainer()
+        {
+            ContainerBuilder builder = new ContainerBuilder();
+            builder.Register<IBenchmarkSingletonService, BenchmarkSingletonService>(VContainer.Lifetime.Singleton);
+            builder.Register<IBenchmarkTransientService, BenchmarkTransientService>(VContainer.Lifetime.Transient);
+            return builder.Build();
+        }
+
+        private static IObjectResolver BuildComplexVContainer()
+        {
+            ContainerBuilder builder = new ContainerBuilder();
+            RegisterComplexVContainer(builder);
+            return builder.Build();
         }
 
         private static void RegisterComplexVContainer(IContainerBuilder builder)
@@ -549,11 +486,10 @@ namespace Onity.Editor.Benchmarks
             builder.Register<IComplexRoot, ComplexRoot>(VContainer.Lifetime.Transient);
         }
 
-        private static IObjectResolver BuildComplexVContainer()
+        private static void RegisterSimpleZenject(DiContainer container)
         {
-            ContainerBuilder builder = new ContainerBuilder();
-            RegisterComplexVContainer(builder);
-            return builder.Build();
+            container.Bind<IBenchmarkSingletonService>().To<BenchmarkSingletonService>().AsSingle();
+            container.Bind<IBenchmarkTransientService>().To<BenchmarkTransientService>().AsTransient();
         }
 
         private static void RegisterComplexZenject(DiContainer container)
@@ -582,16 +518,15 @@ namespace Onity.Editor.Benchmarks
             container.Bind<IComplexRoot>().To<ComplexRoot>().AsTransient();
         }
 
-        private static void SaveReport(BenchmarkReport report)
+        private static void SaveReport(BenchmarkReport report, string latestJson)
         {
-            string absoluteResultsDirectory = Path.Combine(Directory.GetCurrentDirectory(), k_resultsDirectory);
-            Directory.CreateDirectory(absoluteResultsDirectory);
+            string directory = Path.GetDirectoryName(latestJson);
+            Directory.CreateDirectory(directory);
 
             string fileStamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
-            string versionedJson = Path.Combine(absoluteResultsDirectory, $"di-benchmark-{fileStamp}.json");
-            string latestJson = Path.Combine(absoluteResultsDirectory, k_latestJsonFileName);
-            string latestCsv = Path.Combine(absoluteResultsDirectory, k_latestCsvFileName);
-            string latestMarkdown = Path.Combine(absoluteResultsDirectory, k_latestMarkdownFileName);
+            string versionedJson = Path.Combine(directory, $"di-benchmark-player-{fileStamp}.json");
+            string latestCsv = Path.ChangeExtension(latestJson, ".csv");
+            string latestMarkdown = Path.ChangeExtension(latestJson, ".md");
 
             string json = JsonUtility.ToJson(report, true);
             File.WriteAllText(versionedJson, json, Encoding.UTF8);
@@ -603,8 +538,7 @@ namespace Onity.Editor.Benchmarks
         private static string BuildCsv(BenchmarkReport report)
         {
             StringBuilder builder = new StringBuilder(2048);
-            builder.AppendLine(
-                "scenario,container,iterations,mean_ms,min_ms,max_ms,stddev_ms,ns_per_op,alloc_bytes_per_sample_mean,alloc_bytes_per_op_mean");
+            builder.AppendLine("scenario,container,iterations,mean_ms,min_ms,max_ms,stddev_ms,ns_per_op,alloc_bytes_per_sample_mean,alloc_bytes_per_op_mean");
 
             for (int scenarioIndex = 0; scenarioIndex < report.scenarios.Length; scenarioIndex++)
             {
@@ -621,8 +555,8 @@ namespace Onity.Editor.Benchmarks
                     builder.Append(ToInvariant(metric.maxMilliseconds)).Append(',');
                     builder.Append(ToInvariant(metric.standardDeviationMilliseconds)).Append(',');
                     builder.Append(ToInvariant(metric.nanosecondsPerOperation)).Append(',');
-                    builder.Append(ToInvariant(metric.allocBytesPerSampleMean)).Append(',');
-                    builder.Append(ToInvariant(metric.allocBytesPerOperationMean)).AppendLine();
+                    builder.Append(FormatAllocationMetric(report, metric.allocBytesPerSampleMean, "G17")).Append(',');
+                    builder.Append(FormatAllocationMetric(report, metric.allocBytesPerOperationMean, "G17")).AppendLine();
                 }
             }
 
@@ -632,16 +566,18 @@ namespace Onity.Editor.Benchmarks
         private static string BuildMarkdown(BenchmarkReport report)
         {
             StringBuilder builder = new StringBuilder(4096);
-            builder.AppendLine("# Onity DI Benchmark");
+            builder.AppendLine("# Onity DI Player Benchmark");
             builder.AppendLine();
             builder.AppendLine($"- Generated (UTC): `{report.generatedAtUtc}`");
             builder.AppendLine($"- Unity: `{report.unityVersion}`");
             builder.AppendLine($"- Platform: `{report.platform}`");
+            builder.AppendLine($"- Scripting backend: `{report.scriptingBackend}`");
+            builder.AppendLine($"- Compiled activation supported: `{report.compiledActivationSupported}`");
+            builder.AppendLine($"- Allocation measurement available: `{report.allocationMeasurementAvailable}`");
             builder.AppendLine($"- Samples per case: `{report.samplesPerCase}`");
             builder.AppendLine($"- Warmup iterations: `{report.warmupIterations}`");
             builder.AppendLine();
-            builder.AppendLine(
-                "| Scenario | Container | Mean (ms) | ns/op | Alloc/sample (B) | Alloc/op (B) |");
+            builder.AppendLine("| Scenario | Container | Mean (ms) | ns/op | Alloc/sample (B) | Alloc/op (B) |");
             builder.AppendLine("|---|---|---:|---:|---:|---:|");
 
             for (int scenarioIndex = 0; scenarioIndex < report.scenarios.Length; scenarioIndex++)
@@ -655,8 +591,8 @@ namespace Onity.Editor.Benchmarks
                     builder.Append(metric.container).Append(" | ");
                     builder.Append(metric.meanMilliseconds.ToString("F4", CultureInfo.InvariantCulture)).Append(" | ");
                     builder.Append(metric.nanosecondsPerOperation.ToString("F2", CultureInfo.InvariantCulture)).Append(" | ");
-                    builder.Append(metric.allocBytesPerSampleMean.ToString("F2", CultureInfo.InvariantCulture)).Append(" | ");
-                    builder.Append(metric.allocBytesPerOperationMean.ToString("F6", CultureInfo.InvariantCulture)).AppendLine(" |");
+                    builder.Append(FormatAllocationMetric(report, metric.allocBytesPerSampleMean, "F2")).Append(" | ");
+                    builder.Append(FormatAllocationMetric(report, metric.allocBytesPerOperationMean, "F6")).AppendLine(" |");
                 }
             }
 
@@ -678,73 +614,85 @@ namespace Onity.Editor.Benchmarks
             return value;
         }
 
-        private static string ToInvariant(double value)
+        private static string GetOutputPath(string[] args)
         {
-            return value.ToString("G17", CultureInfo.InvariantCulture);
+            string explicitOutput = GetArgumentValue(args, k_outputArgument);
+
+            if (!string.IsNullOrEmpty(explicitOutput))
+            {
+                return Path.GetFullPath(explicitOutput);
+            }
+
+            return Path.Combine(Application.persistentDataPath, k_latestJsonFileName);
         }
 
-        // ---------------------------------------------------------------------
-        // Allocation measurement source
-        //
-        // Per-op allocation is derived from a GROSS, cumulative managed-allocation
-        // counter sampled tightly around the timed loop, divided by the iteration
-        // count. The gross counter only ever grows; a full GC before the loop does
-        // not reset it, so the delta across the loop is the bytes allocated by the
-        // measured work (including objects later collected), which is exactly what
-        // a per-op allocation figure should report.
-        //
-        // Primary source: System.GC.GetTotalAllocatedBytes(precise: true). This is
-        // process-wide and cumulative, and is reliable on Unity 2022.3 / .NET
-        // Standard 2.1 Mono. It is read on a quiet benchmark thread immediately
-        // around the loop, so other-thread noise is negligible at the 10k-iteration
-        // scale used here.
-        //
-        // Why the previous source was wrong: the runner used
-        // GC.GetAllocatedBytesForCurrentThread(). On Unity 2022.3 Editor-Mono that
-        // API does not return a reliable per-thread allocation total — the
-        // committed run read 0 B for EVERY container, including the known
-        // allocation-heavy Zenject and the transient-resolve paths that must
-        // allocate the instance they return. A flat 0 B across the board means the
-        // counter was not tracking, not that the paths allocate nothing, so those
-        // figures were withdrawn.
-        //
-        // GetTotalAllocatedBytes(precise: true) shipped with the .NET Standard 2.1
-        // surface Unity 2022.3 targets, but it is invoked through a guarded reflected
-        // MethodInfo so that if a given Mono build does not expose it the runner
-        // falls back to GetAllocatedBytesForCurrentThread() (documented as unreliable
-        // on this backend) rather than failing to compile or throwing.
-        // ---------------------------------------------------------------------
+        private static bool HasArgument(string[] args, string argument)
+        {
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (string.Equals(args[i], argument, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
 
-        // Cached reflected accessor for GC.GetTotalAllocatedBytes(bool). Resolved
-        // once; null when the running Mono build does not expose the method, which
-        // routes ReadGrossAllocatedBytes to the documented per-thread fallback.
-        private static readonly MethodInfo s_getTotalAllocatedBytesMethod =
-            typeof(GC).GetMethod(
-                "GetTotalAllocatedBytes",
-                BindingFlags.Static | BindingFlags.Public,
-                binder: null,
-                types: new[] { typeof(bool) },
-                modifiers: null);
+            return false;
+        }
 
-        /// <summary>
-        /// Reads the process-wide cumulative gross managed-allocation counter.
-        /// Prefers <c>GC.GetTotalAllocatedBytes(precise: true)</c>; falls back to
-        /// the per-thread counter (unreliable on Unity 2022.3 Editor-Mono) only
-        /// when the preferred method is unavailable on the current runtime.
-        /// </summary>
+        private static string GetArgumentValue(string[] args, string argument)
+        {
+            for (int i = 0; i < args.Length - 1; i++)
+            {
+                if (string.Equals(args[i], argument, StringComparison.OrdinalIgnoreCase))
+                {
+                    return args[i + 1];
+                }
+            }
+
+            return null;
+        }
+
+        private static string BuildContainerLabel(BenchmarkContainerKind containerKind, OnityResolveMode resolveMode)
+        {
+            if (containerKind != BenchmarkContainerKind.Onity)
+            {
+                return containerKind.ToString();
+            }
+
+            return resolveMode == OnityResolveMode.Baked ? "Onity (Baked)" : "Onity (Reflection)";
+        }
+
+        private static string GetScriptingBackendLabel()
+        {
+#if ENABLE_IL2CPP
+            return "IL2CPP";
+#else
+            return "Mono";
+#endif
+        }
+
+        private static bool IsAllocationMeasurementAvailable()
+        {
+#if ENABLE_IL2CPP
+            return false;
+#else
+            return true;
+#endif
+        }
+
         private static long ReadGrossAllocatedBytes()
         {
+#if ENABLE_IL2CPP
+            return 0L;
+#else
             if (s_getTotalAllocatedBytesMethod != null)
             {
                 return (long)s_getTotalAllocatedBytesMethod.Invoke(null, s_preciseArgs);
             }
 
             return GC.GetAllocatedBytesForCurrentThread();
+#endif
         }
-
-        // Boxed argument reused for the precise gross-allocation read so the
-        // reflected call adds no per-sample allocation of its own.
-        private static readonly object[] s_preciseArgs = { true };
 
         private static void ForceFullGc()
         {
@@ -762,17 +710,8 @@ namespace Onity.Editor.Benchmarks
             for (int i = 0; i < values.Length; i++)
             {
                 double value = values[i];
-
-                if (value < min)
-                {
-                    min = value;
-                }
-
-                if (value > max)
-                {
-                    max = value;
-                }
-
+                min = Math.Min(min, value);
+                max = Math.Max(max, value);
                 sum += value;
             }
 
@@ -801,12 +740,30 @@ namespace Onity.Editor.Benchmarks
             return CalculateStats(converted);
         }
 
+        private static string ToInvariant(double value)
+        {
+            return value.ToString("G17", CultureInfo.InvariantCulture);
+        }
+
+        private static string FormatAllocationMetric(BenchmarkReport report, double value, string format)
+        {
+            if (!report.allocationMeasurementAvailable)
+            {
+                return "n/a";
+            }
+
+            return value.ToString(format, CultureInfo.InvariantCulture);
+        }
+
         [Serializable]
         private sealed class BenchmarkReport
         {
             public string generatedAtUtc;
             public string unityVersion;
             public string platform;
+            public string scriptingBackend;
+            public bool compiledActivationSupported;
+            public bool allocationMeasurementAvailable;
             public int samplesPerCase;
             public int warmupIterations;
             public ScenarioReport[] scenarios;

@@ -81,26 +81,28 @@ BasicGameplay) generate from a menu.
 
 ### Latest DI benchmark
 
-From `Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-summary.md`,
+From `Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md`,
 Unity 2022.3.62f3, Windows Editor/Mono, generated 2026-05-30:
 
 | Scenario | Onity (ns/op) | VContainer (ns/op) | Onity vs VContainer |
 |---|---:|---:|---:|
-| Resolve Singleton | 94 | 202 | +53.44% |
-| Resolve Transient | 775 | 1,697 | +54.32% |
-| Resolve Combined | 896 | 1,712 | +47.64% |
-| Resolve Complex | 22,787 | 57,995 | +60.71% |
-| Prepare and Register Complex | 47,243 | 135,140 | +65.04% |
+| Resolve Singleton | 63 | 214 | +70.5% |
+| Resolve Transient | 1,083 | 1,879 | +42.4% |
+| Resolve Combined | 972 | 2,079 | +53.2% |
+| Resolve Complex | 22,905 | 42,158 | +45.7% |
+| Prepare and Register Complex | 61,044 | 150,730 | +59.5% |
 
 Allocation numbers from this runner are withdrawn pending a corrected harness;
 the timing numbers above are the trustworthy benchmark output.
 
 Onity Baked is faster than VContainer on every measured Editor/Mono timing path.
-The remaining performance tasks are IL2CPP player timing, source-generated or
-IL-postprocessed activators for AOT, and a corrected allocation harness.
+The Windows IL2CPP player benchmark also runs, but it shows VContainer ahead on
+transient, combined, and complex resolve. The remaining performance tasks are
+source-generated or IL-postprocessed activators for AOT, and a corrected
+allocation harness.
 
 ## Where work begins
 
 After reading the rest of the plan, the next action is to close the remaining
-0.2.x performance proof gaps: IL2CPP player benchmark, corrected allocation
-measurement, and source-generated or IL-postprocessed activators.
+0.3.x performance proof gaps: corrected allocation measurement and
+source-generated or IL-postprocessed activators for IL2CPP resolve speed.

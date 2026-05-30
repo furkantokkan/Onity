@@ -169,7 +169,7 @@ Each operator ships with:
 
 - Implementation in `Onity.Reactive/Scripts/Operators/<Name>.cs`.
 - A focused EditMode test in `Onity.Tests.Reactive.EditMode`.
-- A benchmark entry in `Assets/Onity-Packages/Onity/Benchmarks/Editor/`.
+- A benchmark entry in `Packages/com.onity.framework/Benchmarks/Editor/`.
 
 ### 3.3 Operator implementation pattern
 

@@ -20,10 +20,11 @@ this repository.
   axis against VContainer and Zenject (which are DI-only); the unified-scope
   advantage is covered as its own axis below.
 - **The benchmark timing numbers are indicative, not guaranteed.** They were
-  measured in the **Unity Editor with the Mono scripting backend, on a single
-  Windows machine** (Unity 2022.3.62f3), 512 warmup iterations, 8 samples, mean
-  reported. Your hardware, Unity version, IL2CPP vs Mono backend, and graph shape
-  will produce different absolute numbers and possibly different relative ordering.
+  measured in the **Unity Editor with the Mono scripting backend** and once in a
+  **Windows IL2CPP player**, on a single Windows machine (Unity 2022.3.62f3),
+  512 warmup iterations, 8 samples, mean reported. Your hardware, Unity version,
+  IL2CPP vs Mono backend, and graph shape will produce different absolute numbers
+  and possibly different relative ordering.
   Treat the numbers as "this is what one machine measured," not "Onity is always
   faster." They were produced by the Onity project's own `OnityDiBenchmarkRunner`
   and have **not been independently audited** — the runner ships in this
@@ -49,14 +50,15 @@ this repository.
 
 | Axis | Onity | VContainer | Zenject / Extenject |
 | --- | --- | --- | --- |
-| Resolve speed (Editor-Mono, indicative) | Fastest in this run with baked resolve (~1.9–2.5× VContainer, ~12–33× Zenject) | Behind Onity baked; close to Onity reflection on simple resolves | Slowest of the three |
-| Build / registration speed (indicative) | Fastest in this run (baked ~2.9× VContainer, reflection ~3.8× VContainer) | Slower than Onity | Slow |
+| Resolve speed (Editor-Mono, indicative) | Fastest in this run with baked resolve | Behind Onity baked | Slowest of the three |
+| Resolve speed (Windows IL2CPP player, indicative) | Fastest for singleton only; behind VContainer on transient/combined/complex resolve | **Fastest on transient/combined/complex resolve** | Slowest except complex is still behind both |
+| Build / registration speed (indicative) | Fastest in both current Editor/Mono and IL2CPP player prepare/register runs | Slower than Onity on prepare/register | Slow |
 | Steady-state resolve allocation | resolve machinery designed allocation-free (a transient allocates the returned instance; alloc figures pending a corrected re-measure) | Low (codegen mode) | Higher |
 | DI feature breadth | Feature-complete for common Unity needs | Broad | Broadest |
 | Entry-point lifecycle | **Automatic, no registration** | Manual `RegisterEntryPoint` | Automatic |
 | Collection / open-generic binds | Yes | Yes | Yes |
 | Conditional / id binds, `Unbind` | No (deliberate non-goal) | Limited | **Yes** |
-| IL2CPP / AOT | Mono compiled fast path + automatic reflection fallback on AOT; correctness covered by fallback tests, player timing still pending | **Mature, source-gen path** | **Mature, broadly shipped** |
+| IL2CPP / AOT | Runtime-probed activation path with reflection fallback; correctness covered, but current player timings do not beat VContainer on all resolve paths | **Mature, source-gen path** | **Mature, broadly shipped** |
 | Unified DI + Reactive + Events | **Yes (one package)** | DI only | DI only |
 | AI-friendliness / analyzer | **Usage guide + `ONITY001`–`ONITY006`** | None bundled | Partial (`ValidateAll`) |
 | Production maturity | **Younger** | Mature | Mature |
@@ -73,10 +75,19 @@ and Zenject on every scenario:
 
 | Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject |
 | --- | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~94 ns | ~215 ns | ~202 ns | ~3,137 ns |
-| Resolve Transient | ~775 ns | ~1,725 ns | ~1,697 ns | ~11,681 ns |
-| Resolve Combined | ~896 ns | ~1,059 ns | ~1,712 ns | ~15,400 ns |
-| Resolve Complex (6-level graph) | ~22,787 ns | ~26,502 ns | ~57,995 ns | ~285,394 ns |
+| Resolve Singleton | ~63 ns | ~164 ns | ~214 ns | ~2,866 ns |
+| Resolve Transient | ~1,083 ns | ~943 ns | ~1,879 ns | ~12,356 ns |
+| Resolve Combined | ~972 ns | ~1,233 ns | ~2,079 ns | ~17,248 ns |
+| Resolve Complex (6-level graph) | ~22,905 ns | ~25,940 ns | ~42,158 ns | ~289,823 ns |
+
+The Windows IL2CPP player run is a different picture:
+
+| Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject | Result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Resolve Singleton | ~17 ns | ~102 ns | ~86 ns | ~469 ns | Onity fastest |
+| Resolve Transient | ~1,431 ns | ~1,581 ns | ~580 ns | ~2,458 ns | VContainer fastest |
+| Resolve Combined | ~1,263 ns | ~1,505 ns | ~602 ns | ~3,525 ns | VContainer fastest |
+| Resolve Complex (6-level graph) | ~34,729 ns | ~37,379 ns | ~12,918 ns | ~62,689 ns | VContainer fastest |
 
 The speed comes from a process-wide compiled-activator cache (`Expression.Compile`
 runs once per `ConstructorInfo`), compiled field/property/method setters, a
@@ -85,14 +96,14 @@ constructor-dependency cache. There is no `builder.Build()` ceremony before a
 resolve, and the container has no engine coupling (`Onity.DI` is
 `noEngineReferences: true`).
 
-**Honest caveat.** These are Editor-Mono numbers on one machine. On IL2CPP the
-compiled activation path is unavailable and Onity uses reflection (see axis 6);
-that mode was slightly behind VContainer on simple singleton/transient resolves
-in this run, while still ahead on combined and complex graph resolves. At that
-point VContainer's source-generated path can match or beat Onity until Onity ships
-its own compile-time activator. The gap against Zenject is large and consistent,
-but Zenject is the slowest of the three by design (heavier feature set, more
-reflection at resolve time).
+**Honest caveat.** Editor-Mono numbers should not be projected onto IL2CPP. The
+current IL2CPP player benchmark proves Onity runs there and still beats Zenject
+on every listed resolve path, but VContainer's generated IL2CPP path is faster
+on transient, combined, and complex resolve. Onity needs a source-generated or
+AOT-specialized activator path before it can claim a full IL2CPP resolve-speed
+lead. The gap against Zenject is large and consistent, but Zenject is the
+slowest of the three by design (heavier feature set, more reflection at resolve
+time).
 
 ### 2. Build / registration speed
 
@@ -101,7 +112,8 @@ Onity on the benchmark machine:
 
 | Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject |
 | --- | ---: | ---: | ---: | ---: |
-| Prepare & Register Complex | ~47,243 ns | ~35,837 ns | ~135,140 ns | ~197,132 ns |
+| Prepare & Register Complex (Editor/Mono) | ~61,044 ns | ~42,929 ns | ~150,730 ns | ~215,537 ns |
+| Prepare & Register Complex (IL2CPP Player) | ~23,872 ns | ~20,939 ns | ~38,465 ns | ~61,060 ns |
 
 Onity avoids VContainer's separate builder object and shares activation metadata
 across the whole process. The baked mode adds a lean dense-id map during `Build()`
@@ -109,7 +121,8 @@ so explicit bindings can resolve without a dictionary lookup; it reuses the same
 providers as the reflection path instead of compiling a second dependency graph.
 **Caveat:** the very first build that compiles a type pays the
 `Expression.Compile` cost; a process that builds many distinct graphs once each
-will see less of this advantage, and on IL2CPP there is no compile step at all.
+will see less of this advantage, and on IL2CPP there is no JIT-compiled native
+activator.
 
 ### 3. Steady-state allocation
 
@@ -172,32 +185,34 @@ VContainer's manual wiring.
 
 ### 6. IL2CPP / AOT
 
-Onity's speed lead on Mono comes from `Expression.Compile`. On a fully
-ahead-of-time runtime (IL2CPP, console AOT) there is no JIT, so `Expression.Compile`
-can throw or return a delegate that throws on first call. Onity handles this with
-a **one-time runtime probe** (`RuntimeCompileSupport`) that both compiles *and
-invokes* a representative activator-shaped lambda at startup:
+Onity's speed lead on Mono comes from `Expression.Compile`. On ahead-of-time
+runtimes (IL2CPP, console AOT), runtime expression compilation can be unavailable,
+interpreter-backed, or target-dependent, so Onity does not assume that a compiled
+delegate is safe. It uses a **one-time runtime probe** (`RuntimeCompileSupport`)
+that both compiles *and invokes* a representative activator-shaped lambda at
+startup:
 
 - On JIT runtimes the probe succeeds and the compiled fast path is used.
-- On AOT/IL2CPP the probe detects the failure and the container **falls back to
-  reflection-based activation** — slower per call, but allocation-comparable and
-  guaranteed to run instead of crashing. Each compiler also wraps `Compile()` in
-  try/catch for per-member safety.
+- On AOT/IL2CPP or restricted runtimes, if the probe detects a failed compiled
+  delegate, the container **falls back to reflection-based activation** — slower
+  per call, but allocation-comparable and guaranteed to run instead of crashing.
+  Each compiler also wraps `Compile()` in try/catch for per-member safety.
 - `OnityContainer.ForceReflectionActivation` lets you force the reflection path
   on a JIT runtime to pre-flight a graph under the exact strategy IL2CPP uses.
 
-This fallback is covered by AOT fallback tests. It proves the container degrades
-to the safe activation path instead of crashing; it does not provide IL2CPP
-player timing data.
+This fallback is covered by AOT fallback tests. The Windows IL2CPP player
+benchmark now also proves that the benchmark graph runs in a player build and
+records timings instead of crashing.
 
-**Honest caveat.** Reflection only guarantees that Onity *runs* correctly on
-IL2CPP; it does not preserve the *speed* lead there. VContainer ships a
-source-generator that produces compile-time activators, so on IL2CPP VContainer
-keeps a codegen-quality path while Onity is on reflection. A source-generated
-activator for Onity (`Onity.SourceGen`) is on the roadmap to close this; until it
-ships, **on IL2CPP VContainer is likely the faster DI container.** Also note that
-runtime open-generic registration relies on `MakeGenericType`, so the closed type
-must survive IL2CPP stripping (reference it statically or preserve it).
+**Honest caveat.** IL2CPP correctness does not preserve the Editor/Mono speed
+lead. VContainer ships a source-generator that produces compile-time activators,
+and the current Windows IL2CPP player run measured VContainer faster on transient,
+combined, and complex resolve. A source-generated activator for Onity
+(`Onity.SourceGen`) is the next required optimization to close this; until it
+ships, **VContainer is the safer choice when IL2CPP resolve speed is the deciding
+factor.** Also note that runtime open-generic registration relies on
+`MakeGenericType`, so the closed type must survive IL2CPP stripping (reference it
+statically or preserve it).
 
 ### 7. Unified scope — DI + Reactive + Events
 

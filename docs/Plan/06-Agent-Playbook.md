@@ -206,4 +206,4 @@ real file paths, real numbers.
 - Plan docs: this folder
 - Engineering doc:
   `Assets/Onity-Packages/Onity/ENGINEERING.md`
-- Benchmarks: `Assets/Onity-Packages/Onity/Benchmarks/`
+- Benchmarks: `Packages/com.onity.framework/Benchmarks/`

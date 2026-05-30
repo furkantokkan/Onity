@@ -63,7 +63,7 @@ are asserted against Onity's real behavior with inline comments, not faked parit
 **Verification status:** `dotnet build Onity.DI.csproj` clean (0 errors).
 The 2026-05-30 follow-up Unity benchmark confirmed that baked resolve now beats
 VContainer in every measured timing scenario, including
-`Prepare & Register Complex` (~47,243 ns vs VContainer ~135,140 ns). The
+`Prepare & Register Complex` (~61,044 ns vs VContainer ~150,730 ns). The
 internal 15,000 ns build gate and corrected gross-allocation measurement remain
 open release-hardening work.
 
@@ -475,7 +475,7 @@ Each operator gets:
 ### 2.2 Reactive benchmark runner
 
 - New file:
-  `Assets/Onity-Packages/Onity/Benchmarks/Editor/Scripts/OnityReactiveBenchmarkRunner.cs`
+  `Packages/com.onity.framework/Benchmarks/Editor/Scripts/OnityReactiveBenchmarkRunner.cs`
 - Scenarios from `04-Performance-Targets.md` section 2.2.
 - Output files alongside DI results.
 

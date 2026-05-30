@@ -13,7 +13,7 @@ The headline numbers are gathered on:
 - Editor mode, Mono runtime (IL2CPP gates are run separately on player
   builds)
 - The single development machine that produced
-  `Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-summary.md`
+  `Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md`
 
 Numbers in this file are **relative**. A scenario that is "2x faster than
 VContainer" must remain so on the same hardware after a change. Absolute
@@ -24,7 +24,7 @@ not.
 
 ### 2.1 DI
 
-Runner: `Assets/Onity-Packages/Onity/Benchmarks/Editor/Scripts/OnityDiBenchmarkRunner.cs`
+Runner: `Packages/com.onity.framework/Benchmarks/Editor/Scripts/OnityDiBenchmarkRunner.cs`
 
 Each scenario is run for all three containers (Onity, VContainer, Zenject):
 
@@ -48,15 +48,15 @@ Each run:
 
 Results land in:
 
-- `Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-latest.json`
-- `Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-latest.md`
-- `Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-summary.md`
+- `Packages/com.onity.framework/Benchmarks/Results/di-benchmark-latest.json`
+- `Packages/com.onity.framework/Benchmarks/Results/di-benchmark-latest.md`
+- `Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md`
 - A timestamped JSON for historical comparison
 
 ### 2.2 Reactive
 
 A new runner is added in Phase 2:
-`Assets/Onity-Packages/Onity/Benchmarks/Editor/Scripts/OnityReactiveBenchmarkRunner.cs`
+`Packages/com.onity.framework/Benchmarks/Editor/Scripts/OnityReactiveBenchmarkRunner.cs`
 
 Scenarios:
 
@@ -92,7 +92,7 @@ agent rotates:
 
 - Each run records `Environment.MachineName`, Unity version, OS version.
 - A baseline file
-  `Assets/Onity-Packages/Onity/Benchmarks/Results/baseline-<machine>.json`
+  `Packages/com.onity.framework/Benchmarks/Results/baseline-<machine>.json`
   stores the reference ns/op for that machine.
 - Regression detection compares against that machine's baseline, not a
   global one.
@@ -103,11 +103,11 @@ agent rotates:
 
 | Scenario | Current Onity Baked | Current VContainer | Internal target | Status |
 |---|---:|---:|---:|---|
-| Resolve Singleton (ns/op) | 94 | 202 | <= 150 | Pass |
-| Resolve Transient (ns/op) | 775 | 1,697 | <= 1,500 | Pass |
-| Resolve Combined (ns/op) | 896 | 1,712 | <= 1,550 | Pass |
-| Resolve Complex (ns/op) | 22,787 | 57,995 | <= 35,000 | Pass |
-| Prepare and Register Complex (ns/op) | 47,243 | 135,140 | <= 15,000 | Misses internal gate, but is ~65% faster than VContainer |
+| Resolve Singleton (ns/op) | 63 | 214 | <= 150 | Pass |
+| Resolve Transient (ns/op) | 1,083 | 1,879 | <= 1,500 | Pass |
+| Resolve Combined (ns/op) | 972 | 2,079 | <= 1,550 | Pass |
+| Resolve Complex (ns/op) | 22,905 | 42,158 | <= 35,000 | Pass |
+| Prepare and Register Complex (ns/op) | 61,044 | 150,730 | <= 15,000 | Misses internal gate, but is ~60% faster than VContainer |
 | Resolve allocation per sample (B) | pending corrected harness | pending corrected harness | 0 measured correctly | Not enforceable yet |
 
 The gates ratchet:
@@ -120,16 +120,22 @@ The gates ratchet:
 
 ### 3.2 IL2CPP variant
 
-0.2.1 confirms the AOT safety path through fallback tests: if
-`Expression.Compile()` cannot compile and invoke on the runtime, Onity uses the
-reflection activation path instead of crashing.
+0.3.0 confirms the AOT safety path through fallback tests and a Windows IL2CPP
+player benchmark. The player run completed without crashing and wrote
+`di-benchmark-player-latest.*`.
 
-The remaining IL2CPP gate is a player benchmark, not an Editor benchmark:
+Latest Windows IL2CPP player timing (`2026-05-30T20:09:24Z`):
 
-- Run `OnityDiBenchmarkRunner` from an IL2CPP player or equivalent player-side
-  harness.
-- Compare Onity reflection fallback against VContainer's source-generated path.
-- Use the result to prioritize `Onity.SourceGen` / IL post-process activators.
+| Scenario | Onity Baked | VContainer | Status |
+|---|---:|---:|---|
+| Resolve Singleton (ns/op) | 17 | 86 | Pass |
+| Resolve Transient (ns/op) | 1,431 | 580 | Miss |
+| Resolve Combined (ns/op) | 1,263 | 602 | Miss |
+| Resolve Complex (ns/op) | 34,729 | 12,918 | Miss |
+| Prepare and Register Complex (ns/op) | 23,872 | 38,465 | Pass |
+
+The result moves `Onity.SourceGen` / IL post-process activators from optional to
+required before Onity can claim an IL2CPP resolve-speed lead over VContainer.
 
 ## 4. Reactive performance gates
 
@@ -148,7 +154,7 @@ qualitative until then:
 | MessageBroker.Publish, 10 subs | 0 alloc, < `event Action<T>` + dictionary lookup |
 
 Phase 2 ships when these numbers exist in
-`Assets/Onity-Packages/Onity/Benchmarks/Results/reactive-benchmark-summary.md`
+`Packages/com.onity.framework/Benchmarks/Results/reactive-benchmark-summary.md`
 and every gate is met.
 
 ### 4.2 Threading mode targets
@@ -206,7 +212,7 @@ Phase 2 extends the workflow to run the reactive benchmark runner.
 
 ## 8. References
 
-- DI runner: `Assets/Onity-Packages/Onity/Benchmarks/Editor/Scripts/OnityDiBenchmarkRunner.cs`
-- Results folder: `Assets/Onity-Packages/Onity/Benchmarks/Results/`
-- Latest summary: `Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-summary.md`
-- Engineering perf rules: `Assets/Onity-Packages/Onity/ENGINEERING.md` (section 11)
+- DI runner: `Packages/com.onity.framework/Benchmarks/Editor/Scripts/OnityDiBenchmarkRunner.cs`
+- Results folder: `Packages/com.onity.framework/Benchmarks/Results/`
+- Latest summary: `Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md`
+- Engineering perf rules: `Packages/com.onity.framework/ENGINEERING.md` (section 11)

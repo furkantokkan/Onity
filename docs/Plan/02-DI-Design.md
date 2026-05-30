@@ -408,8 +408,8 @@ Phase 1 ships when:
 ## 9. References
 
 - Current code: `Assets/Onity-Packages/Onity/Runtime/DI/Scripts/`
-- Benchmark code: `Assets/Onity-Packages/Onity/Benchmarks/Editor/Scripts/OnityDiBenchmarkRunner.cs`
-- Benchmark results: `Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-summary.md`
+- Benchmark code: `Packages/com.onity.framework/Benchmarks/Editor/Scripts/OnityDiBenchmarkRunner.cs`
+- Benchmark results: `Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md`
 - Engineering doc: `Assets/Onity-Packages/Onity/ENGINEERING.md` (sections 4-6)
 - Agent rules: root `AGENTS.md`
 - Style guide: root `codex-code-style.md`

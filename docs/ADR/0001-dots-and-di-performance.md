@@ -103,4 +103,4 @@ against VContainer's source-generated path.
 
 No runtime behavior changes are introduced by this ADR. The decision is based on
 Unity DOTS/Burst constraints and the current benchmark evidence in
-`Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-latest.json`.
+`Packages/com.onity.framework/Benchmarks/Results/di-benchmark-latest.json`.
