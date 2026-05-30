@@ -1,3 +1,9 @@
+---
+title: "From VContainer"
+parent: "Migration"
+nav_order: 2
+---
+
 # Migrating from VContainer to Onity
 
 VContainer registers with `builder.Register<TImpl>(Lifetime.Singleton).As<TInterface>()` inside a `LifetimeScope`; Onity binds with the Zenject-style fluent vocabulary `container.Bind<TInterface>().To<TImpl>().AsSingle()` directly on an `OnityContainer`. The translation is mechanical, but a few things differ in shape: Onity's lifetime enum is exactly `{ Singleton, Transient }` — there is **no `Lifetime.Scoped`**, so a per-scope instance becomes a **child-container `AsSingle`**; Onity binds an instance with `BindInstance` (which **rejects null**, unlike VContainer's `RegisterInstance`); and Onity selects the **greediest resolvable public constructor** (or a single `[Inject]` ctor). Circular dependencies are caught at **resolve time** (VContainer catches them at `Build()`), but either way an exception is thrown. Two capabilities older drafts of this guide listed as missing now ship and map cleanly from VContainer: **collection injection** (`IEnumerable<T>` / `IReadOnlyList<T>` / `T[]` / `List<T>`) and an **entry-point-style lifecycle** (`IOnityInitializable` / `IOnityTickable` / `IOnityFixedTickable` / `IOnityLateTickable`, the analogue of `IStartable`/`ITickable`, pumped by the Unity context). **Open-generic registration** (`Bind(typeof(IRepo<>)).To(typeof(Repo<>))`) also ships. The `Func<>`-factory surface and `RegisterInstance(null)` remain deliberate divergences — see the last section. Every mapping below is verified against the shipped Onity public API (`Onity.DI`, `Onity.Factory`, `Onity.Unity.Reactive`).

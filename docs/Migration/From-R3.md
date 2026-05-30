@@ -1,3 +1,9 @@
+---
+title: "From R3 / UniRx"
+parent: "Migration"
+nav_order: 3
+---
+
 # Migrating from R3 / UniRx to Onity.Reactive
 
 `Onity.Reactive` is a push-based, hot-by-default reactive layer with an R3-shaped vocabulary: `Subject<T>`, `ReactiveProperty<T>`, and operators like `Where`/`Select`/`Merge`/`CombineLatest`/`Scan`. The public stream contract is `IOnityObservable<T>` (R3's `Observable<T>`), and `Subject<T>`, `ReactiveProperty<T>`, every operator, and `broker.Observe<T>()` all speak it, so events and state share one operator surface. Three behavioral differences matter most: the throttle operator is named **`ThrottleLast`** (emit the latest value once per interval) and there is **no leading-edge `Throttle`**; there is **no `Publish`/`Share`/`RefCount`** (multicast is served directly by `Subject<T>`); and lifetime is explicit — every `Subscribe` returns an `IDisposable` you must scope with `AddTo(this)` (Unity `Component`/`Behaviour`) or `AddTo(compositeDisposable)` (plain C#), with **no `AddTo(GameObject)` overload** and no implicit ref-counting. Time operators take an optional `OnityTimeProvider` (deterministic in tests). Every mapping below is verified against the shipped Onity public API (`Onity.Reactive`, `Onity.Unity.Reactive`).

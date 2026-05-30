@@ -1,3 +1,9 @@
+---
+title: "Dependency Injection"
+parent: "Guides"
+nav_order: 1
+---
+
 # Dependency Injection
 
 Onity's DI is built around `OnityContainer` — a sealed, engine-free, parent-scoped container that implements `IResolver` and `IDisposable`. The binding vocabulary is deliberately Zenject-familiar (`Bind<T>().To<C>().AsSingle()`), so existing Unity muscle memory transfers, while the container itself has no `UnityEngine` dependency and runs in plain EditMode tests with no scene.

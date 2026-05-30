@@ -1,3 +1,9 @@
+---
+title: "From Zenject"
+parent: "Migration"
+nav_order: 1
+---
+
 # Migrating from Zenject / Extenject to Onity
 
 Onity's DI surface is intentionally Zenject-familiar: you still `Bind<TContract>().To<TConcrete>().AsSingle()`, you still mark injection points with `[Inject]`, and child containers still inherit parent bindings. The mechanical translation below is therefore mostly one-to-one on the common paths. The differences that matter are: Onity's lifetime enum is exactly `{ Singleton, Transient }` (no `Scoped`/`AsCached`/`AsTransient`-with-id distinctions), Onity uses **last-binding-wins** instead of throwing on duplicate binds, Onity selects the **greediest public constructor** (or the single `[Inject]` ctor) rather than Zenject's fewest-argument rule, and circular dependencies are detected at **resolve time** rather than build time. Three features that older drafts of this guide listed as missing now ship: **collection injection** (`IEnumerable<T>`/`IReadOnlyList<T>`/`T[]`/`List<T>` of every binding of `T`), **open-generic binds** (`Bind(typeof(IRepo<>)).To(typeof(Repo<>))`), and an **automatic lifecycle** (`IOnityInitializable`/`IOnityTickable`/`IOnityFixedTickable`/`IOnityLateTickable`) where binding a type is enough to be initialized and ticked — no manual entry-point registration. The features that remain deliberate non-goals (conditions, ids, `Unbind`, memory pools, signals, sub-container facades, `Instantiate(args)`) are listed in the last section. Every mapping below is verified against the shipped Onity public API (`Onity.DI`, `Onity.Factory`, `Onity.Unity.Reactive`); do not assume any Zenject API exists on Onity unless it appears here.

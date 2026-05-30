@@ -1,0 +1,20 @@
+title: Onity
+description: "One Unity package for dependency injection, reactive programming, and events."
+
+remote_theme: just-the-docs/just-the-docs@v0.10.0
+plugins:
+  - jekyll-remote-theme
+
+search_enabled: true
+color_scheme: dark
+
+heading_anchors: true
+
+aux_links:
+  "View on GitHub":
+    - "https://github.com/furkantokkan/Onity"
+aux_links_new_tab: true
+
+exclude:
+  - "Plan/"
+  - "SUMMARY.md"

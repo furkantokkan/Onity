@@ -1,3 +1,9 @@
+---
+title: "Reactive Operators"
+parent: "Reference"
+nav_order: 2
+---
+
 # Reactive Operator Reference
 
 A complete catalog of every reactive operator shipped by Onity. The everyday contract is `IOnityObservable<T>`: `Subject<T>`, `ReactiveProperty<T>`, every operator below, and the messaging bridge `broker.Observe<T>()` all return the same interface, so one operator chain composes over state, raw streams, and events alike.

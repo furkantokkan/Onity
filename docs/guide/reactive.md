@@ -1,3 +1,9 @@
+---
+title: "Reactive"
+parent: "Guides"
+nav_order: 2
+---
+
 # Reactive
 
 Onity's reactive layer is push-based and hot by default. The everyday contract is `IOnityObservable<T>`: `Subject<T>`, `ReactiveProperty<T>`, every operator, and the messaging bridge `broker.Observe<T>()` all return the **same** interface, so one operator chain works over state, raw streams, and events alike. The core (`Onity.Reactive`) is engine-free; the Unity bridges (frame loops, timers, component lifetime) live in `Onity.Unity.Reactive`.

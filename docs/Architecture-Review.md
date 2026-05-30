@@ -1,3 +1,8 @@
+---
+title: "Architecture"
+nav_order: 8
+---
+
 # Architecture Review
 
 Clean-OOP / SOLID architecture review of the Onity framework, conducted against

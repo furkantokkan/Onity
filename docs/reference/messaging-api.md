@@ -1,3 +1,9 @@
+---
+title: "Messaging API"
+parent: "Reference"
+nav_order: 3
+---
+
 # Messaging API Reference
 
 A complete catalog of Onity's typed pub/sub surface. The core (`Onity.Messaging`) is engine-free; the facade and reactive/DI bridges live in `Onity.Unity.Messaging`. A `MessageChannel<T>` uses the same `SubscriptionEntry[]` design as `Subject<T>`: steady-state `Publish` is designed to avoid per-call managed allocation, unsubscribing from inside a handler is safe (swap-back removal deferred until the publish pass ends), and `Publish` / `Subscribe` after `Dispose()` throw `ObjectDisposedException`.

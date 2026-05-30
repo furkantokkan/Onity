@@ -1,3 +1,8 @@
+---
+title: "AI Usage Guide"
+nav_order: 6
+---
+
 # Onity AI Usage Guide
 
 Machine-readable usage guide for writing CORRECT Onity code across the three pillars:

@@ -1,3 +1,8 @@
+---
+title: "Getting Started"
+nav_order: 1
+---
+
 # Getting Started with Onity
 
 Welcome. This is the hands-on walkthrough: by the end you will have a scene that

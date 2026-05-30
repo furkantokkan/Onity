@@ -1,3 +1,8 @@
+---
+title: "Comparison: VContainer & Zenject"
+nav_order: 7
+---
+
 # Onity vs VContainer / Zenject
 
 A per-axis comparison of three Unity dependency-injection containers — **Onity**,

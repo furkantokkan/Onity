@@ -1,3 +1,9 @@
+---
+title: "DI API"
+parent: "Reference"
+nav_order: 1
+---
+
 # DI API Reference
 
 A complete catalog of the `OnityContainer` binding and resolve surface. `OnityContainer` is a sealed, engine-free (`Onity.DI`, no `UnityEngine`), parent-scoped container that implements `IResolver` and `IDisposable`. You can use it directly in EditMode tests with no Unity scene:

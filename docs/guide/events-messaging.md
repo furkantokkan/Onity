@@ -1,3 +1,9 @@
+---
+title: "Events & Messaging"
+parent: "Guides"
+nav_order: 3
+---
+
 # Events & Messaging
 
 Onity's messaging is typed pub/sub. `MessageChannel<T>` uses the same array-backed, re-entrancy-safe design as `Subject<T>`: allocation-free steady-state `Publish`, safe to unsubscribe from inside a handler, and it throws after `Dispose`. The core (`Onity.Messaging`) is engine-free; `OnityEventHub` and the reactive bridge live in `Onity.Unity.Messaging`.

@@ -73,7 +73,9 @@ The DI fast path compiles constructor activators and member setters with `Expres
 
 ### Built for AI-assisted development
 
-- **AI-indexed docs.** A source-verified, [machine-readable usage guide](docs/Onity-AI-Usage-Guide.md) plus a [GitBook reference](docs/SUMMARY.md): one place an AI agent reads to emit correct, compiling code across DI, Reactive, and Events.
+Onity is deliberately structured — and its documentation is **indexed for AI** — so a coding assistant can work with it comfortably and produce correct, compiling code with minimal guesswork:
+
+- **AI-indexed docs.** A source-verified, [machine-readable usage guide](docs/Onity-AI-Usage-Guide.md) plus a [browsable docs site](https://furkantokkan.github.io/Onity/): one place an AI agent reads to emit correct, compiling code across DI, Reactive, and Events.
 - **One idiom, one disposal model.** Far less for an agent — or a new teammate — to guess wrong than stitching four libraries with four mental models together.
 - **A Roslyn analyzer (`ONITY001`–`ONITY006`)** turns the most common mistakes into inline compiler diagnostics, catching a slip at compile time rather than at runtime.
 - **XML docs on every public API**, so editor/agent IntelliSense surfaces the right call and signature.

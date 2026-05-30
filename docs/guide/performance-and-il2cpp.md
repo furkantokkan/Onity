@@ -1,3 +1,9 @@
+---
+title: "Performance & IL2CPP"
+parent: "Guides"
+nav_order: 5
+---
+
 # Performance & IL2CPP
 
 Onity is built so that one package runs on both JIT runtimes (the Unity Editor and Mono players) and fully ahead-of-time runtimes (IL2CPP, console AOT) without a code change. This page explains how the DI fast path works, how it degrades on AOT, and — honestly — what the allocation and timing claims do and do not establish.

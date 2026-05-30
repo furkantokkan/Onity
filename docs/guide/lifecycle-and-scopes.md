@@ -1,3 +1,9 @@
+---
+title: "Lifecycle & Scopes"
+parent: "Guides"
+nav_order: 4
+---
+
 # Lifecycle & Scopes
 
 Onity has two lifetimes (`Singleton`, `Transient`) and models everything VContainer expresses as `Lifetime.Scoped` with **child containers**. The automatic startup and per-frame lifecycle (the Zenject-style entry points) is opt-in by interface: bind a type that implements a lifecycle interface and the container wires it up — no separate registration call.
