@@ -54,6 +54,11 @@ namespace Onity.DI.Internal
 
         private static ActivatorDelegate CompileCore(ConstructorInfo constructor)
         {
+            if (GeneratedActivators.TryGet(constructor, out ActivatorDelegate generatedActivator))
+            {
+                return generatedActivator;
+            }
+
             if (RuntimeCompileSupport.IsExpressionCompileSupported == false)
             {
                 return BuildReflectionActivator(constructor);

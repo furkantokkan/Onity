@@ -46,11 +46,11 @@ public sealed class PlayerService
 }
 ```
 
-Constructor selection is a simple greediest-resolvable heuristic for the
-scaffold: the most accessible instance constructor wins, breaking ties by the
-largest parameter count. Only `public`/`internal` constructors are considered,
-because the generated activator lives in a separate assembly and can only call
-constructors it can see.
+Constructor selection mirrors the runtime rule for constructors that generated
+source can call: a single accessible `[Inject]` constructor wins; otherwise the
+public/internal constructor with the best score wins. Private/protected
+constructors stay on the normal runtime fallback path because generated user
+source cannot call them safely.
 
 ## What it emits
 
@@ -63,26 +63,21 @@ in namespace `Onity.SourceGen.Generated` with:
   registers each activator by calling, by fully-qualified name:
 
   ```csharp
-  Onity.DI.Internal.GeneratedActivators.Register(typeof(T), Activate_N);
+  Onity.DI.Internal.GeneratedActivators.Register(
+      typeof(T),
+      new[] { typeof(TArg0), typeof(TArg1) },
+      Activate_N);
   ```
 
 The module initializer runs once when the generated assembly is loaded, so
 registration happens automatically with no bootstrap call.
 
-## Next step (NOT done here)
+## Runtime hook
 
-This is a **scaffold/foundation**. The generated code references the runtime hook
-`Onity.DI.Internal.GeneratedActivators.Register(System.Type, System.Func<object[], object>)`
-by fully-qualified name, but **that hook does not exist yet** and this project
-**does not** create any file under `Assets/` or `Onity.DI`. Wiring it is the
-explicit follow-up:
-
-1. Add `Onity.DI.Internal.GeneratedActivators` to the runtime package — a static
-   registry exposing `Register(System.Type, System.Func<object[], object>)` and a
-   lookup the resolve plan can read.
-2. Make `ActivatorCompiler` **consult `GeneratedActivators` BEFORE** the
-   `Expression.Compile` / reflection path, so a baked activator is preferred when
-   one was generated for the type.
+`Onity.DI.Internal.GeneratedActivators` is the runtime registry used by the
+generated module initializer. `ActivatorCompiler` checks this registry before the
+`Expression.Compile` / reflection path, so a generated activator is preferred
+when it matches the constructor signature selected by the container plan.
 
 Other follow-up work beyond this scaffold:
 
@@ -119,9 +114,8 @@ dependencies — Unity already provides the Roslyn assemblies its compiler runs
 against. See `tools/Onity.Analyzers/README.md` for the full step-by-step import
 procedure; it is identical for this DLL.
 
-> Once the runtime `GeneratedActivators` hook exists (see **Next step**), the
-> baked activators register automatically via the module initializer when the
-> compiled assembly loads — no Unity-side bootstrap call is required.
+Generated activators register automatically via the module initializer when the
+compiled assembly loads; no Unity-side bootstrap call is required.
 
 ## Layout
 

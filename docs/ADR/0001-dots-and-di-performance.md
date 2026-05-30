@@ -15,17 +15,20 @@ Accepted.
 
 ## Context
 
-Onity's DI benchmark currently has two measured managed paths:
+Onity's DI benchmark currently has two measured managed resolve modes:
 
 - `Onity (Baked)`: dense-id lookup plus the same managed providers used by the
-  reflection path.
+  standard provider path.
 - `Onity (Reflection)`: managed dictionary/provider path with cached reflection
   metadata and AOT-safe activation.
 
 The latest Editor/Mono benchmark shows `Onity (Baked)` ahead of VContainer in
 the measured resolve and prepare/register scenarios, including
-`Prepare & Register (Complex)`. The remaining strategic question is whether DOTS,
-Jobs, or Burst should be used to make the DI system faster.
+`Prepare & Register (Complex)`. The latest Windows IL2CPP player benchmark uses
+generated AOT activators for the benchmark graph and also beats VContainer in the
+measured resolve and prepare/register scenarios. The remaining strategic
+question is whether DOTS, Jobs, or Burst should be used to make the DI system
+faster.
 
 Unity DOTS/Burst is designed for blittable data-oriented workloads. Onity DI
 constructs and injects managed objects, stores `Type` and reflection metadata,
@@ -40,10 +43,10 @@ Keep managed DI as a pure C# module with the current baked graph and cached
 metadata strategy. Use DOTS only at explicit bridge boundaries where data is
 already blittable or can be copied into blittable event buffers.
 
-For IL2CPP/AOT speed, prioritize source-generated or IL-postprocessed activators
-over DOTS. A generated activator path can emit direct `new T(...)` and member
-assignment calls for known bindings, preserving the existing DI API while
-removing runtime expression compilation and much of the reflection fallback cost.
+For IL2CPP/AOT speed, keep prioritizing source-generated or IL-postprocessed
+activators over DOTS. The generated activator path emits direct `new T(...)`
+calls for known bindings, preserving the existing DI API while removing runtime
+expression compilation and most constructor reflection fallback cost.
 
 ## Alternatives Considered
 
@@ -78,12 +81,14 @@ blittable data and publish results back on the main thread.
 
 ### Generate AOT-safe DI code
 
-Accepted as the preferred future optimization.
+Accepted as the preferred optimization path.
 
 Source-generated activators are aligned with the current architecture: the user
 keeps the same DI API, the container remains managed and testable, IL2CPP gets a
 fast path without `Expression.Compile`, and the generated code can be measured
-against VContainer's source-generated path.
+against VContainer's source-generated path. The initial generated-activator path
+is now implemented and measured for the benchmark graph; future work should
+broaden discovery, generated member setters, and device coverage.
 
 ## Consequences
 
@@ -91,7 +96,7 @@ against VContainer's source-generated path.
 - `Onity.DOTS` stays a bridge module, not a dependency of DI.
 - No managed container resolve is allowed inside Burst jobs.
 - Performance work for DI should focus on:
-  - source-generated activators for IL2CPP/AOT;
+  - broader generated activator/member coverage for IL2CPP/AOT;
   - reducing managed provider indirection where measurement proves it matters;
   - keeping the baked graph lean;
   - preserving parity tests between baked and reflection paths.

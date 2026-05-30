@@ -18,7 +18,7 @@ IClock clock = container.Resolve<IClock>();
 
 A lifetime call (`AsSingle()` / `AsTransient()`) is **required** to actually register a binding; `Bind<T>()` / `To<T>()` alone register nothing. The lifetime enum is exactly `{ Singleton, Transient }` — there is no `Scoped` keyword; a per-scope instance is a child-container `AsSingle` (see [Lifecycle & Scopes](../guide/lifecycle-and-scopes.html)).
 
-The resolve machinery is designed to avoid per-call managed allocation (compiled constructor activators on JIT runtimes, pooled argument arrays, cached injection plans, an optional dense-id baked graph). A transient resolve still allocates the instance it returns. On IL2CPP/AOT the container falls back to reflection-based activation and constructs correctly either way — read `OnityContainer.IsCompiledActivationSupported` to see which path is live.
+The resolve machinery is designed to avoid per-call managed allocation (generated activators for marked types, compiled constructor activators on JIT runtimes, pooled argument arrays, cached injection plans, an optional dense-id baked graph). A transient resolve still allocates the instance it returns. On IL2CPP/AOT the container uses generated activators when available and falls back to reflection-based activation otherwise; it constructs correctly either way. `OnityContainer.IsCompiledActivationSupported` reports only whether runtime `Expression.Compile` is live, not whether a generated activator exists for a specific type.
 
 > Onity has no third-party runtime dependencies; the DI core does not use `System.Linq`.
 
@@ -153,7 +153,7 @@ For editor tooling and debugging. None of these are needed for normal binding/re
 | API | Signature | Notes |
 | --- | --- | --- |
 | `OnityContainer.DiagnosticsCollectionEnabled` | `static bool { get; set; }` | Enable per-resolve timing/count collection. |
-| `OnityContainer.IsCompiledActivationSupported` | `static bool { get; }` | True when the compiled `Expression.Compile` activation path is live (JIT: Editor and Mono players); false on AOT/IL2CPP (reflection fallback). |
+| `OnityContainer.IsCompiledActivationSupported` | `static bool { get; }` | True when the runtime `Expression.Compile` activation path is live (usually Editor and Mono players). False on AOT/IL2CPP does not prevent generated activators from being used; it only means ungenerated constructors fall back to reflection. |
 | `GetDiagnostics` | `GetDiagnostics() -> OnityContainerDiagnostics` | Snapshot of binding/plan/owned-provider counts and whether a parent exists. |
 | `GetBindingDiagnostics` | `GetBindingDiagnostics(List<OnityBindingDiagnostics> results) -> void` | Fill a caller-supplied list with per-binding rows (impl type, contracts, lifetime, resolve count, timings). |
 | `PushBindingSource` | `PushBindingSource(string sourceName) -> IDisposable` | Label subsequent bindings (shown by inspector tooling) for the current thread; dispose to pop. |

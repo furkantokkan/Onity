@@ -5,6 +5,34 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-05-30
+
+### Added
+
+- Added an AOT-safe generated constructor activator registry for `Onity.DI`.
+- Added `[OnityGenerateActivator]` and shipped `Onity.SourceGen.dll` as a
+  Roslyn analyzer asset so marked DI types can register direct `new T(...)`
+  activators before construction plans are built.
+- Added IL2CPP player benchmark bootstrap support and configurable player
+  benchmark iterations, samples, and warmup arguments.
+- Added generated-activator EditMode coverage.
+
+### Changed
+
+- `ActivatorCompiler` now prefers registered generated activators before the
+  runtime `Expression.Compile` / reflection paths.
+- Updated README, comparison docs, IL2CPP guide, and performance plans with the
+  latest Windows IL2CPP player benchmark results.
+- Bumped package version and release pin examples to `0.3.2`.
+
+### Tested
+
+- `dotnet build tools/Onity.SourceGen/Onity.SourceGen.csproj -c Release`
+- `dotnet build onity-core-ci.csproj -c Release`
+- Windows IL2CPP player DI benchmark with 19 generated activators registered:
+  Onity baked was faster than VContainer and Zenject on all five measured
+  timing scenarios.
+
 ## [0.3.1] - 2026-05-31
 
 ### Changed
@@ -148,6 +176,7 @@ dependency (used by the `Onity.Unity` layer).
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.2]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.2
 [0.3.1]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.1
 [0.3.0]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.0
 [0.2.1]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.2.1

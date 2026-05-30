@@ -2,9 +2,12 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using Onity.Benchmarks;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Onity.Editor.Benchmarks
 {
@@ -18,6 +21,11 @@ namespace Onity.Editor.Benchmarks
         private const string k_buildPathArgument = "-onityBenchmarkBuildPath";
         private const string k_outputArgument = "-onityBenchmarkOutput";
         private const string k_playerRunArgument = "-onityRunDiBenchmark";
+        private const string k_iterationsArgument = "-onityBenchmarkIterations";
+        private const string k_samplesArgument = "-onityBenchmarkSamples";
+        private const string k_warmupArgument = "-onityBenchmarkWarmup";
+        private const string k_benchmarkPlayerDefine = "ONITY_DI_BENCHMARK_PLAYER";
+        private const string k_benchmarkScenePath = "Assets/OnityBenchmarkTemp/OnityDiBenchmarkPlayer.unity";
 
         [MenuItem("Onity/Benchmarks/Build and Run DI Benchmarks (IL2CPP Player)")]
         private static void BuildAndRunFromMenu()
@@ -38,6 +46,7 @@ namespace Onity.Editor.Benchmarks
             BuildTargetGroup targetGroup = BuildTargetGroup.Standalone;
             BuildTarget target = BuildTarget.StandaloneWindows64;
             ScriptingImplementation originalBackend = PlayerSettings.GetScriptingBackend(targetGroup);
+            string originalDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
 
             string buildPath = GetArgumentValue(k_buildPathArgument);
             string latestJson = GetArgumentValue(k_outputArgument);
@@ -67,8 +76,12 @@ namespace Onity.Editor.Benchmarks
                 }
 
                 PlayerSettings.SetScriptingBackend(targetGroup, ScriptingImplementation.IL2CPP);
+                PlayerSettings.SetScriptingDefineSymbolsForGroup(
+                    targetGroup,
+                    AddDefine(originalDefines, k_benchmarkPlayerDefine));
 
-                string[] scenes = GetEnabledScenes();
+                string benchmarkScene = CreateBenchmarkScene();
+                string[] scenes = { benchmarkScene };
 
                 BuildPlayerOptions options = new BuildPlayerOptions
                 {
@@ -87,18 +100,20 @@ namespace Onity.Editor.Benchmarks
                         $"IL2CPP player benchmark build failed: {report.summary.result}. See the Unity editor log for details.");
                 }
 
-                RunPlayer(buildPath, latestJson);
+                RunPlayer(buildPath, latestJson, BuildBenchmarkPassthroughArguments());
                 AssetDatabase.Refresh();
 
                 UnityEngine.Debug.Log($"Onity DI IL2CPP player benchmark completed. Latest report: {latestJson}");
             }
             finally
             {
+                DeleteBenchmarkScene();
                 PlayerSettings.SetScriptingBackend(targetGroup, originalBackend);
+                PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, originalDefines);
             }
         }
 
-        private static void RunPlayer(string buildPath, string latestJson)
+        private static void RunPlayer(string buildPath, string latestJson, string passthroughArguments)
         {
             string logPath = Path.ChangeExtension(latestJson, ".player.log");
             StringBuilder output = new StringBuilder(4096);
@@ -106,7 +121,7 @@ namespace Onity.Editor.Benchmarks
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = buildPath,
-                Arguments = $"-batchmode -nographics {k_playerRunArgument} {k_outputArgument} \"{latestJson}\"",
+                Arguments = $"-batchmode -nographics -logFile \"{logPath}\" {k_playerRunArgument} {k_outputArgument} \"{latestJson}\" {passthroughArguments}",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -133,11 +148,11 @@ namespace Onity.Editor.Benchmarks
                     // Process already exited between the timeout and Kill.
                 }
 
-                File.WriteAllText(logPath, output.ToString(), Encoding.UTF8);
+                TryWriteProcessOutput(logPath, output);
                 throw new TimeoutException($"Player benchmark did not exit within 15 minutes. Log: {logPath}");
             }
 
-            File.WriteAllText(logPath, output.ToString(), Encoding.UTF8);
+            TryWriteProcessOutput(logPath, output);
 
             if (process.ExitCode != 0)
             {
@@ -184,6 +199,30 @@ namespace Onity.Editor.Benchmarks
             return scenes;
         }
 
+        private static string CreateBenchmarkScene()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(k_benchmarkScenePath));
+
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+            GameObject runner = new GameObject("Onity DI Benchmark Player");
+            runner.AddComponent<OnityDiBenchmarkPlayerBootstrap>();
+            EditorSceneManager.SaveScene(scene, k_benchmarkScenePath);
+            AssetDatabase.Refresh();
+            return k_benchmarkScenePath;
+        }
+
+        private static void DeleteBenchmarkScene()
+        {
+            Scene scene = SceneManager.GetSceneByPath(k_benchmarkScenePath);
+
+            if (scene.IsValid())
+            {
+                EditorSceneManager.CloseScene(scene, true);
+            }
+
+            AssetDatabase.DeleteAsset("Assets/OnityBenchmarkTemp");
+        }
+
         private static string GetArgumentValue(string argumentName)
         {
             string[] args = Environment.GetCommandLineArgs();
@@ -197,6 +236,65 @@ namespace Onity.Editor.Benchmarks
             }
 
             return null;
+        }
+
+        private static string BuildBenchmarkPassthroughArguments()
+        {
+            StringBuilder builder = new StringBuilder(128);
+            AppendPassthroughArgument(builder, k_iterationsArgument);
+            AppendPassthroughArgument(builder, k_samplesArgument);
+            AppendPassthroughArgument(builder, k_warmupArgument);
+            return builder.ToString();
+        }
+
+        private static void AppendPassthroughArgument(StringBuilder builder, string argumentName)
+        {
+            string value = GetArgumentValue(argumentName);
+
+            if (string.IsNullOrEmpty(value))
+            {
+                return;
+            }
+
+            builder.Append(argumentName).Append(" \"").Append(value.Replace("\"", "\\\"")).Append("\" ");
+        }
+
+        private static string AddDefine(string defines, string define)
+        {
+            if (string.IsNullOrEmpty(defines))
+            {
+                return define;
+            }
+
+            string[] parts = defines.Split(';');
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (string.Equals(parts[i], define, StringComparison.Ordinal))
+                {
+                    return defines;
+                }
+            }
+
+            return defines + ";" + define;
+        }
+
+        private static void TryWriteProcessOutput(string logPath, StringBuilder output)
+        {
+            if (output.Length == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                File.AppendAllText(logPath, output.ToString(), Encoding.UTF8);
+            }
+            catch (IOException)
+            {
+                // The player owns -logFile. If it is still flushing the file, keep
+                // the player log and skip mirrored stdout/stderr.
+            }
         }
 
         private static void AppendLine(StringBuilder builder, string value)

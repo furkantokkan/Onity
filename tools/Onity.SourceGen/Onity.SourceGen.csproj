@@ -50,13 +50,15 @@
 
   <ItemGroup>
     <!--
-      Microsoft.CodeAnalysis.CSharp 4.x: the C# syntax + semantic APIs the
-      generator is built against, including IIncrementalGenerator.
+      Microsoft.CodeAnalysis.CSharp 4.3.x: the C# syntax + semantic APIs the
+      generator is built against, including IIncrementalGenerator. Unity 2022.3
+      ships a 4.3-era compiler, so avoid building the generator against newer
+      Roslyn APIs that Unity cannot load.
       Microsoft.CodeAnalysis.Analyzers supplies the generator-authoring analyzer
       rules enforced by EnforceExtendedAnalyzerRules. PrivateAssets=all keeps
       these compiler packages out of any consumer graph.
     -->
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.1" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
   </ItemGroup>
 

@@ -22,7 +22,7 @@ the performance gates in `04-Performance-Targets.md`, the architecture rules in
 
 | Pillar | Competitor target | Status | One-line verdict |
 |---|---|---|---|
-| DI | Zenject, VContainer | **Editor lead; IL2CPP split** | Faster than both on all 5 Editor/Mono timing scenarios with baked resolve; Windows IL2CPP player is faster than VContainer on singleton and prepare/register, but VContainer leads transient/combined/complex resolve until Onity gets source-generated/AOT-specialized activation |
+| DI | Zenject, VContainer | **Editor + IL2CPP lead in current benchmarks** | Faster than both on all 5 Editor/Mono timing scenarios with baked resolve; Windows IL2CPP player with generated AOT activators is also faster than VContainer and Zenject on all 5 measured timing scenarios |
 | Reactive | R3, UniRx | **Strong core, still maturing** | Subject/ReactiveProperty are re-entrancy-correct and allocation-aware; core combinators, error isolation, and Unity timing bridges are present, with broader operator/perf proof still planned |
 | Events | MessagePipe | **On-philosophy, smaller surface** | Same algebra as reactive, DI-native auto-bind, keyed channels, async channels, and broker examples; no published MessagePipe publish microbenchmark yet |
 | Cross-cutting | (all three combined) | **Unified DX now documented** | DI is the spine; broker + hub auto-bound in every scope; events bridge into reactive operators; AI usage guide and analyzer scaffold exist, with compile-time guidance still expanding |
@@ -44,14 +44,16 @@ remain the current published Editor/Mono comparison. Onity baked resolve beats
 | Prepare & Register Complex | 61,044 | 150,730 | 215,537 | **+60%** |
 
 The Editor/Mono "beats VContainer everywhere" claim is true **including build**,
-not just resolve. The Windows IL2CPP player run is split: Onity wins singleton
-resolve and prepare/register, while VContainer wins transient, combined, and
-complex resolve. The speed comes from a process-wide compiled-activator cache
-(`Expression.Compile` once per `ConstructorInfo`), compiled member setters, a
-`[ThreadStatic]` lock-free `ArgumentArrayPool`, per-plan constructor-dependency
-caches, and a baked provider-slot map - all without an explicit
-`builder.Build()` ceremony before resolve and without engine coupling
-(`Onity.DI.asmdef` is `noEngineReferences: true`).
+not just resolve. The Windows IL2CPP player run now uses generated AOT activators
+for the benchmark graph and also beats the local VContainer baseline across
+singleton, transient, combined, complex, and prepare/register. On Mono/JIT, the
+speed comes from a process-wide compiled-activator cache (`Expression.Compile`
+once per `ConstructorInfo`), compiled member setters, a `[ThreadStatic]`
+lock-free `ArgumentArrayPool`, per-plan constructor-dependency caches, and a
+baked provider-slot map. On IL2CPP, generated direct `new T(...)` activators
+avoid `ConstructorInfo.Invoke` for hot types. Both paths avoid an explicit
+`builder.Build()` ceremony before resolve and keep `Onity.DI.asmdef`
+`noEngineReferences: true`.
 
 ### 1.3 The plan to also lead Reactive and Events
 
@@ -187,9 +189,10 @@ DI already meets its competitive goal. The gates in
 Honest note: Onity wins every Editor/Mono timing head-to-head, but the internal
 `Prepare & Register Complex` gate is still not met and the allocation table
 needs a corrected harness. The Windows IL2CPP player benchmark now proves the
-benchmark graph runs without crashing, but it also shows VContainer ahead on
-transient, combined, and complex resolve. The next meaningful step is
-IL2CPP-safe source-generated or post-processed activators.
+benchmark graph runs without crashing, registers generated AOT activators, and
+beats the measured VContainer baseline on singleton, transient, combined,
+complex, and prepare/register. The next meaningful step is broader
+generated-activator coverage plus Android/WebGL/device runs.
 
 ### 3.2 Reactive - strong primitives, prove the rest
 
@@ -443,13 +446,14 @@ fix.
 | Keep the provider-slot baked graph and parity suite green while adding regression tests around build/resolve timing thresholds | M | Adopt |
 | Correct the allocation harness and publish gross managed allocation deltas for singleton, transient, and complex resolves | M | Adopt |
 | Reduce baked `Prepare & Register Complex` under 15,000 ns with source-generated or IL post-processed activators | M | Adopt |
-| Keep Windows IL2CPP benchmark coverage green, add Android/WebGL coverage, and add source-generated or IL-postprocessed activators for IL2CPP resolve speed | L | Adopt (platform hardening) |
+| Keep Windows IL2CPP benchmark coverage green, add Android/WebGL coverage, and broaden source-generated or IL-postprocessed activator coverage for IL2CPP resolve speed | L | Adopt (platform hardening) |
 | Replace per-subscribe closure+`DisposableAction` in `Subject<T>`/`ReactiveProperty` with `struct Subscription { owner, id } : IDisposable` | M | Adopt |
 | Pool async-operator state (`Queue<T>`/CTS) in `SelectAwait/WhereAwait/Debounce/ThrottleLast`; default Debounce/ThrottleLast to a Unity time provider in the Unity bridge | M | Adopt |
 
 **Exit gate:** baked resolve remains parity-green; the corrected allocation
-harness is published; IL2CPP benchmark runs without throwing and source-generated
-activators close the transient/combined/complex resolve gap; `Prepare & Register Complex` is either
+harness is published; IL2CPP benchmark runs without throwing and generated
+activators stay ahead of the local VContainer baseline across singleton,
+transient, combined, and complex resolve; `Prepare & Register Complex` is either
 below the 15,000 ns internal gate or the remaining build-time gap is explicitly
 scoped into the source-generation milestone; subscribe-time GC drops measurably
 on a spawn/despawn benchmark.

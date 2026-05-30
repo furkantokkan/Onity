@@ -120,22 +120,25 @@ The gates ratchet:
 
 ### 3.2 IL2CPP variant
 
-0.3.0 confirms the AOT safety path through fallback tests and a Windows IL2CPP
-player benchmark. The player run completed without crashing and wrote
-`di-benchmark-player-latest.*`.
+0.3.2 confirms the AOT safety path through fallback tests and a Windows IL2CPP
+player benchmark. The player run completed without crashing, registered the
+benchmark graph's generated activators, and wrote `di-benchmark-player-latest.*`.
 
-Latest Windows IL2CPP player timing (`2026-05-30T20:09:24Z`):
+Latest Windows IL2CPP player timing (`2026-05-30T23:02:24Z`, 128 warmup /
+3 samples / 1000 iterations):
 
 | Scenario | Onity Baked | VContainer | Status |
 |---|---:|---:|---|
-| Resolve Singleton (ns/op) | 17 | 86 | Pass |
-| Resolve Transient (ns/op) | 1,431 | 580 | Miss |
-| Resolve Combined (ns/op) | 1,263 | 602 | Miss |
-| Resolve Complex (ns/op) | 34,729 | 12,918 | Miss |
-| Prepare and Register Complex (ns/op) | 23,872 | 38,465 | Pass |
+| Resolve Singleton (ns/op) | 18 | 88 | Pass |
+| Resolve Transient (ns/op) | 179 | 507 | Pass |
+| Resolve Combined (ns/op) | 178 | 630 | Pass |
+| Resolve Complex (ns/op) | 5,115 | 12,092 | Pass |
+| Prepare and Register Complex (ns/op) | 35,345 | 46,053 | Pass |
 
-The result moves `Onity.SourceGen` / IL post-process activators from optional to
-required before Onity can claim an IL2CPP resolve-speed lead over VContainer.
+The result closes the measured Windows IL2CPP resolve-speed gap against
+VContainer for this benchmark graph. Remaining IL2CPP work is target-device
+coverage, broader generated-activator coverage, and a corrected gross-allocation
+harness.
 
 ## 4. Reactive performance gates
 

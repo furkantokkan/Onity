@@ -5,7 +5,7 @@
 [![Onity CI](https://github.com/furkantokkan/Onity/actions/workflows/onity-ci.yml/badge.svg)](.github/workflows/onity-ci.yml)
 ![Unity 2022.3+](https://img.shields.io/badge/Unity-2022.3%2B-black?logo=unity)
 ![EditMode tests green](https://img.shields.io/badge/EditMode%20tests-green-brightgreen)
-![IL2CPP fallback covered](https://img.shields.io/badge/IL2CPP-fallback%20covered-blue)
+![IL2CPP AOT activators](https://img.shields.io/badge/IL2CPP-AOT%20activators-blue)
 ![DOTS / ECS bridge](https://img.shields.io/badge/DOTS%2FECS-Burst%20event%20bridge-orange)
 ![AI-indexed docs](https://img.shields.io/badge/docs-AI--indexed-blueviolet)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
@@ -27,7 +27,7 @@ Onity replaces all of that with **one package and one mental model**:
 
 The runtime core (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`) is **engine-free** — no `UnityEngine` dependency — so domain logic is testable in plain EditMode with no scene. The hot-path machinery (resolve via compiled activators, pooled argument arrays, and cached construction plans; publish, `OnNext`, `EveryUpdate`, subscription steady state) is **designed to avoid per-call managed allocation** — though a transient resolve still allocates the instance it returns, and the published allocation figures were unreliable and are being re-measured (see [Benchmarks](#benchmarks)). The core uses no `System.Linq`; **Onity has no third-party runtime dependencies**. The Zenject-familiar `Bind<T>().To<C>().AsSingle()` vocabulary, fluent discoverable builders, a verified [machine-readable usage guide](docs/Onity-AI-Usage-Guide.md), and a [Roslyn analyzer pack](tools/Onity.Analyzers) (`ONITY001`–`ONITY006`) make it **AI-friendly** by design: an agent reading one guide writes correct, compiling code across all three pillars, and the analyzer turns common misuse into inline diagnostics.
 
-The DI fast path compiles constructor activators and member setters with `Expression.Compile` when the runtime probe confirms that path is usable, and **falls back to reflection when it is not** — so the same container runs across Editor, Mono player, and IL2CPP player builds. IL2CPP correctness is covered, and IL2CPP timing is now measured separately because it does not match Editor/Mono ordering.
+The DI fast path uses source-generated constructor activators when available, compiles constructor activators and member setters with `Expression.Compile` on JIT runtimes, and **falls back to reflection when neither generated nor compiled activation is available** — so the same container runs across Editor, Mono player, and IL2CPP player builds. IL2CPP correctness and timing are covered separately because AOT backends do not behave like Editor/Mono.
 
 ---
 
@@ -46,7 +46,7 @@ The DI fast path compiles constructor activators and member setters with `Expres
 - Child containers as Onity's "scoped" lifetime — a child bind shadows the parent only inside the child.
 - `RegisterBuildCallback` / `RegisterBuildCallbackAsync`, then `Build()` / `await BuildAsync(ct)` for sync and async startup.
 - Engine-free and testable without a scene: `using OnityContainer c = new OnityContainer();`.
-- **IL2CPP-safe activation**: a compiled `Expression.Compile` fast path when the runtime supports it, with a reflection fallback detected by a one-time probe. Correctness is covered; IL2CPP speed is measured separately from Editor/Mono.
+- **IL2CPP-safe activation**: source-generated constructor activators for AOT speed, a compiled `Expression.Compile` fast path when the runtime supports it, and a reflection fallback detected by a one-time probe.
 - Actionable, fix-oriented errors: `OnityResolveException`, `OnityBindingException`; opt-in binding-source attribution and diagnostics.
 - A [Roslyn analyzer pack](tools/Onity.Analyzers) (`ONITY001`–`ONITY006`) catches resolve-in-`Update`, register-after-`Build`, dropped subscriptions, multiple `[Inject]` constructors, invalid `[Inject]` members, and manual `new` on a container-managed type.
 
@@ -94,11 +94,11 @@ Onity is deliberately structured — and its documentation is **indexed for AI**
 | Events → reactive stream | hand-write a `MessagePipe → R3` adapter | `broker.Observe<T>()` returns `IOnityObservable<T>` |
 | Observable type | R3 `Observable<T>`; events need bridging | one `IOnityObservable<T>` for subjects, properties, and events |
 | Disposal | 3+ different disposal idioms | one `IDisposable` + `AddTo(...)` everywhere |
-| DI resolve / build speed | baseline | faster than VContainer and Zenject on the measured paths below (Editor-Mono, one machine — indicative, not guaranteed) |
+| DI resolve / build speed | baseline | faster than VContainer and Zenject on the measured Editor-Mono and Windows IL2CPP player paths below (one machine — indicative, not guaranteed) |
 | Hot-path allocation (steady state) | varies | resolve machinery designed allocation-free (a transient still allocates the returned instance; alloc figures pending a corrected re-measure) |
 | Entry-point lifecycle | automatic (Zenject); manual wiring (VContainer) | **automatic** — `IOnityTickable` etc. need no registration |
 | Collection / open-generic binds | yes (both) | **yes** — `IEnumerable<T>`…`T[]` and `Bind(typeof(IRepo<>))` |
-| IL2CPP / AOT | mature, broadly shipped | Runtime-probed activation with reflection fallback; correctness covered, but current IL2CPP player timing shows VContainer ahead on transient/combined/complex resolve paths |
+| IL2CPP / AOT | mature, broadly shipped | Source-generated constructor activators, runtime-probed compiled activation, and reflection fallback; current IL2CPP player timing beats VContainer on the measured resolve/build paths |
 | DOTS / ECS event bridge | not built in | **yes** — Burst `ISystem`s drain the event broker into Entities |
 | Engine-free, scene-free testing | no (Zenject); partial (VContainer) | **yes** — `new OnityContainer()` in EditMode |
 | Compile-time analyzer | partial (Zenject validation) | **yes** — `ONITY001`–`ONITY006` with code fixes |
@@ -111,7 +111,7 @@ Onity's DI now covers the feature axes VContainer and Zenject are known for — 
 
 ## Benchmarks
 
-Measured by `OnityDiBenchmarkRunner` / `OnityDiBenchmarkPlayerRunner` (Unity 2022.3.62f3, Windows; 512 warmup / 8 samples / mean). These numbers were measured on a single machine and are **indicative, not a guarantee**; hardware, Unity version, backend, and graph shape can change both absolute timings and relative ordering.
+Measured by `OnityDiBenchmarkRunner` / `OnityDiBenchmarkPlayerRunner` (Unity 2022.3.62f3, Windows; mean reported). These numbers were measured on a single machine and are **indicative, not a guarantee**; hardware, Unity version, backend, and graph shape can change both absolute timings and relative ordering.
 
 Editor / Mono run (`2026-05-30T19:38:06Z`, `WindowsEditor`):
 
@@ -123,21 +123,21 @@ Editor / Mono run (`2026-05-30T19:38:06Z`, `WindowsEditor`):
 | Resolve Complex (6-level) | ~22,905 ns | ~42,158 ns | ~289,823 ns | ~+46% |
 | Prepare & Register Complex | ~61,044 ns | ~150,730 ns | ~215,537 ns | ~+60% |
 
-IL2CPP player run (`2026-05-30T20:09:24Z`, `WindowsPlayer`):
+IL2CPP player run (`2026-05-30T23:02:24Z`, `WindowsPlayer`, source-generated activators registered, 128 warmup / 3 samples / 1000 iterations):
 
 | Scenario | Onity | VContainer | Zenject | Result |
 | --- | ---: | ---: | ---: | --- |
-| Resolve Singleton | ~17 ns | ~86 ns | ~469 ns | Onity faster |
-| Resolve Transient | ~1,431 ns | ~580 ns | ~2,458 ns | VContainer faster |
-| Resolve Combined | ~1,263 ns | ~602 ns | ~3,525 ns | VContainer faster |
-| Resolve Complex (6-level) | ~34,729 ns | ~12,918 ns | ~62,689 ns | VContainer faster |
-| Prepare & Register Complex | ~23,872 ns | ~38,465 ns | ~61,060 ns | Onity faster |
+| Resolve Singleton | ~18 ns | ~88 ns | ~599 ns | Onity faster |
+| Resolve Transient | ~179 ns | ~507 ns | ~2,239 ns | Onity faster |
+| Resolve Combined | ~178 ns | ~630 ns | ~2,871 ns | Onity faster |
+| Resolve Complex (6-level) | ~5,115 ns | ~12,092 ns | ~61,944 ns | Onity faster |
+| Prepare & Register Complex | ~35,345 ns | ~46,053 ns | ~72,173 ns | Onity faster |
 
-The **timing** numbers above are the trustworthy part. The committed allocation figures were **not reliable** — the same harness reported 0 B for VContainer and Zenject too, which cannot be correct (a transient resolve allocates the instance it returns, a 6-level graph allocates roughly one object per level, and Zenject is allocation-heavy), so the measurement was not capturing gross allocations. The resolve machinery (compiled activators, a pooled argument array, cached construction plans) is **designed** to avoid per-call managed allocation beyond the constructed instances themselves, but the published alloc numbers are withdrawn pending a corrected in-editor re-measure.
+The **timing** numbers above are the trustworthy part. The committed allocation figures were **not reliable** — the same harness reported 0 B for VContainer and Zenject too, which cannot be correct (a transient resolve allocates the instance it returns, a 6-level graph allocates roughly one object per level, and Zenject is allocation-heavy), so the measurement was not capturing gross allocations. The resolve machinery (generated/compiled activators, a pooled argument array, cached construction plans) is **designed** to avoid per-call managed allocation beyond the constructed instances themselves, but the published alloc numbers are withdrawn pending a corrected in-editor re-measure.
 
-On Mono/JIT, the speed comes from a process-wide compiled-activator cache (`Expression.Compile` once per `ConstructorInfo`), compiled member setters, a `[ThreadStatic]` lock-free argument-array pool, and a per-plan per-slot constructor-dependency cache — with no `builder.Build()` ceremony before resolve and no engine coupling (`Onity.DI` is `noEngineReferences: true`). On IL2CPP, the container runs safely through the runtime-probed activation path, but the player results above show that VContainer's IL2CPP path is currently faster for transient, combined, and complex resolve. Onity needs a source-generated/AOT-specialized activator path to claim a full IL2CPP speed lead. Full Editor numbers and deltas: [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md). Player details: [`di-benchmark-player-latest.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-player-latest.md).
+On Mono/JIT, the speed comes from a process-wide compiled-activator cache (`Expression.Compile` once per `ConstructorInfo`), compiled member setters, a `[ThreadStatic]` lock-free argument-array pool, and a per-plan per-slot constructor-dependency cache — with no `builder.Build()` ceremony before resolve and no engine coupling (`Onity.DI` is `noEngineReferences: true`). On IL2CPP, generated activators register direct `new T(...)` delegates before the container builds its construction plans, so resolve avoids `ConstructorInfo.Invoke` on AOT builds too. Full Editor numbers and deltas: [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md). Player details: [`di-benchmark-player-latest.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-player-latest.md).
 
-0.3.0 benchmark verification: Unity batchmode Editor DI benchmark, Windows IL2CPP player DI benchmark, and the release branch CI build (`dotnet build onity-core-ci.csproj -c Release`). CI runs EditMode and PlayMode on every push — see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
+0.3.2 benchmark verification: Unity batchmode Editor DI benchmark, Windows IL2CPP player DI benchmark with generated activators, `dotnet build tools/Onity.SourceGen/Onity.SourceGen.csproj -c Release`, and the release branch CI build (`dotnet build onity-core-ci.csproj -c Release`). CI runs EditMode and PlayMode on every push — see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
 
 ---
 
@@ -158,7 +158,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.0
+https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.2
 ```
 
 …or in `Packages/manifest.json`:
@@ -171,7 +171,7 @@ https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3
 }
 ```
 
-(`#upm` tracks the latest package; use the `?path=…#v0.3.0` form to pin a specific release.)
+(`#upm` tracks the latest package; use the `?path=…#v0.3.2` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 

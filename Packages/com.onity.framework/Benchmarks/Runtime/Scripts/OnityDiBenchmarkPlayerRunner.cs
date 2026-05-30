@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using Onity.DI;
+using Onity.DI.Internal;
 using UnityEngine;
 using VContainer;
 using Zenject;
@@ -17,11 +18,17 @@ namespace Onity.Benchmarks
     /// </summary>
     public static class OnityDiBenchmarkPlayerRunner
     {
-        private const int k_warmupIterations = 512;
-        private const int k_samplesPerCase = 8;
+        private const int k_defaultWarmupIterations = 512;
+        private const int k_defaultSamplesPerCase = 8;
+        private const int k_defaultIterationsPerSample = 10000;
         private const string k_runArgument = "-onityRunDiBenchmark";
         private const string k_outputArgument = "-onityBenchmarkOutput";
+        private const string k_iterationsArgument = "-onityBenchmarkIterations";
+        private const string k_samplesArgument = "-onityBenchmarkSamples";
+        private const string k_warmupArgument = "-onityBenchmarkWarmup";
         private const string k_latestJsonFileName = "di-benchmark-player-latest.json";
+        private static int s_warmupIterations = k_defaultWarmupIterations;
+        private static int s_samplesPerCase = k_defaultSamplesPerCase;
 
         private static readonly BenchmarkContainerKind[] s_containers =
         {
@@ -41,15 +48,6 @@ namespace Onity.Benchmarks
                 "UseBakedResolve",
                 BindingFlags.Static | BindingFlags.NonPublic);
 
-        private static readonly ScenarioConfig[] s_scenarios =
-        {
-            new ScenarioConfig(BenchmarkScenario.ResolveSingleton, "Resolve (Singleton)", 10000),
-            new ScenarioConfig(BenchmarkScenario.ResolveTransient, "Resolve (Transient)", 10000),
-            new ScenarioConfig(BenchmarkScenario.ResolveCombined, "Resolve (Combined)", 10000),
-            new ScenarioConfig(BenchmarkScenario.ResolveComplex, "Resolve (Complex)", 10000),
-            new ScenarioConfig(BenchmarkScenario.PrepareAndRegisterComplex, "Prepare & Register (Complex)", 10000)
-        };
-
         private static readonly MethodInfo s_getTotalAllocatedBytesMethod =
             typeof(GC).GetMethod(
                 "GetTotalAllocatedBytes",
@@ -59,21 +57,39 @@ namespace Onity.Benchmarks
                 modifiers: null);
 
         private static readonly object[] s_preciseArgs = { true };
+        private static bool s_generatedOnityActivatorsRegistered;
+        private static bool s_isRunning;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void RunFromCommandLine()
         {
             string[] args = Environment.GetCommandLineArgs();
 
+#if !ONITY_DI_BENCHMARK_PLAYER
             if (!HasArgument(args, k_runArgument))
             {
                 return;
             }
+#endif
+
+            RunBenchmarkAndQuit();
+        }
+
+        public static void RunBenchmarkAndQuit()
+        {
+            if (s_isRunning)
+            {
+                return;
+            }
+
+            s_isRunning = true;
 
             int exitCode = 0;
+            string[] args = Environment.GetCommandLineArgs();
 
             try
             {
+                UnityEngine.Debug.Log("Onity DI player benchmark entrypoint started.");
                 string jsonPath = GetOutputPath(args);
                 BenchmarkReport report = RunBenchmarks();
                 SaveReport(report, jsonPath);
@@ -98,6 +114,14 @@ namespace Onity.Benchmarks
                     "Internal OnityContainer.UseBakedResolve flag was not found; the baked-vs-reflection player benchmark cannot toggle the resolve path.");
             }
 
+            RegisterGeneratedOnityActivators();
+
+            string[] args = Environment.GetCommandLineArgs();
+            int iterationsPerSample = GetPositiveIntArgument(args, k_iterationsArgument, k_defaultIterationsPerSample);
+            s_samplesPerCase = GetPositiveIntArgument(args, k_samplesArgument, k_defaultSamplesPerCase);
+            s_warmupIterations = GetPositiveIntArgument(args, k_warmupArgument, k_defaultWarmupIterations);
+            ScenarioConfig[] scenarios = CreateScenarios(iterationsPerSample);
+
             BenchmarkReport report = new BenchmarkReport
             {
                 generatedAtUtc = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture),
@@ -105,17 +129,18 @@ namespace Onity.Benchmarks
                 platform = Application.platform.ToString(),
                 scriptingBackend = GetScriptingBackendLabel(),
                 compiledActivationSupported = OnityContainer.IsCompiledActivationSupported,
+                generatedActivatorsRegistered = GeneratedActivators.RegisteredCount,
                 allocationMeasurementAvailable = IsAllocationMeasurementAvailable(),
-                samplesPerCase = k_samplesPerCase,
-                warmupIterations = k_warmupIterations,
-                scenarios = new ScenarioReport[s_scenarios.Length]
+                samplesPerCase = s_samplesPerCase,
+                warmupIterations = s_warmupIterations,
+                scenarios = new ScenarioReport[scenarios.Length]
             };
 
             MetricReport[] metrics = new MetricReport[s_containers.Length + 1];
 
-            for (int scenarioIndex = 0; scenarioIndex < s_scenarios.Length; scenarioIndex++)
+            for (int scenarioIndex = 0; scenarioIndex < scenarios.Length; scenarioIndex++)
             {
-                ScenarioConfig config = s_scenarios[scenarioIndex];
+                ScenarioConfig config = scenarios[scenarioIndex];
                 int metricCount = 0;
 
                 for (int containerIndex = 0; containerIndex < s_containers.Length; containerIndex++)
@@ -165,6 +190,9 @@ namespace Onity.Benchmarks
         {
             bool isOnity = containerKind == BenchmarkContainerKind.Onity;
             object originalFlag = isOnity ? s_useBakedResolveProperty.GetValue(null) : null;
+            string containerLabel = BuildContainerLabel(containerKind, resolveMode);
+            UnityEngine.Debug.Log(
+                $"Onity DI player benchmark measuring {config.displayName} / {containerLabel} ({config.iterationsPerSample} iterations x {s_samplesPerCase} samples).");
 
             try
             {
@@ -173,13 +201,13 @@ namespace Onity.Benchmarks
                     s_useBakedResolveProperty.SetValue(null, resolveMode == OnityResolveMode.Baked);
                 }
 
-                double[] elapsedMsSamples = new double[k_samplesPerCase];
-                long[] allocSamples = new long[k_samplesPerCase];
+                double[] elapsedMsSamples = new double[s_samplesPerCase];
+                long[] allocSamples = new long[s_samplesPerCase];
 
-                for (int sampleIndex = 0; sampleIndex < k_samplesPerCase; sampleIndex++)
+                for (int sampleIndex = 0; sampleIndex < s_samplesPerCase; sampleIndex++)
                 {
                     using BenchmarkOperation operation = CreateOperation(containerKind, config.scenario);
-                    int warmup = Math.Min(k_warmupIterations, config.iterationsPerSample);
+                    int warmup = Math.Min(s_warmupIterations, config.iterationsPerSample);
 
                     for (int i = 0; i < warmup; i++)
                     {
@@ -208,7 +236,7 @@ namespace Onity.Benchmarks
 
                 return new MetricReport
                 {
-                    container = BuildContainerLabel(containerKind, resolveMode),
+                    container = containerLabel,
                     meanMilliseconds = stats.mean,
                     minMilliseconds = stats.min,
                     maxMilliseconds = stats.max,
@@ -243,6 +271,18 @@ namespace Onity.Benchmarks
                 default:
                     throw new ArgumentOutOfRangeException(nameof(containerKind), containerKind, "Unknown benchmark container.");
             }
+        }
+
+        private static ScenarioConfig[] CreateScenarios(int iterationsPerSample)
+        {
+            return new[]
+            {
+                new ScenarioConfig(BenchmarkScenario.ResolveSingleton, "Resolve (Singleton)", iterationsPerSample),
+                new ScenarioConfig(BenchmarkScenario.ResolveTransient, "Resolve (Transient)", iterationsPerSample),
+                new ScenarioConfig(BenchmarkScenario.ResolveCombined, "Resolve (Combined)", iterationsPerSample),
+                new ScenarioConfig(BenchmarkScenario.ResolveComplex, "Resolve (Complex)", iterationsPerSample),
+                new ScenarioConfig(BenchmarkScenario.PrepareAndRegisterComplex, "Prepare & Register (Complex)", iterationsPerSample)
+            };
         }
 
         private static BenchmarkOperation CreateOnityOperation(BenchmarkScenario scenario)
@@ -445,6 +485,110 @@ namespace Onity.Benchmarks
             container.Build();
         }
 
+        private static void RegisterGeneratedOnityActivators()
+        {
+            if (s_generatedOnityActivatorsRegistered)
+            {
+                return;
+            }
+
+            GeneratedActivators.Register(
+                typeof(BenchmarkSingletonService),
+                Type.EmptyTypes,
+                args => new BenchmarkSingletonService());
+            GeneratedActivators.Register(
+                typeof(BenchmarkTransientService),
+                new[] { typeof(IBenchmarkSingletonService) },
+                args => new BenchmarkTransientService((IBenchmarkSingletonService)args[0]));
+
+            GeneratedActivators.Register(
+                typeof(SharedSettings),
+                Type.EmptyTypes,
+                args => new SharedSettings());
+            GeneratedActivators.Register(
+                typeof(SharedClock),
+                Type.EmptyTypes,
+                args => new SharedClock());
+            GeneratedActivators.Register(
+                typeof(SharedRandom),
+                Type.EmptyTypes,
+                args => new SharedRandom());
+
+            GeneratedActivators.Register(
+                typeof(LeafA),
+                new[] { typeof(ISharedSettings) },
+                args => new LeafA((ISharedSettings)args[0]));
+            GeneratedActivators.Register(
+                typeof(LeafB),
+                new[] { typeof(ISharedClock) },
+                args => new LeafB((ISharedClock)args[0]));
+            GeneratedActivators.Register(
+                typeof(LeafC),
+                new[] { typeof(ISharedRandom) },
+                args => new LeafC((ISharedRandom)args[0]));
+            GeneratedActivators.Register(
+                typeof(LeafD),
+                new[] { typeof(ISharedSettings) },
+                args => new LeafD((ISharedSettings)args[0]));
+            GeneratedActivators.Register(
+                typeof(LeafE),
+                new[] { typeof(ISharedClock) },
+                args => new LeafE((ISharedClock)args[0]));
+            GeneratedActivators.Register(
+                typeof(LeafF),
+                new[] { typeof(ISharedRandom) },
+                args => new LeafF((ISharedRandom)args[0]));
+            GeneratedActivators.Register(
+                typeof(LeafG),
+                new[] { typeof(ISharedSettings) },
+                args => new LeafG((ISharedSettings)args[0]));
+            GeneratedActivators.Register(
+                typeof(LeafH),
+                new[] { typeof(ISharedClock) },
+                args => new LeafH((ISharedClock)args[0]));
+
+            GeneratedActivators.Register(
+                typeof(ComplexServiceA),
+                new[] { typeof(ILeafA), typeof(ILeafB), typeof(ISharedSettings) },
+                args => new ComplexServiceA((ILeafA)args[0], (ILeafB)args[1], (ISharedSettings)args[2]));
+            GeneratedActivators.Register(
+                typeof(ComplexServiceB),
+                new[] { typeof(ILeafC), typeof(ILeafD), typeof(ISharedClock) },
+                args => new ComplexServiceB((ILeafC)args[0], (ILeafD)args[1], (ISharedClock)args[2]));
+            GeneratedActivators.Register(
+                typeof(ComplexServiceC),
+                new[] { typeof(ILeafE), typeof(ILeafF), typeof(ISharedRandom) },
+                args => new ComplexServiceC((ILeafE)args[0], (ILeafF)args[1], (ISharedRandom)args[2]));
+            GeneratedActivators.Register(
+                typeof(ComplexServiceD),
+                new[] { typeof(ILeafG), typeof(ILeafH), typeof(IComplexServiceA) },
+                args => new ComplexServiceD((ILeafG)args[0], (ILeafH)args[1], (IComplexServiceA)args[2]));
+            GeneratedActivators.Register(
+                typeof(ComplexServiceE),
+                new[] { typeof(IComplexServiceB), typeof(IComplexServiceC), typeof(ISharedSettings) },
+                args => new ComplexServiceE((IComplexServiceB)args[0], (IComplexServiceC)args[1], (ISharedSettings)args[2]));
+            GeneratedActivators.Register(
+                typeof(ComplexRoot),
+                new[]
+                {
+                    typeof(IComplexServiceA),
+                    typeof(IComplexServiceB),
+                    typeof(IComplexServiceC),
+                    typeof(IComplexServiceD),
+                    typeof(IComplexServiceE),
+                    typeof(IBenchmarkTransientService)
+                },
+                args => new ComplexRoot(
+                    (IComplexServiceA)args[0],
+                    (IComplexServiceB)args[1],
+                    (IComplexServiceC)args[2],
+                    (IComplexServiceD)args[3],
+                    (IComplexServiceE)args[4],
+                    (IBenchmarkTransientService)args[5]));
+
+            s_generatedOnityActivatorsRegistered = true;
+        }
+
         private static IObjectResolver BuildSimpleVContainer()
         {
             ContainerBuilder builder = new ContainerBuilder();
@@ -573,6 +717,7 @@ namespace Onity.Benchmarks
             builder.AppendLine($"- Platform: `{report.platform}`");
             builder.AppendLine($"- Scripting backend: `{report.scriptingBackend}`");
             builder.AppendLine($"- Compiled activation supported: `{report.compiledActivationSupported}`");
+            builder.AppendLine($"- Generated activators registered: `{report.generatedActivatorsRegistered}`");
             builder.AppendLine($"- Allocation measurement available: `{report.allocationMeasurementAvailable}`");
             builder.AppendLine($"- Samples per case: `{report.samplesPerCase}`");
             builder.AppendLine($"- Warmup iterations: `{report.warmupIterations}`");
@@ -650,6 +795,19 @@ namespace Onity.Benchmarks
             }
 
             return null;
+        }
+
+        private static int GetPositiveIntArgument(string[] args, string argument, int fallback)
+        {
+            string value = GetArgumentValue(args, argument);
+
+            if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed)
+                && parsed > 0)
+            {
+                return parsed;
+            }
+
+            return fallback;
         }
 
         private static string BuildContainerLabel(BenchmarkContainerKind containerKind, OnityResolveMode resolveMode)
@@ -763,6 +921,7 @@ namespace Onity.Benchmarks
             public string platform;
             public string scriptingBackend;
             public bool compiledActivationSupported;
+            public int generatedActivatorsRegistered;
             public bool allocationMeasurementAvailable;
             public int samplesPerCase;
             public int warmupIterations;

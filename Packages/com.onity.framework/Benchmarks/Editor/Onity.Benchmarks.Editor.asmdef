@@ -3,6 +3,7 @@
   "rootNamespace": "Onity.Editor.Benchmarks",
   "references": [
     "Onity.DI",
+    "Onity.Benchmarks",
     "VContainer",
     "Zenject"
   ],

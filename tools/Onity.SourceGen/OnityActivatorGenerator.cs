@@ -20,13 +20,13 @@ namespace Onity.SourceGen
     /// <c>Expression.Compile</c>. A generated
     /// <c>[System.Runtime.CompilerServices.ModuleInitializer]</c>
     /// method registers every activator with the runtime hook
-    /// <c>Onity.DI.Internal.GeneratedActivators.Register(System.Type, System.Func&lt;object[], object&gt;)</c>.
+    /// <c>Onity.DI.Internal.GeneratedActivators.Register(System.Type, System.Type[], System.Func&lt;object[], object&gt;)</c>.
     ///
-    /// This is a scaffold: it covers constructor injection selected by an explicit
-    /// attribute. Member-setter injection, type discovery without an attribute, and
-    /// the runtime <c>GeneratedActivators</c> hook itself are follow-up work. The
-    /// hook is referenced by fully-qualified name in the generated code only; this
-    /// generator never creates a file under <c>Assets/</c> or <c>Onity.DI</c>.
+    /// This covers constructor injection selected by an explicit attribute.
+    /// Member-setter injection and binding-site type discovery are intentionally
+    /// left to the normal runtime plan. The hook is referenced by fully-qualified
+    /// name in generated code; this generator never creates files under
+    /// <c>Assets/</c> or <c>Onity.DI</c>.
     /// </remarks>
     [Generator(LanguageNames.CSharp)]
     public sealed class OnityActivatorGenerator : IIncrementalGenerator
@@ -38,9 +38,13 @@ namespace Onity.SourceGen
         private const string k_attributeSimpleName = "OnityGenerateActivator";
 
         /// <summary>
+        /// Simple name of Onity's constructor-selection attribute.
+        /// </summary>
+        private const string k_injectAttributeSimpleName = "Inject";
+
+        /// <summary>
         /// Fully-qualified runtime hook the generated module initializer calls to
-        /// register each activator. The type is intentionally NOT defined in this
-        /// project; wiring it is the explicit follow-up step (see README).
+        /// register each activator.
         /// </summary>
         private const string k_registerHook = "global::Onity.DI.Internal.GeneratedActivators.Register";
 
@@ -149,7 +153,7 @@ namespace Onity.SourceGen
                     continue;
                 }
 
-                if (MatchesMarkerName(attributeClass.Name))
+                if (MatchesAttributeName(attributeClass.Name, k_attributeSimpleName))
                 {
                     return true;
                 }
@@ -162,24 +166,27 @@ namespace Onity.SourceGen
         /// Compares an attribute type name against the marker simple name, tolerating
         /// the optional <c>Attribute</c> suffix that C# strips at usage sites.
         /// </summary>
-        private static bool MatchesMarkerName(string attributeTypeName)
+        private static bool MatchesAttributeName(string attributeTypeName, string expectedSimpleName)
         {
-            if (attributeTypeName == k_attributeSimpleName)
+            if (attributeTypeName == expectedSimpleName)
             {
                 return true;
             }
 
-            return attributeTypeName == k_attributeSimpleName + "Attribute";
+            return attributeTypeName == expectedSimpleName + "Attribute";
         }
 
         /// <summary>
-        /// Picks the constructor the activator will call. Mirrors a simple
-        /// greediest-resolvable heuristic: prefer the most accessible instance
-        /// constructor, breaking ties by the largest parameter count. Returns
-        /// <c>null</c> when no usable instance constructor exists.
+        /// Picks the constructor the activator will call. Mirrors the runtime
+        /// rule for constructors this generated source can call: prefer a single
+        /// accessible [Inject] constructor; otherwise use the public/internal
+        /// constructor with the best score. Returns <c>null</c> when no usable
+        /// instance constructor exists.
         /// </summary>
         private static IMethodSymbol SelectConstructor(INamedTypeSymbol typeSymbol)
         {
+            IMethodSymbol attributed = null;
+            bool hasInaccessibleAttributedConstructor = false;
             IMethodSymbol best = null;
 
             foreach (IMethodSymbol constructor in typeSymbol.InstanceConstructors)
@@ -189,11 +196,29 @@ namespace Onity.SourceGen
                     continue;
                 }
 
-                // The generated activator lives in a separate assembly, so it can
-                // only call constructors it can see.
-                if (constructor.DeclaredAccessibility != Accessibility.Public
-                    && constructor.DeclaredAccessibility != Accessibility.Internal)
+                bool accessible =
+                    constructor.DeclaredAccessibility == Accessibility.Public
+                    || constructor.DeclaredAccessibility == Accessibility.Internal;
+                bool hasInjectAttribute = HasInjectAttribute(constructor);
+
+                if (!accessible)
                 {
+                    if (hasInjectAttribute)
+                    {
+                        hasInaccessibleAttributedConstructor = true;
+                    }
+
+                    continue;
+                }
+
+                if (hasInjectAttribute)
+                {
+                    if (attributed != null)
+                    {
+                        return null;
+                    }
+
+                    attributed = constructor;
                     continue;
                 }
 
@@ -203,7 +228,36 @@ namespace Onity.SourceGen
                 }
             }
 
+            if (hasInaccessibleAttributedConstructor)
+            {
+                return null;
+            }
+
+            if (attributed != null)
+            {
+                return attributed;
+            }
+
             return best;
+        }
+
+        private static bool HasInjectAttribute(IMethodSymbol constructor)
+        {
+            foreach (AttributeData attribute in constructor.GetAttributes())
+            {
+                INamedTypeSymbol attributeClass = attribute.AttributeClass;
+                if (attributeClass is null)
+                {
+                    continue;
+                }
+
+                if (MatchesAttributeName(attributeClass.Name, k_injectAttributeSimpleName))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -268,7 +322,9 @@ namespace Onity.SourceGen
                     .Append(k_registerHook)
                     .Append("(typeof(")
                     .Append(model.FullyQualifiedType)
-                    .Append("), Activate_")
+                    .Append("), ")
+                    .Append(BuildParameterTypeArray(model))
+                    .Append(", Activate_")
                     .Append(i)
                     .AppendLine(");");
             }
@@ -311,6 +367,33 @@ namespace Onity.SourceGen
             builder.AppendLine(");");
             builder.AppendLine("        }");
             builder.AppendLine();
+        }
+
+        private static string BuildParameterTypeArray(ActivatorModel model)
+        {
+            if (model.ParameterTypes.Count == 0)
+            {
+                return "global::System.Type.EmptyTypes";
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append("new global::System.Type[] { ");
+
+            for (int i = 0; i < model.ParameterTypes.Count; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(", ");
+                }
+
+                builder
+                    .Append("typeof(")
+                    .Append(model.ParameterTypes[i])
+                    .Append(')');
+            }
+
+            builder.Append(" }");
+            return builder.ToString();
         }
     }
 }

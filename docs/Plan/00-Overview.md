@@ -21,9 +21,10 @@ should not need to learn five mental models.
 
 1. **Settle the main system first.** DI and Reactive must be production-ready
    before plugins receive attention. Everything else is deferred.
-2. **Beat VContainer on DI resolve hot paths.** Current benchmark shows Onity
-   is faster at registration (+91%) but slower at transient/complex resolve
-   (-15% to -28%). Closing this gap is the headline performance task.
+2. **Keep the VContainer speed lead on DI hot paths.** Current Editor/Mono and
+   Windows IL2CPP player benchmarks show Onity ahead on the measured resolve and
+   prepare/register scenarios. The remaining performance work is corrected
+   allocation measurement and target-device coverage.
 3. **Zenject-familiar API.** A developer who knows
    `Bind<T>().To<C>().AsSingle()` should be productive on day one without
    reading a manual.
@@ -67,7 +68,7 @@ As of 2026-02-12 the runtime modules under
 | Module | Files | Maturity |
 |---|---:|---|
 | `Onity.Core` | 3 | Stable, minimal primitives |
-| `Onity.DI` | 7 | Working, reflection-based, slower than VContainer on transient/complex |
+| `Onity.DI` | 7 | Working, baked/generated activator paths, faster than VContainer in current benchmark runs |
 | `Onity.Reactive` | 17 | Working, primitive operators present, missing R3-parity operators |
 | `Onity.Messaging` | 7 | Working, see `EVENT_HUB_PLAN.md` for next steps |
 | `Onity.Factory` | 1 | Minimal contracts |
@@ -96,10 +97,10 @@ Allocation numbers from this runner are withdrawn pending a corrected harness;
 the timing numbers above are the trustworthy benchmark output.
 
 Onity Baked is faster than VContainer on every measured Editor/Mono timing path.
-The Windows IL2CPP player benchmark also runs, but it shows VContainer ahead on
-transient, combined, and complex resolve. The remaining performance tasks are
-source-generated or IL-postprocessed activators for AOT, and a corrected
-allocation harness.
+The Windows IL2CPP player benchmark also runs with generated AOT activators and
+is faster than VContainer on singleton, transient, combined, complex, and
+prepare/register in the current run. The remaining performance tasks are broader
+platform/device coverage and a corrected allocation harness.
 
 ## Where work begins
 
