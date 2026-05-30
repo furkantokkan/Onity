@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Onity.DI;
-using ZLinq;
 
 namespace Onity.Unity.UI
 {
@@ -121,15 +120,25 @@ namespace Onity.Unity.UI
 
             PropertyInfo[] allProperties = presenterType.GetProperties(
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            PropertyInfo[] injectableProperties =
-                allProperties
-                    .AsValueEnumerable()
-                    .Where(static property => property.CanWrite)
-                    .Where(
-                        static property =>
-                            property.IsDefined(typeof(OnityUiInjectAttribute), true)
-                            || property.IsDefined(typeof(InjectAttribute), true))
-                    .ToArray();
+            List<PropertyInfo> injectablePropertyList = new List<PropertyInfo>(allProperties.Length);
+
+            for (int i = 0; i < allProperties.Length; i++)
+            {
+                PropertyInfo property = allProperties[i];
+
+                if (property.CanWrite == false)
+                {
+                    continue;
+                }
+
+                if (property.IsDefined(typeof(OnityUiInjectAttribute), true)
+                    || property.IsDefined(typeof(InjectAttribute), true))
+                {
+                    injectablePropertyList.Add(property);
+                }
+            }
+
+            PropertyInfo[] injectableProperties = injectablePropertyList.ToArray();
 
             lock (s_cacheGate)
             {

@@ -480,7 +480,7 @@ namespace Onity.Tests.EditMode
                         }
 
                         Assert.Fail(
-                            $"Source should avoid System.Linq and prefer ZLinq: {filePath}:{lineIndex + 1}");
+                            $"Source should avoid System.Linq (use loops): {filePath}:{lineIndex + 1}");
                     }
                 }
             }
