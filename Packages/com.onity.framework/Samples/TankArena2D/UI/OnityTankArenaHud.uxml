@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:Style src="OnityTankArenaHud.uss" />
+    <ui:VisualElement class="tank-hud__root">
+        <ui:VisualElement class="tank-hud__panel">
+            <ui:Label class="tank-hud__title" text="Onity Tank Arena" />
+            <ui:Label name="score-value" class="tank-hud__line" text="Score: 0" />
+            <ui:Label name="health-value" class="tank-hud__line" text="Health: 0" />
+            <ui:Label name="wave-value" class="tank-hud__line" text="Wave: 0" />
+            <ui:Label name="enemy-count-value" class="tank-hud__line" text="Enemies: 0" />
+            <ui:Label name="timer-value" class="tank-hud__line" text="Time: 0.0" />
+            <ui:Label name="dots-value" class="tank-hud__line" text="DOTS: N/A" />
+            <ui:Label name="status-value" class="tank-hud__status" text="Status: Initializing" />
+            <ui:Button name="restart-button" class="tank-hud__restart" text="Restart Run" />
+        </ui:VisualElement>
+        <ui:VisualElement class="tank-hud__hint-panel">
+            <ui:Label class="tank-hud__hint" text="Move: WASD / Arrows" />
+            <ui:Label class="tank-hud__hint" text="Fire: Space / InputAction" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

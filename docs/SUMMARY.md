@@ -19,6 +19,7 @@
 * [Comparison: Onity vs VContainer / Zenject](Onity-vs-VContainer-Zenject.md)
 * [AI Usage Guide](Onity-AI-Usage-Guide.md)
 * [Architecture Review](Architecture-Review.md)
+* [ADR 0001: DOTS and DI Performance](ADR/0001-dots-and-di-performance.md)
 
 ## Migration
 

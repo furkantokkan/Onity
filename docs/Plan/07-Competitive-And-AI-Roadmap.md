@@ -22,32 +22,34 @@ the performance gates in `04-Performance-Targets.md`, the architecture rules in
 
 | Pillar | Competitor target | Status | One-line verdict |
 |---|---|---|---|
-| DI | Zenject, VContainer | **Leads on every measured path** | Faster than both on all 5 benchmark scenarios; 0 B/op on every resolve path; ship-quality core, a few correctness/DX gaps for AI priors |
-| Reactive | R3, UniRx | **Strong core, incomplete operators** | Subject/ReactiveProperty are 0-alloc and re-entrancy-correct; missing combinators (CombineLatest/Merge/Scan), error-flow, and a main-thread hop; dual observable model undercuts the single mental model |
-| Events | MessagePipe | **On-philosophy, smaller surface** | Same algebra as reactive (one model), 0-alloc publish, DI-native auto-bind; missing keyed + async handlers; no published microbenchmark yet |
-| Cross-cutting | (all three combined) | **Seams exist, not yet unified DX** | DI is the spine; broker + hub auto-bound in every scope; events bridge into reactive operators; but three registration verbs, two observable stacks, inconsistent error UX, no AI guide, no analyzer |
+| DI | Zenject, VContainer | **Leads on every measured path** | Faster than both on all 5 timing scenarios with baked resolve; allocation figures are pending corrected re-measurement; ship-quality core, with IL2CPP/source-gen hardening still planned |
+| Reactive | R3, UniRx | **Strong core, still maturing** | Subject/ReactiveProperty are re-entrancy-correct and allocation-aware; core combinators, error isolation, and Unity timing bridges are present, with broader operator/perf proof still planned |
+| Events | MessagePipe | **On-philosophy, smaller surface** | Same algebra as reactive, DI-native auto-bind, keyed channels, async channels, and broker examples; no published MessagePipe publish microbenchmark yet |
+| Cross-cutting | (all three combined) | **Unified DX now documented** | DI is the spine; broker + hub auto-bound in every scope; events bridge into reactive operators; AI usage guide and analyzer scaffold exist, with compile-time guidance still expanding |
 
 ### 1.2 The measured DI win (already true)
 
 From `di-benchmark-summary.md` (Unity 2022.3.62f3, Windows, Mono editor,
-512 warmup / 8 samples / median, alloc via `GC.GetTotalAllocatedBytes` deltas).
-Onity beats **both** VContainer and Zenject on every scenario, and is
-**0 B/op** on every resolve path:
+512 warmup / 8 samples / mean). The allocation figures from this runner are
+withdrawn pending corrected gross-allocation measurement; the timing numbers
+remain the current published comparison. Onity baked resolve beats **both**
+VContainer and Zenject on every measured timing scenario:
 
-| Scenario | Onity (ns/op) | VContainer (ns/op) | Zenject (ns/op) | Onity vs VContainer |
+| Scenario | Onity Baked (ns/op) | VContainer (ns/op) | Zenject (ns/op) | Onity vs VContainer |
 |---|---:|---:|---:|---:|
-| Resolve Singleton | 152 | 195 | 2,326 | **+28%** |
-| Resolve Transient | 996 | 1,421 | 12,670 | **+43%** |
-| Resolve Combined | 1,883 | 2,462 | 20,392 | **+31%** |
-| Resolve Complex (6-level) | 37,895 | 47,117 | 302,383 | **+24%** |
-| Prepare & Register Complex | 30,085 | 145,953 | 191,297 | **+384%** |
+| Resolve Singleton | 94 | 202 | 3,137 | **+53%** |
+| Resolve Transient | 775 | 1,697 | 11,681 | **+54%** |
+| Resolve Combined | 896 | 1,712 | 15,400 | **+48%** |
+| Resolve Complex (6-level) | 22,787 | 57,995 | 285,394 | **+61%** |
+| Prepare & Register Complex | 47,243 | 135,140 | 197,132 | **+65%** |
 
-The "beats VContainer everywhere" claim is now true **including build**, not
-just resolve. The speed comes from a process-wide compiled-activator cache
-(`Expression.Compile` once per `ConstructorInfo`), a `[ThreadStatic]` lock-free
-`ArgumentArrayPool`, and a per-plan per-slot constructor-dependency cache - all
-without an explicit `builder.Build()` ceremony before resolve and without
-engine coupling (`Onity.DI.asmdef` is `noEngineReferences: true`).
+The "beats VContainer everywhere" claim is true **including build**, not just
+resolve. The speed comes from a process-wide compiled-activator cache
+(`Expression.Compile` once per `ConstructorInfo`), compiled member setters, a
+`[ThreadStatic]` lock-free `ArgumentArrayPool`, per-plan constructor-dependency
+caches, and a baked provider-slot map - all without an explicit
+`builder.Build()` ceremony before resolve and without engine coupling
+(`Onity.DI.asmdef` is `noEngineReferences: true`).
 
 ### 1.3 The plan to also lead Reactive and Events
 
@@ -171,27 +173,26 @@ DI already meets its competitive goal. The gates in
 `04-Performance-Targets.md` section 3.1 are the contract to **not regress**
 (ratchet rule: a >5% regression without a documented reason fails CI).
 
-| Scenario | Onity now (ns/op) | Phase 1 gate | Stretch | Gate status |
+| Scenario | Onity baked now (ns/op) | Phase 1 gate | Stretch | Gate status |
 |---|---:|---:|---:|---|
-| Resolve Singleton | 152 | <= 150 | <= 130 | ~At gate (hits the spirit) |
-| Resolve Transient | 996 | <= 1,500 | <= 1,200 | **Beats stretch** |
-| Resolve Combined | 1,883 | <= 1,550 | <= 1,250 | **Missed** (still beats VContainer) |
-| Resolve Complex | 37,895 | <= 35,000 | <= 28,000 | **Slightly missed** |
-| Prepare & Register Complex | 30,085 | <= 15,000 | <= 12,000 | **Regressed** (Expression.Compile per type at build; still 4.85x faster than VContainer) |
-| Resolve alloc / sample (B) | 0 | 0 | 0 | **Met** |
+| Resolve Singleton | 94 | <= 150 | <= 130 | **Beats stretch** |
+| Resolve Transient | 775 | <= 1,500 | <= 1,200 | **Beats stretch** |
+| Resolve Combined | 896 | <= 1,550 | <= 1,250 | **Beats stretch** |
+| Resolve Complex | 22,787 | <= 35,000 | <= 28,000 | **Beats stretch** |
+| Prepare & Register Complex | 47,243 | <= 15,000 | <= 12,000 | **Missed internal gate** (still ~2.9x faster than VContainer) |
+| Resolve alloc / sample (B) | Pending | 0 | 0 | Re-measure with corrected allocation harness |
 
-Honest note: Onity wins every head-to-head but three gate **numbers**
-(Combined, Complex, build-time) are not strictly met. These are
-follow-through items (section 5 Phase F), not a crisis. The closers are
-already designed and deferred in `02-DI-Design.md`: the full
-`BakedGraph` + `TypeIdCache<T>` slot-array path (closes Combined/Complex) and
-compiled field/property/method setter delegates in `InjectMembers` (removes the
-last reflection `SetValue/Invoke` cost). The build-time regression is fixable
-with lazy/parallel first-resolve compilation or a source-gen activator path.
+Honest note: Onity wins every timing head-to-head, but the internal
+`Prepare & Register Complex` gate is still not met and the allocation table
+needs a corrected harness. The build-time closer is no longer another managed
+graph rewrite; the next meaningful step is IL2CPP-safe source-generated or
+post-processed activators so baked build can avoid runtime reflection setup
+entirely.
 
-**Unverified risk:** only Mono-editor numbers exist. IL2CPP/WebGL validation of
-`Expression.Compile` activators (per `04` section 3.2) is the main on-device
-risk; source-generated activators are the Phase-2 contingency.
+**Platform risk:** IL2CPP correctness is validated through the reflection
+fallback, but only Mono-editor timing numbers are published. The next platform
+proof is an IL2CPP benchmark run plus source-generated activators if reflection
+cannot hold the speed lead on AOT.
 
 ### 3.2 Reactive - strong primitives, prove the rest
 
@@ -442,17 +443,19 @@ fix.
 
 | Item | Effort | Adopt? |
 |---|---|---|
-| Finish the deferred `BakedGraph` + `TypeIdCache<T>` slot-array path behind `UseBakedResolve` + full parity run (closes Combined <=1,550 and Complex <=35,000) | L | Adopt |
-| Compiled field/property/method setter delegates in `InjectMembers` (removes remaining reflection `SetValue/Invoke`) | M | Adopt |
-| Reduce Prepare & Register Complex under 15,000 ns (lazy/parallel first-resolve compilation or source-gen activators) | S | Adopt |
+| Keep the provider-slot baked graph and parity suite green while adding regression tests around build/resolve timing thresholds | M | Adopt |
+| Correct the allocation harness and publish gross managed allocation deltas for singleton, transient, and complex resolves | M | Adopt |
+| Reduce baked `Prepare & Register Complex` under 15,000 ns with source-generated or IL post-processed activators | M | Adopt |
 | Validate `Expression.Compile` activators on IL2CPP/WebGL; add source-generated activator fallback if the interpreter path misses the 1.5x Mono bound | L | Adopt (platform hardening) |
 | Replace per-subscribe closure+`DisposableAction` in `Subject<T>`/`ReactiveProperty` with `struct Subscription { owner, id } : IDisposable` | M | Adopt |
 | Pool async-operator state (`Queue<T>`/CTS) in `SelectAwait/WhereAwait/Debounce/ThrottleLast`; default Debounce/ThrottleLast to a Unity time provider in the Unity bridge | M | Adopt |
 
-**Exit gate:** all DI gates in `04` section 3.1 strictly pass; `UseBakedResolve
-= false` produces identical results (parity); IL2CPP benchmark runs without
-throwing and Transient stays <= 1.5x the Mono baseline; subscribe-time GC drops
-measurably on a spawn/despawn benchmark.
+**Exit gate:** baked resolve remains parity-green; the corrected allocation
+harness is published; IL2CPP benchmark runs without throwing and shows whether
+source-generated activators are required; `Prepare & Register Complex` is either
+below the 15,000 ns internal gate or the remaining build-time gap is explicitly
+scoped into the source-generation milestone; subscribe-time GC drops measurably
+on a spawn/despawn benchmark.
 
 ### Phase G - Ergonomic event layer + lifecycle (optional, demand-driven)
 

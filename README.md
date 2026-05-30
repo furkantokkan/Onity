@@ -110,15 +110,15 @@ Onity's DI now covers the feature axes VContainer and Zenject are known for — 
 
 ## Benchmarks
 
-Measured by `OnityDiBenchmarkRunner` (Unity 2022.3.62f3, Windows, **Mono editor**; 512 warmup / 8 samples / median). These numbers were **measured in the Editor on a single machine — they are indicative, not a guarantee**; your hardware, Unity version, and scripting backend will differ. On these runs Onity beat both VContainer and Zenject on every scenario:
+Measured by `OnityDiBenchmarkRunner` (Unity 2022.3.62f3, Windows, **Mono editor**; 512 warmup / 8 samples / mean). These numbers were **measured in the Editor on a single machine — they are indicative, not a guarantee**; your hardware, Unity version, and scripting backend will differ. On these runs Onity's baked path beat both VContainer and Zenject on every scenario:
 
 | Scenario | Onity | VContainer | Zenject | Onity vs VContainer |
 | --- | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~152 ns | ~195 ns | ~2,326 ns | ~+28% |
-| Resolve Transient | ~996 ns | ~1,421 ns | ~12,670 ns | ~+43% |
-| Resolve Combined | ~1,883 ns | ~2,462 ns | ~20,392 ns | ~+31% |
-| Resolve Complex (6-level) | ~37,895 ns | ~47,117 ns | ~302,383 ns | ~+24% |
-| Prepare & Register Complex | ~30,085 ns | ~145,953 ns | ~191,297 ns | ~+384% |
+| Resolve Singleton | ~94 ns | ~202 ns | ~3,137 ns | ~+53% |
+| Resolve Transient | ~775 ns | ~1,697 ns | ~11,681 ns | ~+54% |
+| Resolve Combined | ~896 ns | ~1,712 ns | ~15,400 ns | ~+48% |
+| Resolve Complex (6-level) | ~22,787 ns | ~57,995 ns | ~285,394 ns | ~+61% |
+| Prepare & Register Complex | ~47,243 ns | ~135,140 ns | ~197,132 ns | ~+65% |
 
 The **timing** numbers above are the trustworthy part. The committed allocation figures were **not reliable** — the same harness reported 0 B for VContainer and Zenject too, which cannot be correct (a transient resolve allocates the instance it returns, a 6-level graph allocates roughly one object per level, and Zenject is allocation-heavy), so the measurement was not capturing gross allocations. The resolve machinery (compiled activators, a pooled argument array, cached construction plans) is **designed** to avoid per-call managed allocation beyond the constructed instances themselves, but the published alloc numbers are withdrawn pending a corrected in-editor re-measure.
 
@@ -145,7 +145,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.2.0
+https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.2.1
 ```
 
 …or in `Packages/manifest.json`:
@@ -158,7 +158,7 @@ https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.2
 }
 ```
 
-(`#upm` tracks the latest package; use the `?path=…#v0.2.0` form to pin a specific release.)
+(`#upm` tracks the latest package; use the `?path=…#v0.2.1` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 

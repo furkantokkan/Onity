@@ -21,7 +21,7 @@ this repository.
   advantage is covered as its own axis below.
 - **The benchmark timing numbers are indicative, not guaranteed.** They were
   measured in the **Unity Editor with the Mono scripting backend, on a single
-  Windows machine** (Unity 2022.3.62f3), 512 warmup iterations, 8 samples, median
+  Windows machine** (Unity 2022.3.62f3), 512 warmup iterations, 8 samples, mean
   reported. Your hardware, Unity version, IL2CPP vs Mono backend, and graph shape
   will produce different absolute numbers and possibly different relative ordering.
   Treat the numbers as "this is what one machine measured," not "Onity is always
@@ -49,8 +49,8 @@ this repository.
 
 | Axis | Onity | VContainer | Zenject / Extenject |
 | --- | --- | --- | --- |
-| Resolve speed (Editor-Mono, indicative) | Fastest in this run (~1.2–1.4× VContainer, ~10–15× Zenject) | Close behind Onity | Slowest of the three |
-| Build / registration speed (indicative) | Fastest in this run (~4.9× VContainer) | Slower than Onity | Slow |
+| Resolve speed (Editor-Mono, indicative) | Fastest in this run with baked resolve (~1.9–2.5× VContainer, ~12–33× Zenject) | Behind Onity baked; close to Onity reflection on simple resolves | Slowest of the three |
+| Build / registration speed (indicative) | Fastest in this run (baked ~2.9× VContainer, reflection ~3.8× VContainer) | Slower than Onity | Slow |
 | Steady-state resolve allocation | resolve machinery designed allocation-free (a transient allocates the returned instance; alloc figures pending a corrected re-measure) | Low (codegen mode) | Higher |
 | DI feature breadth | Feature-complete for common Unity needs | Broad | Broadest |
 | Entry-point lifecycle | **Automatic, no registration** | Manual `RegisterEntryPoint` | Automatic |
@@ -71,12 +71,12 @@ this repository.
 On the Editor-Mono benchmark machine, Onity resolved faster than both VContainer
 and Zenject on every scenario:
 
-| Scenario | Onity | VContainer | Zenject |
-| --- | ---: | ---: | ---: |
-| Resolve Singleton | ~152 ns | ~195 ns | ~2,326 ns |
-| Resolve Transient | ~996 ns | ~1,421 ns | ~12,670 ns |
-| Resolve Combined | ~1,883 ns | ~2,462 ns | ~20,392 ns |
-| Resolve Complex (6-level graph) | ~37,895 ns | ~47,117 ns | ~302,383 ns |
+| Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject |
+| --- | ---: | ---: | ---: | ---: |
+| Resolve Singleton | ~94 ns | ~215 ns | ~202 ns | ~3,137 ns |
+| Resolve Transient | ~775 ns | ~1,725 ns | ~1,697 ns | ~11,681 ns |
+| Resolve Combined | ~896 ns | ~1,059 ns | ~1,712 ns | ~15,400 ns |
+| Resolve Complex (6-level graph) | ~22,787 ns | ~26,502 ns | ~57,995 ns | ~285,394 ns |
 
 The speed comes from a process-wide compiled-activator cache (`Expression.Compile`
 runs once per `ConstructorInfo`), compiled field/property/method setters, a
@@ -86,27 +86,30 @@ resolve, and the container has no engine coupling (`Onity.DI` is
 `noEngineReferences: true`).
 
 **Honest caveat.** These are Editor-Mono numbers on one machine. On IL2CPP the
-compiled fast path is unavailable and Onity uses reflection (see axis 6), which
-is slower per call — at that point VContainer's source-generated path can match
-or beat Onity until Onity ships its own compile-time activator. The gap against
-Zenject is large and consistent, but Zenject is the slowest of the three by
-design (heavier feature set, more reflection at resolve time).
+compiled activation path is unavailable and Onity uses reflection (see axis 6);
+that mode was slightly behind VContainer on simple singleton/transient resolves
+in this run, while still ahead on combined and complex graph resolves. At that
+point VContainer's source-generated path can match or beat Onity until Onity ships
+its own compile-time activator. The gap against Zenject is large and consistent,
+but Zenject is the slowest of the three by design (heavier feature set, more
+reflection at resolve time).
 
 ### 2. Build / registration speed
 
 Building (preparing and registering) a complex graph was substantially faster in
 Onity on the benchmark machine:
 
-| Scenario | Onity | VContainer | Zenject |
-| --- | ---: | ---: | ---: |
-| Prepare & Register Complex | ~30,085 ns | ~145,953 ns | ~191,297 ns |
+| Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject |
+| --- | ---: | ---: | ---: | ---: |
+| Prepare & Register Complex | ~47,243 ns | ~35,837 ns | ~135,140 ns | ~197,132 ns |
 
-Onity avoids an explicit container-build step before the first resolve, and the
-activator cache is shared across the whole process, so the second container that
-builds the same types pays almost nothing for compilation. **Caveat:** the very
-first build that compiles a type pays the `Expression.Compile` cost; a process
-that builds many distinct graphs once each will see less of this advantage, and
-on IL2CPP there is no compile step at all.
+Onity avoids VContainer's separate builder object and shares activation metadata
+across the whole process. The baked mode adds a lean dense-id map during `Build()`
+so explicit bindings can resolve without a dictionary lookup; it reuses the same
+providers as the reflection path instead of compiling a second dependency graph.
+**Caveat:** the very first build that compiles a type pays the
+`Expression.Compile` cost; a process that builds many distinct graphs once each
+will see less of this advantage, and on IL2CPP there is no compile step at all.
 
 ### 3. Steady-state allocation
 

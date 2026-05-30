@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="OnityTankArenaSceneFlow.uss" />
+    <ui:VisualElement class="tank-flow__fullscreen">
+        <ui:VisualElement class="tank-flow__card">
+            <ui:Label class="tank-flow__title" text="Tank Arena 2D" />
+            <ui:Label class="tank-flow__subtitle" text="Built with Onity DI + Reactive + Messaging + Pooling + DOTS Bridge" />
+            <ui:Button name="start-button" class="tank-flow__button" text="Start Battle" />
+            <ui:Button name="quit-button" class="tank-flow__button tank-flow__button--danger" text="Quit" />
+            <ui:Label class="tank-flow__hint" text="Keyboard: Enter to start, Escape to quit (editor: stop play mode)" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

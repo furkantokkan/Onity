@@ -30,17 +30,11 @@ namespace Onity.DI.Internal
         /// <summary>Dense <see cref="TypeIdRegistry" /> id of the contract type.</summary>
         public readonly int ContractTypeId;
 
-        /// <summary>Index of this binding's activator and singleton slot.</summary>
+        /// <summary>Index of this binding's provider and singleton slot.</summary>
         public readonly int ProviderSlot;
 
         /// <summary>Creation strategy used when producing the instance.</summary>
         public readonly BakedLifetime Lifetime;
-
-        /// <summary>Start index of this binding's flattened constructor dependencies.</summary>
-        public readonly int FirstDependency;
-
-        /// <summary>Number of flattened constructor dependencies.</summary>
-        public readonly int DependencyCount;
 
         /// <summary>
         /// Initializes a baked binding row.
@@ -48,33 +42,16 @@ namespace Onity.DI.Internal
         /// <param name="contractTypeId">Dense contract type id.</param>
         /// <param name="providerSlot">Provider slot index.</param>
         /// <param name="lifetime">Creation strategy.</param>
-        /// <param name="firstDependency">Start index in the dependency list.</param>
-        /// <param name="dependencyCount">Dependency count.</param>
         public BakedBinding(
             int contractTypeId,
             int providerSlot,
-            BakedLifetime lifetime,
-            int firstDependency,
-            int dependencyCount)
+            BakedLifetime lifetime)
         {
             ContractTypeId = contractTypeId;
             ProviderSlot = providerSlot;
             Lifetime = lifetime;
-            FirstDependency = firstDependency;
-            DependencyCount = dependencyCount;
         }
     }
-
-    /// <summary>
-    /// Produces the instance for one provider slot. The closure captures the same
-    /// provider object the dictionary path would use, so the baked path returns an
-    /// identical instance (singleton identity, transient distinctness, member
-    /// injection, and re-entrant cycle detection all stay byte-for-byte equal to
-    /// the reflection path). The seam exists only to drop the per-resolve
-    /// dictionary lookup, not to re-implement construction.
-    /// </summary>
-    /// <returns>Resolved instance for the slot.</returns>
-    internal delegate object BakedProducer();
 
     /// <summary>
     /// Compiled, array-backed view of a container's explicit local bindings built
@@ -98,41 +75,30 @@ namespace Onity.DI.Internal
         private readonly int[] m_slotByTypeId;
 
         // Indexed by provider slot. Parallel arrays keep the hot path branch-light:
-        // read producer, optionally read/write the singleton cache, return.
+        // read provider, optionally read/write the singleton cache, return.
+        private readonly OnityContainer m_container;
         private readonly BakedBinding[] m_bindings;
-        private readonly BakedProducer[] m_producers;
+        private readonly OnityContainer.IBakedProvider[] m_providers;
         private readonly object[] m_singletonCache;
 
-        // Flattened constructor dependency type ids, shared across bindings. Kept
-        // to satisfy the documented layout and to let future fully-baked
-        // construction walk dependencies without per-binding arrays. The current
-        // producer seam does not read it on the hot path.
-        private readonly int[] m_dependencyList;
-
-        // Compiled activators per provider slot, aligned with m_producers. Captured
-        // for the documented layout and for a future fully-baked CreateInstance.
-        private readonly ActivatorDelegate[] m_activators;
-
         private BakedGraph(
+            OnityContainer container,
             int[] slotByTypeId,
             BakedBinding[] bindings,
-            BakedProducer[] producers,
-            object[] singletonCache,
-            int[] dependencyList,
-            ActivatorDelegate[] activators)
+            OnityContainer.IBakedProvider[] providers,
+            object[] singletonCache)
         {
+            m_container = container;
             m_slotByTypeId = slotByTypeId;
             m_bindings = bindings;
-            m_producers = producers;
+            m_providers = providers;
             m_singletonCache = singletonCache;
-            m_dependencyList = dependencyList;
-            m_activators = activators;
         }
 
         /// <summary>
         /// Number of baked provider slots.
         /// </summary>
-        public int SlotCount => m_producers.Length;
+        public int SlotCount => m_providers.Length;
 
         /// <summary>
         /// Tries to resolve a contract by its dense type id using the baked slot
@@ -164,19 +130,20 @@ namespace Onity.DI.Internal
             return true;
         }
 
-        // Produces the instance for a slot. Instance and transient bindings defer to
-        // the captured producer every time. Singleton bindings cache the producer's
-        // result in a flat slot, so steady-state singleton resolves return the cached
-        // reference with no dictionary lookup and no producer call. The single-thread
+        // Produces the instance for a slot. Instance and transient bindings defer
+        // to the provider every time. Singleton bindings cache the provider's result
+        // in a flat slot, so steady-state singleton resolves return the cached
+        // reference with no dictionary lookup and no provider call. The single-thread
         // resolve guarantee documented for OnityContainer lets this read/write the
         // slot without a memory barrier.
         private object ResolveSlot(int slot)
         {
             BakedLifetime lifetime = m_bindings[slot].Lifetime;
+            OnityContainer.IBakedProvider provider = m_providers[slot];
 
             if (lifetime != BakedLifetime.Singleton)
             {
-                return m_producers[slot]();
+                return provider.Get(m_container);
             }
 
             object cached = m_singletonCache[slot];
@@ -186,10 +153,11 @@ namespace Onity.DI.Internal
                 return cached;
             }
 
-            // The producer wraps the same SingletonProvider, so its first call both
-            // constructs and caches inside the provider; storing the result here just
-            // collapses future lookups to a field read. Identity matches the provider.
-            object created = m_producers[slot]();
+            // The provider is the same SingletonProvider used by the dictionary path,
+            // so its first call both constructs and caches inside the provider;
+            // storing the result here just collapses future lookups to a field read.
+            // Identity matches the provider.
+            object created = provider.Get(m_container);
             m_singletonCache[slot] = created;
             return created;
         }
@@ -201,23 +169,22 @@ namespace Onity.DI.Internal
         /// </summary>
         public sealed class Builder
         {
+            private readonly OnityContainer m_container;
             private readonly System.Collections.Generic.List<BakedBinding> m_bindings;
-            private readonly System.Collections.Generic.List<BakedProducer> m_producers;
-            private readonly System.Collections.Generic.List<ActivatorDelegate> m_activators;
-            private readonly System.Collections.Generic.List<int> m_dependencyList;
+            private readonly System.Collections.Generic.List<OnityContainer.IBakedProvider> m_providers;
             private readonly System.Collections.Generic.Dictionary<int, int> m_slotByTypeId;
 
             /// <summary>
             /// Initializes an empty builder.
             /// </summary>
+            /// <param name="container">Owning container.</param>
             /// <param name="expectedBindingCount">Hint for initial capacity.</param>
-            public Builder(int expectedBindingCount)
+            public Builder(OnityContainer container, int expectedBindingCount)
             {
+                m_container = container ?? throw new ArgumentNullException(nameof(container));
                 int capacity = expectedBindingCount > 0 ? expectedBindingCount : 16;
                 m_bindings = new System.Collections.Generic.List<BakedBinding>(capacity);
-                m_producers = new System.Collections.Generic.List<BakedProducer>(capacity);
-                m_activators = new System.Collections.Generic.List<ActivatorDelegate>(capacity);
-                m_dependencyList = new System.Collections.Generic.List<int>(capacity * 2);
+                m_providers = new System.Collections.Generic.List<OnityContainer.IBakedProvider>(capacity);
                 m_slotByTypeId = new System.Collections.Generic.Dictionary<int, int>(capacity);
             }
 
@@ -228,32 +195,15 @@ namespace Onity.DI.Internal
             /// </summary>
             /// <param name="contractTypeId">Dense contract type id.</param>
             /// <param name="lifetime">Creation strategy.</param>
-            /// <param name="producer">Instance producer wrapping the provider.</param>
-            /// <param name="activator">Compiled activator, or null for instance bindings.</param>
-            /// <param name="dependencyTypeIds">Flattened constructor dependency ids.</param>
+            /// <param name="provider">Provider used by the reflection path.</param>
             public void Add(
                 int contractTypeId,
                 BakedLifetime lifetime,
-                BakedProducer producer,
-                ActivatorDelegate activator,
-                int[] dependencyTypeIds)
+                OnityContainer.IBakedProvider provider)
             {
-                if (producer == null)
+                if (provider == null)
                 {
-                    throw new ArgumentNullException(nameof(producer));
-                }
-
-                int firstDependency = m_dependencyList.Count;
-                int dependencyCount = 0;
-
-                if (dependencyTypeIds != null)
-                {
-                    for (int i = 0; i < dependencyTypeIds.Length; i++)
-                    {
-                        m_dependencyList.Add(dependencyTypeIds[i]);
-                    }
-
-                    dependencyCount = dependencyTypeIds.Length;
+                    throw new ArgumentNullException(nameof(provider));
                 }
 
                 if (m_slotByTypeId.TryGetValue(contractTypeId, out int existingSlot))
@@ -261,20 +211,15 @@ namespace Onity.DI.Internal
                     m_bindings[existingSlot] = new BakedBinding(
                         contractTypeId,
                         existingSlot,
-                        lifetime,
-                        firstDependency,
-                        dependencyCount);
-                    m_producers[existingSlot] = producer;
-                    m_activators[existingSlot] = activator;
+                        lifetime);
+                    m_providers[existingSlot] = provider;
                     return;
                 }
 
-                int slot = m_producers.Count;
+                int slot = m_providers.Count;
                 m_slotByTypeId.Add(contractTypeId, slot);
-                m_bindings.Add(
-                    new BakedBinding(contractTypeId, slot, lifetime, firstDependency, dependencyCount));
-                m_producers.Add(producer);
-                m_activators.Add(activator);
+                m_bindings.Add(new BakedBinding(contractTypeId, slot, lifetime));
+                m_providers.Add(provider);
             }
 
             /// <summary>
@@ -308,12 +253,11 @@ namespace Onity.DI.Internal
                 }
 
                 return new BakedGraph(
+                    m_container,
                     slotByTypeId,
                     m_bindings.ToArray(),
-                    m_producers.ToArray(),
-                    new object[m_producers.Count],
-                    m_dependencyList.ToArray(),
-                    m_activators.ToArray());
+                    m_providers.ToArray(),
+                    new object[m_providers.Count]);
             }
         }
     }

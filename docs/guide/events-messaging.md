@@ -56,6 +56,57 @@ public readonly struct PlayerDamaged
 }
 ```
 
+## Recipe - inject the message broker
+
+Use `IMessageBroker` when one service owns several message types and you do not
+want separate typed publisher/subscriber constructor parameters. Every
+`OnityContext` binds the broker automatically.
+
+```csharp
+using System;
+using Onity.Messaging;
+
+public readonly struct PlayerDamaged
+{
+    public readonly int Amount;
+    public PlayerDamaged(int amount) { Amount = amount; }
+}
+
+public readonly struct PlayerHealed
+{
+    public readonly int Amount;
+    public PlayerHealed(int amount) { Amount = amount; }
+}
+
+public sealed class CombatEvents : IDisposable
+{
+    private readonly IMessageBroker m_broker;
+    private readonly IDisposable m_damaged;
+    private readonly IDisposable m_healed;
+
+    public CombatEvents(IMessageBroker broker)
+    {
+        m_broker = broker;                         // auto-bound by the context
+        m_damaged = broker.Subscribe<PlayerDamaged>(OnDamaged);
+        m_healed = broker.Subscribe<PlayerHealed>(OnHealed);
+    }
+
+    public void ReportDamage(int amount)
+    {
+        m_broker.Publish(new PlayerDamaged(amount));
+    }
+
+    public void Dispose()
+    {
+        m_damaged.Dispose();
+        m_healed.Dispose();
+    }
+
+    private void OnDamaged(PlayerDamaged message) { /* update combat state */ }
+    private void OnHealed(PlayerHealed message) { /* update combat state */ }
+}
+```
+
 ## The `OnityEventHub` facade
 
 `OnityEventHub` wraps the scoped broker with a single publish/subscribe/observe surface and caches one reactive stream per message type.
@@ -104,6 +155,136 @@ public sealed class DamageNumbers
     public IDisposable Listen() => m_damage.Subscribe(d => { /* spawn number */ });
 }
 ```
+
+## MessagePipe migration examples
+
+MessagePipe users usually wire a broker, register message types, inject
+`IPublisher<T>` / `ISubscriber<T>`, and optionally bridge into filters or async
+handlers. Onity keeps the typed vocabulary but moves most setup into the scoped
+context.
+
+### Setup
+
+```csharp
+// MessagePipe + VContainer / Microsoft DI style setup:
+builder.AddMessagePipe();
+builder.RegisterMessageBroker<PlayerDamaged>(options);
+```
+
+```csharp
+// Onity setup:
+// IMessageBroker and OnityEventHub are auto-bound by ProjectContext,
+// SceneContext, and GameObjectContext.
+
+// Only add this when a service constructor injects IPublisher<T> or ISubscriber<T>
+// directly. Broker and EventHub injection do not need it.
+container.BindMessageChannel<PlayerDamaged>();
+```
+
+### Publisher and subscriber
+
+```csharp
+// MessagePipe shape:
+public sealed class DamageSystem
+{
+    private readonly IPublisher<PlayerDamaged> m_publisher;
+    public DamageSystem(IPublisher<PlayerDamaged> publisher) { m_publisher = publisher; }
+    public void Hit(int amount) => m_publisher.Publish(new PlayerDamaged(amount));
+}
+
+public sealed class DamageHud
+{
+    private readonly ISubscriber<PlayerDamaged> m_subscriber;
+    public DamageHud(ISubscriber<PlayerDamaged> subscriber) { m_subscriber = subscriber; }
+    public IDisposable Start() => m_subscriber.Subscribe(OnDamaged);
+    private void OnDamaged(PlayerDamaged message) { /* update UI */ }
+}
+```
+
+```csharp
+// Onity equivalent:
+using Onity.DI;
+using Onity.Messaging;
+using Onity.Unity.Installers;
+using Onity.Unity.Messaging;
+
+public sealed class GameInstaller : MonoInstaller
+{
+    public override void InstallBindings(OnityContainer container)
+    {
+        container.BindMessageChannel<PlayerDamaged>();
+        container.Bind<DamageSystem>().AsSingle();
+        container.Bind<DamageHud>().AsSingle();
+    }
+}
+
+public sealed class DamageSystem
+{
+    private readonly IPublisher<PlayerDamaged> m_publisher;
+    public DamageSystem(IPublisher<PlayerDamaged> publisher) { m_publisher = publisher; }
+    public void Hit(int amount) => m_publisher.Publish(new PlayerDamaged(amount));
+}
+
+public sealed class DamageHud
+{
+    private readonly ISubscriber<PlayerDamaged> m_subscriber;
+    public DamageHud(ISubscriber<PlayerDamaged> subscriber) { m_subscriber = subscriber; }
+    public IDisposable Start() => m_subscriber.Subscribe(OnDamaged);
+    private void OnDamaged(PlayerDamaged message) { /* update UI */ }
+}
+```
+
+When you do not need direction-only injection, use the auto-bound broker or hub:
+
+```csharp
+public sealed class DamageSystem
+{
+    private readonly OnityEventHub m_events;
+    public DamageSystem(OnityEventHub events) { m_events = events; }
+    public void Hit(int amount) => m_events.Publish(new PlayerDamaged(amount));
+}
+```
+
+### Filters
+
+MessagePipe filters map to the reactive bridge. The event channel stays lean;
+the per-consumer rule lives in the observable chain.
+
+```csharp
+using Onity.Reactive;
+using Onity.Unity.Messaging;
+using Onity.Unity.Reactive;
+
+m_events.Observe<PlayerDamaged>()
+        .Where(message => message.Amount > 0)
+        .Subscribe(OnRealDamage)
+        .AddTo(m_subscriptions);
+```
+
+### Async and keyed channels
+
+MessagePipe's async publisher/subscriber pattern maps to
+`AsyncMessageChannel<T>`. Keyed MessagePipe channels map to
+`KeyedMessageChannel<TKey,TMessage>`.
+
+```csharp
+using System.Threading;
+using System.Threading.Tasks;
+using Onity.Messaging;
+
+AsyncMessageChannel<LevelLoaded> levelLoaded = new AsyncMessageChannel<LevelLoaded>();
+
+levelLoaded.Subscribe(async (message, ct) =>
+{
+    await WarmupLevelAsync(message, ct);
+});
+
+await levelLoaded.PublishAsync(new LevelLoaded(/* ... */), CancellationToken.None);
+```
+
+Onity does not provide a global static `GlobalMessagePipe` equivalent. Scope the
+broker through `ProjectContext`, `SceneContext`, or `GameObjectContext`, then
+inject `OnityEventHub` where manager-style ergonomics are useful.
 
 ## Keyed channels
 

@@ -60,10 +60,12 @@ Documented divergences (Onity throws on member-injection cycles; resolve-time vs
 build-time circular detection; most-params ctor selection; scope == child container)
 are asserted against Onity's real behavior with inline comments, not faked parity.
 
-**Verification status:** `dotnet build Onity.DI.csproj` clean (0 errors). EditMode
-tests and the DI benchmark still require the Unity Editor to run; expected impact is
-`Prepare & Register Complex` back under the 15,000 ns gate and `Resolve Complex`
-moving toward the 35,000 / 28,000 targets, with steady-state resolve staying 0 B/op.
+**Verification status:** `dotnet build Onity.DI.csproj` clean (0 errors).
+The 2026-05-30 follow-up Unity benchmark confirmed that baked resolve now beats
+VContainer in every measured timing scenario, including
+`Prepare & Register Complex` (~47,243 ns vs VContainer ~135,140 ns). The
+internal 15,000 ns build gate and corrected gross-allocation measurement remain
+open release-hardening work.
 
 ### 2026-05-29 - In progress: parallel increments started this session
 

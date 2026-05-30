@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="OnityTankArenaSceneFlow.uss" />
+    <ui:VisualElement class="tank-flow__fullscreen">
+        <ui:VisualElement class="tank-flow__card">
+            <ui:Label class="tank-flow__title" text="Onity Tank Arena" />
+            <ui:Label class="tank-flow__subtitle" text="Preparing scene transition" />
+            <ui:Label name="loading-progress" class="tank-flow__line" text="Loading..." />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
