@@ -5,6 +5,30 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-05-30
+
+### Changed
+
+- Optimized the baked DI build path by reusing the existing provider records in
+  the baked graph instead of collecting unused dependency and activator data.
+- Updated DI benchmark reports and charts. `Onity (Baked)` now beats VContainer
+  in every measured Editor/Mono resolve and prepare/register scenario, including
+  `Prepare & Register (Complex)`.
+- Documented the DOTS/Burst boundary for DI performance: managed DI stays in the
+  C# container; DOTS remains a bridge for blittable, batchable workloads.
+- Refreshed the public VContainer/Zenject comparison with the latest 0.2.1
+  benchmark numbers.
+- Added message broker and MessagePipe migration examples to the events
+  documentation.
+
+### Tested
+
+- `dotnet build Onity.DI.csproj`
+- `dotnet build Onity.Tests.EditMode.csproj`
+- Unity EditMode filtered baked parity suite: 15/15 passed.
+- Unity batchmode DI benchmark generated
+  `Benchmarks/Results/di-benchmark-latest.json`.
+
 ## [0.1.0] - 2026-05-30
 
 First public preview. Three feature-complete pillars on a shared engine-free core
@@ -88,4 +112,5 @@ dependency (used by the `Onity.Unity` layer).
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.2.1]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.2.1
 [0.1.0]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.1.0

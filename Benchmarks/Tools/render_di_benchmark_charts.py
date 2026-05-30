@@ -61,11 +61,28 @@ def resolve_path(path: str, prefer_repo_root: bool) -> str:
 
 def container_sort_key(container: str) -> int:
     ordering = {
-        "Onity": 0,
-        "VContainer": 1,
-        "Zenject": 2,
+        "Onity (Baked)": 0,
+        "Onity": 1,
+        "Onity (Reflection)": 2,
+        "VContainer": 3,
+        "Zenject": 4,
     }
     return ordering.get(container, 99)
+
+
+def container_color(container: str) -> str:
+    colors = {
+        "Onity (Baked)": "#16a34a",
+        "Onity": "#22c55e",
+        "Onity (Reflection)": "#84cc16",
+        "VContainer": "#3b82f6",
+        "Zenject": "#ef4444",
+    }
+    return colors.get(container, "#888888")
+
+
+def collect_onity_containers(containers: List[str]) -> List[str]:
+    return [container for container in containers if container == "Onity" or container.startswith("Onity ")]
 
 
 def collect_containers(report: Dict) -> List[str]:
@@ -108,12 +125,6 @@ def render_runtime_chart(
     except ImportError:
         raise RuntimeError("matplotlib and numpy are required. Install with: pip install matplotlib numpy")
 
-    colors = {
-        "Onity": "#22c55e",
-        "VContainer": "#3b82f6",
-        "Zenject": "#ef4444",
-    }
-
     scenario_names = [row[0] for row in rows]
     x = np.arange(len(scenario_names))
     width = 0.8 / max(1, len(containers))
@@ -128,7 +139,7 @@ def render_runtime_chart(
             values,
             width=width,
             label=container,
-            color=colors.get(container, "#888888"),
+            color=container_color(container),
         )
 
     iterations = report.get("scenarios", [{}])[0].get("iterationsPerSample", 0)
@@ -176,16 +187,10 @@ def render_gc_chart(
 
     scenario_name = selected_row[0]
     values_kb = [selected_row[2][container] / 1024.0 for container in containers]
-    colors = {
-        "Onity": "#22c55e",
-        "VContainer": "#3b82f6",
-        "Zenject": "#ef4444",
-    }
-
     x = np.arange(len(containers))
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.bar(x, values_kb, color=[colors.get(name, "#888888") for name in containers], width=0.6)
+    ax.bar(x, values_kb, color=[container_color(name) for name in containers], width=0.6)
     ax.set_xticks(x)
     ax.set_xticklabels(containers)
     ax.set_ylabel("Allocated KB per sample (lower is better)")
@@ -216,19 +221,37 @@ def render_summary_markdown(
     lines.append("")
     lines.append("## Relative Speedup vs VContainer")
     lines.append("")
-    lines.append("| Scenario | Onity speedup |")
-    lines.append("|---|---:|")
+    onity_containers = collect_onity_containers(containers)
+
+    if len(onity_containers) == 0:
+        lines.append("| Scenario | Onity speedup |")
+        lines.append("|---|---:|")
+    else:
+        speedup_headers = " | ".join(f"{container} speedup" for container in onity_containers)
+        speedup_rules = "|".join("---:" for _ in onity_containers)
+        lines.append(f"| Scenario | {speedup_headers} |")
+        lines.append(f"|---|{speedup_rules}|")
 
     for scenario_name, ms_map, _ in rows:
-        onity = ms_map.get("Onity", math.nan)
         vcontainer = ms_map.get("VContainer", math.nan)
 
-        if math.isnan(onity) or math.isnan(vcontainer) or vcontainer <= 0:
+        if len(onity_containers) == 0:
             lines.append(f"| {scenario_name} | N/A |")
             continue
 
-        speedup = (vcontainer - onity) / vcontainer * 100.0
-        lines.append(f"| {scenario_name} | {speedup:+.2f}% |")
+        cells = []
+
+        for container in onity_containers:
+            onity = ms_map.get(container, math.nan)
+
+            if math.isnan(onity) or math.isnan(vcontainer) or vcontainer <= 0:
+                cells.append("N/A")
+                continue
+
+            speedup = (vcontainer - onity) / vcontainer * 100.0
+            cells.append(f"{speedup:+.2f}%")
+
+        lines.append(f"| {scenario_name} | {' | '.join(cells)} |")
 
     with open(output_path, "w", encoding="utf-8") as file:
         file.write("\n".join(lines))

@@ -464,15 +464,15 @@ namespace Onity.DI
         }
 
         // Compiles this scope's explicit local bindings into a flat, dense-id keyed
-        // graph. Each baked producer wraps the SAME IProvider the dictionary path
-        // uses, so a baked resolve returns an instance identical to the reflection
-        // path (singleton identity, transient distinctness, member injection, and
-        // cycle detection are all owned by the provider, not duplicated here). Only
+        // graph. The baked graph stores the SAME IProvider the dictionary path uses,
+        // so a baked resolve returns an instance identical to the reflection path
+        // (singleton identity, transient distinctness, member injection, and cycle
+        // detection are all owned by the provider, not duplicated here). Only
         // m_providerMap is baked: parent, implicit-concrete, and unbound contracts
         // intentionally stay on the reflection path for identical behavior.
         private BakedGraph BuildBakedGraph()
         {
-            BakedGraph.Builder builder = new BakedGraph.Builder(m_providerMap.Count);
+            BakedGraph.Builder builder = new BakedGraph.Builder(this, m_providerMap.Count);
 
             foreach (KeyValuePair<Type, IProvider> pair in m_providerMap)
             {
@@ -480,60 +480,13 @@ namespace Onity.DI
                 IProvider provider = pair.Value;
                 int contractTypeId = TypeIdRegistry.Register(contractType);
 
-                int[] dependencyTypeIds = CollectBakedDependencyIds(provider);
-                ActivatorDelegate activator = TryGetActivator(provider);
-                IProvider capturedProvider = provider;
-                BakedProducer producer = () => capturedProvider.Get(this);
-
                 builder.Add(
                     contractTypeId,
                     provider.BakedLifetime,
-                    producer,
-                    activator,
-                    dependencyTypeIds);
+                    provider);
             }
 
             return builder.Build();
-        }
-
-        // Flattens a provider's constructor dependency types into dense ids for the
-        // baked dependency list. Instance bindings have no constructor to inspect.
-        // Built once per binding at Build() time, never on the resolve hot path.
-        private int[] CollectBakedDependencyIds(IProvider provider)
-        {
-            if (provider.BakedLifetime == BakedLifetime.Instance)
-            {
-                return null;
-            }
-
-            TypeInjectionPlan plan = GetOrCreatePlan(provider.ImplementationType);
-            Type[] dependencies = plan.ConstructorDependencies;
-
-            if (dependencies.Length == 0)
-            {
-                return null;
-            }
-
-            int[] dependencyTypeIds = new int[dependencies.Length];
-
-            for (int i = 0; i < dependencies.Length; i++)
-            {
-                dependencyTypeIds[i] = TypeIdRegistry.Register(dependencies[i]);
-            }
-
-            return dependencyTypeIds;
-        }
-
-        // Returns the compiled activator for a constructable binding so the baked
-        // graph carries the documented activator array. Instance bindings have none.
-        private ActivatorDelegate TryGetActivator(IProvider provider)
-        {
-            if (provider.BakedLifetime == BakedLifetime.Instance)
-            {
-                return null;
-            }
-
-            return GetOrCreatePlan(provider.ImplementationType).Activator;
         }
 
         /// <summary>
@@ -2078,14 +2031,20 @@ namespace Onity.DI
             }
         }
 
-        private interface IProvider : IDisposable
+        internal interface IBakedProvider
         {
             object Get(OnityContainer container);
-            ProviderDiagnosticsSnapshot GetDiagnosticsSnapshot();
 
             // Creation strategy and concrete type, read only at Build() time to
             // populate the baked graph. Never touched on the resolve hot path.
             BakedLifetime BakedLifetime { get; }
+        }
+
+        private interface IProvider : IBakedProvider, IDisposable
+        {
+            ProviderDiagnosticsSnapshot GetDiagnosticsSnapshot();
+
+            // Concrete type is read only for diagnostics and registration setup.
             Type ImplementationType { get; }
         }
 
