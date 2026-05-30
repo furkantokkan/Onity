@@ -6,9 +6,14 @@ Current Unity target in this repository: `2022.3.62f3`.
 
 ## Scope
 
-- Runtime root: `Assets/Onity/Runtime`
-- Editor root: `Assets/Onity/Editor`
-- Tests root: `Assets/Onity/Tests`
+- Runtime root: `Runtime`
+- Editor root: `Editor`
+- Tests root: `Tests`
+- Benchmarks root: `Benchmarks`
+
+In this development repository the package is mirrored at
+`Assets/Onity-Packages/Onity`. On the published `upm` branch these paths are at
+the package root.
 
 Core assemblies in this package:
 
@@ -172,6 +177,26 @@ What remains intentionally scoped:
 - Onity keeps API surface tighter than UniTask and focuses on Unity-first DI/reactive integration.
 - Additional async-enumerable breadth (full LINQ-like async stream API) can be added incrementally based on usage pressure.
 
+## Benchmark Snapshot
+
+Latest published DI run: `2026-05-30T18:32:48Z`, Unity 2022.3.62f3,
+Windows Editor/Mono, 512 warmup iterations, 8 measured samples, mean ns/op.
+See `Benchmarks/Results/di-benchmark-summary.md` for the full report.
+
+| Scenario | Onity Baked | VContainer | Zenject | Onity vs VContainer |
+| --- | ---: | ---: | ---: | ---: |
+| Resolve Singleton | ~94 ns | ~202 ns | ~3,137 ns | ~+53% |
+| Resolve Transient | ~775 ns | ~1,697 ns | ~11,681 ns | ~+54% |
+| Resolve Combined | ~896 ns | ~1,712 ns | ~15,400 ns | ~+48% |
+| Resolve Complex (6-level) | ~22,787 ns | ~57,995 ns | ~285,394 ns | ~+61% |
+| Prepare & Register Complex | ~47,243 ns | ~135,140 ns | ~197,132 ns | ~+65% |
+
+Timing numbers are Editor/Mono results from one machine. The committed
+allocation columns are withdrawn until the allocation harness is corrected,
+because the same run reported 0 B for every container. On IL2CPP, Onity uses the
+safe reflection fallback instead of the Mono compiled activator path; measure a
+player build before making IL2CPP speed claims.
+
 ## Build and Test
 
 ```powershell
@@ -183,10 +208,11 @@ dotnet build Onity.Tests.EditMode.csproj -nologo
 
 EditMode tests are under:
 
-- `Assets/Onity/Tests/EditMode/Scripts`
+- `Tests/EditMode/Scripts`
 
 ## Notes
 
-- Runtime implementation is self-owned under `Assets/Onity`.
-- Third-party frameworks under `Assets/ThirdParty` are reference and comparison inputs.
-- Performance claims should be validated with `Assets/Onity/Benchmarks`.
+- Runtime implementation is self-owned under `Runtime`.
+- Third-party frameworks in the development repository are reference and
+  comparison inputs only.
+- Performance claims should be validated with `Benchmarks`.
