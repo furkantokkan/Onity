@@ -82,25 +82,25 @@ BasicGameplay) generate from a menu.
 ### Latest DI benchmark
 
 From `Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-summary.md`,
-Unity 2022.3.62f3, Windows Editor:
+Unity 2022.3.62f3, Windows Editor/Mono, generated 2026-05-30:
 
 | Scenario | Onity (ns/op) | VContainer (ns/op) | Onity vs VContainer |
 |---|---:|---:|---:|
-| Resolve Singleton | 175 | 187 | +6.24% |
-| Resolve Transient | 2,088 | 1,801 | -15.91% |
-| Resolve Combined | 2,163 | 1,833 | -18.02% |
-| Resolve Complex | 52,386 | 40,916 | -28.03% |
-| Prepare and Register Complex | 12,492 | 143,123 | +91.27% |
+| Resolve Singleton | 94 | 202 | +53.44% |
+| Resolve Transient | 775 | 1,697 | +54.32% |
+| Resolve Combined | 896 | 1,712 | +47.64% |
+| Resolve Complex | 22,787 | 57,995 | +60.71% |
+| Prepare and Register Complex | 47,243 | 135,140 | +65.04% |
 
-Allocation per sample is 0 bytes for all containers in all scenarios.
+Allocation numbers from this runner are withdrawn pending a corrected harness;
+the timing numbers above are the trustworthy benchmark output.
 
-The gap on transient/combined/complex is the **single most important
-performance task** of phase 1.
+Onity Baked is faster than VContainer on every measured Editor/Mono timing path.
+The remaining performance tasks are IL2CPP player timing, source-generated or
+IL-postprocessed activators for AOT, and a corrected allocation harness.
 
 ## Where work begins
 
-After reading the rest of the plan, the next action is **Phase 0 - Module
-Reorganization** described in `05-Implementation-Phases.md`. Phase 0 prepares
-the codebase for the DI hot-path rewrite in Phase 1.
-
-Do not start Phase 1 work before Phase 0 ships.
+After reading the rest of the plan, the next action is to close the remaining
+0.2.x performance proof gaps: IL2CPP player benchmark, corrected allocation
+measurement, and source-generated or IL-postprocessed activators.

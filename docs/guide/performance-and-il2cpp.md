@@ -41,7 +41,7 @@ The committed DI benchmark reports resolve **timing** (speed) numbers. Treat the
 
 ## IL2CPP checklist
 
-- **No setup required for the fallback.** The reflection path engages automatically on AOT/IL2CPP. The container runs the same bindings; only activation speed changes. This fallback was verified all-green on an IL2CPP build.
+- **No setup required for the fallback.** The reflection path engages automatically on AOT/IL2CPP. The container runs the same bindings; only activation speed changes. This covers correctness; IL2CPP speed still needs a player-side benchmark.
 - **Keep the core engine-free.** `Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, and `Onity.Factory` have no `UnityEngine` dependency, which keeps them simple to strip and test. `ZLinq` is the only third-party runtime dependency, used by the `Onity.Unity` layer.
 - **Closed generics only.** Open generic *definitions* are bound (`Bind(typeof(IRepo<>))`), but each **closed** form (`IRepo<Foo>`) is what actually resolves and is built on first use. Make sure the closed types you resolve are reachable so the AOT linker preserves them.
 - **No reflection-only members the linker can drop silently.** Constructors and injected members the container needs must survive stripping; reference them so they are not removed.

@@ -56,7 +56,7 @@ this repository.
 | Entry-point lifecycle | **Automatic, no registration** | Manual `RegisterEntryPoint` | Automatic |
 | Collection / open-generic binds | Yes | Yes | Yes |
 | Conditional / id binds, `Unbind` | No (deliberate non-goal) | Limited | **Yes** |
-| IL2CPP / AOT | Compiled fast path + automatic reflection fallback; validated on one IL2CPP build | **Mature, source-gen path** | **Mature, broadly shipped** |
+| IL2CPP / AOT | Mono compiled fast path + automatic reflection fallback on AOT; correctness covered by fallback tests, player timing still pending | **Mature, source-gen path** | **Mature, broadly shipped** |
 | Unified DI + Reactive + Events | **Yes (one package)** | DI only | DI only |
 | AI-friendliness / analyzer | **Usage guide + `ONITY001`–`ONITY006`** | None bundled | Partial (`ValidateAll`) |
 | Production maturity | **Younger** | Mature | Mature |
@@ -186,7 +186,9 @@ invokes* a representative activator-shaped lambda at startup:
 - `OnityContainer.ForceReflectionActivation` lets you force the reflection path
   on a JIT runtime to pre-flight a graph under the exact strategy IL2CPP uses.
 
-This fallback was **verified all-green on an IL2CPP build**.
+This fallback is covered by AOT fallback tests. It proves the container degrades
+to the safe activation path instead of crashing; it does not provide IL2CPP
+player timing data.
 
 **Honest caveat.** Reflection only guarantees that Onity *runs* correctly on
 IL2CPP; it does not preserve the *speed* lead there. VContainer ships a

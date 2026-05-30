@@ -40,9 +40,11 @@ Each run:
 
 - 512 warmup iterations
 - 8 measured samples
-- Median ns/op reported
-- GC allocation per sample measured via
-  `GC.GetTotalAllocatedBytes(precise: true)` deltas
+- Arithmetic mean ns/op reported
+- GC allocation columns are currently emitted, but public allocation claims are
+  withdrawn until the harness is corrected. The 2026-05-30 run reported 0 B for
+  every container, including transient resolves in VContainer and Zenject, so
+  that data did not capture gross allocations.
 
 Results land in:
 
@@ -99,30 +101,35 @@ agent rotates:
 
 ### 3.1 Headline gates (Phase 1 exit)
 
-| Scenario | Today (Onity) | Today (VContainer) | Phase 1 target | Stretch |
-|---|---:|---:|---:|---:|
-| Resolve Singleton (ns/op) | 175 | 187 | <= 150 | <= 130 |
-| Resolve Transient (ns/op) | 2,088 | 1,801 | <= 1,500 | <= 1,200 |
-| Resolve Combined (ns/op) | 2,163 | 1,833 | <= 1,550 | <= 1,250 |
-| Resolve Complex (ns/op) | 52,386 | 40,916 | <= 35,000 | <= 28,000 |
-| Prepare and Register Complex (ns/op) | 12,492 | 143,123 | <= 15,000 | <= 12,000 |
-| Resolve allocation per sample (B) | 0 | 0 | 0 | 0 |
+| Scenario | Current Onity Baked | Current VContainer | Internal target | Status |
+|---|---:|---:|---:|---|
+| Resolve Singleton (ns/op) | 94 | 202 | <= 150 | Pass |
+| Resolve Transient (ns/op) | 775 | 1,697 | <= 1,500 | Pass |
+| Resolve Combined (ns/op) | 896 | 1,712 | <= 1,550 | Pass |
+| Resolve Complex (ns/op) | 22,787 | 57,995 | <= 35,000 | Pass |
+| Prepare and Register Complex (ns/op) | 47,243 | 135,140 | <= 15,000 | Misses internal gate, but is ~65% faster than VContainer |
+| Resolve allocation per sample (B) | pending corrected harness | pending corrected harness | 0 measured correctly | Not enforceable yet |
 
 The gates ratchet:
 
 - A PR that improves a number sets the new baseline.
-- A PR that regresses a number by more than **5%** without a documented
+- A PR that regresses a timing number by more than **5%** without a documented
   reason fails CI.
+- Allocation gates stay documented but are not enforceable until the corrected
+  allocation benchmark lands.
 
 ### 3.2 IL2CPP variant
 
-Phase 1 ships an IL2CPP build of `OnityDiBenchmarkRunner` to confirm:
+0.2.1 confirms the AOT safety path through fallback tests: if
+`Expression.Compile()` cannot compile and invoke on the runtime, Onity uses the
+reflection activation path instead of crashing.
 
-- `Expression.Compile()` activators do not throw at startup on IL2CPP.
-- Resolve Transient is still <= 1.5x slower than the Mono baseline.
+The remaining IL2CPP gate is a player benchmark, not an Editor benchmark:
 
-If Expression-based activators hit a hard wall on IL2CPP, Phase 2 brings in
-source-generated activators (see `02-DI-Design.md` section 3.4).
+- Run `OnityDiBenchmarkRunner` from an IL2CPP player or equivalent player-side
+  harness.
+- Compare Onity reflection fallback against VContainer's source-generated path.
+- Use the result to prioritize `Onity.SourceGen` / IL post-process activators.
 
 ## 4. Reactive performance gates
 

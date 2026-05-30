@@ -29,8 +29,8 @@ out of scope). Changes are internal only; the public API is unchanged.
 
 - **Static activator cache** (`ActivatorCompiler`): `Expression.Compile` now runs
   once per `ConstructorInfo` per process via a `ConcurrentDictionary`, instead of
-  once per container `Build`. Targets the `Prepare & Register Complex` regression
-  (30,085 ns) introduced by Phase 1.1.
+  once per container `Build`. Targets the earlier `Prepare & Register Complex`
+  regression introduced by Phase 1.1.
 - **Lock-free `ArgumentArrayPool`** (`OnityContainer`): replaced the global locked
   `Dictionary<int,Stack<>>` with a `[ThreadStatic]` per-length free-list. Removes
   the lock from every `CreateInstance` / inject-method frame; re-entrant-correct
@@ -102,7 +102,7 @@ hook that `Subject<T>.OnNext` routes a throwing subscriber's exception to).
 channels only; messaging code still throws standard .NET exceptions today (error-standard
 roadmap, `07-Competitive-And-AI-Roadmap.md`). Docs reflect the shipped reality.
 
-### 2026-05-30 - Full EditMode suite green in Unity 6.4 (203/203)
+### 2026-05-30 - Historical full EditMode suite pass in Unity 6.4
 
 Ran the entire `Onity.DI.Tests` EditMode suite in the Onity Example Game (Unity
 6000.4.7f1) via the Test Runner: **203 tests, 203 passed, 0 failed.** This covers
@@ -118,11 +118,15 @@ because awaiting a CT-canceled async `ValueTask` surfaces `TaskCanceledException
 All engine-free projects (`Onity.Core/Factory/DI/Reactive/Messaging`) and
 `Onity.Analyzers` compile clean via `dotnet build` (0 errors).
 
+This was the full suite count at that point in the development branch. The suite
+has grown since then; current docs should reference the live test runner/CI
+result instead of freezing this count as the current total.
+
 **`UseBakedResolve` stays `false` (shipping default) by design.** `OnityBakedGraphParityTests`
 asserts the default is `false` (it is opt-in until validated). Flipping it to the
 default is the final perf-activation step, gated on: (1) updating that guard assertion,
-(2) a full EditMode run with the flag forced `true` (confirm all 203 pass on the baked
-path, not just the 15 parity scenarios), and (3) `OnityDiBenchmarkRunner` (in the Onity
+(2) a full EditMode run with the flag forced `true` (confirm the whole suite passes on
+the baked path, not just the 15 parity scenarios), and (3) `OnityDiBenchmarkRunner` (in the Onity
 repo, which references VContainer/Zenject) confirming the baked path meets the Resolve
 Complex <= 35,000 / Combined <= 1,550 gates. Until then the proven reflection/compiled
 path remains the default.
@@ -156,7 +160,8 @@ from these compiled activators, this was the real "not production-ready on IL2CP
 **Verification:** the three compiler sources were compiled unmodified in a throwaway
 net8 console and exercised on both paths - 8/8 checks pass (probe true on JIT; compiled
 ctor; force-reflection disables compile; reflection ctor; value-type box/unbox;
-field/property/method setters). Full EditMode suite (now 208) must be re-run in Unity.
+field/property/method setters). The then-current expanded EditMode suite still
+needed a Unity re-run at this point.
 
 **Remaining for P0-1:** (1) build an IL2CPP player that runs a resolve smoke + benchmark
 on device to confirm the probe trips and the reflection path performs acceptably;
@@ -186,8 +191,8 @@ lifecycle interface is now wired by the container itself - no register-entry-poi
   multi-contract-ticks-once, disposable-disposed-on-Dispose.
 
 **Verification:** `Onity.Core`+`Onity.Factory`+`Onity.DI` compiled headlessly (net8) -
-0 warnings, 0 errors. Full EditMode suite (now ~217 with the AOT + lifecycle tests) must
-be re-run in Unity; the `OnityContext` pump needs a PlayMode check.
+0 warnings, 0 errors. The then-current expanded EditMode suite still needed a
+Unity re-run; the `OnityContext` pump needed a PlayMode check.
 
 ### 2026-05-30 - P1-1 (collection injection): register many, inject all
 
@@ -219,7 +224,7 @@ resolve hot path is untouched.
 **Verification:** compiled Core+Factory+DI headlessly AND ran an 11-assertion harness
 through the real `OnityContainer` on net8 - all pass (enumerable/array/readonlylist/list,
 order, last-wins, ctor injection, CanResolve, hierarchy 3+1=4 ancestors-first, unbound
-throws). Full EditMode suite (now ~228) to be re-run in Unity.
+throws). The then-current expanded EditMode suite still needed a Unity re-run.
 
 ### 2026-05-30 - P1-2 (open generic registration): last DI feature gap closed
 
@@ -251,7 +256,7 @@ This was the last DI-feature axis where VContainer was ahead.
 
 **Verification:** compiled Core+Factory+DI headlessly (full DI assembly, all P0-1/P1-1/P1-2/
 P1-3 changes) AND ran an 11-assertion harness through the real `OnityContainer` on net8 -
-all pass. Full EditMode suite (now ~239) to be re-run in Unity.
+all pass. The then-current expanded EditMode suite still needed a Unity re-run.
 
 **DI feature parity with VContainer is now complete:** collection injection (P1-1),
 open generics (P1-2), and automatic entry-point lifecycle (P1-3, where Onity is *ahead* -
