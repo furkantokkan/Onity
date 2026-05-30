@@ -156,6 +156,6 @@ Frame and timer sources that feed the operators above. They are pumped by a hidd
 
 Shipped: `Where`, `Select`, `DistinctUntilChanged`, `Skip`, `SkipWhile`, `Take`, `TakeWhile`, `StartWith`, `Scan`, `Pairwise`, `Merge`, `CombineLatest`, `Sample`, `Buffer` (count + time), `Debounce`, `ThrottleLast`, `Throttle` (leading edge), `SelectAwait`, `WhereAwait`, `TakeUntil` (token + task), `TakeUntilCancellation`, `FirstAsync`, `ToTask`, `ObserveOn`, `ObserveOnMainThread`, `Delay`.
 
-Not shipped: `Window`, `Zip`, `Switch`, `Concat`, `Publish`, `Share`, `RefCount`; factories `Never` / `Create` / `Defer`. Model current state with `ReactiveProperty<T>` and transient notifications with messages (see [Messaging API](messaging-api.md)).
+Not shipped: `Window`, `Zip`, `Switch`, `Concat`, `Publish`, `Share`, `RefCount`; factories `Never` / `Create` / `Defer`. Model current state with `ReactiveProperty<T>` and transient notifications with messages (see [Messaging API](messaging-api.html)).
 
-See the [Reactive guide](../guide/reactive.md) for narrative usage and recipes.
+See the [Reactive guide](../guide/reactive.html) for narrative usage and recipes.

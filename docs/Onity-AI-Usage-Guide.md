@@ -6,7 +6,7 @@ nav_order: 6
 # Onity AI Usage Guide
 
 Machine-readable usage guide for writing CORRECT Onity code across the three pillars:
-**DI** (replaces Zenject/VContainer), **Reactive** (replaces R3/UniRx), **Events** (replaces MessagePipe).
+**DI** (replaces Zenject/VContainer), **Reactive** (replaces R3/UniRx), **Events** (replaces MessagePipe and the UniRx `MessageBroker`).
 
 This guide is verified against the real Onity source. Every code block compiles against the current
 public API. When this guide and any older design doc disagree, **this guide and the source win**.

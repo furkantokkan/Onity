@@ -14,7 +14,7 @@ Onity replaces three libraries you might already know:
 
 - **Dependency injection** (instead of Zenject / VContainer)
 - **Reactive programming** (instead of R3 / UniRx)
-- **Events / messaging** (instead of MessagePipe)
+- **Events / messaging** (instead of MessagePipe and the UniRx `MessageBroker`)
 
 You do not glue three libraries together. Onity is one coherent API with one
 mental model and one disposal rule. That is the whole point of this guide: show
@@ -22,11 +22,11 @@ you the single idiom for each job so you are not stitching adapters between
 frameworks.
 
 > Looking for the dense, every-signature reference instead? See
-> [`Onity-AI-Usage-Guide.md`](Onity-AI-Usage-Guide.md). This page is the friendly
+> [`Onity-AI-Usage-Guide.md`](Onity-AI-Usage-Guide.html). This page is the friendly
 > first read; that page is the lookup table. Migrating from another framework?
-> See [`Migration/From-Zenject.md`](Migration/From-Zenject.md),
-> [`Migration/From-VContainer.md`](Migration/From-VContainer.md), and
-> [`Migration/From-R3.md`](Migration/From-R3.md).
+> See [`Migration/From-Zenject.md`](Migration/From-Zenject.html),
+> [`Migration/From-VContainer.md`](Migration/From-VContainer.html), and
+> [`Migration/From-R3.md`](Migration/From-R3.html).
 
 Everything below compiles against the real shipped API. Copy the blocks as-is.
 
@@ -558,12 +558,12 @@ because `ReactiveProperty<T>` and `events.Observe<T>()` are the *same*
 
 ## Where to go next
 
-- **Full API reference:** [`Onity-AI-Usage-Guide.md`](Onity-AI-Usage-Guide.md) —
+- **Full API reference:** [`Onity-AI-Usage-Guide.md`](Onity-AI-Usage-Guide.html) —
   every binding form, operator, and error-to-fix table.
 - **Coming from another framework:**
-  [`Migration/From-Zenject.md`](Migration/From-Zenject.md),
-  [`Migration/From-VContainer.md`](Migration/From-VContainer.md),
-  [`Migration/From-R3.md`](Migration/From-R3.md).
+  [`Migration/From-Zenject.md`](Migration/From-Zenject.html),
+  [`Migration/From-VContainer.md`](Migration/From-VContainer.html),
+  [`Migration/From-R3.md`](Migration/From-R3.html).
 - **Factories with runtime arguments, child/scoped containers, async startup
   (`BuildAsync`), and the typed `IPublisher<T>`/`ISubscriber<T>` channels** are all
   covered in the AI Usage Guide once you outgrow the basics here.

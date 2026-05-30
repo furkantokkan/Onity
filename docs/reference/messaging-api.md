@@ -119,7 +119,7 @@ Sequential awaitable handlers: `PublishAsync` awaits each handler before invokin
 
 ### Reactive bridge (`OnityMessageReactiveExtensions`)
 
-Turn messages into the full reactive operator chain. The returned `IOnityObservable<T>` flows into `Where` / `Select` / `Subscribe` etc. (see [Reactive Operators](reactive-operators.md)).
+Turn messages into the full reactive operator chain. The returned `IOnityObservable<T>` flows into `Where` / `Select` / `Subscribe` etc. (see [Reactive Operators](reactive-operators.html)).
 
 | API | Signature | Notes |
 | --- | --- | --- |
@@ -167,4 +167,4 @@ broker.Observe<DamageEvent>()
 | `ReactiveProperty<T>` (in DI) | **Current state** a new listener must immediately know (health, score, connection status). Subscribing emits the current value first. This is the only "replay current value" primitive. |
 | Direct service call (injected interface) | A command/query with exactly one owner where you need a return value, ordering, or a synchronous result. |
 
-> Intentionally **not shipped** (non-goals): buffered/replay events, handler priority, request-response. Model "the last message a late subscriber needs" as a `ReactiveProperty<T>`. See the [Events & Messaging guide](../guide/events-messaging.md) for the full decision rule and recipes.
+> Intentionally **not shipped** (non-goals): buffered/replay events, handler priority, request-response. Model "the last message a late subscriber needs" as a `ReactiveProperty<T>`. See the [Events & Messaging guide](../guide/events-messaging.html) for the full decision rule and recipes.

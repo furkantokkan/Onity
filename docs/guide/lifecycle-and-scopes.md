@@ -79,13 +79,13 @@ container.BindInterfacesAndSelfTo<WaveDirector>().AsSingle();
 
 ### `IOnityTickable` vs `EveryUpdate()`
 
-For a singleton service that ticks for the lifetime of its scope, prefer `IOnityTickable` — it costs no subscription and is driven directly by the context. Reach for `OnityUnityObservable.EveryUpdate()` (see [Reactive](reactive.md)) when a **MonoBehaviour** wants a frame stream it can compose with operators and scope with `AddTo(this)` / `TakeUntilDisable(this)`.
+For a singleton service that ticks for the lifetime of its scope, prefer `IOnityTickable` — it costs no subscription and is driven directly by the context. Reach for `OnityUnityObservable.EveryUpdate()` (see [Reactive](reactive.html)) when a **MonoBehaviour** wants a frame stream it can compose with operators and scope with `AddTo(this)` / `TakeUntilDisable(this)`.
 
 ## Unity contexts
 
 A context is a `MonoBehaviour` that owns a container for a slice of the scene. On `Awake` it creates the container (discovering its parent context if any), registers the default bindings, runs the assigned installers, calls `Build()`, and — when **Auto Inject Hierarchy** is enabled — member-injects every MonoBehaviour under its root. On `Update` / `FixedUpdate` / `LateUpdate` it pumps the lifecycle ticks; on `OnDestroy` it disposes the container.
 
-Every context auto-binds: the container, `IResolver`, the context itself, `MessageBroker` (and its interfaces), and `OnityEventHub` (and its interfaces). That is why a service can inject `OnityEventHub` or `IMessageBroker` with no installer line (see [Events & Messaging](events-messaging.md)).
+Every context auto-binds: the container, `IResolver`, the context itself, `MessageBroker` (and its interfaces), and `OnityEventHub` (and its interfaces). That is why a service can inject `OnityEventHub` or `IMessageBroker` with no installer line (see [Events & Messaging](events-messaging.html)).
 
 | Context | Role | Notes |
 | --- | --- | --- |
@@ -127,7 +127,7 @@ The context creates the container, registers defaults, runs the installer, build
 
 ## See also
 
-- [Dependency Injection](dependency-injection.md) — bindings, the four injection sites, and `MonoInstaller`.
-- [Events & Messaging](events-messaging.md) — the broker and `OnityEventHub` each context auto-binds.
-- [Reactive](reactive.md) — `EveryUpdate()` as the MonoBehaviour-side alternative to `IOnityTickable`.
-- [Migration: From VContainer](../Migration/From-VContainer.md) — scope mapping in detail.
+- [Dependency Injection](dependency-injection.html) — bindings, the four injection sites, and `MonoInstaller`.
+- [Events & Messaging](events-messaging.html) — the broker and `OnityEventHub` each context auto-binds.
+- [Reactive](reactive.html) — `EveryUpdate()` as the MonoBehaviour-side alternative to `IOnityTickable`.
+- [Migration: From VContainer](../Migration/From-VContainer.html) — scope mapping in detail.

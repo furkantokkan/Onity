@@ -8,6 +8,6 @@ has_children: true
 
 Complete API catalogs for each Onity pillar.
 
-- [DI API](di-api.md)
-- [Reactive Operators](reactive-operators.md)
-- [Messaging API](messaging-api.md)
+- [DI API](di-api.html)
+- [Reactive Operators](reactive-operators.html)
+- [Messaging API](messaging-api.html)

@@ -53,7 +53,7 @@ There is no source generator or IL post-processor. The "compiled" fast path is `
 
 ## See also
 
-- [Dependency Injection](dependency-injection.md) — the binding and resolve surface the fast path serves.
-- [Reactive](reactive.md) and [Events & Messaging](events-messaging.md) — the emit paths designed to avoid per-call allocation.
-- [Comparison: Onity vs VContainer / Zenject](../Onity-vs-VContainer-Zenject.md) — where Onity sits against the libraries it replaces.
-- [Architecture Review](../Architecture-Review.md) — the engine-free layering in depth.
+- [Dependency Injection](dependency-injection.html) — the binding and resolve surface the fast path serves.
+- [Reactive](reactive.html) and [Events & Messaging](events-messaging.html) — the emit paths designed to avoid per-call allocation.
+- [Comparison: Onity vs VContainer / Zenject](../Onity-vs-VContainer-Zenject.html) — where Onity sits against the libraries it replaces.
+- [Architecture Review](../Architecture-Review.html) — the engine-free layering in depth.

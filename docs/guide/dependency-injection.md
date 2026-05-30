@@ -18,11 +18,11 @@ container.Build();
 IInputService input = container.Resolve<IInputService>();
 ```
 
-This page covers the binding surface, the four injection sites, scoping via child containers, factories for runtime arguments, and the documented edge behaviors. For the automatic per-frame/startup lifecycle see [Lifecycle & Scopes](lifecycle-and-scopes.md); for the compiled/reflection activation story see [Performance & IL2CPP](performance-and-il2cpp.md).
+This page covers the binding surface, the four injection sites, scoping via child containers, factories for runtime arguments, and the documented edge behaviors. For the automatic per-frame/startup lifecycle see [Lifecycle & Scopes](lifecycle-and-scopes.html); for the compiled/reflection activation story see [Performance & IL2CPP](performance-and-il2cpp.html).
 
 ## Binding
 
-A binding always needs a lifetime. `Bind<T>()` / `.To<C>()` on their own register **nothing** until you call `.AsSingle()` or `.AsTransient()`. The lifetime enum is exactly `{ Singleton, Transient }` — there is no `Scoped` keyword (a per-scope instance is a child-container `AsSingle`; see [Lifecycle & Scopes](lifecycle-and-scopes.md)).
+A binding always needs a lifetime. `Bind<T>()` / `.To<C>()` on their own register **nothing** until you call `.AsSingle()` or `.AsTransient()`. The lifetime enum is exactly `{ Singleton, Transient }` — there is no `Scoped` keyword (a per-scope instance is a child-container `AsSingle`; see [Lifecycle & Scopes](lifecycle-and-scopes.html)).
 
 ```csharp
 // Contract -> implementation, choose a lifetime (the lifetime call is required):
@@ -185,7 +185,7 @@ These behaviors are locked by tests; rely on them, and avoid the listed traps.
 
 ## Unity wiring
 
-In a scene, bindings live in a `MonoInstaller`. A context component (`ProjectContext` / `SceneContext` / `GameObjectContext`) creates the container, registers the default bindings (the container, `IResolver`, itself, `MessageBroker`, `OnityEventHub`), runs your installers, builds, and injects the hierarchy. See [Lifecycle & Scopes](lifecycle-and-scopes.md) for the full context model.
+In a scene, bindings live in a `MonoInstaller`. A context component (`ProjectContext` / `SceneContext` / `GameObjectContext`) creates the container, registers the default bindings (the container, `IResolver`, itself, `MessageBroker`, `OnityEventHub`), runs your installers, builds, and injects the hierarchy. See [Lifecycle & Scopes](lifecycle-and-scopes.html) for the full context model.
 
 ```csharp
 using Onity.DI;
@@ -209,8 +209,8 @@ public sealed class GameInstaller : MonoInstaller
 
 ## See also
 
-- [Events & Messaging](events-messaging.md) — the auto-bound broker and `OnityEventHub`.
-- [Reactive](reactive.md) — `ReactiveProperty<T>` as shared, DI-bound state.
-- [Lifecycle & Scopes](lifecycle-and-scopes.md) — child scopes, contexts, and the automatic lifecycle.
-- [Performance & IL2CPP](performance-and-il2cpp.md) — compiled activators and the AOT fallback.
-- [Migration: From Zenject](../Migration/From-Zenject.md) and [From VContainer](../Migration/From-VContainer.md).
+- [Events & Messaging](events-messaging.html) — the auto-bound broker and `OnityEventHub`.
+- [Reactive](reactive.html) — `ReactiveProperty<T>` as shared, DI-bound state.
+- [Lifecycle & Scopes](lifecycle-and-scopes.html) — child scopes, contexts, and the automatic lifecycle.
+- [Performance & IL2CPP](performance-and-il2cpp.html) — compiled activators and the AOT fallback.
+- [Migration: From Zenject](../Migration/From-Zenject.html) and [From VContainer](../Migration/From-VContainer.html).

@@ -39,9 +39,9 @@ this repository.
   feature-complete and tested, but its production track record and ecosystem are
   still small. That gap is real and is called out explicitly below.
 - Full DI benchmark detail:
-  [`di-benchmark-summary.md`](../Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-summary.md).
+  [`di-benchmark-summary.md`](https://github.com/furkantokkan/Onity/blob/main/Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md).
   The competitive roadmap and adopt/non-goal matrix:
-  [`docs/Plan/07-Competitive-And-AI-Roadmap.md`](Plan/07-Competitive-And-AI-Roadmap.md).
+  [`docs/Plan/07-Competitive-And-AI-Roadmap.md`](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/07-Competitive-And-AI-Roadmap.md).
 
 ---
 
@@ -220,8 +220,8 @@ the three libraries separately.
 ### 8. AI-friendliness and compile-time analyzer
 
 Onity ships a verified, machine-readable
-[AI usage guide](Onity-AI-Usage-Guide.md) (every snippet compiles against the
-current public API) and a [Roslyn analyzer pack](../tools/Onity.Analyzers)
+[AI usage guide](Onity-AI-Usage-Guide.html) (every snippet compiles against the
+current public API) and a [Roslyn analyzer pack](https://github.com/furkantokkan/Onity/blob/main/tools/Onity.Analyzers)
 (`ONITY001`–`ONITY006`) with code fixes. The rules catch:
 
 - `ONITY001` — `Resolve` inside `Update` / `FixedUpdate` / `LateUpdate`.

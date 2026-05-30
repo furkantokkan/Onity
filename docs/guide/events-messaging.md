@@ -71,7 +71,7 @@ public sealed class OnityEventHub
 
 ## Reactive bridge — `Observe<T>()`
 
-`broker.Observe<T>()`, `subscriber.Observe<T>()`, and `OnityEventHub.Observe<T>()` all return `IOnityObservable<T>`, so events flow into the full operator chain — the same chain you use over a `ReactiveProperty<T>` (see [Reactive](reactive.md)).
+`broker.Observe<T>()`, `subscriber.Observe<T>()`, and `OnityEventHub.Observe<T>()` all return `IOnityObservable<T>`, so events flow into the full operator chain — the same chain you use over a `ReactiveProperty<T>` (see [Reactive](reactive.html)).
 
 ```csharp
 using Onity.Reactive;            // Where, Select, Subscribe
@@ -189,6 +189,6 @@ public sealed class HealthBar : MonoBehaviour
 
 ## See also
 
-- [Reactive](reactive.md) — the operator chain `Observe<T>()` feeds, and `ReactiveProperty<T>` for current state.
-- [Dependency Injection](dependency-injection.md) — `BindMessageChannel<T>` and constructor-injected services.
-- [Lifecycle & Scopes](lifecycle-and-scopes.md) — what each context auto-binds.
+- [Reactive](reactive.html) — the operator chain `Observe<T>()` feeds, and `ReactiveProperty<T>` for current state.
+- [Dependency Injection](dependency-injection.html) — `BindMessageChannel<T>` and constructor-injected services.
+- [Lifecycle & Scopes](lifecycle-and-scopes.html) — what each context auto-binds.

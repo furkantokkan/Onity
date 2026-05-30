@@ -16,7 +16,7 @@ container.Build();
 IClock clock = container.Resolve<IClock>();
 ```
 
-A lifetime call (`AsSingle()` / `AsTransient()`) is **required** to actually register a binding; `Bind<T>()` / `To<T>()` alone register nothing. The lifetime enum is exactly `{ Singleton, Transient }` — there is no `Scoped` keyword; a per-scope instance is a child-container `AsSingle` (see [Lifecycle & Scopes](../guide/lifecycle-and-scopes.md)).
+A lifetime call (`AsSingle()` / `AsTransient()`) is **required** to actually register a binding; `Bind<T>()` / `To<T>()` alone register nothing. The lifetime enum is exactly `{ Singleton, Transient }` — there is no `Scoped` keyword; a per-scope instance is a child-container `AsSingle` (see [Lifecycle & Scopes](../guide/lifecycle-and-scopes.html)).
 
 The resolve machinery is designed to avoid per-call managed allocation (compiled constructor activators on JIT runtimes, pooled argument arrays, cached injection plans, an optional dense-id baked graph). A transient resolve still allocates the instance it returns. On IL2CPP/AOT the container falls back to reflection-based activation and constructs correctly either way — read `OnityContainer.IsCompiledActivationSupported` to see which path is live.
 
@@ -185,6 +185,6 @@ Two sealed exception types, both in `Onity.DI`.
 | `OnityResolveException` | Resolve/inject failures: unbound contract, circular dependency (resolve-time), failed construction, null service type, null inject target, resolve after dispose. |
 | `OnityBindingException` | Binding/config failures: null/non-assignable/abstract implementation, no-interface `BindInterfacesTo`, empty contract list, no accessible constructor, multiple `[Inject]` constructors, setterless/indexer `[Inject]` property, generic `[Inject]` method, callback registration after build, `NonLazy` before a lifetime. |
 
-For the full message-to-fix table, see the [AI Usage Guide](../Onity-AI-Usage-Guide.md) error section. Narrative usage lives in the [Dependency Injection guide](../guide/dependency-injection.md).
+For the full message-to-fix table, see the [AI Usage Guide](../Onity-AI-Usage-Guide.html) error section. Narrative usage lives in the [Dependency Injection guide](../guide/dependency-injection.html).
 
 > Not shipped (Zenject parity gaps): no `WhenInjectedInto`, no `WithId`, no `Instantiate(args)`. Use a typed factory or distinct contracts instead.

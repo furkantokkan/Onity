@@ -47,7 +47,7 @@ bag.Clear();                            // dispose all, keep the bag reusable
 bag.Dispose();                          // dispose all, final
 ```
 
-A `ReactiveProperty<T>` is the only primitive that replays its current value to a new subscriber. Model **current state** (health, score, current wave) as a `ReactiveProperty<T>`; model **transient notifications** as messages (see [Events & Messaging](events-messaging.md)).
+A `ReactiveProperty<T>` is the only primitive that replays its current value to a new subscriber. Model **current state** (health, score, current wave) as a `ReactiveProperty<T>`; model **transient notifications** as messages (see [Events & Messaging](events-messaging.html)).
 
 ## Synchronous operators
 
@@ -184,7 +184,7 @@ public sealed class AiTicker : MonoBehaviour
 }
 ```
 
-> For singletons, prefer the automatic `IOnityTickable` lifecycle over `EveryUpdate()` — see [Lifecycle & Scopes](lifecycle-and-scopes.md).
+> For singletons, prefer the automatic `IOnityTickable` lifecycle over `EveryUpdate()` — see [Lifecycle & Scopes](lifecycle-and-scopes.html).
 
 ### Debounce a search box, honoring time scale
 
@@ -238,7 +238,7 @@ public sealed class WaveGate
 
 ## See also
 
-- [Events & Messaging](events-messaging.md) — `broker.Observe<T>()` feeds the same operator chain.
-- [Dependency Injection](dependency-injection.md) — bind a `ReactiveProperty<T>` as shared state.
-- [Lifecycle & Scopes](lifecycle-and-scopes.md) — `IOnityTickable` vs `EveryUpdate()`.
-- [Migration: From R3 / UniRx](../Migration/From-R3.md).
+- [Events & Messaging](events-messaging.html) — `broker.Observe<T>()` feeds the same operator chain.
+- [Dependency Injection](dependency-injection.html) — bind a `ReactiveProperty<T>` as shared state.
+- [Lifecycle & Scopes](lifecycle-and-scopes.html) — `IOnityTickable` vs `EveryUpdate()`.
+- [Migration: From R3 / UniRx](../Migration/From-R3.html).

@@ -8,6 +8,6 @@ has_children: true
 
 Mechanical mappings for moving an existing project onto Onity, verified against the shipped public API.
 
-- [From Zenject](From-Zenject.md)
-- [From VContainer](From-VContainer.md)
-- [From R3 / UniRx](From-R3.md)
+- [From Zenject](From-Zenject.html)
+- [From VContainer](From-VContainer.html)
+- [From R3 / UniRx](From-R3.html)
