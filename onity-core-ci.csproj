@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    License-free CI compile check for Onity's engine-free assemblies.
+    These five layers (Core, DI, Reactive, Messaging, Factory) carry no UnityEngine
+    reference and no ZLinq usage, so they compile on a plain .NET SDK with no Unity
+    install and no Unity license. Targets the Unity 2022.3 language level (C# 9).
+    Used by the build-core job in .github/workflows/onity-ci.yml.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <OutputType>Library</OutputType>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>OnityEngineFreeCore</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Packages/com.onity.framework/Runtime/Core/**/*.cs" />
+    <Compile Include="Packages/com.onity.framework/Runtime/Factory/**/*.cs" />
+    <Compile Include="Packages/com.onity.framework/Runtime/DI/**/*.cs" />
+    <Compile Include="Packages/com.onity.framework/Runtime/Reactive/**/*.cs" />
+    <Compile Include="Packages/com.onity.framework/Runtime/Messaging/**/*.cs" />
+  </ItemGroup>
+
+</Project>

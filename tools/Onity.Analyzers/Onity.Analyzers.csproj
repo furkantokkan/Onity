@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Onity.Analyzers: Roslyn analyzers shipped as a precompiled DLL.
+
+    This project is NOT a Unity asmdef. It is a standalone netstandard2.0
+    class library built with `dotnet build`. Unity consumes the emitted
+    Onity.Analyzers.dll as a RoslynAnalyzer asset (see README.md).
+
+    Engine-free: this project MUST NOT reference UnityEngine. Analyzers run
+    inside the C# compiler, which has no Unity runtime.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <!-- Analyzers are libraries; they are never run as an app. -->
+    <IsPackable>false</IsPackable>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+
+    <!-- Roslyn analyzer assemblies should not embed UnityEngine or any runtime dep. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Keep the assembly identity stable for the RoslynAnalyzer asset. -->
+    <AssemblyName>Onity.Analyzers</AssemblyName>
+    <RootNamespace>Onity.Analyzers</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    The Tests/ subfolder is a separate test assembly (Onity.Analyzers.Tests.csproj)
+    that references NUnit and the Roslyn test harness. Exclude it from the analyzer
+    assembly so the engine-free analyzer DLL never pulls in test-only dependencies.
+  -->
+  <ItemGroup>
+    <Compile Remove="Tests\**\*.cs" />
+    <None Remove="Tests\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Microsoft.CodeAnalysis.CSharp 4.x: the C# syntax + semantic APIs the
+      analyzer is built against. Workspaces brings the CodeFixProvider types.
+      PrivateAssets=all keeps these compiler packages out of any consumer graph.
+    -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Analyzer release tracking (satisfies RS2008); read by the analyzer-authoring rules. -->
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Onity.SourceGen: a Roslyn incremental source generator shipped as a
+    precompiled DLL.
+
+    Purpose: emit AOT-safe constructor activators so IL2CPP keeps
+    compiled-activator speed WITHOUT runtime Expression.Compile. On full AOT
+    runtimes dynamic-code compilation is unavailable, so ActivatorCompiler falls
+    back to reflection (ConstructorInfo.Invoke). This generator instead bakes a
+    plain-C# `new T(...)` activator at compile time, which the runtime can use on
+    every platform.
+
+    This project is NOT a Unity asmdef. It is a standalone netstandard2.0 class
+    library built with `dotnet build`. Unity consumes the emitted
+    Onity.SourceGen.dll as a RoslynAnalyzer asset (same import path as
+    Onity.Analyzers — see README.md).
+
+    Engine-free: this project MUST NOT reference UnityEngine. Source generators
+    run inside the C# compiler, which has no Unity runtime.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <!-- Source generators are libraries; they are never run as an app. -->
+    <IsPackable>false</IsPackable>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+
+    <!--
+      Marks this assembly as a Roslyn component (analyzer/source generator) so
+      tooling loads it into the compiler's analyzer pipeline.
+    -->
+    <IsRoslynComponent>true</IsRoslynComponent>
+
+    <!-- Apply the stricter analyzer/generator authoring rules at build time. -->
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+
+    <!-- Roslyn component assemblies should not embed UnityEngine or any runtime dep. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Keep the assembly identity stable for the RoslynAnalyzer asset. -->
+    <AssemblyName>Onity.SourceGen</AssemblyName>
+    <RootNamespace>Onity.SourceGen</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Microsoft.CodeAnalysis.CSharp 4.x: the C# syntax + semantic APIs the
+      generator is built against, including IIncrementalGenerator.
+      Microsoft.CodeAnalysis.Analyzers supplies the generator-authoring analyzer
+      rules enforced by EnforceExtendedAnalyzerRules. PrivateAssets=all keeps
+      these compiler packages out of any consumer graph.
+    -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

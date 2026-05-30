@@ -19,8 +19,11 @@
 *.suo
 *.userprefs
 
-# Generated C# project files
+# Generated C# project files (Unity emits these). Keep the hand-written tool and
+# CI project files, which are real sources the repo needs.
 *.csproj
+!onity-core-ci.csproj
+!tools/**/*.csproj
 *.sln
 *.unityproj
 *.pidb

@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Onity.Analyzers.Tests: unit tests for the Onity Roslyn analyzers.
+
+    This project is NOT a Unity asmdef. It is a standalone test assembly run with
+    `dotnet test`. It is intentionally kept out of Unity's compilation: the
+    analyzer DLL is consumed by Unity as a RoslynAnalyzer asset, while these tests
+    host the analyzers inside the Roslyn AnalyzerTest harness, which has no Unity
+    runtime. The folder carries no .meta files and the .csproj is ignored by Unity
+    (it only imports .asmdef-driven code), so it does not affect the EditMode
+    test assembly.
+
+    Engine-free: this project MUST NOT reference UnityEngine.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+
+    <!-- The analyzer under test is netstandard2.0; do not require Unity here. -->
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+
+    <!-- Older transitively-pulled Roslyn packages target net4x; silence the noise. -->
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The analyzers under test. -->
+    <ProjectReference Include="..\Onity.Analyzers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Framework-agnostic Roslyn analyzer/codefix test harness. The test-framework
+      specific adapters (.NUnit/.XUnit/.MSTest) are not available in this
+      environment, so the suite supplies its own minimal NUnit IVerifier
+      (NUnitVerifier) to drive CSharpAnalyzerTest.
+
+      Microsoft.CodeAnalysis.CSharp is pinned to the same 4.8.0 the analyzer is
+      built against so the harness loads matching compiler types.
+    -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="1.1.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" />
+
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+</Project>

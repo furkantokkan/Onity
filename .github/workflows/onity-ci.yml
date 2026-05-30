@@ -10,9 +10,61 @@ on:
       - main
       - master
 
+env:
+  # Opt the bundled Node 20 actions into Node 24 ahead of GitHub's cutover,
+  # clearing the "Node.js 20 actions are deprecated" warning.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
+  # Always runs - no Unity license required. Compiles the engine-free assemblies
+  # (Core, DI, Reactive, Messaging, Factory) plus the Roslyn analyzer and source
+  # generator, so every push gets a green build check independent of Unity.
+  build-core:
+    name: Build engine-free core
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Compile engine-free assemblies
+        run: dotnet build onity-core-ci.csproj -c Release
+
+      - name: Build Roslyn analyzer and source generator
+        run: |
+          dotnet build tools/Onity.Analyzers/Onity.Analyzers.csproj -c Release
+          dotnet build tools/Onity.SourceGen/Onity.SourceGen.csproj -c Release
+
+  # Detects whether the Unity license secret is configured, so the Unity test jobs
+  # below can be skipped (not failed) on forks/clones that have not set it.
+  check-license:
+    name: Check Unity license
+    runs-on: ubuntu-latest
+    outputs:
+      has_license: ${{ steps.check.outputs.has_license }}
+    steps:
+      - id: check
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          if [ -n "$UNITY_LICENSE" ]; then
+            echo "has_license=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_license=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::UNITY_LICENSE secret not set - skipping Unity EditMode/PlayMode tests. Add UNITY_LICENSE / UNITY_EMAIL / UNITY_PASSWORD repository secrets to enable them."
+          fi
+
+  # Unity EditMode + PlayMode tests. Runs only when a Unity license secret exists.
   test:
     name: Test (${{ matrix.testMode }})
+    needs: check-license
+    if: needs.check-license.outputs.has_license == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
