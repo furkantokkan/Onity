@@ -1,13 +1,11 @@
 title: Onity
 description: "One Unity package for dependency injection, reactive programming, and events."
 
-remote_theme: just-the-docs/just-the-docs@v0.10.0
-plugins:
-  - jekyll-remote-theme
+# Built by the "Deploy docs (GitHub Pages)" Actions workflow with the just-the-docs gem.
+theme: just-the-docs
 
-search_enabled: true
 color_scheme: dark
-
+search_enabled: true
 heading_anchors: true
 
 aux_links:
@@ -15,6 +13,13 @@ aux_links:
     - "https://github.com/furkantokkan/Onity"
 aux_links_new_tab: true
 
+gh_edit_link: true
+gh_edit_link_text: "Edit this page on GitHub"
+gh_edit_repository: "https://github.com/furkantokkan/Onity"
+gh_edit_branch: "main"
+gh_edit_view_mode: "tree"
+
+# Internal planning notes and the GitBook table of contents are not part of the site.
 exclude:
   - "Plan/"
   - "SUMMARY.md"
