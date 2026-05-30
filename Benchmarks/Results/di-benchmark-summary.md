@@ -1,5 +1,22 @@
 # DI Benchmark Summary
 
+> **NOTE — allocation column is unreliable and superseded.**
+> The `Alloc/sample (B)` column below reads `0.00` for every container,
+> including VContainer and Zenject. That is impossible: a transient resolve
+> must allocate the instance it returns, the complex resolve allocates one
+> object per node in the graph, and Zenject is known to be allocation-heavy.
+> A reading of `0.00` across the board means the allocation measurement was
+> not capturing real bytes on this run, not that these paths allocate nothing.
+> On Unity 2022.3 Editor Mono, `GC.GetAllocatedBytesForCurrentThread()` (the
+> API the runner uses) does not return reliable per-thread allocation totals,
+> so the column is meaningless here and must be re-measured inside the Unity
+> editor with a trustworthy allocation source (for example the Unity Profiler
+> GC Alloc counter) before any allocation claim is published. Do not cite
+> these allocation figures, and do not state a verified "zero-allocation"
+> resolve based on them. The `Mean (ms)` / speed columns are unaffected by
+> this and still stand as indicative timings (Editor-Mono, a single machine,
+> not a guarantee).
+
 Generated 2026-05-24 from `OnityDiBenchmarkRunner` after Phase 1.1
 (compiled constructor activators via `Expression.Compile`).
 
@@ -49,4 +66,7 @@ Notes:
 - Prepare & Register Complex regressed because `Expression.Compile` runs
   once per registered type at build time. Onity still finishes container
   build ~4.85x faster than VContainer in absolute terms.
-- All scenarios remain zero-allocation per sample.
+- The allocation column is not trustworthy on this run (see the NOTE at the
+  top): it read `0.00 B` for every container, which is impossible, so no
+  zero-allocation conclusion can be drawn from these figures. Re-measure
+  allocations in the Unity editor before publishing any allocation claim.

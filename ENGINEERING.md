@@ -127,7 +127,7 @@ Expected pattern:
   (`AddTo(this)` in a MonoBehaviour, `AddTo(CompositeDisposable)` in plain C#).
 - No per-publish allocation on steady-state paths is a target for hot channels;
   `MessageChannel<T>` uses the same `SubscriptionEntry[]` design as `Subject<T>`
-  (0-alloc steady-state `Publish`, re-entrancy-safe).
+  (steady-state `Publish` designed allocation-free, re-entrancy-safe).
 
 ## 8. Reactive Engineering Rules
 
