@@ -11,13 +11,19 @@ competitor wins, this document says so.
   reactive programming, and events. This document compares only the **DI**
   axis against VContainer and Zenject (which are DI-only); the unified-scope
   advantage is covered as its own axis below.
-- **The benchmark numbers are indicative, not guaranteed.** They were measured
-  in the **Unity Editor with the Mono scripting backend, on a single Windows
-  machine** (Unity 2022.3.62f3), 512 warmup iterations, 8 samples, median
-  reported, allocation measured via `GC.GetTotalAllocatedBytes` deltas. Your
-  hardware, Unity version, IL2CPP vs Mono backend, and graph shape will produce
-  different absolute numbers and possibly different relative ordering. Treat the
-  numbers as "this is what one machine measured," not "Onity is always faster."
+- **The benchmark timing numbers are indicative, not guaranteed.** They were
+  measured in the **Unity Editor with the Mono scripting backend, on a single
+  Windows machine** (Unity 2022.3.62f3), 512 warmup iterations, 8 samples, median
+  reported. Your hardware, Unity version, IL2CPP vs Mono backend, and graph shape
+  will produce different absolute numbers and possibly different relative ordering.
+  Treat the numbers as "this is what one machine measured," not "Onity is always
+  faster."
+- **The published allocation figures were unreliable.** The committed run
+  reported 0 B for VContainer and Zenject as well, which cannot be correct (a
+  transient resolve allocates the instance it returns, and Zenject is
+  allocation-heavy), so the `GC.GetTotalAllocatedBytes` delta was not capturing
+  gross allocations. Those alloc numbers are withdrawn pending a corrected
+  in-editor re-measure. The **timing** numbers are unaffected by this.
 - **Onity is younger.** VContainer and Zenject have years of production use,
   large communities, and broad real-world hardening. Onity's DI is
   feature-complete and tested, but its production track record and ecosystem are
@@ -35,7 +41,7 @@ competitor wins, this document says so.
 | --- | --- | --- | --- |
 | Resolve speed (Editor-Mono, indicative) | **Fastest measured** on this machine | Fast | Slowest of the three |
 | Build / registration speed (indicative) | **Fastest measured** | Slower than Onity here | Slow |
-| Steady-state resolve allocation | **0 B/op** on every measured resolve path | Low (codegen mode) | Higher |
+| Steady-state resolve allocation | resolve machinery designed allocation-free (a transient allocates the returned instance; alloc figures pending a corrected re-measure) | Low (codegen mode) | Higher |
 | DI feature breadth | Feature-complete for common Unity needs | Broad | Broadest |
 | Entry-point lifecycle | **Automatic, no registration** | Manual `RegisterEntryPoint` | Automatic |
 | Collection / open-generic binds | Yes | Yes | Yes |
@@ -94,15 +100,22 @@ on IL2CPP there is no compile step at all.
 
 ### 3. Steady-state allocation
 
-Onity is **0 B/op on every measured resolve path** (singleton, transient,
-combined, complex). Allocation is measured as `GC.GetTotalAllocatedBytes` deltas
-across the sampled resolves. This holds for resolve specifically; one-time
-operations such as the first compile of an activator do allocate.
+Onity's resolve machinery is **designed to avoid per-call managed allocation**
+beyond the constructed instances themselves: compiled activators, a
+`[ThreadStatic]` pooled argument array, and cached construction plans mean a
+singleton resolve from a warm container should not allocate, while a transient
+resolve still allocates the instance it returns and a 6-level graph allocates
+roughly one object per level. One-time operations such as the first compile of
+an activator also allocate.
 
-VContainer's codegen path is also low-allocation; Zenject allocates more on the
-resolve path due to its reflection-driven model. For per-frame gameplay churn
-(spawn/despawn), the 0-B/op resolve path is the meaningful number, and Onity
-holds it on Mono.
+**The published allocation numbers for this axis are not trustworthy.** The
+committed benchmark reported 0 B for VContainer and Zenject as well, which is
+impossible for a transient resolve (it must allocate the returned instance) and
+for Zenject's reflection-heavy model — so the `GC.GetTotalAllocatedBytes` delta
+was not capturing gross allocations. Those figures are withdrawn pending a
+corrected in-editor re-measure. VContainer's codegen path is genuinely
+low-allocation and Zenject allocates more on the resolve path; the precise
+per-op deltas for all three will be restated once re-measured.
 
 ### 4. DI feature breadth
 
@@ -123,7 +136,7 @@ Onity's DI now covers the feature axes most Unity projects need:
 particular offers conditional / contextual binds (`WhenInjectedInto`, `WithId`,
 `FromSubContainerResolve`), `Unbind`/`Rebind`, and a deep memory-pool / factory
 system. Onity **deliberately omits** conditional/id binds and `Unbind` — they
-fight the predictable single-model and zero-hot-path-allocation goals — and
+fight the predictable single-model and allocation-conscious hot-path goals — and
 answers "two implementations of one interface" with collection injection or a
 typed factory instead. VContainer offers a first-class `Lifetime.Scoped`
 keyword; Onity models scope as a child container. If your project depends on
@@ -237,9 +250,10 @@ third-party material.
 ## When to choose which
 
 - **Choose Onity** if you want one coherent package for DI + Reactive + Events,
-  value a zero-allocation Mono resolve path, want automatic entry-point
-  lifecycle without manual registration, want a compile-time analyzer and an
-  AI-readable usage guide, and are comfortable adopting a younger framework.
+  value a resolve path designed to avoid per-call managed allocation on Mono,
+  want automatic entry-point lifecycle without manual registration, want a
+  compile-time analyzer and an AI-readable usage guide, and are comfortable
+  adopting a younger framework.
 - **Choose VContainer** if IL2CPP resolve performance via source-generated
   activators is critical today, you want a mature DI-only container with a strong
   community, and you are fine pairing it with a separate reactive/event stack.

@@ -8,7 +8,7 @@ public API. When this guide and any older design doc disagree, **this guide and 
 
 - Target: Unity. Core asmdefs (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`,
   `Onity.Factory`) are **engine-free** (no `UnityEngine`). Unity glue lives in `Onity.Unity`.
-- Constraints baked into the code: zero hot-path allocation, **no `System.Linq`**, no third-party runtime deps.
+- Constraints baked into the code: hot-path machinery **designed to avoid per-call managed allocation** (a transient resolve still allocates the instance it returns; the published alloc figures were unreliable and are being re-measured), **no `System.Linq`** in the core, and **ZLinq as the only third-party runtime dependency** (used by the `Onity.Unity` layer).
 - Naming convention in Onity source: private instance `m_camelCase`, private static `s_camelCase`,
   constants `k_camelCase`, Allman braces. Match it when adding code to the package.
 
@@ -261,7 +261,7 @@ Push-based, hot-by-default. The everyday contract is `IOnityObservable<T>`. `Sub
 ```csharp
 using Onity.Reactive;
 
-// Subject<T>: multicast event source. OnNext is 0-alloc steady-state.
+// Subject<T>: multicast event source. OnNext is designed allocation-free in steady state.
 Subject<int> damage = new Subject<int>();
 IDisposable sub = damage.Subscribe(v => Debug.Log(v));
 damage.OnNext(10);
@@ -451,8 +451,8 @@ public sealed class FireControl : MonoBehaviour
 
 ## 4. Events — `Onity.Messaging` (+ `Onity.Unity.Messaging`)
 
-Typed pub/sub. `MessageChannel<T>` is the same `SubscriptionEntry[]` design as `Subject<T>`: 0-alloc
-steady-state `Publish`, re-entrancy-safe (unsubscribe inside a handler is OK), throws after `Dispose`.
+Typed pub/sub. `MessageChannel<T>` is the same `SubscriptionEntry[]` design as `Subject<T>`: steady-state
+`Publish` designed allocation-free, re-entrancy-safe (unsubscribe inside a handler is OK), throws after `Dispose`.
 
 > Threading: publish/subscribe on the Unity **main thread**. Channels are not internally locked for
 > publish (broker channel CREATION is locked). Messages run in subscription order.

@@ -1,0 +1,127 @@
+# Lifecycle & Scopes
+
+Onity has two lifetimes (`Singleton`, `Transient`) and models everything VContainer expresses as `Lifetime.Scoped` with **child containers**. The automatic startup and per-frame lifecycle (the Zenject-style entry points) is opt-in by interface: bind a type that implements a lifecycle interface and the container wires it up — no separate registration call.
+
+## Child containers — the "scoped" lifetime
+
+There is no `Scoped` keyword. A per-scope instance is a child-container `AsSingle`. A child inherits the parent's bindings; a binding declared on the child **shadows** the parent only inside that child.
+
+```csharp
+using Onity.DI;
+
+using OnityContainer parent = new OnityContainer();
+parent.Bind<IDependency>().To<Dependency>().AsSingle();
+parent.Build();
+
+using OnityContainer child = new OnityContainer(parent);
+child.Bind<IDependency>().To<AlternateDependency>().AsSingle();   // shadows in the child only
+child.Build();
+
+// child.Resolve<IDependency>()  -> AlternateDependency
+// parent.Resolve<IDependency>() -> Dependency (unchanged)
+```
+
+Mapping from other containers:
+
+| Other container | Onity equivalent |
+| --- | --- |
+| VContainer `Lifetime.Singleton` (root) | `AsSingle()` on the root container |
+| VContainer `Lifetime.Scoped` | child-container `AsSingle()` (`new OnityContainer(parent)`) |
+| VContainer `Lifetime.Transient` | `AsTransient()` |
+
+Disposing a child container disposes the singletons it **owns** in reverse registration order; it does not dispose the parent.
+
+## Disposal ownership
+
+`Dispose()` disposes the singletons a container created, in reverse registration order. Bound instances passed in via `BindInstance` are owned by the caller — the container does not dispose them. In a Unity scene, the context disposes its container automatically on `OnDestroy`, so you rarely call `Dispose()` by hand.
+
+## The automatic lifecycle
+
+Implement a lifecycle interface (from `Onity.DI`) on a **singleton or bound instance**, bind it, and the owning container collects it at `Build()`. Transient bindings are not collected — there is no single stable instance to drive.
+
+| Interface | Method | When it runs |
+| --- | --- | --- |
+| `IOnityInitializable` | `Initialize()` | once, at the end of `Build()`, in binding-registration order — all dependencies are resolvable |
+| `IOnityTickable` | `Tick()` | once per frame, from the context's `Update` |
+| `IOnityFixedTickable` | `FixedTick()` | once per physics step, from the context's `FixedUpdate` |
+| `IOnityLateTickable` | `LateTick()` | once per frame after all `Tick()` work, from the context's `LateUpdate` |
+
+```csharp
+using Onity.DI;
+
+public sealed class WaveDirector : IOnityInitializable, IOnityTickable
+{
+    private readonly IEnemyFactory m_factory;
+    public WaveDirector(IEnemyFactory factory) { m_factory = factory; }
+
+    public void Initialize()
+    {
+        // runs once after Build(); safe to resolve / wire up here
+    }
+
+    public void Tick()
+    {
+        // runs every frame while the owning context is alive
+    }
+}
+
+// Binding it is all the registration the lifecycle needs:
+container.BindInterfacesAndSelfTo<WaveDirector>().AsSingle();
+```
+
+`BindInterfacesAndSelfTo` registers the lifecycle interfaces along with the concrete type, so the same instance is both injectable and driven by the lifecycle. Outside a Unity context, drive the ticks yourself by calling `container.Tick()` / `FixedTick()` / `LateTick()`; `Build()` already runs `Initialize()`.
+
+### `IOnityTickable` vs `EveryUpdate()`
+
+For a singleton service that ticks for the lifetime of its scope, prefer `IOnityTickable` — it costs no subscription and is driven directly by the context. Reach for `OnityUnityObservable.EveryUpdate()` (see [Reactive](reactive.md)) when a **MonoBehaviour** wants a frame stream it can compose with operators and scope with `AddTo(this)` / `TakeUntilDisable(this)`.
+
+## Unity contexts
+
+A context is a `MonoBehaviour` that owns a container for a slice of the scene. On `Awake` it creates the container (discovering its parent context if any), registers the default bindings, runs the assigned installers, calls `Build()`, and — when **Auto Inject Hierarchy** is enabled — member-injects every MonoBehaviour under its root. On `Update` / `FixedUpdate` / `LateUpdate` it pumps the lifecycle ticks; on `OnDestroy` it disposes the container.
+
+Every context auto-binds: the container, `IResolver`, the context itself, `MessageBroker` (and its interfaces), and `OnityEventHub` (and its interfaces). That is why a service can inject `OnityEventHub` or `IMessageBroker` with no installer line (see [Events & Messaging](events-messaging.md)).
+
+| Context | Role | Notes |
+| --- | --- | --- |
+| `ProjectContext` | Global root that persists across scene loads | Singleton (`ProjectContext.Instance`), `DontDestroyOnLoad`; the natural parent for scene scopes. Execution order `-10000`. |
+| `SceneContext` | Per-scene scope | Child of the project context when one exists. Execution order `-9500`. |
+| `GameObjectContext` | Per-object subscope | A nested scope for a prefab/object subtree; child of the enclosing context. |
+
+Serialized context fields:
+
+- **Installers** — the `MonoInstaller[]` run in order during `Awake`.
+- **Parent Context** — an explicit parent; leave null for automatic parent discovery.
+- **Auto Inject Hierarchy** — member-inject all MonoBehaviours under the root on `Awake` (default on). Installers and context components are skipped.
+- **Run Async Build Callbacks** — run `BuildAsync()` post-build callbacks in `Start` (default on).
+
+### Scene wiring
+
+```csharp
+using Onity.DI;
+using Onity.Unity.Installers;
+using Onity.Unity.Messaging;   // BindMessageChannel<T>
+using UnityEngine;
+
+public sealed class CombatInstaller : MonoInstaller
+{
+    public override void InstallBindings(OnityContainer container)
+    {
+        container.BindMessageChannel<PlayerDamaged>();
+        container.BindInterfacesAndSelfTo<WaveDirector>().AsSingle();   // lifecycle: Initialize + Tick
+        container.Bind<IScoreService>().To<ScoreService>().AsSingle();
+    }
+}
+```
+
+1. Add a context component (`ProjectContext`, `SceneContext`, or `GameObjectContext`) to a root object.
+2. Assign `CombatInstaller` to the context's **Installers** list.
+3. Put the consuming MonoBehaviours under the context root so they are auto-injected.
+
+The context creates the container, registers defaults, runs the installer, builds (firing `Initialize()`), injects the hierarchy, and from then on pumps `Tick()` / `FixedTick()` / `LateTick()` each frame.
+
+## See also
+
+- [Dependency Injection](dependency-injection.md) — bindings, the four injection sites, and `MonoInstaller`.
+- [Events & Messaging](events-messaging.md) — the broker and `OnityEventHub` each context auto-binds.
+- [Reactive](reactive.md) — `EveryUpdate()` as the MonoBehaviour-side alternative to `IOnityTickable`.
+- [Migration: From VContainer](../Migration/From-VContainer.md) — scope mapping in detail.

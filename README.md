@@ -1,11 +1,10 @@
 # Onity
 
-**One Unity package for dependency injection, reactive programming, and events — one idiom, one disposal model, an engine-free core, and allocation-free hot paths.**
+**One Unity package for dependency injection, reactive programming, and events — one idiom, one disposal model, an engine-free core, and hot paths designed to avoid per-call managed allocation.**
 
 [![Onity CI](https://github.com/furkantokkan/Onity/actions/workflows/onity-ci.yml/badge.svg)](.github/workflows/onity-ci.yml)
 ![Unity 2022.3+](https://img.shields.io/badge/Unity-2022.3%2B-black?logo=unity)
 ![EditMode tests green](https://img.shields.io/badge/EditMode%20tests-green-brightgreen)
-![DI alloc 0 B/op](https://img.shields.io/badge/DI%20resolve-0%20B%2Fop-blue)
 ![IL2CPP validated](https://img.shields.io/badge/IL2CPP-validated-blue)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -22,7 +21,7 @@ Onity replaces all of that with **one package and one mental model**:
 - **Reactive operators ride both.** `Subject<T>`, `ReactiveProperty<T>`, and `broker.Observe<T>()` are all the *same* `IOnityObservable<T>`, so `Where`/`Select`/`Subscribe` work on state and events alike.
 - **Everything disposes the same way.** Every `Subscribe` returns `IDisposable`; `AddTo(this)` (Unity) or `AddTo(CompositeDisposable)` (plain C#) scopes its lifetime — across DI, events, and reactive, identically.
 
-The runtime core (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`) is **engine-free** — no `UnityEngine` dependency — so domain logic is testable in plain EditMode with no scene. Hot paths (resolve, publish, `OnNext`, `EveryUpdate`, subscription steady state) are **allocation-free in steady state**, with no `System.Linq` and no third-party runtime dependencies. The Zenject-familiar `Bind<T>().To<C>().AsSingle()` vocabulary, fluent discoverable builders, a verified [machine-readable usage guide](docs/Onity-AI-Usage-Guide.md), and a [Roslyn analyzer pack](tools/Onity.Analyzers) (`ONITY001`–`ONITY006`) make it **AI-friendly** by design: an agent reading one guide writes correct, compiling code across all three pillars, and the analyzer turns common misuse into inline diagnostics.
+The runtime core (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`) is **engine-free** — no `UnityEngine` dependency — so domain logic is testable in plain EditMode with no scene. The hot-path machinery (resolve via compiled activators, pooled argument arrays, and cached construction plans; publish, `OnNext`, `EveryUpdate`, subscription steady state) is **designed to avoid per-call managed allocation** — though a transient resolve still allocates the instance it returns, and the published allocation figures were unreliable and are being re-measured (see [Benchmarks](#benchmarks)). The core uses no `System.Linq`; **ZLinq is the only third-party runtime dependency** (used by the `Onity.Unity` layer). The Zenject-familiar `Bind<T>().To<C>().AsSingle()` vocabulary, fluent discoverable builders, a verified [machine-readable usage guide](docs/Onity-AI-Usage-Guide.md), and a [Roslyn analyzer pack](tools/Onity.Analyzers) (`ONITY001`–`ONITY006`) make it **AI-friendly** by design: an agent reading one guide writes correct, compiling code across all three pillars, and the analyzer turns common misuse into inline diagnostics.
 
 The DI fast path compiles constructor activators and member setters with `Expression.Compile` on JIT runtimes (Editor, Mono players) and **automatically falls back to reflection on AOT/IL2CPP**, where dynamic code generation is unavailable — so the same container runs on both. This fallback was verified all-green on an IL2CPP build.
 
@@ -49,8 +48,8 @@ The DI fast path compiles constructor activators and member setters with `Expres
 
 ### Reactive — `Onity.Reactive` (replaces R3 / UniRx)
 
-- `Subject<T>` (0-alloc steady-state `OnNext`) and `ReactiveProperty<T>` (built-in `DistinctUntilChanged`, emits current value on subscribe, `SetValue(T) -> bool`).
-- Synchronous operators: `Where`, `Select`, `DistinctUntilChanged`, `Skip`/`SkipWhile`, `Take`/`TakeWhile`, `StartWith`, `Scan`, `Pairwise`, `Merge`, `CombineLatest`, `Sample` — all 0-alloc per emit (subscribe-time wrapper only).
+- `Subject<T>` (steady-state `OnNext` designed allocation-free) and `ReactiveProperty<T>` (built-in `DistinctUntilChanged`, emits current value on subscribe, `SetValue(T) -> bool`).
+- Synchronous operators: `Where`, `Select`, `DistinctUntilChanged`, `Skip`/`SkipWhile`, `Take`/`TakeWhile`, `StartWith`, `Scan`, `Pairwise`, `Merge`, `CombineLatest`, `Sample` — emit paths designed allocation-free (subscribe-time wrapper only).
 - Async / time operators: `Debounce`, `ThrottleLast`, `TakeUntil(CancellationToken)` / `TakeUntil(Task)`, `SelectAwait`, `WhereAwait`, plus `FirstAsync` / `ToTask` reactive-to-async bridges.
 - Deterministic time testing via pluggable `OnityTimeProvider`.
 - Unity bridges (`Onity.Unity.Reactive`): `OnityUnityObservable.EveryUpdate()` / `EveryFixedUpdate()` / `EveryLateUpdate()`, `Timer`, `Interval`; lifetime helpers `AddTo(Component)` / `TakeUntilDestroy(Component)` / `TakeUntilDisable(Behaviour)`.
@@ -58,7 +57,7 @@ The DI fast path compiles constructor activators and member setters with `Expres
 
 ### Events — `Onity.Messaging` (replaces MessagePipe and the UniRx `MessageBroker`)
 
-- Typed pub/sub: `IPublisher<T>` / `ISubscriber<T>` from `IMessageBroker`; 0-alloc steady-state `Publish`, re-entrancy-safe (unsubscribe inside a handler is OK).
+- Typed pub/sub: `IPublisher<T>` / `ISubscriber<T>` from `IMessageBroker`; steady-state `Publish` designed allocation-free, re-entrancy-safe (unsubscribe inside a handler is OK).
 - `OnityEventHub` facade — `Publish<T>` / `Subscribe<T>` / `Observe<T>()` — **auto-bound in every scope**, no installer line required.
 - `broker.Observe<T>()` returns `IOnityObservable<T>`, so any event flows into the full reactive operator chain — no hand-written adapter.
 - Allocation-free diagnostics: `GetDiagnostics(List<...>)` and `ChannelCount` built into the core type.
@@ -76,7 +75,7 @@ The DI fast path compiles constructor activators and member setters with `Expres
 | Observable type | R3 `Observable<T>`; events need bridging | one `IOnityObservable<T>` for subjects, properties, and events |
 | Disposal | 3+ different disposal idioms | one `IDisposable` + `AddTo(...)` everywhere |
 | DI resolve / build speed | baseline | faster than VContainer and Zenject on the measured paths below (Editor-Mono, one machine — indicative, not guaranteed) |
-| Hot-path allocation (steady state) | varies | **0 B/op** on resolve, publish, `OnNext`, `EveryUpdate` |
+| Hot-path allocation (steady state) | varies | resolve machinery designed allocation-free (a transient still allocates the returned instance; alloc figures pending a corrected re-measure) |
 | Entry-point lifecycle | automatic (Zenject); manual wiring (VContainer) | **automatic** — `IOnityTickable` etc. need no registration |
 | Collection / open-generic binds | yes (both) | **yes** — `IEnumerable<T>`…`T[]` and `Bind(typeof(IRepo<>))` |
 | IL2CPP / AOT | mature, broadly shipped | compiled fast path + automatic reflection fallback; validated on one IL2CPP build |
@@ -85,21 +84,23 @@ The DI fast path compiles constructor activators and member setters with `Expres
 | Machine-readable AI usage guide | none | **yes** — verified against source |
 | Production maturity / ecosystem | **mature, battle-tested, large ecosystem** | **younger** — feature-complete DI, but smaller real-world track record |
 
-Onity's DI now covers the feature axes VContainer and Zenject are known for — collection injection, open-generic binds, and automatic entry-point lifecycle (where Onity is actually *ahead*: no manual registration). It still deliberately omits a few competitor features that fight the single-model / zero-alloc goals — e.g. no `WhenInjectedInto`/`WithId` conditional binds, no `Unbind`, no leading-edge `Throttle` (only `ThrottleLast`), no buffered/request-response messaging. Zenject and VContainer remain more **mature** and have a larger ecosystem; Onity is the younger project. See **[Onity vs VContainer / Zenject](docs/Onity-vs-VContainer-Zenject.md)** for the honest per-axis breakdown, and the [competitive roadmap](docs/Plan/07-Competitive-And-AI-Roadmap.md) for the full adopt/non-goal matrix.
+Onity's DI now covers the feature axes VContainer and Zenject are known for — collection injection, open-generic binds, and automatic entry-point lifecycle (where Onity is actually *ahead*: no manual registration). It still deliberately omits a few competitor features that fight the predictable single-model and allocation-conscious hot-path goals — e.g. no `WhenInjectedInto`/`WithId` conditional binds, no `Unbind`, no leading-edge `Throttle` (only `ThrottleLast`), no buffered/request-response messaging. Zenject and VContainer remain more **mature** and have a larger ecosystem; Onity is the younger project. See **[Onity vs VContainer / Zenject](docs/Onity-vs-VContainer-Zenject.md)** for the honest per-axis breakdown, and the [competitive roadmap](docs/Plan/07-Competitive-And-AI-Roadmap.md) for the full adopt/non-goal matrix.
 
 ---
 
 ## Benchmarks
 
-Measured by `OnityDiBenchmarkRunner` (Unity 2022.3.62f3, Windows, **Mono editor**; 512 warmup / 8 samples / median; allocation via `GC.GetTotalAllocatedBytes` deltas). These numbers were **measured in the Editor on a single machine — they are indicative, not a guarantee**; your hardware, Unity version, and scripting backend will differ. On these runs Onity beat both VContainer and Zenject on every scenario and was **0 B/op on every resolve path**:
+Measured by `OnityDiBenchmarkRunner` (Unity 2022.3.62f3, Windows, **Mono editor**; 512 warmup / 8 samples / median). These numbers were **measured in the Editor on a single machine — they are indicative, not a guarantee**; your hardware, Unity version, and scripting backend will differ. On these runs Onity beat both VContainer and Zenject on every scenario:
 
-| Scenario | Onity | VContainer | Zenject | Onity vs VContainer | Alloc/op (steady state) |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~152 ns | ~195 ns | ~2,326 ns | ~+28% | 0 B |
-| Resolve Transient | ~996 ns | ~1,421 ns | ~12,670 ns | ~+43% | 0 B |
-| Resolve Combined | ~1,883 ns | ~2,462 ns | ~20,392 ns | ~+31% | 0 B |
-| Resolve Complex (6-level) | ~37,895 ns | ~47,117 ns | ~302,383 ns | ~+24% | 0 B |
-| Prepare & Register Complex | ~30,085 ns | ~145,953 ns | ~191,297 ns | ~+384% | 0 B |
+| Scenario | Onity | VContainer | Zenject | Onity vs VContainer |
+| --- | ---: | ---: | ---: | ---: |
+| Resolve Singleton | ~152 ns | ~195 ns | ~2,326 ns | ~+28% |
+| Resolve Transient | ~996 ns | ~1,421 ns | ~12,670 ns | ~+43% |
+| Resolve Combined | ~1,883 ns | ~2,462 ns | ~20,392 ns | ~+31% |
+| Resolve Complex (6-level) | ~37,895 ns | ~47,117 ns | ~302,383 ns | ~+24% |
+| Prepare & Register Complex | ~30,085 ns | ~145,953 ns | ~191,297 ns | ~+384% |
+
+The **timing** numbers above are the trustworthy part. The committed allocation figures were **not reliable** — the same harness reported 0 B for VContainer and Zenject too, which cannot be correct (a transient resolve allocates the instance it returns, a 6-level graph allocates roughly one object per level, and Zenject is allocation-heavy), so the measurement was not capturing gross allocations. The resolve machinery (compiled activators, a pooled argument array, cached construction plans) is **designed** to avoid per-call managed allocation beyond the constructed instances themselves, but the published alloc numbers are withdrawn pending a corrected in-editor re-measure.
 
 The speed comes from a process-wide compiled-activator cache (`Expression.Compile` once per `ConstructorInfo`), compiled member setters, a `[ThreadStatic]` lock-free argument-array pool, and a per-plan per-slot constructor-dependency cache — with no `builder.Build()` ceremony before resolve and no engine coupling (`Onity.DI` is `noEngineReferences: true`). On AOT/IL2CPP these compiled paths automatically fall back to reflection (slower per call, but allocation-comparable and guaranteed to run). Full numbers and deltas: [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md).
 
@@ -234,7 +235,7 @@ For the complete, source-verified API across all three pillars, read the [Onity 
 ## Requirements
 
 - **Unity 2022.3 LTS or newer** (the full EditMode suite is verified green on **Unity 6.4**; benchmarks were captured on 2022.3.62f3).
-- No third-party runtime dependencies. The Input System reactive bridge requires `ENABLE_INPUT_SYSTEM`.
+- **ZLinq is the only third-party runtime dependency** (used by the `Onity.Unity` layer; the core uses no `System.Linq`). The Input System reactive bridge requires `ENABLE_INPUT_SYSTEM`.
 - Unity-only: standalone .NET / Godot / cross-engine runtimes are out of scope by design.
 
 ---

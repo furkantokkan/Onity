@@ -46,10 +46,12 @@ jobs:
           projectPath: .
           unityVersion: 2022.3.62f3
           testMode: ${{ matrix.testMode }}
+          artifactsPath: artifacts
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.testMode }}
-          path: ${{ steps.tests.outputs.artifactsPath }}
+          path: artifacts
+          if-no-files-found: ignore

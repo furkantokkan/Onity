@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-05-30
 
 First public preview. Three feature-complete pillars on a shared engine-free core
-with one disposal model, allocation-free hot paths, no `System.Linq`, and no
-third-party runtime dependencies.
+with one disposal model and hot-path machinery designed to avoid per-call managed
+allocation. The core uses no `System.Linq`; ZLinq is the only third-party runtime
+dependency (used by the `Onity.Unity` layer).
 
 ### Added
 
@@ -24,8 +25,10 @@ third-party runtime dependencies.
   - Optimized resolve path: process-wide compiled-activator cache
     (`Expression.Compile` once per `ConstructorInfo`), a `[ThreadStatic]`
     lock-free argument-array pool, and a per-plan per-slot dependency cache.
-    0 B/op on every resolve path; beats VContainer and Zenject on all measured
-    scenarios.
+    Designed to avoid per-call managed allocation beyond the constructed
+    instances themselves; beats VContainer and Zenject on all measured timing
+    scenarios. (The published allocation figures were unreliable and are being
+    re-measured — a transient resolve still allocates the instance it returns.)
   - Member injection setters (field/property) wired into the activation pipeline.
   - Opt-in **BakedGraph** resolve path behind a feature flag for pre-resolved
     construction plans.
@@ -33,12 +36,12 @@ third-party runtime dependencies.
     `OnityBindingException`, with opt-in binding-source attribution.
 
 - **Reactive (`Onity.Reactive`)**
-  - Primitives: `Subject<T>` (0-alloc steady-state `OnNext`) and
+  - Primitives: `Subject<T>` (steady-state `OnNext` designed allocation-free) and
     `ReactiveProperty<T>` (built-in `DistinctUntilChanged`, emits current value on
     subscribe, `SetValue(T) -> bool`).
   - Synchronous operators: `Where`, `Select`, `DistinctUntilChanged`,
     `Skip`/`SkipWhile`, `Take`/`TakeWhile`, `StartWith`, `Scan`, `Pairwise`,
-    `Merge`, `CombineLatest`, `Sample` - 0-alloc per emit.
+    `Merge`, `CombineLatest`, `Sample` - emit paths designed allocation-free.
   - Async / time operators: `Debounce`, `ThrottleLast`,
     `TakeUntil(CancellationToken)` / `TakeUntil(Task)`, `SelectAwait`,
     `WhereAwait`, plus `FirstAsync` / `ToTask` reactive-to-async bridges.
@@ -48,7 +51,7 @@ third-party runtime dependencies.
 
 - **Messaging (`Onity.Messaging`)**
   - Typed pub/sub broker: `IPublisher<T>` / `ISubscriber<T>` from
-    `IMessageBroker`; 0-alloc steady-state `Publish`, re-entrancy-safe
+    `IMessageBroker`; steady-state `Publish` designed allocation-free, re-entrancy-safe
     (unsubscribe inside a handler is allowed).
   - `OnityEventHub` facade (`Publish<T>` / `Subscribe<T>` / `Observe<T>()`) and
     `broker.Observe<T>()` returning `IOnityObservable<T>`, so any event flows into
@@ -79,6 +82,10 @@ third-party runtime dependencies.
 ### Tested
 
 - Full EditMode suite green: **203/203** in Unity 6.4.
-- Allocation verified at 0 B/op on resolve, publish, `OnNext`, and `EveryUpdate`.
+- Timing benchmarks captured on 2022.3.62f3 (Editor-Mono, one machine — indicative,
+  not guaranteed). The resolve/publish/`OnNext`/`EveryUpdate` paths are designed to
+  avoid per-call managed allocation, but the published allocation figures were
+  unreliable and need a corrected in-editor re-measure; a transient resolve still
+  allocates the instance it returns.
 
 [0.1.0]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.1.0
