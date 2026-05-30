@@ -10,6 +10,14 @@
 ![AI-indexed docs](https://img.shields.io/badge/docs-AI--indexed-blueviolet)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
 
+**Install** — in Unity, open *Window → Package Manager → `+` → Add package from git URL…* and paste:
+
+```
+https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework
+```
+
+Append `#v0.2.0` to pin a release. Requires Git on your machine. Onity's Unity layer also needs **ZLinq** (its only third-party runtime dependency) — install it via NuGetForUnity. See [Install](#install) for the full steps and alternatives.
+
 ---
 
 ## Why Onity
