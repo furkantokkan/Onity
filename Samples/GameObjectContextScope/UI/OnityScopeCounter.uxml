@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="OnityScopeCounter.uss" />
+    <ui:VisualElement class="scope-card">
+        <ui:Label name="scope-value" text="Scope: 0" class="scope-card__value" />
+        <ui:Button name="scope-increment" text="Increment Local Counter" class="scope-card__button" />
+    </ui:VisualElement>
+</ui:UXML>

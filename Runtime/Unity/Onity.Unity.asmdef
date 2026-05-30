@@ -1,0 +1,32 @@
+{
+  "name": "Onity.Unity",
+  "rootNamespace": "Onity.Unity",
+  "references": [
+    "Onity.Core",
+    "Onity.DI",
+    "Onity.DOTS",
+    "Onity.Factory",
+    "Onity.Messaging",
+    "Onity.Reactive",
+    "Onity.Pooling",
+    "Unity.Burst",
+    "Unity.InputSystem",
+    "Unity.Collections",
+    "Unity.Jobs"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [
+    {
+      "name": "com.unity.entities",
+      "expression": "1.0.0",
+      "define": "ONITY_ENTITIES"
+    }
+  ],
+  "noEngineReferences": false
+}

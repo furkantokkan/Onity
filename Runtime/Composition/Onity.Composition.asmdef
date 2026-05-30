@@ -1,0 +1,19 @@
+{
+  "name": "Onity.Composition",
+  "rootNamespace": "Onity.Composition",
+  "references": [
+    "Onity.Core",
+    "Onity.DI",
+    "Onity.Reactive",
+    "Onity.Messaging"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true
+}
