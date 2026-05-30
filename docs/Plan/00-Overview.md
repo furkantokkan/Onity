@@ -1,0 +1,106 @@
+# 00 - Onity Overview
+
+## Vision
+
+Onity is a **Unity-only, high-performance** framework that replaces the common
+"download four assets to build a game" pattern:
+
+| Slot | Replaced asset | Onity module |
+|---|---|---|
+| DI container | Zenject / VContainer | `Onity.DI` |
+| Reactive primitives | UniRx / R3 | `Onity.Reactive` |
+| Messaging bus | MessagePipe | `Onity.Messaging` |
+| Async helpers | UniTask | `Onity.Async` |
+| Pooling | UnityEngine.Pool wrappers | `Onity.Pooling` |
+| Factory | Zenject factories | `Onity.Factory` |
+
+One install gives a user the full stack with a single coherent API. The user
+should not need to learn five mental models.
+
+## Primary goals (priority order)
+
+1. **Settle the main system first.** DI and Reactive must be production-ready
+   before plugins receive attention. Everything else is deferred.
+2. **Beat VContainer on DI resolve hot paths.** Current benchmark shows Onity
+   is faster at registration (+91%) but slower at transient/complex resolve
+   (-15% to -28%). Closing this gap is the headline performance task.
+3. **Zenject-familiar API.** A developer who knows
+   `Bind<T>().To<C>().AsSingle()` should be productive on day one without
+   reading a manual.
+4. **Allocation-free hot paths.** Resolve, Publish, EveryUpdate, and
+   subscription steady state must allocate zero bytes per call.
+5. **AI-implementable plan.** The framework is built by AI agents reading this
+   plan plus `AGENTS.md`. Every design decision and acceptance criterion is
+   spelled out in MD files so agents do not have to guess.
+
+## Secondary goals (after main system is stable)
+
+1. DOTS bridges beyond the current `int` event queue.
+2. Plugins: `Onity.Physics`, `Onity.SkillStats`, `Onity.Input`, `Onity.UI`,
+   `Onity.SceneFlow`.
+3. Sample projects covering common Unity game patterns.
+4. Asset Store and GitHub UPM release packaging.
+
+## Non-goals
+
+- **No non-Unity runtimes.** Onity targets Unity 2022.3 LTS and later.
+  Standalone .NET / Godot / cross-engine portability is explicitly out of
+  scope.
+- **No third-party runtime dependencies.** R3, UniTask, Zenject, VContainer,
+  Autofac, MicroResolver, MessagePipe, etc. live in `Assets/Packages/` and
+  `Assets/ThirdParty/` for **reference and benchmark comparison only**. They
+  must not be referenced by any Onity runtime asmdef.
+- **No managed DI inside Burst jobs.** DI resolves managed objects. Burst
+  cannot allocate managed memory. Resolve on main thread, pass blittable data
+  into jobs.
+- **No advanced Zenject feature parity.** Conditional bindings, signal bus,
+  sub-containers beyond `ProjectContext/SceneContext/GameObjectContext`,
+  facade pattern, etc. are not goals unless a sample needs them.
+- **No source-generated DI in phase 1.** `Expression.Compile` is the activator
+  baseline; source-gen is a phase 2+ optimization.
+
+## Current state snapshot
+
+As of 2026-02-12 the runtime modules under
+`Assets/Onity-Packages/Onity/Runtime/` are:
+
+| Module | Files | Maturity |
+|---|---:|---|
+| `Onity.Core` | 3 | Stable, minimal primitives |
+| `Onity.DI` | 7 | Working, reflection-based, slower than VContainer on transient/complex |
+| `Onity.Reactive` | 17 | Working, primitive operators present, missing R3-parity operators |
+| `Onity.Messaging` | 7 | Working, see `EVENT_HUB_PLAN.md` for next steps |
+| `Onity.Factory` | 1 | Minimal contracts |
+| `Onity.Pooling` | 4 | Working with diagnostics registry |
+| `Onity.Unity` | ~30 | Contexts, async helpers, scene flow, UI bridge, input wrappers |
+| `Onity.DOTS` | 6 | Only int-event queue + session bridge |
+
+Editor tooling (`Onity/Diagnostics/*`, scene validation) and benchmark runner
+already work. Samples scenes (RollABall, GameObjectContextScope,
+BasicGameplay) generate from a menu.
+
+### Latest DI benchmark
+
+From `Assets/Onity-Packages/Onity/Benchmarks/Results/di-benchmark-summary.md`,
+Unity 2022.3.62f3, Windows Editor:
+
+| Scenario | Onity (ns/op) | VContainer (ns/op) | Onity vs VContainer |
+|---|---:|---:|---:|
+| Resolve Singleton | 175 | 187 | +6.24% |
+| Resolve Transient | 2,088 | 1,801 | -15.91% |
+| Resolve Combined | 2,163 | 1,833 | -18.02% |
+| Resolve Complex | 52,386 | 40,916 | -28.03% |
+| Prepare and Register Complex | 12,492 | 143,123 | +91.27% |
+
+Allocation per sample is 0 bytes for all containers in all scenarios.
+
+The gap on transient/combined/complex is the **single most important
+performance task** of phase 1.
+
+## Where work begins
+
+After reading the rest of the plan, the next action is **Phase 0 - Module
+Reorganization** described in `05-Implementation-Phases.md`. Phase 0 prepares
+the codebase for the DI hot-path rewrite in Phase 1.
+
+Do not start Phase 1 work before Phase 0 ships.

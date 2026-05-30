@@ -1,0 +1,43 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]serSettings/
+[Mm]emoryCaptures/
+
+# NuGetForUnity-restored packages (e.g. ZLinq DLLs); restored from packages.config
+[Aa]ssets/[Pp]ackages/
+
+# IDE / tooling
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+# Generated C# project files
+*.csproj
+*.sln
+*.unityproj
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Build output of the bundled tools (analyzers / source generators)
+tools/**/bin/
+tools/**/obj/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

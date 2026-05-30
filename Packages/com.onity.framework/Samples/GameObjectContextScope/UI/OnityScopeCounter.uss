@@ -1,0 +1,27 @@
+.scope-card
+{
+    width: 210px;
+    margin-left: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: 8px;
+    padding-right: 8px;
+    background-color: rgba(24, 28, 36, 0.85);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.scope-card__value
+{
+    color: rgb(242, 242, 242);
+    -unity-font-style: bold;
+    margin-bottom: 6px;
+}
+
+.scope-card__button
+{
+    margin-top: 2px;
+}
