@@ -274,6 +274,22 @@ For the complete, source-verified API across all three pillars, read the [Onity 
 
 ---
 
+## Credits
+
+Onity is inspired by the libraries it sets out to unify and improve on:
+
+- **[Zenject / Extenject](https://github.com/modesttree/Zenject)** — the DI binding vocabulary (`Bind<T>().To<C>().AsSingle()`) and the automatic entry-point lifecycle.
+- **[VContainer](https://github.com/hadashiA/VContainer)** — the DI performance focus and the container diagnostics window.
+- **[R3](https://github.com/Cysharp/R3) / [UniRx](https://github.com/neuecc/UniRx)** — the reactive model (operator chains, `Subject`, `ReactiveProperty`) and UniRx's `MessageBroker`.
+- **[MessagePipe](https://github.com/Cysharp/MessagePipe)** — the typed, DI-native pub/sub broker.
+- **[UniTask](https://github.com/Cysharp/UniTask)** — the PlayerLoop-driven async helper patterns.
+
+Built on **[ZLinq](https://github.com/Cysharp/ZLinq)** — its only third-party runtime dependency.
+
+## Author
+
+**Furkan Tokkan** — [@furkantokkan](https://github.com/furkantokkan)
+
 ## License
 
-Licensed under the **MIT License** — see [LICENSE](LICENSE).
+**MIT** — see [LICENSE](LICENSE).
