@@ -54,33 +54,56 @@ follow your own conventions.
 
 ## Step 1 — Install Onity
 
-Onity ships as an **embedded source package**: a folder of C# under `Assets/`,
-already compiled into assembly definitions. There is nothing to download at
-runtime and no `Resources` magic.
+Onity is a UPM package (`com.onity.framework`). Pick one method.
 
-**If you are in this repository already**, Onity lives at
-`Assets/Onity-Packages/Onity/` and is compiled for you. You are done — skip to
-the verification check below.
+### A. Unity Package Manager — git URL (recommended)
 
-**To add Onity to another Unity project**, copy the package folder in:
+In Unity, open **Window → Package Manager → `+` → Add package from git URL…** and
+paste the short URL:
 
 ```
-<YourProject>/Assets/Onity-Packages/Onity/
+https://github.com/furkantokkan/Onity.git#upm
 ```
 
-That single folder contains everything: `Runtime/` (the assemblies),
-`Editor/` (Inspector and menu tooling), and `Tests/`.
+The `upm` branch is the package at its repository root (auto-mirrored by CI on
+every change). To pin a release instead, use the explicit form
+`https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.2.0`.
+Git must be installed on your machine.
 
-The package's runtime assemblies are auto-referenced
-(`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`,
-`Onity.Unity`). That means **your game scripts can call Onity without editing any
-`.asmdef`** — you only need the right `using` directives. If your game code lives
-in its own assembly definition that turns off auto-referencing, add the
-assemblies you use (typically `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`,
-and `Onity.Unity`) to that asmdef's references.
+### B. Embedded package
 
-**Verify the install** with a one-line script anywhere in your project. If it
-compiles, Onity is wired in:
+Copy the package folder into your project's `Packages/` directory:
+
+```
+<YourProject>/Packages/com.onity.framework/
+```
+
+That folder contains everything: `Runtime/` (the assemblies), `Editor/`
+(Inspector and menu tooling), `Tests/`, and `Samples/`. If you cloned this
+repository, it is already there.
+
+### Required dependency — ZLinq
+
+Onity's Unity layer uses [ZLinq](https://github.com/Cysharp/ZLinq), its only
+third-party runtime dependency (the engine-free core uses no `System.Linq`).
+Install ZLinq with **NuGetForUnity** (*Window → NuGet → Manage NuGet Packages*,
+search `ZLinq`, Install). If you cloned this repository, NuGetForUnity restores it
+automatically from the committed `Assets/packages.config` the first time the
+project opens — nothing to do.
+
+### Referencing the assemblies
+
+The package's runtime assemblies are auto-referenced (`Onity.Core`, `Onity.DI`,
+`Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`, `Onity.Unity`), so your game
+scripts can call Onity without editing any `.asmdef` — you only need the right
+`using` directives. If your game code lives in its own assembly definition that
+turns off auto-referencing, add the assemblies you use (typically `Onity.DI`,
+`Onity.Reactive`, `Onity.Messaging`, and `Onity.Unity`) to that asmdef's
+references.
+
+### Verify the install
+
+A one-line script anywhere in your project — if it compiles, Onity is wired in:
 
 ```csharp
 using Onity.DI;
