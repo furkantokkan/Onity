@@ -130,11 +130,17 @@ The speed comes from a process-wide compiled-activator cache (`Expression.Compil
 
 > This repository is a minimal Unity project: the package itself lives at `Packages/com.onity.framework`, so you can clone-and-open it directly or consume the package in your own project. Onity targets **Unity 2022.3 LTS or newer**.
 >
-> **Required dependency — ZLinq.** Onity's Unity layer uses [ZLinq](https://github.com/Cysharp/ZLinq) — its only external runtime dependency (Onity itself uses no `System.Linq`). Add ZLinq to your project's `Packages/manifest.json` (e.g. via NuGetForUnity, package `ZLinq`) before importing Onity.
+> **Required dependency — ZLinq.** Onity's Unity layer uses [ZLinq](https://github.com/Cysharp/ZLinq) (its only external runtime dependency; Onity itself uses no `System.Linq`). **If you clone this repository, there is nothing to do** — NuGetForUnity (declared in `Packages/manifest.json`) auto-restores ZLinq `1.5.4` from the committed `Assets/packages.config` the first time the project opens. **If you add Onity to your own project**, install ZLinq there too: *Window → NuGet → Manage NuGet Packages*, search `ZLinq`, Install — or however your project consumes NuGet packages.
 
-### Option A — UPM git URL
+### Option A — UPM git URL (recommended)
 
-Add to your project's `Packages/manifest.json`:
+In Unity, open **Window → Package Manager → `+` → Add package from git URL…** and paste:
+
+```
+https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework
+```
+
+…or add it to your project's `Packages/manifest.json` directly:
 
 ```json
 {
@@ -143,6 +149,8 @@ Add to your project's `Packages/manifest.json`:
   }
 }
 ```
+
+(Pin a release by appending `#v0.2.0` to the URL.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 
