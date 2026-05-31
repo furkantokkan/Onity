@@ -9,6 +9,7 @@
 * [Reactive](guide/reactive.md)
 * [Events & Messaging](guide/events-messaging.md)
 * [Lifecycle & Scopes](guide/lifecycle-and-scopes.md)
+* [Factories & Pooling](guide/factories-and-pooling.md)
 * [Performance & IL2CPP](guide/performance-and-il2cpp.md)
 
 ## Reference

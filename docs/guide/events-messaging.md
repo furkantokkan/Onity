@@ -24,6 +24,193 @@ public sealed class CombatSystem
 
 > Threading: publish and subscribe on the Unity **main thread**. Channels are not internally locked for publish (only broker channel *creation* is locked). Handlers run in subscription order.
 
+## Quick event trigger recipes
+
+Use messages for past-tense gameplay notifications with zero, one, or many
+listeners. Define the message as a small struct or class:
+
+```csharp
+public readonly struct PlayerDamaged
+{
+    public readonly int Amount;
+
+    public PlayerDamaged(int amount)
+    {
+        Amount = amount;
+    }
+}
+```
+
+### Publish from a service
+
+`OnityEventHub` is auto-bound by `ProjectContext`, `SceneContext`, and
+`GameObjectContext`. No installer line is needed.
+
+```csharp
+using Onity.Unity.Messaging;
+
+public sealed class DamageService
+{
+    private readonly OnityEventHub m_events;
+
+    public DamageService(OnityEventHub events)
+    {
+        m_events = events;
+    }
+
+    public void ApplyDamage(int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        m_events.Publish(new PlayerDamaged(amount));
+    }
+}
+```
+
+### Subscribe from a plain service
+
+Plain services own their subscription token and dispose it when the service is
+disposed by the container.
+
+```csharp
+using System;
+using Onity.Unity.Messaging;
+
+public sealed class DamageLogService : IDisposable
+{
+    private readonly IDisposable m_subscription;
+
+    public DamageLogService(OnityEventHub events)
+    {
+        m_subscription = events.Subscribe<PlayerDamaged>(OnPlayerDamaged);
+    }
+
+    public void Dispose()
+    {
+        m_subscription.Dispose();
+    }
+
+    private void OnPlayerDamaged(PlayerDamaged message)
+    {
+        // Write analytics, update counters, trigger audio, etc.
+    }
+}
+```
+
+### Subscribe from a MonoBehaviour
+
+Unity-created objects cannot use constructor injection, so inject the hub with
+`[Inject]` and bind the subscription to the component lifetime.
+
+```csharp
+using Onity.DI;
+using Onity.Reactive;
+using Onity.Unity.Messaging;
+using Onity.Unity.Reactive;
+using UnityEngine;
+
+public sealed class DamageHud : MonoBehaviour
+{
+    [Inject] private OnityEventHub m_events;
+
+    private readonly CompositeDisposable m_subscriptions = new CompositeDisposable();
+
+    private void OnEnable()
+    {
+        m_events.Subscribe<PlayerDamaged>(OnPlayerDamaged)
+                .AddTo(m_subscriptions);
+    }
+
+    private void OnDisable()
+    {
+        m_subscriptions.Clear();
+    }
+
+    private void OnPlayerDamaged(PlayerDamaged message)
+    {
+        // Update the HUD.
+    }
+}
+```
+
+### Filter an event like a reactive stream
+
+This replaces the common "MessageBroker -> R3/UniRx" adapter pattern. Events
+already expose `IOnityObservable<T>`.
+
+```csharp
+using Onity.Reactive;
+using Onity.Unity.Messaging;
+using Onity.Unity.Reactive;
+
+m_events.Observe<PlayerDamaged>()
+        .Where(message => message.Amount > 0)
+        .Select(message => message.Amount)
+        .Subscribe(amount => ShowDamage(amount))
+        .AddTo(m_subscriptions);
+```
+
+### Inject only a publisher or subscriber
+
+Use this when a class should only publish or only listen. This is the closest
+shape to MessagePipe's `IPublisher<T>` / `ISubscriber<T>` usage.
+
+```csharp
+using System;
+using Onity.DI;
+using Onity.Messaging;
+using Onity.Unity.Installers;
+using Onity.Unity.Messaging;
+
+public sealed class GameInstaller : MonoInstaller
+{
+    public override void InstallBindings(OnityContainer container)
+    {
+        container.BindMessageChannel<PlayerDamaged>();
+        container.Bind<DamageService>().AsSingle();
+        container.Bind<DamageHudModel>().AsSingle();
+    }
+}
+
+public sealed class DamageService
+{
+    private readonly IPublisher<PlayerDamaged> m_publisher;
+
+    public DamageService(IPublisher<PlayerDamaged> publisher)
+    {
+        m_publisher = publisher;
+    }
+
+    public void ApplyDamage(int amount)
+    {
+        m_publisher.Publish(new PlayerDamaged(amount));
+    }
+}
+
+public sealed class DamageHudModel
+{
+    private readonly ISubscriber<PlayerDamaged> m_subscriber;
+
+    public DamageHudModel(ISubscriber<PlayerDamaged> subscriber)
+    {
+        m_subscriber = subscriber;
+    }
+
+    public IDisposable Listen()
+    {
+        return m_subscriber.Subscribe(OnPlayerDamaged);
+    }
+
+    private void OnPlayerDamaged(PlayerDamaged message)
+    {
+        // Update view model state.
+    }
+}
+```
+
 ## Surface
 
 ```csharp

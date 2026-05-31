@@ -18,7 +18,7 @@ container.Build();
 IInputService input = container.Resolve<IInputService>();
 ```
 
-This page covers the binding surface, the four injection sites, scoping via child containers, factories for runtime arguments, and the documented edge behaviors. For the automatic per-frame/startup lifecycle see [Lifecycle & Scopes](lifecycle-and-scopes.html); for the compiled/reflection activation story see [Performance & IL2CPP](performance-and-il2cpp.html).
+This page covers the binding surface, the four injection sites, scoping via child containers, factories for runtime arguments, and the documented edge behaviors. For prefab pools and pooled factories see [Factories & Pooling](factories-and-pooling.html); for the automatic per-frame/startup lifecycle see [Lifecycle & Scopes](lifecycle-and-scopes.html); for the compiled/reflection activation story see [Performance & IL2CPP](performance-and-il2cpp.html).
 
 ## Binding
 
@@ -155,7 +155,7 @@ container.BindFactory<string, Enemy, EnemyFactory>();
 Enemy goblin = container.Resolve<IFactory<string, Enemy>>().Create("goblin");
 ```
 
-`BindFactory` has zero-, one-, and two-parameter overloads matching `IFactory<TValue>`, `IFactory<TParam,TValue>`, and `IFactory<TParam1,TParam2,TValue>`.
+`BindFactory` has zero-, one-, and two-parameter overloads matching `IFactory<TValue>`, `IFactory<TParam,TValue>`, and `IFactory<TParam1,TParam2,TValue>`. See [Factories & Pooling](factories-and-pooling.html) for prefab pooled factories, `IPool<T>`, and `IPoolHooks` examples.
 
 ## Build and async startup
 
@@ -212,5 +212,6 @@ public sealed class GameInstaller : MonoInstaller
 - [Events & Messaging](events-messaging.html) — the auto-bound broker and `OnityEventHub`.
 - [Reactive](reactive.html) — `ReactiveProperty<T>` as shared, DI-bound state.
 - [Lifecycle & Scopes](lifecycle-and-scopes.html) — child scopes, contexts, and the automatic lifecycle.
+- [Factories & Pooling](factories-and-pooling.html) — runtime-argument factories and prefab pool wiring.
 - [Performance & IL2CPP](performance-and-il2cpp.html) — compiled activators and the AOT fallback.
 - [Migration: From Zenject](../Migration/From-Zenject.html) and [From VContainer](../Migration/From-VContainer.html).

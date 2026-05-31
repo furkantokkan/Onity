@@ -16,8 +16,9 @@ Onity is one Unity package that unifies dependency injection, reactive programmi
 
 - [Dependency Injection](guide/dependency-injection.html)
 - [Reactive](guide/reactive.html)
-- [Events & Messaging](guide/events-messaging.html)
+- [Events & Messaging](guide/events-messaging.html) — MessageBroker/MessagePipe-style event trigger examples.
 - [Lifecycle & Scopes](guide/lifecycle-and-scopes.html)
+- [Factories & Pooling](guide/factories-and-pooling.html)
 - [Performance & IL2CPP](guide/performance-and-il2cpp.html)
 
 ## Reference

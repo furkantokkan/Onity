@@ -266,6 +266,8 @@ For the complete, source-verified API across all three pillars, read the [Onity 
 
 - **[Onity AI Usage Guide](docs/Onity-AI-Usage-Guide.md)** — the source-of-truth, machine-readable reference for the real public API across DI, Reactive, and Events. Read this first.
 - **[Getting Started](docs/Getting-Started.md)** — a step-by-step human walkthrough: install, your first installer, DI + reactive state + events, and common mistakes.
+- **[Events & Messaging](docs/guide/events-messaging.md)** — MessageBroker/MessagePipe-style publish, subscribe, typed channel, and reactive event examples.
+- **[Factories & Pooling](docs/guide/factories-and-pooling.md)** — `BindFactory`, `BindPooledFactory`, `IPool<T>`, `IPoolHooks`, and prefab pool examples.
 - **[Architecture review](docs/Architecture-Review.md)** — module/dependency map, SOLID assessment, and the PASS verdict on the structure.
 - **Migration guides** — moving an existing project over:
   - [From Zenject](docs/Migration/From-Zenject.md)
