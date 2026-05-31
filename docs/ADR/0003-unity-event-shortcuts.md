@@ -1,10 +1,10 @@
 ---
-title: "ADR 0003: Unity Event Shortcuts"
+title: "ADR 0003: OnityEvent Shortcuts"
 parent: "Architecture Decisions"
 nav_order: 3
 ---
 
-# ADR 0003: Unity Event Shortcuts
+# ADR 0003: OnityEvent Shortcuts
 
 ## Status
 
@@ -31,11 +31,11 @@ about.
 
 Add Unity-facing shortcuts:
 
-- `Onity.Publish(message)`
-- `Onity.Subscribe<T>(handler)`
-- `Onity.Observe<T>()`
-- owner overloads such as `Onity.Publish(owner, message)` and
-  `Onity.Subscribe<T>(owner, handler)`
+- `OnityEvent.Publish(message)`
+- `OnityEvent.Subscribe<T>(handler)`
+- `OnityEvent.Observe<T>()`
+- owner overloads such as `OnityEvent.Publish(owner, message)` and
+  `OnityEvent.Subscribe<T>(owner, handler)`
 
 The no-owner overloads resolve the default active context in this order:
 
@@ -72,7 +72,7 @@ the preferred simple scene/project case should not require writing `this`.
 
 ## Consequences
 
-- MonoBehaviour event code can use `Onity.Publish(...)` directly.
+- MonoBehaviour event code can use `OnityEvent.Publish(...)` directly.
 - Exact object-scope routing remains available through owner overloads.
 - The shortcut does not search the scene on every call; active contexts register
   themselves during context `Awake`.

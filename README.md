@@ -21,7 +21,7 @@ A typical Unity project bolts together four assets to ship gameplay: a DI contai
 Onity replaces all of that with **one package and one mental model**:
 
 - **DI is the spine.** Bind services in a `MonoInstaller`; consume them through constructor injection.
-- **Events ride the broker.** `IMessageBroker` and `OnityEventHub` are auto-bound in every scope — use `Onity.Publish(...)` / `Onity.Subscribe(...)` from Unity code with no setup line.
+- **Events ride the broker.** `IMessageBroker` and `OnityEventHub` are auto-bound in every scope — use `OnityEvent.Publish(...)` / `OnityEvent.Subscribe(...)` from Unity code with no setup line.
 - **Reactive operators ride both.** `Subject<T>`, `ReactiveProperty<T>`, and `broker.Observe<T>()` are all the *same* `IOnityObservable<T>`, so `Where`/`Select`/`Subscribe` work on state and events alike.
 - **Everything disposes the same way.** Every `Subscribe` returns `IDisposable`; `AddTo(this)` (Unity) or `AddTo(CompositeDisposable)` (plain C#) scopes its lifetime — across DI, events, and reactive, identically.
 
@@ -63,7 +63,7 @@ The DI fast path uses source-generated constructor activators when available, co
 ### Events — `Onity.Messaging` (replaces MessagePipe and the UniRx `MessageBroker`)
 
 - Typed pub/sub: `IPublisher<T>` / `ISubscriber<T>` from `IMessageBroker`; steady-state `Publish` designed allocation-free, re-entrancy-safe (unsubscribe inside a handler is OK).
-- `Onity.Publish(...)` / `Onity.Subscribe(...)` / `Onity.Observe<T>()` shortcuts for Unity code, backed by the auto-bound `OnityEventHub`.
+- `OnityEvent.Publish(...)` / `OnityEvent.Subscribe(...)` / `OnityEvent.Observe<T>()` shortcuts for Unity code, backed by the auto-bound `OnityEventHub`.
 - `OnityEventHub` facade — `Publish<T>` / `Subscribe<T>` / `Observe<T>()` — **auto-bound in every scope**, no installer line required for explicit DI.
 - `broker.Observe<T>()` returns `IOnityObservable<T>`, so any event flows into the full reactive operator chain — no hand-written adapter.
 - Allocation-free diagnostics: `GetDiagnostics(List<...>)` and `ChannelCount` built into the core type.
@@ -137,7 +137,7 @@ The **timing** numbers above are the published benchmark evidence. Allocation nu
 
 On Mono/JIT, Onity uses cached compiled activators. On IL2CPP, generated activators provide the AOT fast path for hot types. Full Editor numbers and deltas: [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md). Player details: [`di-benchmark-player-latest.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-player-latest.md).
 
-0.3.3 verification: Unity batchmode Editor DI benchmark, Windows IL2CPP player DI benchmark with generated activators at 10,000 iterations per sample, `dotnet build tools/Onity.SourceGen/Onity.SourceGen.csproj -c Release`, and release branch CI build (`dotnet build onity-core-ci.csproj -c Release -nologo`). CI runs EditMode and PlayMode on every push — see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
+Benchmark verification behind these numbers: Unity batchmode Editor DI benchmark, Windows IL2CPP player DI benchmark with generated activators at 10,000 iterations per sample, `dotnet build tools/Onity.SourceGen/Onity.SourceGen.csproj -c Release`, and release branch CI build (`dotnet build onity-core-ci.csproj -c Release -nologo`). CI runs EditMode and PlayMode on every push — see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
 
 ---
 
@@ -158,7 +158,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.3
+https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.4
 ```
 
 …or in `Packages/manifest.json`:
@@ -171,7 +171,7 @@ https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3
 }
 ```
 
-(`#upm` tracks the latest package; use the `?path=…#v0.3.3` form to pin a specific release.)
+(`#upm` tracks the latest package; use the `?path=…#v0.3.4` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 
@@ -201,12 +201,12 @@ Reference the assemblies you need from your own asmdef (`Onity.DI`, `Onity.React
 
 ## Quick Start
 
-One `MonoInstaller` binds a service, shared reactive state, a typed message channel, and a plain-C# game loop that ticks itself. A thin `MonoBehaviour` consumes the rest through the Unity `Onity.Publish` / `Onity.Observe` shortcuts backed by the auto-bound `OnityEventHub`. Every snippet uses the real shipped API.
+One `MonoInstaller` binds a service, shared reactive state, a typed message channel, and a plain-C# game loop that ticks itself. A thin `MonoBehaviour` consumes the rest through the Unity `OnityEvent.Publish` / `OnityEvent.Observe` shortcuts backed by the auto-bound `OnityEventHub`. Every snippet uses the real shipped API.
 
 ```csharp
 using Onity.DI;
 using Onity.Reactive;
-using Onity.Unity;              // Onity.Publish / Subscribe / Observe
+using Onity.Unity;              // OnityEvent.Publish / Subscribe / Observe
 using Onity.Unity.Installers;   // MonoInstaller
 using Onity.Unity.Messaging;    // BindMessageChannel<T>
 using UnityEngine;
@@ -248,12 +248,12 @@ public sealed class HealthHud : MonoBehaviour
     {
         m_health.Subscribe(value => Debug.Log($"Health: {value}")).AddTo(this);   // emits current value first
 
-        Onity.Observe<PlayerDamaged>(this)                 // event -> reactive stream
+        OnityEvent.Observe<PlayerDamaged>(this)                 // event -> reactive stream
               .Where(e => e.Amount > 0)
               .Subscribe(e => m_health.Value -= e.Amount)
               .AddTo(this);                                // disposed on Destroy
 
-        Onity.Publish(new PlayerDamaged(10));
+        OnityEvent.Publish(new PlayerDamaged(10));
     }
 }
 ```

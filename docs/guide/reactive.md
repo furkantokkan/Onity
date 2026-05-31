@@ -57,7 +57,7 @@ Use this table when choosing the shape of a gameplay flow.
 | --- | --- | --- |
 | `Subject<T>` | A local hot stream owned by one class. | Input samples, local callbacks, internal model events. |
 | `ReactiveProperty<T>` | Current state that late subscribers must see immediately. | Health, score, selected weapon, current wave. |
-| `OnityEventHub.Observe<T>()` / `Onity.Observe<T>()` | Transient game events as a stream. | Damage dealt, enemy killed, level loaded. |
+| `OnityEventHub.Observe<T>()` / `OnityEvent.Observe<T>()` | Transient game events as a stream. | Damage dealt, enemy killed, level loaded. |
 | `Where` / `Select` / `CombineLatest` / `Scan` | Filtering, projection, derived state, accumulation. | Critical-hit only stream, effective HP, combo counter. |
 | `SelectAwait` / `WhereAwait` | Sequential async work where source order matters. | Validate one request at a time. |
 | `ObserveOnThreadPool` / `SelectOnThreadPool` | Pure managed CPU work away from the Unity main thread. | Score calculation, path-cost estimation, rule evaluation. |
@@ -144,7 +144,7 @@ public sealed class DamageScorePresenter : MonoBehaviour
 {
     private void OnEnable()
     {
-        Onity.Observe<PlayerDamaged>(this)
+        OnityEvent.Observe<PlayerDamaged>(this)
              .Where(message => message.Amount > 0)
              .SelectOnThreadPool(
                  (message, ct) => CalculateScoreDelta(message),

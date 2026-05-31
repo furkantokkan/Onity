@@ -8,7 +8,7 @@ nav_order: 3
 
 Onity's messaging is typed pub/sub. `MessageChannel<T>` uses the same array-backed, re-entrancy-safe design as `Subject<T>`: allocation-free steady-state `Publish`, safe to unsubscribe from inside a handler, and it throws after `Dispose`. The core (`Onity.Messaging`) is engine-free; `OnityEventHub` and the reactive bridge live in `Onity.Unity.Messaging`.
 
-The broker (`IMessageBroker` / `MessageBroker`) and the `OnityEventHub` facade are **auto-bound in every context**, so code can publish or subscribe with no installer line. For Unity code, prefer the shorthand `Onity.Publish(...)` / `Onity.Subscribe(...)`; plain services can still inject `OnityEventHub` when explicit dependencies are better.
+The broker (`IMessageBroker` / `MessageBroker`) and the `OnityEventHub` facade are **auto-bound in every context**, so code can publish or subscribe with no installer line. For Unity code, prefer the shorthand `OnityEvent.Publish(...)` / `OnityEvent.Subscribe(...)`; plain services can still inject `OnityEventHub` when explicit dependencies are better.
 
 ```csharp
 using System;
@@ -19,7 +19,7 @@ public sealed class DamageButton : MonoBehaviour
 {
     public void Click()
     {
-        Onity.Publish(new PlayerDamaged(10));
+        OnityEvent.Publish(new PlayerDamaged(10));
     }
 }
 ```
@@ -62,7 +62,7 @@ public sealed class PlayerHealth : MonoBehaviour
             return;
         }
 
-        Onity.Publish(new PlayerDamaged(amount));
+        OnityEvent.Publish(new PlayerDamaged(amount));
     }
 }
 ```
@@ -71,7 +71,7 @@ For an isolated `GameObjectContext`, pass the owner component so Onity chooses
 the nearest context instead of the default scene/project context:
 
 ```csharp
-Onity.Publish(this, new PlayerDamaged(amount));
+OnityEvent.Publish(this, new PlayerDamaged(amount));
 ```
 
 ### Publish from a plain service
@@ -135,7 +135,7 @@ public sealed class DamageLogService : IDisposable
 
 ### Subscribe from a MonoBehaviour
 
-Use `Onity.Subscribe(this, ...)` when the subscription should be disposed with
+Use `OnityEvent.Subscribe(this, ...)` when the subscription should be disposed with
 the component. The owner component also selects the nearest context.
 
 ```csharp
@@ -149,7 +149,7 @@ public sealed class DamageHud : MonoBehaviour
 
     private void OnEnable()
     {
-        m_subscription = Onity.Subscribe<PlayerDamaged>(this, OnPlayerDamaged);
+        m_subscription = OnityEvent.Subscribe<PlayerDamaged>(this, OnPlayerDamaged);
     }
 
     private void OnDisable()
@@ -175,7 +175,7 @@ using Onity.Reactive;
 using Onity.Unity;
 using Onity.Unity.Reactive;
 
-Onity.Observe<PlayerDamaged>(this)
+OnityEvent.Observe<PlayerDamaged>(this)
      .Where(message => message.Amount > 0)
      .Select(message => message.Amount)
      .Subscribe(amount => ShowDamage(amount))
@@ -200,7 +200,7 @@ public sealed class HeavyDamageHud : MonoBehaviour
 {
     private void OnEnable()
     {
-        Onity.Observe<PlayerDamaged>(this)
+        OnityEvent.Observe<PlayerDamaged>(this)
              .Where(message => message.Amount >= 25)
              .Subscribe(ShowHeavyHit)
              .TakeUntilDisable(this);
@@ -218,7 +218,7 @@ keeps the publish path lean; each listener owns its own `Where(...)` chain.
 
 ### Publish from a ScriptableObject or plain class
 
-`Onity.Publish(message)` can be called from a `ScriptableObject` or any plain C#
+`OnityEvent.Publish(message)` can be called from a `ScriptableObject` or any plain C#
 object as long as an active `ProjectContext`, `SceneContext`, or
 `GameObjectContext` exists.
 
@@ -241,12 +241,12 @@ public sealed class SkillDefinition : ScriptableObject
 {
     public void Trigger()
     {
-        Onity.Publish(new SkillTriggered(this));
+        OnityEvent.Publish(new SkillTriggered(this));
     }
 }
 ```
 
-Use the owner overload (`Onity.Publish(this, message)`) when the publisher is a
+Use the owner overload (`OnityEvent.Publish(this, message)`) when the publisher is a
 `Component` and should route through the nearest `GameObjectContext`. A
 `ScriptableObject` has no transform hierarchy, so it uses the default active
 context shortcut or an injected `OnityEventHub`.
@@ -341,7 +341,7 @@ public sealed class DamageAnalyticsView : MonoBehaviour
 {
     private void OnEnable()
     {
-        Onity.Observe<PlayerDamaged>(this)
+        OnityEvent.Observe<PlayerDamaged>(this)
              .SelectOnThreadPool(
                  (message, ct) => BuildAnalyticsPayload(message),
                  maxConcurrency: 2)
@@ -527,13 +527,13 @@ using System;
 using Onity.Reactive;
 using Onity.Unity;
 
-Onity.Publish(new PlayerDamaged(10));
-IDisposable token = Onity.Subscribe<PlayerDamaged>(OnPlayerDamaged);
-IOnityObservable<PlayerDamaged> stream = Onity.Observe<PlayerDamaged>();
+OnityEvent.Publish(new PlayerDamaged(10));
+IDisposable token = OnityEvent.Subscribe<PlayerDamaged>(OnPlayerDamaged);
+IOnityObservable<PlayerDamaged> stream = OnityEvent.Observe<PlayerDamaged>();
 ```
 
-`Onity.Publish(message)` uses the active scene context first, then the project
-context. `Onity.Publish(owner, message)` uses the nearest context to `owner`,
+`OnityEvent.Publish(message)` uses the active scene context first, then the project
+context. `OnityEvent.Publish(owner, message)` uses the nearest context to `owner`,
 which is the right choice inside a `GameObjectContext`.
 
 ## Reactive bridge — `Observe<T>()`

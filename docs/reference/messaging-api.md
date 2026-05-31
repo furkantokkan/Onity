@@ -107,7 +107,7 @@ Sequential awaitable handlers: `PublishAsync` awaits each handler before invokin
 
 ## Unity facade and bridges
 
-### Static Unity shortcut (`Onity.Unity.Onity`)
+### Static Unity shortcut (`Onity.Unity.OnityEvent`)
 
 Use this from MonoBehaviours and simple Unity code when constructor injection is
 unnecessary. The no-owner overloads resolve the active scene context first, then
@@ -128,8 +128,8 @@ component, which is useful for `GameObjectContext` scopes.
 using System;
 using Onity.Unity;
 
-Onity.Publish(new PlayerDamaged(10));
-IDisposable token = Onity.Subscribe<PlayerDamaged>(message => { /* handle */ });
+OnityEvent.Publish(new PlayerDamaged(10));
+IDisposable token = OnityEvent.Subscribe<PlayerDamaged>(message => { /* handle */ });
 ```
 
 ### `OnityEventHub` (`Onity.Unity.Messaging`)
@@ -163,9 +163,9 @@ These are optional aliases over the owner overloads above:
 
 | API | Signature | Notes |
 | --- | --- | --- |
-| `Publish<TMessage>` | `Publish<TMessage>(this Component owner, TMessage message) -> void` | Same as `Onity.Publish(owner, message)`. |
-| `Subscribe<TMessage>` | `Subscribe<TMessage>(this Component owner, MessageHandler<TMessage> handler) -> IDisposable` | Same as `Onity.Subscribe(owner, handler)`. |
-| `Observe<TMessage>` | `Observe<TMessage>(this Component owner) -> IOnityObservable<TMessage>` | Same as `Onity.Observe<TMessage>(owner)`. |
+| `Publish<TMessage>` | `Publish<TMessage>(this Component owner, TMessage message) -> void` | Same as `OnityEvent.Publish(owner, message)`. |
+| `Subscribe<TMessage>` | `Subscribe<TMessage>(this Component owner, MessageHandler<TMessage> handler) -> IDisposable` | Same as `OnityEvent.Subscribe(owner, handler)`. |
+| `Observe<TMessage>` | `Observe<TMessage>(this Component owner) -> IOnityObservable<TMessage>` | Same as `OnityEvent.Observe<TMessage>(owner)`. |
 
 ```csharp
 using Onity.Unity.Messaging;     // Observe<T>, OnityEventHub

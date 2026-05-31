@@ -4,7 +4,7 @@ using System.Reflection;
 using NUnit.Framework;
 using Onity.Unity.Contexts;
 using UnityEngine;
-using OnityApi = Onity.Unity.Onity;
+using OnityEventApi = Onity.Unity.OnityEvent;
 
 namespace Onity.Tests.EditMode
 {
@@ -31,12 +31,12 @@ namespace Onity.Tests.EditMode
         {
             CreateContext<SceneContext>("EventShortcutSceneContext");
             int received = 0;
-            IDisposable subscription = OnityApi.Subscribe<ShortcutMessage>(
+            IDisposable subscription = OnityEventApi.Subscribe<ShortcutMessage>(
                 message => received = message.Value);
 
             try
             {
-                OnityApi.Publish(new ShortcutMessage(7));
+                OnityEventApi.Publish(new ShortcutMessage(7));
             }
             finally
             {
@@ -59,13 +59,13 @@ namespace Onity.Tests.EditMode
             ownerObject.transform.SetParent(objectContextRoot.transform);
             Transform owner = ownerObject.transform;
             int received = 0;
-            IDisposable subscription = OnityApi.Subscribe<ShortcutMessage>(
+            IDisposable subscription = OnityEventApi.Subscribe<ShortcutMessage>(
                 owner,
                 message => received = message.Value);
 
             try
             {
-                OnityApi.Publish(owner, new ShortcutMessage(11));
+                OnityEventApi.Publish(owner, new ShortcutMessage(11));
             }
             finally
             {

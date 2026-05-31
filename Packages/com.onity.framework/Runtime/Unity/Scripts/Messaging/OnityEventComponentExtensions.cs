@@ -18,7 +18,7 @@ namespace Onity.Unity.Messaging
         /// <param name="message">Published payload.</param>
         public static void Publish<TMessage>(this Component owner, TMessage message)
         {
-            global::Onity.Unity.Onity.Publish(owner, message);
+            global::Onity.Unity.OnityEvent.Publish(owner, message);
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace Onity.Unity.Messaging
             this Component owner,
             MessageHandler<TMessage> handler)
         {
-            return global::Onity.Unity.Onity.Subscribe(owner, handler);
+            return global::Onity.Unity.OnityEvent.Subscribe(owner, handler);
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Onity.Unity.Messaging
         /// <returns>Observable stream for the message type.</returns>
         public static IOnityObservable<TMessage> Observe<TMessage>(this Component owner)
         {
-            return global::Onity.Unity.Onity.Observe<TMessage>(owner);
+            return global::Onity.Unity.OnityEvent.Observe<TMessage>(owner);
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Onity.Unity.Messaging
         /// <returns>Resolved event hub.</returns>
         public static OnityEventHub GetEventHub(this Component owner)
         {
-            return global::Onity.Unity.Onity.GetEventHub(owner);
+            return global::Onity.Unity.OnityEvent.GetEventHub(owner);
         }
     }
 }

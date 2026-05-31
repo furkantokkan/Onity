@@ -9,9 +9,9 @@ using UnityEngine;
 namespace Onity.Unity
 {
     /// <summary>
-    /// Unity-facing shorthand for commonly used Onity services.
+    /// Unity-facing shorthand for scoped Onity events.
     /// </summary>
-    public static class Onity
+    public static class OnityEvent
     {
         /// <summary>
         /// Publishes a message through the default active Onity context.

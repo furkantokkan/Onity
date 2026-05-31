@@ -1,6 +1,6 @@
 {
   "name": "com.onity.framework",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "displayName": "Onity",
   "description": "One Unity package for dependency injection, reactive programming, and events - one idiom, one disposal model, an engine-free core, and low-allocation hot paths. Replaces Zenject/VContainer, R3/UniRx, and MessagePipe with a single coherent API.",
   "unity": "2022.3",

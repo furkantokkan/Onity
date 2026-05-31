@@ -25,7 +25,7 @@ You do NOT mix three libraries. Onity is one package with one mental model:
 
 ```
 DI is the spine.            Bind services in a MonoInstaller; resolve via constructor injection.
-Events ride the broker.     Use Onity.Publish/Subscribe in Unity code; inject OnityEventHub in services.
+Events ride the broker.     Use OnityEvent.Publish/Subscribe in Unity code; inject OnityEventHub in services.
 Reactive operators ride both. Subject<T>/ReactiveProperty<T> AND broker.Observe<T>() are the SAME
                             IOnityObservable<T>, so Where/Select/Subscribe work on events and state alike.
 Lifetime is one model.      Every Subscribe returns IDisposable. Dispose it with AddTo(this) (Unity)
@@ -37,9 +37,9 @@ Lifetime is one model.      Every Subscribe returns IDisposable. Dispose it with
 ```csharp
 // 1. Register in an installer:           container.Bind<IThing>().To<Thing>().AsSingle();
 // 2. Consume by constructor injection:    public Service(IThing thing) { ... }
-// 3. Send an event:                       Onity.Publish(new ThingHappened());
-// 4. Receive an event:                    Onity.Subscribe<ThingHappened>(this, OnThing);
-// 5. Receive as a filtered stream:        Onity.Observe<ThingHappened>(this).Where(...).Subscribe(...).AddTo(this);
+// 3. Send an event:                       OnityEvent.Publish(new ThingHappened());
+// 4. Receive an event:                    OnityEvent.Subscribe<ThingHappened>(this, OnThing);
+// 5. Receive as a filtered stream:        OnityEvent.Observe<ThingHappened>(this).Where(...).Subscribe(...).AddTo(this);
 // 6. Hold reactive state:                 var hp = new ReactiveProperty<int>(100); hp.Value = 90;
 // 7. Observe state (emits current first): hp.Where(v => v <= 0).Subscribe(_ => Die()).AddTo(this);
 // 8. Per-frame loop:                       OnityUnityObservable.EveryUpdate().Subscribe(_ => Tick()).AddTo(this);
@@ -518,9 +518,9 @@ using System;
 using Onity.Reactive;
 using Onity.Unity;
 
-Onity.Publish(new PlayerDamaged(10));
-IDisposable token = Onity.Subscribe<PlayerDamaged>(OnDamaged);
-IOnityObservable<PlayerDamaged> stream = Onity.Observe<PlayerDamaged>();
+OnityEvent.Publish(new PlayerDamaged(10));
+IDisposable token = OnityEvent.Subscribe<PlayerDamaged>(OnDamaged);
+IOnityObservable<PlayerDamaged> stream = OnityEvent.Observe<PlayerDamaged>();
 ```
 
 ```csharp
@@ -537,7 +537,7 @@ public sealed class OnityEventHub
 
 ```csharp
 // Recipe A: publish a typed message from Unity code. Define messages as small structs/classes.
-using Onity.Unity;                      // Onity.Publish
+using Onity.Unity;                      // OnityEvent.Publish
 using UnityEngine;
 
 public readonly struct PlayerDamaged
@@ -548,21 +548,21 @@ public readonly struct PlayerDamaged
 
 public sealed class DamageButton : MonoBehaviour
 {
-    public void Click() => Onity.Publish(new PlayerDamaged(10));
+    public void Click() => OnityEvent.Publish(new PlayerDamaged(10));
 }
 ```
 
 ```csharp
 // Recipe B: subscribe with the disposable-token model; own lifetime via OnEnable/OnDisable.
 using System;
-using Onity.Unity;                       // Onity.Subscribe
+using Onity.Unity;                       // OnityEvent.Subscribe
 using UnityEngine;
 
 public sealed class HealthBar : MonoBehaviour
 {
     private IDisposable m_subscription;
 
-    private void OnEnable()  => m_subscription = Onity.Subscribe<PlayerDamaged>(this, OnDamaged);
+    private void OnEnable()  => m_subscription = OnityEvent.Subscribe<PlayerDamaged>(this, OnDamaged);
     private void OnDisable() => m_subscription?.Dispose();
     private void OnDamaged(PlayerDamaged message) { /* update bar */ }
 }
@@ -808,11 +808,11 @@ DON'T:
 - `MessageChannelDiagnostics` (struct: `MessageType`, `SubscriberCount`)
 
 ### `Onity.Unity` (UnityEngine)
-- Static shortcut (`Onity.Unity.Onity`):
-  `Onity.Publish<T>(message)`, `Onity.Publish<T>(owner, message)`,
-  `Onity.Subscribe<T>(handler)`, `Onity.Subscribe<T>(owner, handler)`,
-  `Onity.Observe<T>()`, `Onity.Observe<T>(owner)`,
-  `Onity.GetEventHub(...)`, `Onity.TryGetEventHub(...)`
+- Static shortcut (`Onity.Unity.OnityEvent`):
+  `OnityEvent.Publish<T>(message)`, `OnityEvent.Publish<T>(owner, message)`,
+  `OnityEvent.Subscribe<T>(handler)`, `OnityEvent.Subscribe<T>(owner, handler)`,
+  `OnityEvent.Observe<T>()`, `OnityEvent.Observe<T>(owner)`,
+  `OnityEvent.GetEventHub(...)`, `OnityEvent.TryGetEventHub(...)`
 - Contexts (`Onity.Unity.Contexts`): `OnityContext` (abstract base), `ProjectContext`, `SceneContext`, `GameObjectContext`
 - Installers (`Onity.Unity.Installers`): `MonoInstaller` (abstract; `InstallBindings(OnityContainer)`);
   extensions `BindScriptableObject<T>(asset)` / `BindScriptableObject<TContract,TAsset>(asset)`,

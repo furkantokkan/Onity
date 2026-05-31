@@ -7,6 +7,10 @@ This folder contains benchmark tooling for comparing:
 
 ## 1. Run DI Benchmarks in Unity
 
+Benchmark comparison assemblies reference VContainer and Zenject. To compile and
+run them in a package-only project, install those comparison packages and add
+`ONITY_BENCHMARKS` to **Project Settings > Player > Scripting Define Symbols**.
+
 From the Unity menu:
 - `Onity/Benchmarks/Run DI Benchmarks (Editor)`
 - `Onity/Benchmarks/Build and Run DI Benchmarks (IL2CPP Player)`
