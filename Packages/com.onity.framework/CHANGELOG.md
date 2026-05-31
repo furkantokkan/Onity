@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a Single Scene Setup preset that creates one gameplay scene with a
   `SceneContext`, prepares the runtime-loaded `ProjectContext` prefab, and
   applies Build Settings immediately.
+- Added `Onity.Publish`, `Onity.Subscribe`, and `Onity.Observe` Unity shortcuts
+  over the auto-bound event hub, plus component-scoped overloads for
+  `GameObjectContext` usage.
 
 ### Changed
 

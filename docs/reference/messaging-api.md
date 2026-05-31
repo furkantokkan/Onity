@@ -105,9 +105,34 @@ Sequential awaitable handlers: `PublishAsync` awaits each handler before invokin
 
 ---
 
-## Facade and bridges (`Onity.Unity.Messaging`)
+## Unity facade and bridges
 
-### `OnityEventHub`
+### Static Unity shortcut (`Onity.Unity.Onity`)
+
+Use this from MonoBehaviours and simple Unity code when constructor injection is
+unnecessary. The no-owner overloads resolve the active scene context first, then
+the project context. Owner overloads choose the nearest `OnityContext` to the
+component, which is useful for `GameObjectContext` scopes.
+
+| API | Signature | Notes |
+| --- | --- | --- |
+| `Publish<TMessage>` | `Publish<TMessage>(TMessage message) -> void` | Publish through the default active context. |
+| `Publish<TMessage>` | `Publish<TMessage>(Component owner, TMessage message) -> void` | Publish through the nearest context to `owner`. |
+| `Subscribe<TMessage>` | `Subscribe<TMessage>(MessageHandler<TMessage> handler) -> IDisposable` | Subscribe through the default active context. Caller owns the token. |
+| `Subscribe<TMessage>` | `Subscribe<TMessage>(Component owner, MessageHandler<TMessage> handler) -> IDisposable` | Subscribe through the nearest context to `owner`; token is also tied to owner destroy. |
+| `Observe<TMessage>` | `Observe<TMessage>() -> IOnityObservable<TMessage>` | Observe from the default active context. |
+| `Observe<TMessage>` | `Observe<TMessage>(Component owner) -> IOnityObservable<TMessage>` | Observe from the nearest context to `owner`. |
+| `GetEventHub` / `TryGetEventHub` | `GetEventHub(...)`, `TryGetEventHub(...)` | Resolve the underlying `OnityEventHub` when advanced access is needed. |
+
+```csharp
+using System;
+using Onity.Unity;
+
+Onity.Publish(new PlayerDamaged(10));
+IDisposable token = Onity.Subscribe<PlayerDamaged>(message => { /* handle */ });
+```
+
+### `OnityEventHub` (`Onity.Unity.Messaging`)
 
 `sealed class OnityEventHub`. Auto-bound in every `OnityContext` over the scoped broker; inject it with no installer line. Constructor: `new OnityEventHub(IMessageBroker broker)`.
 
@@ -131,6 +156,16 @@ Turn messages into the full reactive operator chain. The returned `IOnityObserva
 | API | Signature | Notes |
 | --- | --- | --- |
 | `BindMessageChannel<TMessage>` | `BindMessageChannel<TMessage>(this OnityContainer container) -> void` | Bind `IPublisher<TMessage>` and `ISubscriber<TMessage>` instances (sourced from the scope's `IMessageBroker`) so services can constructor-inject them directly. |
+
+### Component extensions (`OnityEventComponentExtensions`)
+
+These are optional aliases over the owner overloads above:
+
+| API | Signature | Notes |
+| --- | --- | --- |
+| `Publish<TMessage>` | `Publish<TMessage>(this Component owner, TMessage message) -> void` | Same as `Onity.Publish(owner, message)`. |
+| `Subscribe<TMessage>` | `Subscribe<TMessage>(this Component owner, MessageHandler<TMessage> handler) -> IDisposable` | Same as `Onity.Subscribe(owner, handler)`. |
+| `Observe<TMessage>` | `Observe<TMessage>(this Component owner) -> IOnityObservable<TMessage>` | Same as `Onity.Observe<TMessage>(owner)`. |
 
 ```csharp
 using Onity.Unity.Messaging;     // Observe<T>, OnityEventHub

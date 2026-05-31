@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Onity.DI;
 using Onity.Messaging;
 using Onity.Unity.Installers;
@@ -14,6 +15,8 @@ namespace Onity.Unity.Contexts
     [DefaultExecutionOrder(-9500)]
     public abstract class OnityContext : MonoBehaviour
     {
+        private static readonly List<OnityContext> s_activeContexts = new List<OnityContext>(8);
+
         [Header("Context Setup")]
         [Tooltip("Installers executed during context initialization.")]
         [SerializeField] private MonoInstaller[] m_installers = Array.Empty<MonoInstaller>();
@@ -43,6 +46,7 @@ namespace Onity.Unity.Contexts
             RegisterDefaultBindings();
             InstallBindings();
             m_container.Build();
+            RegisterActiveContext();
 
             if (m_autoInjectHierarchy)
             {
@@ -99,6 +103,7 @@ namespace Onity.Unity.Contexts
         /// </summary>
         protected virtual void OnDestroy()
         {
+            UnregisterActiveContext();
             m_container?.Dispose();
             m_container = null;
         }
@@ -148,6 +153,97 @@ namespace Onity.Unity.Contexts
             return null;
         }
 
+        internal static bool TryResolveDefault<TService>(out TService service)
+        {
+            if (TryResolveLastActive<SceneContext, TService>(out service))
+            {
+                return true;
+            }
+
+            if (TryResolveFromContext(ProjectContext.Instance, out service))
+            {
+                return true;
+            }
+
+            for (int i = s_activeContexts.Count - 1; i >= 0; i--)
+            {
+                OnityContext context = s_activeContexts[i];
+
+                if (context == null)
+                {
+                    s_activeContexts.RemoveAt(i);
+                    continue;
+                }
+
+                if (context is SceneContext || context is ProjectContext)
+                {
+                    continue;
+                }
+
+                if (TryResolveFromContext(context, out service))
+                {
+                    return true;
+                }
+            }
+
+            service = default;
+            return false;
+        }
+
+        internal static bool TryResolveNearest<TService>(Component owner, out TService service)
+        {
+            if (owner == null)
+            {
+                service = default;
+                return false;
+            }
+
+            OnityContext context = owner as OnityContext;
+
+            if (context == null)
+            {
+                context = owner.GetComponentInParent<OnityContext>(true);
+            }
+
+            return TryResolveFromContext(context, out service);
+        }
+
+        private static bool TryResolveLastActive<TContext, TService>(out TService service)
+            where TContext : OnityContext
+        {
+            for (int i = s_activeContexts.Count - 1; i >= 0; i--)
+            {
+                OnityContext context = s_activeContexts[i];
+
+                if (context == null)
+                {
+                    s_activeContexts.RemoveAt(i);
+                    continue;
+                }
+
+                if (context is TContext && TryResolveFromContext(context, out service))
+                {
+                    return true;
+                }
+            }
+
+            service = default;
+            return false;
+        }
+
+        private static bool TryResolveFromContext<TService>(OnityContext context, out TService service)
+        {
+            if (context != null
+                && context.m_container != null
+                && context.m_container.TryResolve(out service))
+            {
+                return true;
+            }
+
+            service = default;
+            return false;
+        }
+
         private void CreateContainer()
         {
             OnityContainer parent = null;
@@ -168,6 +264,17 @@ namespace Onity.Unity.Contexts
             }
 
             m_container = new OnityContainer(parent);
+        }
+
+        private void RegisterActiveContext()
+        {
+            s_activeContexts.Remove(this);
+            s_activeContexts.Add(this);
+        }
+
+        private void UnregisterActiveContext()
+        {
+            s_activeContexts.Remove(this);
         }
 
         private void RegisterDefaultBindings()

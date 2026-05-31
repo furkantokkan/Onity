@@ -25,7 +25,7 @@ You do NOT mix three libraries. Onity is one package with one mental model:
 
 ```
 DI is the spine.            Bind services in a MonoInstaller; resolve via constructor injection.
-Events ride the broker.     Inject IPublisher<T>/ISubscriber<T> or OnityEventHub; Publish / Subscribe.
+Events ride the broker.     Use Onity.Publish/Subscribe in Unity code; inject OnityEventHub in services.
 Reactive operators ride both. Subject<T>/ReactiveProperty<T> AND broker.Observe<T>() are the SAME
                             IOnityObservable<T>, so Where/Select/Subscribe work on events and state alike.
 Lifetime is one model.      Every Subscribe returns IDisposable. Dispose it with AddTo(this) (Unity)
@@ -37,9 +37,9 @@ Lifetime is one model.      Every Subscribe returns IDisposable. Dispose it with
 ```csharp
 // 1. Register in an installer:           container.Bind<IThing>().To<Thing>().AsSingle();
 // 2. Consume by constructor injection:    public Service(IThing thing) { ... }
-// 3. Send an event:                       eventHub.Publish(new ThingHappened());
-// 4. Receive an event:                    eventHub.Subscribe<ThingHappened>(OnThing).AddTo(this);
-// 5. Receive as a filtered stream:        eventHub.Observe<ThingHappened>().Where(...).Subscribe(...).AddTo(this);
+// 3. Send an event:                       Onity.Publish(new ThingHappened());
+// 4. Receive an event:                    Onity.Subscribe<ThingHappened>(this, OnThing);
+// 5. Receive as a filtered stream:        Onity.Observe<ThingHappened>(this).Where(...).Subscribe(...).AddTo(this);
 // 6. Hold reactive state:                 var hp = new ReactiveProperty<int>(100); hp.Value = 90;
 // 7. Observe state (emits current first): hp.Where(v => v <= 0).Subscribe(_ => Die()).AddTo(this);
 // 8. Per-frame loop:                       OnityUnityObservable.EveryUpdate().Subscribe(_ => Tick()).AddTo(this);
@@ -510,9 +510,21 @@ broker.Observe<DamageEvent>()
       .AddTo(this);
 ```
 
-### 4.3 `OnityEventHub` facade (auto-bound in every context)
+### 4.3 Unity shortcut + `OnityEventHub` facade
 
 ```csharp
+// Unity shorthand: use this from MonoBehaviours and simple scene code.
+using System;
+using Onity.Reactive;
+using Onity.Unity;
+
+Onity.Publish(new PlayerDamaged(10));
+IDisposable token = Onity.Subscribe<PlayerDamaged>(OnDamaged);
+IOnityObservable<PlayerDamaged> stream = Onity.Observe<PlayerDamaged>();
+```
+
+```csharp
+// Plain services: inject the scoped facade explicitly.
 public sealed class OnityEventHub
 {
     public void Publish<TMessage>(TMessage message);
@@ -524,8 +536,9 @@ public sealed class OnityEventHub
 ### 4.4 Event recipes
 
 ```csharp
-// Recipe A: inject the hub, publish a typed message. Define messages as small structs/classes.
-using Onity.Unity.Messaging;            // OnityEventHub
+// Recipe A: publish a typed message from Unity code. Define messages as small structs/classes.
+using Onity.Unity;                      // Onity.Publish
+using UnityEngine;
 
 public readonly struct PlayerDamaged
 {
@@ -533,29 +546,24 @@ public readonly struct PlayerDamaged
     public PlayerDamaged(int amount) { Amount = amount; }
 }
 
-public sealed class CombatSystem
+public sealed class DamageButton : MonoBehaviour
 {
-    private readonly OnityEventHub m_events;
-    public CombatSystem(OnityEventHub events) { m_events = events; }   // auto-bound, no installer line needed
-    public void ApplyHit(int amount) => m_events.Publish(new PlayerDamaged(amount));
+    public void Click() => Onity.Publish(new PlayerDamaged(10));
 }
 ```
 
 ```csharp
 // Recipe B: subscribe with the disposable-token model; own lifetime via OnEnable/OnDisable.
-using Onity.DI;                          // Inject
-using Onity.Reactive;                    // CompositeDisposable
-using Onity.Unity.Messaging;             // OnityEventHub
-using Onity.Unity.Reactive;              // AddTo(CompositeDisposable)
+using System;
+using Onity.Unity;                       // Onity.Subscribe
 using UnityEngine;
 
 public sealed class HealthBar : MonoBehaviour
 {
-    [Inject] private OnityEventHub m_events;
-    private readonly CompositeDisposable m_subscriptions = new CompositeDisposable();
+    private IDisposable m_subscription;
 
-    private void OnEnable()  => m_events.Subscribe<PlayerDamaged>(OnDamaged).AddTo(m_subscriptions);
-    private void OnDisable() => m_subscriptions.Clear();
+    private void OnEnable()  => m_subscription = Onity.Subscribe<PlayerDamaged>(this, OnDamaged);
+    private void OnDisable() => m_subscription?.Dispose();
     private void OnDamaged(PlayerDamaged message) { /* update bar */ }
 }
 ```
@@ -800,13 +808,19 @@ DON'T:
 - `MessageChannelDiagnostics` (struct: `MessageType`, `SubscriberCount`)
 
 ### `Onity.Unity` (UnityEngine)
+- Static shortcut (`Onity.Unity.Onity`):
+  `Onity.Publish<T>(message)`, `Onity.Publish<T>(owner, message)`,
+  `Onity.Subscribe<T>(handler)`, `Onity.Subscribe<T>(owner, handler)`,
+  `Onity.Observe<T>()`, `Onity.Observe<T>(owner)`,
+  `Onity.GetEventHub(...)`, `Onity.TryGetEventHub(...)`
 - Contexts (`Onity.Unity.Contexts`): `OnityContext` (abstract base), `ProjectContext`, `SceneContext`, `GameObjectContext`
 - Installers (`Onity.Unity.Installers`): `MonoInstaller` (abstract; `InstallBindings(OnityContainer)`);
   extensions `BindScriptableObject<T>(asset)` / `BindScriptableObject<TContract,TAsset>(asset)`,
   `BindPooledFactory<TComponent>(prefab, ...)` / `BindPooledFactory<TValue>(IPool<TValue>)`, `BindUiResolverBridge()`
 - Messaging (`Onity.Unity.Messaging`): `OnityEventHub` (`Publish<T>`, `Subscribe<T>`, `Observe<T>()`);
   `OnityMessageReactiveExtensions.Observe<T>()` (on `IMessageBroker` and `ISubscriber<T>`);
-  `OnityMessageBindingExtensions.BindMessageChannel<T>(this OnityContainer)`
+  `OnityMessageBindingExtensions.BindMessageChannel<T>(this OnityContainer)`;
+  `OnityEventComponentExtensions` (`Publish`, `Subscribe`, `Observe` on `Component`)
 - Reactive (`Onity.Unity.Reactive`):
   `OnityUnityObservable.EveryUpdate/EveryFixedUpdate/EveryLateUpdate` (+ `OnityUnityThreadMode` and
   `CancellationToken` overloads), `Timer(float, useUnscaledTime = false)`, `Interval(float, useUnscaledTime = false)`;

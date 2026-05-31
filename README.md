@@ -21,7 +21,7 @@ A typical Unity project bolts together four assets to ship gameplay: a DI contai
 Onity replaces all of that with **one package and one mental model**:
 
 - **DI is the spine.** Bind services in a `MonoInstaller`; consume them through constructor injection.
-- **Events ride the broker.** `IMessageBroker` and `OnityEventHub` are auto-bound in every scope — publish and subscribe with no setup line.
+- **Events ride the broker.** `IMessageBroker` and `OnityEventHub` are auto-bound in every scope — use `Onity.Publish(...)` / `Onity.Subscribe(...)` from Unity code with no setup line.
 - **Reactive operators ride both.** `Subject<T>`, `ReactiveProperty<T>`, and `broker.Observe<T>()` are all the *same* `IOnityObservable<T>`, so `Where`/`Select`/`Subscribe` work on state and events alike.
 - **Everything disposes the same way.** Every `Subscribe` returns `IDisposable`; `AddTo(this)` (Unity) or `AddTo(CompositeDisposable)` (plain C#) scopes its lifetime — across DI, events, and reactive, identically.
 
@@ -63,7 +63,8 @@ The DI fast path uses source-generated constructor activators when available, co
 ### Events — `Onity.Messaging` (replaces MessagePipe and the UniRx `MessageBroker`)
 
 - Typed pub/sub: `IPublisher<T>` / `ISubscriber<T>` from `IMessageBroker`; steady-state `Publish` designed allocation-free, re-entrancy-safe (unsubscribe inside a handler is OK).
-- `OnityEventHub` facade — `Publish<T>` / `Subscribe<T>` / `Observe<T>()` — **auto-bound in every scope**, no installer line required.
+- `Onity.Publish(...)` / `Onity.Subscribe(...)` / `Onity.Observe<T>()` shortcuts for Unity code, backed by the auto-bound `OnityEventHub`.
+- `OnityEventHub` facade — `Publish<T>` / `Subscribe<T>` / `Observe<T>()` — **auto-bound in every scope**, no installer line required for explicit DI.
 - `broker.Observe<T>()` returns `IOnityObservable<T>`, so any event flows into the full reactive operator chain — no hand-written adapter.
 - Allocation-free diagnostics: `GetDiagnostics(List<...>)` and `ChannelCount` built into the core type.
 - `BindMessageChannel<T>()` when you want to inject a typed `IPublisher<T>` / `ISubscriber<T>` directly.
@@ -200,13 +201,15 @@ Reference the assemblies you need from your own asmdef (`Onity.DI`, `Onity.React
 
 ## Quick Start
 
-One `MonoInstaller` binds a service, shared reactive state, a typed message channel, and a plain-C# game loop that ticks itself. A thin `MonoBehaviour` consumes the rest through the auto-bound `OnityEventHub`. Every snippet uses the real shipped API.
+One `MonoInstaller` binds a service, shared reactive state, a typed message channel, and a plain-C# game loop that ticks itself. A thin `MonoBehaviour` consumes the rest through the Unity `Onity.Publish` / `Onity.Observe` shortcuts backed by the auto-bound `OnityEventHub`. Every snippet uses the real shipped API.
 
 ```csharp
 using Onity.DI;
 using Onity.Reactive;
+using Onity.Unity;              // Onity.Publish / Subscribe / Observe
 using Onity.Unity.Installers;   // MonoInstaller
-using Onity.Unity.Messaging;    // BindMessageChannel<T>, OnityEventHub
+using Onity.Unity.Messaging;    // BindMessageChannel<T>
+using UnityEngine;
 
 public readonly struct PlayerDamaged
 {
@@ -239,17 +242,18 @@ public sealed class GameInstaller : MonoInstaller
 
 public sealed class HealthHud : MonoBehaviour
 {
-    [Inject] private OnityEventHub m_events;           // auto-bound facade
     [Inject] private ReactiveProperty<int> m_health;   // shared state from the installer
 
     private void OnEnable()
     {
         m_health.Subscribe(value => Debug.Log($"Health: {value}")).AddTo(this);   // emits current value first
 
-        m_events.Observe<PlayerDamaged>()                 // event -> reactive stream
-                .Where(e => e.Amount > 0)
-                .Subscribe(e => m_health.Value -= e.Amount)
-                .AddTo(this);                              // disposed on Destroy
+        Onity.Observe<PlayerDamaged>(this)                 // event -> reactive stream
+              .Where(e => e.Amount > 0)
+              .Subscribe(e => m_health.Value -= e.Amount)
+              .AddTo(this);                                // disposed on Destroy
+
+        Onity.Publish(new PlayerDamaged(10));
     }
 }
 ```
