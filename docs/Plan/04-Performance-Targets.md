@@ -137,8 +137,7 @@ Latest Windows IL2CPP player timing (`2026-05-31T15:26:19Z`, 512 warmup /
 
 The result closes the measured Windows IL2CPP resolve-speed gap against
 VContainer for this benchmark graph. Remaining IL2CPP work is target-device
-coverage, broader generated-activator coverage, and a corrected gross-allocation
-harness.
+coverage, broader generated-activator coverage, and allocation measurement.
 
 ## 4. Reactive performance gates
 

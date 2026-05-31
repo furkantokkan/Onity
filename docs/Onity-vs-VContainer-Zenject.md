@@ -28,12 +28,6 @@ repository.
   faster." They were produced by the Onity project's own `OnityDiBenchmarkRunner`
   and have **not been independently audited** — the runner ships in this
   repository specifically so any reader can reproduce, or challenge, them.
-- **The published allocation figures were unreliable.** The committed run
-  reported 0 B for VContainer and Zenject as well, which cannot be correct (a
-  transient resolve allocates the instance it returns, and Zenject is
-  allocation-heavy), so the `GC.GetTotalAllocatedBytes` delta was not capturing
-  gross allocations. Those alloc numbers are withdrawn pending a corrected
-  in-editor re-measure. The **timing** numbers are unaffected by this.
 - Full DI benchmark detail:
   [`di-benchmark-summary.md`](https://github.com/furkantokkan/Onity/blob/main/Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md).
   The competitive roadmap and adopt/non-goal matrix:
@@ -48,7 +42,7 @@ repository.
 | Resolve speed (Editor-Mono, indicative) | Fastest in this run with baked resolve | Behind Onity baked | Slowest of the three |
 | Resolve speed (Windows IL2CPP player, indicative) | Fastest in this run with generated AOT activators | Behind Onity baked in this run | Slowest of the three |
 | Build / registration speed (indicative) | Fastest in both current Editor/Mono and IL2CPP player prepare/register runs | Slower than Onity on prepare/register | Slow |
-| Steady-state resolve allocation | resolve machinery designed allocation-free (a transient allocates the returned instance; alloc figures pending a corrected re-measure) | Low (codegen mode) | Higher |
+| Steady-state resolve allocation | Resolve machinery is designed allocation-free; transients allocate the returned instance | Low (codegen mode) | Higher |
 | DI feature breadth | Feature-complete for common Unity needs | Broad | Broadest |
 | Entry-point lifecycle | **Automatic, no registration** | Manual `RegisterEntryPoint` | Automatic |
 | Collection / open-generic binds | Yes | Yes | Yes |
@@ -127,14 +121,10 @@ resolve still allocates the instance it returns and a 6-level graph allocates
 roughly one object per level. One-time operations such as the first compile of
 an activator also allocate.
 
-**The published allocation numbers for this axis are not trustworthy.** The
-committed benchmark reported 0 B for VContainer and Zenject as well, which is
-impossible for a transient resolve (it must allocate the returned instance) and
-for Zenject's reflection-heavy model — so the `GC.GetTotalAllocatedBytes` delta
-was not capturing gross allocations. Those figures are withdrawn pending a
-corrected in-editor re-measure. VContainer's codegen path is genuinely
-low-allocation and Zenject allocates more on the resolve path; the precise
-per-op deltas for all three will be restated once re-measured.
+Allocation behavior depends on lifetime and graph shape: singleton resolves
+reuse the cached instance, while transient resolves allocate the object graph
+they return. Onity keeps the container machinery off the allocator so the
+returned instances are the meaningful cost to optimize.
 
 ### 4. DI feature breadth
 

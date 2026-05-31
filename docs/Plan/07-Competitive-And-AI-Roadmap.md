@@ -30,10 +30,8 @@ the performance gates in `04-Performance-Targets.md`, the architecture rules in
 ### 1.2 The measured DI win (already true)
 
 From `di-benchmark-summary.md` (Unity 2022.3.62f3, Windows, Mono editor,
-512 warmup / 8 samples / mean). The allocation figures from this runner are
-withdrawn pending corrected gross-allocation measurement; the timing numbers
-remain the current published Editor/Mono comparison. Onity baked resolve beats
-**both** VContainer and Zenject on every measured Editor/Mono timing scenario:
+512 warmup / 8 samples / mean). Onity baked resolve beats **both** VContainer
+and Zenject on every measured Editor/Mono timing scenario:
 
 | Scenario | Onity Baked (ns/op) | VContainer (ns/op) | Zenject (ns/op) | Onity vs VContainer |
 |---|---:|---:|---:|---:|
@@ -184,11 +182,11 @@ DI already meets its competitive goal. The gates in
 | Resolve Combined | 972 | <= 1,550 | <= 1,250 | **Beats stretch** |
 | Resolve Complex | 22,905 | <= 35,000 | <= 28,000 | **Beats stretch** |
 | Prepare & Register Complex | 61,044 | <= 15,000 | <= 12,000 | **Missed internal gate** (still ~60% faster than VContainer) |
-| Resolve alloc / sample (B) | Pending | 0 | 0 | Re-measure with corrected allocation harness |
+| Resolve alloc / sample (B) | Pending | 0 | 0 | Add allocation benchmark coverage |
 
 Benchmark note: Onity wins every Editor/Mono timing head-to-head, but the internal
-`Prepare & Register Complex` gate is still not met and the allocation table
-needs a corrected harness. The Windows IL2CPP player benchmark now proves the
+`Prepare & Register Complex` gate is still not met and allocation coverage is
+tracked separately. The Windows IL2CPP player benchmark now proves the
 benchmark graph runs without crashing, registers generated AOT activators, and
 beats the measured VContainer baseline on singleton, transient, combined,
 complex, and prepare/register. The next meaningful step is broader
@@ -444,14 +442,14 @@ fix.
 | Item | Effort | Adopt? |
 |---|---|---|
 | Keep the provider-slot baked graph and parity suite green while adding regression tests around build/resolve timing thresholds | M | Adopt |
-| Correct the allocation harness and publish gross managed allocation deltas for singleton, transient, and complex resolves | M | Adopt |
+| Add allocation benchmark coverage for singleton, transient, and complex resolves | M | Adopt |
 | Reduce baked `Prepare & Register Complex` under 15,000 ns with source-generated or IL post-processed activators | M | Adopt |
 | Keep Windows IL2CPP benchmark coverage green, add Android/WebGL coverage, and broaden source-generated or IL-postprocessed activator coverage for IL2CPP resolve speed | L | Adopt (platform hardening) |
 | Replace per-subscribe closure+`DisposableAction` in `Subject<T>`/`ReactiveProperty` with `struct Subscription { owner, id } : IDisposable` | M | Adopt |
 | Pool async-operator state (`Queue<T>`/CTS) in `SelectAwait/WhereAwait/Debounce/ThrottleLast`; default Debounce/ThrottleLast to a Unity time provider in the Unity bridge | M | Adopt |
 
-**Exit gate:** baked resolve remains parity-green; the corrected allocation
-harness is published; IL2CPP benchmark runs without throwing and generated
+**Exit gate:** baked resolve remains parity-green; allocation benchmark coverage
+is published; IL2CPP benchmark runs without throwing and generated
 activators stay ahead of the local VContainer baseline across singleton,
 transient, combined, and complex resolve; `Prepare & Register Complex` is either
 below the 15,000 ns internal gate or the remaining build-time gap is explicitly

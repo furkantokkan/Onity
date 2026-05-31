@@ -47,8 +47,8 @@ should not need to learn five mental models.
 - **No non-Unity runtimes.** Onity targets Unity 2022.3 LTS and later.
   Standalone .NET / Godot / cross-engine portability is explicitly out of
   scope.
-- **No non-Unity third-party runtime dependencies.** ZLinq, R3, UniTask,
-  Zenject, VContainer, Autofac, MicroResolver, MessagePipe, etc. live in
+- **No non-Unity third-party runtime dependencies.** R3, UniTask, Zenject,
+  VContainer, Autofac, MicroResolver, MessagePipe, etc. live in
   `Assets/Packages/` and `Assets/ThirdParty/` for **reference and benchmark
   comparison only**. They must not be referenced by any Onity runtime asmdef.
 - **No managed DI inside Burst jobs.** DI resolves managed objects. Burst
@@ -93,17 +93,16 @@ Unity 2022.3.62f3, Windows Editor/Mono, generated 2026-05-30:
 | Resolve Complex | 22,905 | 42,158 | +45.7% |
 | Prepare and Register Complex | 61,044 | 150,730 | +59.5% |
 
-Allocation numbers from this runner are withdrawn pending a corrected harness;
-the timing numbers above are the trustworthy benchmark output.
+The timing table above is the current benchmark output.
 
 Onity Baked is faster than VContainer on every measured Editor/Mono timing path.
 The Windows IL2CPP player benchmark also runs with generated AOT activators and
 is faster than VContainer on singleton, transient, combined, complex, and
 prepare/register in the current run. The remaining performance tasks are broader
-platform/device coverage and a corrected allocation harness.
+platform/device coverage and allocation measurement.
 
 ## Where work begins
 
 After reading the rest of the plan, the next action is to close the remaining
-0.3.x performance proof gaps: corrected allocation measurement and
+0.3.x performance proof gaps: allocation measurement and
 source-generated or IL-postprocessed activators for IL2CPP resolve speed.

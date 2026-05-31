@@ -84,9 +84,8 @@ metadata. It intentionally does not ship bundled samples.
 ### No third-party dependencies
 
 Onity has no non-Unity third-party runtime dependencies — the engine-free core
-uses no `System.Linq`, and the former ZLinq dependency was removed in 0.3.1.
-Unity first-party package dependencies are declared in `package.json` and
-resolved by UPM.
+uses no `System.Linq`. Unity first-party package dependencies are declared in
+`package.json` and resolved by UPM.
 
 ### Referencing the assemblies
 

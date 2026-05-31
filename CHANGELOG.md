@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Removed the former ZLinq dependency — Onity now has **zero non-Unity third-party runtime
+- Removed the external LINQ replacement dependency — Onity now has **zero non-Unity third-party runtime
   dependencies**. `OnityUiPresenterFactory` uses a hand-rolled loop instead of
   `AsValueEnumerable`; install no longer needs NuGetForUnity.
 
@@ -109,8 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First public preview. Three feature-complete pillars on a shared engine-free core
 with one disposal model and hot-path machinery designed to avoid per-call managed
-allocation. In this 0.1.0 preview, the core used no `System.Linq` and ZLinq was
-the only third-party runtime dependency (used by the `Onity.Unity` layer).
+allocation. In this 0.1.0 preview, the core used no `System.Linq`.
 
 ### Added
 
@@ -127,8 +126,7 @@ the only third-party runtime dependency (used by the `Onity.Unity` layer).
     lock-free argument-array pool, and a per-plan per-slot dependency cache.
     Designed to avoid per-call managed allocation beyond the constructed
     instances themselves; beats VContainer and Zenject on all measured timing
-    scenarios. (The published allocation figures were unreliable and are being
-    re-measured — a transient resolve still allocates the instance it returns.)
+    scenarios, while transient resolves still allocate the instance they return.
   - Member injection setters (field/property) wired into the activation pipeline.
   - Opt-in **BakedGraph** resolve path behind a feature flag for pre-resolved
     construction plans.

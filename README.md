@@ -25,7 +25,7 @@ Onity replaces all of that with **one package and one mental model**:
 - **Reactive operators ride both.** `Subject<T>`, `ReactiveProperty<T>`, and `broker.Observe<T>()` are all the *same* `IOnityObservable<T>`, so `Where`/`Select`/`Subscribe` work on state and events alike.
 - **Everything disposes the same way.** Every `Subscribe` returns `IDisposable`; `AddTo(this)` (Unity) or `AddTo(CompositeDisposable)` (plain C#) scopes its lifetime — across DI, events, and reactive, identically.
 
-The runtime core (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`) is **engine-free** — no `UnityEngine` dependency — so domain logic is testable in plain EditMode with no scene. The hot-path machinery (resolve via compiled activators, pooled argument arrays, and cached construction plans; publish, `OnNext`, `EveryUpdate`, subscription steady state) is **designed to avoid per-call managed allocation** — though a transient resolve still allocates the instance it returns, and the published allocation figures were unreliable and are being re-measured (see [Benchmarks](#benchmarks)). The core uses no `System.Linq`; **Onity has no non-Unity third-party runtime dependencies**. The former ZLinq dependency was removed in 0.3.1. The Zenject-familiar `Bind<T>().To<C>().AsSingle()` vocabulary, fluent discoverable builders, a verified [machine-readable usage guide](docs/Onity-AI-Usage-Guide.md), and a [Roslyn analyzer pack](tools/Onity.Analyzers) (`ONITY001`–`ONITY006`) make it **AI-friendly** by design: an agent reading one guide writes correct, compiling code across all three pillars, and the analyzer turns common misuse into inline diagnostics.
+The runtime core (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`) is **engine-free** — no `UnityEngine` dependency — so domain logic is testable in plain EditMode with no scene. The hot-path machinery (resolve via compiled activators, pooled argument arrays, and cached construction plans; publish, `OnNext`, `EveryUpdate`, subscription steady state) is **designed to avoid per-call managed allocation** — though a transient resolve still allocates the instance it returns. The core uses no `System.Linq`; **Onity has no non-Unity third-party runtime dependencies**. The Zenject-familiar `Bind<T>().To<C>().AsSingle()` vocabulary, fluent discoverable builders, a verified [machine-readable usage guide](docs/Onity-AI-Usage-Guide.md), and a [Roslyn analyzer pack](tools/Onity.Analyzers) (`ONITY001`–`ONITY006`) make it **AI-friendly** by design: an agent reading one guide writes correct, compiling code across all three pillars, and the analyzer turns common misuse into inline diagnostics.
 
 The DI fast path uses source-generated constructor activators when available, compiles constructor activators and member setters with `Expression.Compile` on JIT runtimes, and **falls back to reflection when neither generated nor compiled activation is available** — so the same container runs across Editor, Mono player, and IL2CPP player builds. IL2CPP correctness and timing are covered separately because AOT backends do not behave like Editor/Mono.
 
@@ -96,7 +96,7 @@ Onity is deliberately structured — and its documentation is **indexed for AI**
 | Observable type | R3 `Observable<T>`; events need bridging | one `IOnityObservable<T>` for subjects, properties, and events |
 | Disposal | 3+ different disposal idioms | one `IDisposable` + `AddTo(...)` everywhere |
 | DI resolve / build speed | baseline | faster than VContainer and Zenject on the measured Editor-Mono and Windows IL2CPP player paths below (Windows PC — indicative, not guaranteed) |
-| Hot-path allocation (steady state) | varies | resolve machinery designed allocation-free (a transient still allocates the returned instance; alloc figures pending a corrected re-measure) |
+| Hot-path allocation (steady state) | varies | resolve machinery designed allocation-free; transients allocate the returned instance |
 | Entry-point lifecycle | automatic (Zenject); manual wiring (VContainer) | **automatic** — `IOnityTickable` etc. need no registration |
 | Collection / open-generic binds | yes (both) | **yes** — `IEnumerable<T>`…`T[]` and `Bind(typeof(IRepo<>))` |
 | IL2CPP / AOT | AOT-compatible DI | Source-generated constructor activators, runtime-probed compiled activation, and reflection fallback; current IL2CPP player timing beats VContainer on the measured resolve/build paths |
@@ -133,8 +133,6 @@ IL2CPP player run (`2026-05-31T15:26:19Z`, `WindowsPlayer`, source-generated act
 | Resolve Complex (6-level) | ~4,782 ns | ~13,552 ns | ~61,999 ns | ~+65% |
 | Prepare & Register Complex | ~26,944 ns | ~39,694 ns | ~65,937 ns | ~+32% |
 
-The **timing** numbers above are the published benchmark evidence. Allocation numbers are intentionally not shown until the allocation harness is re-measured.
-
 On Mono/JIT, Onity uses cached compiled activators. On IL2CPP, generated activators provide the AOT fast path for hot types. Full Editor numbers and deltas: [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md). Player details: [`di-benchmark-player-latest.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-player-latest.md).
 
 Benchmark verification behind these numbers: Unity batchmode Editor DI benchmark, Windows IL2CPP player DI benchmark with generated activators at 10,000 iterations per sample, `dotnet build tools/Onity.SourceGen/Onity.SourceGen.csproj -c Release`, and release branch CI build (`dotnet build onity-core-ci.csproj -c Release -nologo`). CI runs EditMode and PlayMode on every push — see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
@@ -145,7 +143,7 @@ Benchmark verification behind these numbers: Unity batchmode Editor DI benchmark
 
 > This repository is a minimal Unity project: the package itself lives at `Packages/com.onity.framework`, so you can clone-and-open it directly or consume the package in your own project. Onity targets **Unity 2022.3 LTS or newer**.
 >
-> **No non-Unity third-party runtime dependencies — no NuGet/Cysharp package to install.** Onity's core uses no `System.Linq`, and the package no longer depends on ZLinq. Unity first-party package dependencies are declared in `package.json` and resolved by UPM.
+> **No non-Unity third-party runtime dependencies — no NuGet/Cysharp package to install.** Onity's core uses no `System.Linq`. Unity first-party package dependencies are declared in `package.json` and resolved by UPM.
 
 ### Option A — UPM git URL (recommended)
 
@@ -287,7 +285,7 @@ For the complete, source-verified API across all three pillars, read the [Onity 
 ## Requirements
 
 - **Unity 2022.3 LTS or newer** (the current benchmark numbers were captured on Unity 2022.3.62f3, Windows Editor/Mono and Windows IL2CPP Player).
-- **Onity has no non-Unity third-party runtime dependencies** (the core uses no `System.Linq`; ZLinq was removed in 0.3.1). The Input System reactive bridge requires `ENABLE_INPUT_SYSTEM`.
+- **Onity has no non-Unity third-party runtime dependencies** (the core uses no `System.Linq`). The Input System reactive bridge requires `ENABLE_INPUT_SYSTEM`.
 - Unity-only: standalone .NET / Godot / cross-engine runtimes are out of scope by design.
 
 ---

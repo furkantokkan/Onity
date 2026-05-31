@@ -64,7 +64,7 @@ are asserted against Onity's real behavior with inline comments, not faked parit
 The 2026-05-30 follow-up Unity benchmark confirmed that baked resolve now beats
 VContainer in every measured timing scenario, including
 `Prepare & Register Complex` (~61,044 ns vs VContainer ~150,730 ns). The
-internal 15,000 ns build gate and corrected gross-allocation measurement remain
+internal 15,000 ns build gate and allocation measurement remain
 open release-hardening work.
 
 ### 2026-05-29 - In progress: parallel increments started this session

@@ -10,7 +10,7 @@ AI-friendliness.
 | Axis | Winner today | Track to close |
 |---|---|---|
 | Resolve / build speed | **Onity** in the current Editor/Mono and Windows IL2CPP player benchmark runs | keep benchmark gates green |
-| Steady-state allocation | pending corrected harness | allocation re-measure |
+| Steady-state allocation | measurement pending | allocation benchmark coverage |
 | Scope (DI+Reactive+Events) | **Onity** | n/a |
 | AI-friendliness / analyzer | **Onity** | n/a |
 | IL2CPP / AOT / console proven | **Onity** on current Windows IL2CPP benchmark | broader device coverage |
@@ -31,7 +31,7 @@ AI-friendliness.
 > process and both compilers fall back to reflection when no generated activator exists.
 > The current player benchmark registers 19 generated activators and beats VContainer on
 > singleton, transient, combined, complex, and prepare/register in that run. **Remaining:**
-> Android/WebGL/device coverage, broader generated-member coverage, and corrected allocation data.
+> Android/WebGL/device coverage, broader generated-member coverage, and allocation data.
 - Keep the Windows IL2CPP player benchmark green and add Android/device coverage
   for the same singleton/transient/complex/child/inject/factory smoke surface.
 - Confirm compiled activators + member-setters do not throw under IL2CPP; use the
