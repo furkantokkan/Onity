@@ -76,12 +76,12 @@ and Zenject on every scenario:
 The Windows IL2CPP player run uses Onity's generated AOT activator registry for
 the benchmark graph and keeps the same relative ordering:
 
-| Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject | Result |
-| --- | ---: | ---: | ---: | ---: | --- |
-| Resolve Singleton | ~17 ns | ~157 ns | ~79 ns | ~547 ns | Onity fastest |
-| Resolve Transient | ~191 ns | ~348 ns | ~576 ns | ~2,742 ns | Onity fastest |
-| Resolve Combined | ~232 ns | ~634 ns | ~794 ns | ~3,531 ns | Onity fastest |
-| Resolve Complex (6-level graph) | ~5,399 ns | ~6,095 ns | ~12,740 ns | ~61,072 ns | Onity fastest |
+| Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject | Onity Baked vs VContainer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Resolve Singleton | ~17 ns | ~157 ns | ~79 ns | ~547 ns | ~+79% |
+| Resolve Transient | ~191 ns | ~348 ns | ~576 ns | ~2,742 ns | ~+67% |
+| Resolve Combined | ~232 ns | ~634 ns | ~794 ns | ~3,531 ns | ~+71% |
+| Resolve Complex (6-level graph) | ~5,399 ns | ~6,095 ns | ~12,740 ns | ~61,072 ns | ~+58% |
 
 On Mono/JIT, the speed comes from a process-wide compiled-activator cache
 (`Expression.Compile` runs once per `ConstructorInfo`), compiled

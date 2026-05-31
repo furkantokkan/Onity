@@ -69,13 +69,13 @@ Latest Windows IL2CPP Player run: `2026-05-31T00:48:27Z`, Unity 2022.3.62f3,
 512 warmup iterations, 8 measured samples, 10,000 measured iterations per
 sample, arithmetic mean.
 
-| Scenario | Onity Baked | Onity Reflection | VContainer | Zenject | Result |
-| --- | ---: | ---: | ---: | ---: | --- |
-| Resolve Singleton | ~17 ns | ~157 ns | ~79 ns | ~547 ns | Onity faster |
-| Resolve Transient | ~191 ns | ~348 ns | ~576 ns | ~2,742 ns | Onity faster |
-| Resolve Combined | ~232 ns | ~634 ns | ~794 ns | ~3,531 ns | Onity faster |
-| Resolve Complex (6-level) | ~5,399 ns | ~6,095 ns | ~12,740 ns | ~61,072 ns | Onity faster |
-| Prepare & Register Complex | ~31,084 ns | ~24,958 ns | ~42,446 ns | ~66,386 ns | Onity faster |
+| Scenario | Onity Baked | Onity Reflection | VContainer | Zenject | Onity Baked vs VContainer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Resolve Singleton | ~17 ns | ~157 ns | ~79 ns | ~547 ns | ~+79% |
+| Resolve Transient | ~191 ns | ~348 ns | ~576 ns | ~2,742 ns | ~+67% |
+| Resolve Combined | ~232 ns | ~634 ns | ~794 ns | ~3,531 ns | ~+71% |
+| Resolve Complex (6-level) | ~5,399 ns | ~6,095 ns | ~12,740 ns | ~61,072 ns | ~+58% |
+| Prepare & Register Complex | ~31,084 ns | ~24,958 ns | ~42,446 ns | ~66,386 ns | ~+27% |
 
 These timings are indicative, not a guarantee. They were captured in the Editor
 and in a Windows IL2CPP player on one Windows PC; Unity version, scripting

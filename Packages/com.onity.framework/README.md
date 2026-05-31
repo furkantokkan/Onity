@@ -197,13 +197,13 @@ Editor / Mono (`2026-05-30T19:38:06Z`):
 
 Windows IL2CPP Player (`2026-05-31T00:48:27Z`, source-generated activators, 10,000 iterations):
 
-| Scenario | Onity Baked | VContainer | Zenject | Result |
-| --- | ---: | ---: | ---: | --- |
-| Resolve Singleton | ~17 ns | ~79 ns | ~547 ns | Onity faster |
-| Resolve Transient | ~191 ns | ~576 ns | ~2,742 ns | Onity faster |
-| Resolve Combined | ~232 ns | ~794 ns | ~3,531 ns | Onity faster |
-| Resolve Complex (6-level) | ~5,399 ns | ~12,740 ns | ~61,072 ns | Onity faster |
-| Prepare & Register Complex | ~31,084 ns | ~42,446 ns | ~66,386 ns | Onity faster |
+| Scenario | Onity Baked | VContainer | Zenject | Onity vs VContainer |
+| --- | ---: | ---: | ---: | ---: |
+| Resolve Singleton | ~17 ns | ~79 ns | ~547 ns | ~+79% |
+| Resolve Transient | ~191 ns | ~576 ns | ~2,742 ns | ~+67% |
+| Resolve Combined | ~232 ns | ~794 ns | ~3,531 ns | ~+71% |
+| Resolve Complex (6-level) | ~5,399 ns | ~12,740 ns | ~61,072 ns | ~+58% |
+| Prepare & Register Complex | ~31,084 ns | ~42,446 ns | ~66,386 ns | ~+27% |
 
 Timing numbers are from a Windows PC and are indicative, not a guarantee. The
 committed allocation columns are withdrawn until the allocation harness is
