@@ -194,7 +194,7 @@ dependency (used by the `Onity.Unity` layer).
 ### Tested
 
 - Full EditMode suite green: **203/203** in Unity 6.4.
-- Timing benchmarks captured on 2022.3.62f3 (Editor-Mono, one machine — indicative,
+- Timing benchmarks captured on 2022.3.62f3 (Editor-Mono, Windows PC — indicative,
   not guaranteed). The resolve/publish/`OnNext`/`EveryUpdate` paths are designed to
   avoid per-call managed allocation, but the published allocation figures were
   unreliable and need a corrected in-editor re-measure; a transient resolve still

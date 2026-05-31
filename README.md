@@ -195,17 +195,17 @@ Editor / Mono (`2026-05-30T19:38:06Z`):
 | Resolve Complex (6-level) | ~22,905 ns | ~42,158 ns | ~289,823 ns | ~+46% |
 | Prepare & Register Complex | ~61,044 ns | ~150,730 ns | ~215,537 ns | ~+60% |
 
-Windows IL2CPP Player (`2026-05-30T23:02:24Z`, source-generated activators):
+Windows IL2CPP Player (`2026-05-31T00:48:27Z`, source-generated activators, 10,000 iterations):
 
 | Scenario | Onity Baked | VContainer | Zenject | Result |
 | --- | ---: | ---: | ---: | --- |
-| Resolve Singleton | ~18 ns | ~88 ns | ~599 ns | Onity faster |
-| Resolve Transient | ~179 ns | ~507 ns | ~2,239 ns | Onity faster |
-| Resolve Combined | ~178 ns | ~630 ns | ~2,871 ns | Onity faster |
-| Resolve Complex (6-level) | ~5,115 ns | ~12,092 ns | ~61,944 ns | Onity faster |
-| Prepare & Register Complex | ~35,345 ns | ~46,053 ns | ~72,173 ns | Onity faster |
+| Resolve Singleton | ~17 ns | ~79 ns | ~547 ns | Onity faster |
+| Resolve Transient | ~191 ns | ~576 ns | ~2,742 ns | Onity faster |
+| Resolve Combined | ~232 ns | ~794 ns | ~3,531 ns | Onity faster |
+| Resolve Complex (6-level) | ~5,399 ns | ~12,740 ns | ~61,072 ns | Onity faster |
+| Prepare & Register Complex | ~31,084 ns | ~42,446 ns | ~66,386 ns | Onity faster |
 
-Timing numbers are from one machine and are indicative, not a guarantee. The
+Timing numbers are from a Windows PC and are indicative, not a guarantee. The
 committed allocation columns are withdrawn until the allocation harness is
 corrected, because the earlier Editor harness reported 0 B for every container.
 Onity is ahead on every measured Editor/Mono and Windows IL2CPP player timing
