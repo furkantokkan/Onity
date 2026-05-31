@@ -12,8 +12,8 @@ override most others:
 1. **Performance is part of the product.** A change is not done until the
    benchmark numbers move in the right direction. See
    `04-Performance-Targets.md`.
-2. **Zero third-party runtime dependencies.** R3, UniTask, Zenject,
-   VContainer, MessagePipe, Autofac, MicroResolver are reference and
+2. **Zero non-Unity third-party runtime dependencies.** ZLinq, R3, UniTask,
+   Zenject, VContainer, MessagePipe, Autofac, MicroResolver are reference and
    benchmark only. Never `references` them from an Onity runtime asmdef.
 
 If a task seems to require either rule to bend, stop and ask.

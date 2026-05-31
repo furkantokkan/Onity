@@ -47,10 +47,10 @@ should not need to learn five mental models.
 - **No non-Unity runtimes.** Onity targets Unity 2022.3 LTS and later.
   Standalone .NET / Godot / cross-engine portability is explicitly out of
   scope.
-- **No third-party runtime dependencies.** R3, UniTask, Zenject, VContainer,
-  Autofac, MicroResolver, MessagePipe, etc. live in `Assets/Packages/` and
-  `Assets/ThirdParty/` for **reference and benchmark comparison only**. They
-  must not be referenced by any Onity runtime asmdef.
+- **No non-Unity third-party runtime dependencies.** ZLinq, R3, UniTask,
+  Zenject, VContainer, Autofac, MicroResolver, MessagePipe, etc. live in
+  `Assets/Packages/` and `Assets/ThirdParty/` for **reference and benchmark
+  comparison only**. They must not be referenced by any Onity runtime asmdef.
 - **No managed DI inside Burst jobs.** DI resolves managed objects. Burst
   cannot allocate managed memory. Resolve on main thread, pass blittable data
   into jobs.

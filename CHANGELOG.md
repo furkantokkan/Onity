@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Removed the ZLinq dependency — Onity now has **zero third-party runtime
+- Removed the former ZLinq dependency — Onity now has **zero non-Unity third-party runtime
   dependencies**. `OnityUiPresenterFactory` uses a hand-rolled loop instead of
   `AsValueEnumerable`; install no longer needs NuGetForUnity.
 
@@ -69,8 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First public preview. Three feature-complete pillars on a shared engine-free core
 with one disposal model and hot-path machinery designed to avoid per-call managed
-allocation. The core uses no `System.Linq`; ZLinq is the only third-party runtime
-dependency (used by the `Onity.Unity` layer).
+allocation. In this 0.1.0 preview, the core used no `System.Linq` and ZLinq was
+the only third-party runtime dependency (used by the `Onity.Unity` layer).
 
 ### Added
 

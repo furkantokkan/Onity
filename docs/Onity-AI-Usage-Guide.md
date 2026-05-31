@@ -13,7 +13,7 @@ public API. When this guide and any older design doc disagree, **this guide and 
 
 - Target: Unity. Core asmdefs (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`,
   `Onity.Factory`) are **engine-free** (no `UnityEngine`). Unity glue lives in `Onity.Unity`.
-- Constraints baked into the code: hot-path machinery **designed to avoid per-call managed allocation** (a transient resolve still allocates the instance it returns; the published alloc figures were unreliable and are being re-measured), **no `System.Linq`** in the core, and **no third-party runtime dependencies**.
+- Constraints baked into the code: hot-path machinery **designed to avoid per-call managed allocation** (a transient resolve still allocates the instance it returns; the published alloc figures were unreliable and are being re-measured), **no `System.Linq`** in the core, and **no non-Unity third-party runtime dependencies**.
 - Naming convention in Onity source: private instance `m_camelCase`, private static `s_camelCase`,
   constants `k_camelCase`, Allman braces. Match it when adding code to the package.
 
@@ -695,7 +695,7 @@ DON'T:
 - DON'T inject `IEnumerable<T>` / `T[]` collections — collection injection is not supported.
 - DON'T bind open generics `typeof(Foo<>)` — only closed generics resolve.
 - DON'T add a second `[Inject]` constructor, a setterless `[Inject]` property, an `[Inject]` indexer, or a generic `[Inject]` method — each throws `OnityBindingException`.
-- DON'T use `System.Linq` in Onity package code (write plain loops; Onity has no third-party runtime dependencies); avoid LINQ/allocations in hot paths.
+- DON'T use `System.Linq` in Onity package code (write plain loops; Onity has no non-Unity third-party runtime dependencies); avoid LINQ/allocations in hot paths.
 - DON'T touch `UnityEngine` members in a `Subscribe` directly after `SelectAwait`/`WhereAwait` (they resume off the main thread).
 - DON'T publish/subscribe to a broker or `Subject<T>` from a background thread.
 - DON'T call APIs that aren't in this guide assuming Zenject/R3/MessagePipe parity: no `Instantiate(args)`,

@@ -8,7 +8,7 @@ nav_order: 2
 
 A complete catalog of every reactive operator shipped by Onity. The everyday contract is `IOnityObservable<T>`: `Subject<T>`, `ReactiveProperty<T>`, every operator below, and the messaging bridge `broker.Observe<T>()` all return the same interface, so one operator chain composes over state, raw streams, and events alike.
 
-The synchronous core lives in `Onity.Reactive` and is engine-free. The async/time operators are also engine-free (they take an injectable `OnityTimeProvider`), and the managed thread-pool scheduling operators (`ObserveOnThreadPool`, `SelectOnThreadPool`) also live in the core. Frame-loop scheduling operators (`ObserveOnMainThread`, `Delay`) live in the Unity bridge layer `Onity.Unity.Reactive` and depend on `UnityEngine`. The reactive emit path is designed to avoid per-call managed allocation: a synchronous operator allocates only at subscribe time and forwards each value without allocating. (Onity has no third-party runtime dependencies; the reactive core does not use `System.Linq`.)
+The synchronous core lives in `Onity.Reactive` and is engine-free. The async/time operators are also engine-free (they take an injectable `OnityTimeProvider`), and the managed thread-pool scheduling operators (`ObserveOnThreadPool`, `SelectOnThreadPool`) also live in the core. Frame-loop scheduling operators (`ObserveOnMainThread`, `Delay`) live in the Unity bridge layer `Onity.Unity.Reactive` and depend on `UnityEngine`. The reactive emit path is designed to avoid per-call managed allocation: a synchronous operator allocates only at subscribe time and forwards each value without allocating. (Onity has no non-Unity third-party runtime dependencies; the reactive core does not use `System.Linq`.)
 
 Conventions used in the tables below:
 

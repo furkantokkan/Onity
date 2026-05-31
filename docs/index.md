@@ -6,7 +6,7 @@ permalink: /
 
 # Onity
 
-Onity is one Unity package that unifies dependency injection, reactive programming, and events behind a single coherent API — replacing the usual mix of Zenject/VContainer, R3/UniRx, and MessagePipe. The core is engine-free; Onity has no third-party runtime dependencies.
+Onity is one Unity package that unifies dependency injection, reactive programming, and events behind a single coherent API — replacing the usual mix of Zenject/VContainer, R3/UniRx, and MessagePipe. The core is engine-free; Onity has no non-Unity third-party runtime dependencies.
 
 ## Start here
 

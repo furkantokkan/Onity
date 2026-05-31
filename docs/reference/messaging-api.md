@@ -21,7 +21,7 @@ Threading: publish and subscribe on the Unity **main thread**. Channel *creation
 
 `MessageBroker` (and thus `IPublisher<T>` / `ISubscriber<T>` via `GetPublisher` / `GetSubscriber`) and `OnityEventHub` are auto-bound in every `OnityContext`, so a service can inject `OnityEventHub` or `IMessageBroker` with no installer line. `BindMessageChannel<T>()` is only needed to inject the typed `IPublisher<T>` / `ISubscriber<T>` directly.
 
-> Onity has no third-party runtime dependencies; the messaging core does not use `System.Linq`.
+> Onity has no non-Unity third-party runtime dependencies; the messaging core does not use `System.Linq`.
 
 ---
 
