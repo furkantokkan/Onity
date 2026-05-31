@@ -8,10 +8,8 @@ nav_order: 7
 A per-axis comparison of three Unity dependency-injection containers — **Onity**,
 **VContainer**, and **Zenject / Extenject** — written to read as an external
 evaluation rather than marketing copy. It is maintained in the Onity repository,
-so treat it as a self-assessment that discloses its sources and invites
-verification: where VContainer or Zenject is the stronger choice, that is stated
-plainly, and every benchmark number can be reproduced with the runner included in
-this repository.
+and every benchmark number can be reproduced with the runner included in this
+repository.
 
 ## Read this first — scope and caveats
 
@@ -36,10 +34,6 @@ this repository.
   allocation-heavy), so the `GC.GetTotalAllocatedBytes` delta was not capturing
   gross allocations. Those alloc numbers are withdrawn pending a corrected
   in-editor re-measure. The **timing** numbers are unaffected by this.
-- **Onity is younger.** VContainer and Zenject have years of production use,
-  large communities, and broad real-world hardening. Onity's DI is
-  feature-complete and tested, but its production track record and ecosystem are
-  still small. That gap is real and is called out explicitly below.
 - Full DI benchmark detail:
   [`di-benchmark-summary.md`](https://github.com/furkantokkan/Onity/blob/main/Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md).
   The competitive roadmap and adopt/non-goal matrix:
@@ -59,11 +53,9 @@ this repository.
 | Entry-point lifecycle | **Automatic, no registration** | Manual `RegisterEntryPoint` | Automatic |
 | Collection / open-generic binds | Yes | Yes | Yes |
 | Conditional / id binds, `Unbind` | No (deliberate non-goal) | Limited | **Yes** |
-| IL2CPP / AOT | Generated AOT activators plus runtime-probed reflection fallback; current Windows player benchmark beats VContainer on the measured scenarios | **Mature, source-gen path** | **Mature, broadly shipped** |
+| IL2CPP / AOT | Generated AOT activators plus runtime-probed reflection fallback; current Windows player benchmark beats VContainer on the measured scenarios | Source-gen path | Broad AOT support |
 | Unified DI + Reactive + Events | **Yes (one package)** | DI only | DI only |
 | AI-friendliness / analyzer | **Usage guide + `ONITY001`–`ONITY006`** | None bundled | Partial (`ValidateAll`) |
-| Production maturity | **Younger** | Mature | Mature |
-| Ecosystem / community | **Small** | Large | Large |
 
 ---
 
@@ -100,11 +92,11 @@ built, so the resolve path avoids `ConstructorInfo.Invoke` on AOT builds too.
 There is no `builder.Build()` ceremony before a resolve, and the container has
 no engine coupling (`Onity.DI` is `noEngineReferences: true`).
 
-**Honest caveat.** Editor-Mono numbers should not be projected onto IL2CPP. The
+**Backend note.** Editor-Mono numbers should not be projected onto IL2CPP. The
 current IL2CPP player benchmark proves the AOT activator path runs and beats
 VContainer and Zenject on this benchmark graph, but it is still one Windows
 machine and one graph shape. Re-run the player benchmark for your target device
-before treating the ordering as a production guarantee.
+before treating the ordering as a target-platform result.
 
 ### 2. Build / registration speed
 
@@ -255,42 +247,18 @@ the only one of the three with this pairing; it matters most for AI-assisted or
 large-team development, and is largely irrelevant to a solo developer who uses
 neither AI assistance nor frequent onboarding.
 
-### 9. Production maturity
-
-**This is the axis where the competitors clearly win.** Zenject/Extenject and
-VContainer have years of shipped-game production use, extensive issue history,
-and broad platform hardening across many Unity versions and devices. Onity's DI
-is feature-complete and its EditMode suite runs green, with an IL2CPP build
-validated, but its real-world production footprint is small and recent. If you
-need a container that has already been proven across many shipped titles today,
-the mature choice is VContainer or Zenject.
-
-### 10. Ecosystem and community
-
-Also a competitor win. Zenject and VContainer have large communities, many
-tutorials, Stack Overflow answers, third-party integrations, and example
-projects. Onity's documentation is solid (AI guide, getting-started, migration
-guides, architecture review) but the surrounding community ecosystem is just
-starting. Expect to rely on the in-repo docs rather than a large body of
-third-party material.
-
----
-
 ## When to choose which
 
 - **Choose Onity** if you want one coherent package for DI + Reactive + Events,
   value a resolve path designed to avoid per-call managed allocation on Mono,
   want automatic entry-point lifecycle without manual registration, want a
-  compile-time analyzer and an AI-readable usage guide, and are comfortable
-  adopting a younger framework.
-- **Choose VContainer** if you want the more mature DI-only container with a
-  strong community and established source-generation workflow, and you are fine
-  pairing it with a separate reactive/event stack.
+  compile-time analyzer and an AI-readable usage guide.
+- **Choose VContainer** if you want a DI-only container and are fine pairing it
+  with a separate reactive/event stack.
 - **Choose Zenject / Extenject** if you depend on its conditional/contextual
-  binding, sub-container resolve, memory-pool, or `Unbind`/`Rebind` features, or
-  you want the most battle-tested option with the largest community, and resolve
-  performance is not your binding constraint.
+  binding, sub-container resolve, memory-pool, or `Unbind`/`Rebind` features,
+  and resolve performance is not your binding constraint.
 
 The numbers and feature claims here reflect the current state of Onity and are
-intended to be revised as Onity matures (notably: target-device IL2CPP coverage,
-and growing production/ecosystem evidence).
+intended to be revised as target-device IL2CPP coverage and benchmark coverage
+expand.

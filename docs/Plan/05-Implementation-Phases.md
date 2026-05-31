@@ -261,7 +261,7 @@ all pass. The then-current expanded EditMode suite still needed a Unity re-run.
 **DI feature parity with VContainer is now complete:** collection injection (P1-1),
 open generics (P1-2), and automatic entry-point lifecycle (P1-3, where Onity is *ahead* -
 no manual registration). Remaining VContainer edges are non-feature: IL2CPP-proven-on-device
-(P0-1 device run + optional source-gen) and production maturity/ecosystem (P2/P3).
+(P0-1 device run + optional source-gen) and platform/docs polish (P2/P3).
 
 ### 2026-05-30 - IL2CPP validated on device + parallel P0-2/P2/P3/SourceGen lanes
 
@@ -289,7 +289,7 @@ SourceGen headless-verified, the rest write-only pending a Unity run):
   hook. **`dotnet build` clean (0/0) + an end-to-end generator smoke passed.** Runtime wiring
   (the hook + ActivatorCompiler consulting it first) is the explicit next step; member-setter
   generation + attribute-free discovery are future work.
-- **Release docs (P3):** README refreshed (new features, honest comparison table, indicative-
+- **Release docs (P3):** README refreshed (new features, comparison table, indicative-
   benchmark caveat, CI badge, lifecycle quickstart), new `docs/Onity-vs-VContainer-Zenject.md`,
   `package.json` 0.1.0 -> 0.2.0.
 

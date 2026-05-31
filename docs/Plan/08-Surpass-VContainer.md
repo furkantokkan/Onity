@@ -5,9 +5,6 @@ Windows IL2CPP player resolve speed with generated AOT activators, Editor/Mono
 and IL2CPP prepare/register speed, scope (DI+Reactive+Events), and
 AI-friendliness.
 
-Honest framing: one gap — *real production battle-testing* — cannot be fully
-engineered; it accrues with adoption. Everything else below is concrete work.
-
 ## Gap scorecard (today)
 
 | Axis | Winner today | Track to close |
@@ -16,12 +13,12 @@ engineered; it accrues with adoption. Everything else below is concrete work.
 | Steady-state allocation | pending corrected harness | allocation re-measure |
 | Scope (DI+Reactive+Events) | **Onity** | n/a |
 | AI-friendliness / analyzer | **Onity** | n/a |
-| IL2CPP / AOT / console proven | **Onity** on current Windows IL2CPP benchmark; VContainer still has broader production/device history | device coverage + maturity |
+| IL2CPP / AOT / console proven | **Onity** on current Windows IL2CPP benchmark | broader device coverage |
 | Collection / `IEnumerable<T>` injection | **Onity** (P1-1 shipped) | — |
 | Open-generic registration | **Onity** (P1-2 shipped; IL2CPP caveat) | — |
 | Entry-point lifecycle (auto-run) | **Onity** (P1-3 shipped; pump needs PlayMode test) | — |
-| Production maturity / trust | VContainer | **P2** (partial) |
-| Docs / ecosystem | VContainer | **P3** |
+| Build/sample evidence | **Onity roadmap** | **P2** (partial) |
+| Docs and samples | **Onity roadmap** | **P3** |
 
 ---
 
@@ -108,7 +105,7 @@ engineered; it accrues with adoption. Everything else below is concrete work.
 
 ---
 
-## P2 - Earn production trust (the maturity gap)
+## P2 - Demonstrate production use
 
 ### P2-1 PlayMode tests + CI
 - Add a `Onity.Tests.PlayMode` assembly (lifecycle, EveryUpdate, contexts, ticking).
@@ -121,11 +118,11 @@ engineered; it accrues with adoption. Everything else below is concrete work.
 - Wire the Coin Rush sample scene; produce a runnable build; this is the first
   "real game uses Onity" evidence.
 - **Verify:** green CI, soak holds frame/GC, sample build runs.
-- Effort: L (ongoing). Risk: low. *Real-world adoption still accrues over time.*
+- Effort: L (ongoing). Risk: low.
 
 ---
 
-## P3 - Ecosystem parity
+## P3 - Documentation and samples
 
 - Generate an API reference site from the XML docs (DocFX) and link from the README.
 - 2-3 more focused samples (RollABall-style, a HUD/reactive sample, an events sample).
@@ -142,8 +139,8 @@ engineered; it accrues with adoption. Everything else below is concrete work.
    VContainer has and Onity lacks; both medium effort.
 3. **P1-2 (open-generic)** - after P0-1 (AOT-coupled).
 4. **P2 (CI/PlayMode/soak/sample)** - converts "unproven" into "verified + demonstrated."
-5. **P3 (docs site / samples / release)** - ecosystem polish.
+5. **P3 (docs site / samples / release)** - documentation polish.
 
 After P0+P1: Onity is faster, broader, AI-friendly, AND feature-complete + IL2CPP-proven
-vs VContainer - i.e. **>= VContainer on every engineering axis**. Only lived-in
-production maturity (P2 + time) remains, and P2 makes that demonstrable.
+vs VContainer - i.e. **>= VContainer on every engineering axis**. P2/P3 keep expanding
+the verification, sample, and documentation surface.

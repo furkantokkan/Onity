@@ -23,7 +23,7 @@ the performance gates in `04-Performance-Targets.md`, the architecture rules in
 | Pillar | Competitor target | Status | One-line verdict |
 |---|---|---|---|
 | DI | Zenject, VContainer | **Editor + IL2CPP lead in current benchmarks** | Faster than both on all 5 Editor/Mono timing scenarios with baked resolve; Windows IL2CPP player with generated AOT activators is also faster than VContainer and Zenject on all 5 measured timing scenarios |
-| Reactive | R3, UniRx | **Strong core, still maturing** | Subject/ReactiveProperty are re-entrancy-correct and allocation-aware; core combinators, error isolation, and Unity timing bridges are present, with broader operator/perf proof still planned |
+| Reactive | R3, UniRx | **Strong core, expanding coverage** | Subject/ReactiveProperty are re-entrancy-correct and allocation-aware; core combinators, error isolation, and Unity timing bridges are present, with broader operator/perf proof still planned |
 | Events | MessagePipe | **On-philosophy, smaller surface** | Same algebra as reactive, DI-native auto-bind, keyed channels, async channels, and broker examples; no published MessagePipe publish microbenchmark yet |
 | Cross-cutting | (all three combined) | **Unified DX now documented** | DI is the spine; broker + hub auto-bound in every scope; events bridge into reactive operators; AI usage guide and analyzer scaffold exist, with compile-time guidance still expanding |
 
@@ -186,7 +186,7 @@ DI already meets its competitive goal. The gates in
 | Prepare & Register Complex | 61,044 | <= 15,000 | <= 12,000 | **Missed internal gate** (still ~60% faster than VContainer) |
 | Resolve alloc / sample (B) | Pending | 0 | 0 | Re-measure with corrected allocation harness |
 
-Honest note: Onity wins every Editor/Mono timing head-to-head, but the internal
+Benchmark note: Onity wins every Editor/Mono timing head-to-head, but the internal
 `Prepare & Register Complex` gate is still not met and the allocation table
 needs a corrected harness. The Windows IL2CPP player benchmark now proves the
 benchmark graph runs without crashing, registers generated AOT activators, and
@@ -396,7 +396,7 @@ steady-state cost.
 | Leading-edge `Throttle(TimeSpan, OnityTimeProvider)`, `Sample(signal)`, `Buffer(int)`/`Buffer(TimeSpan)` with pooled/cleared buffers | M | Adopt (P1-8) |
 | `ObserveOnMainThread()` / `ObserveOn(OnityFrameProvider)` re-posting onto the pump; documented as mandatory after any `*Await`/async operator | M | Adopt (P1-6) |
 | Reactive benchmark runner + `reactive-benchmark-summary.md` (scenarios from `04` section 2.2) | M | Adopt (P1-10) |
-| Honestly label Job/Burst/Dots thread modes experimental/no-op in docs + XML until they offload real work | S | Adopt (truth-in-perf) |
+| Label Job/Burst/Dots thread modes experimental/no-op in docs + XML until they offload real work | S | Adopt (truth-in-perf) |
 | Defer `Zip/Switch/Window/Concat/Publish/Share/RefCount/ObserveEveryValueChanged` | L | **Non-goal / backlog** |
 
 **Exit gate:** each new operator has an EditMode test + a benchmark scenario;

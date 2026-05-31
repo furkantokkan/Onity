@@ -65,7 +65,7 @@ should not need to learn five mental models.
 As of 2026-02-12 the runtime modules under
 `Assets/Onity-Packages/Onity/Runtime/` are:
 
-| Module | Files | Maturity |
+| Module | Files | Status |
 |---|---:|---|
 | `Onity.Core` | 3 | Stable, minimal primitives |
 | `Onity.DI` | 7 | Working, baked/generated activator paths, faster than VContainer in current benchmark runs |
