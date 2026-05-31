@@ -149,9 +149,18 @@ an installer, and drop it in the context's installer list.
 
 > Tip: for state that must survive scene loads (audio, save service, settings),
 > create a `ProjectContext` once via the menu
-> `Tools → Onity → Contexts → Create ProjectContext Prefab`. A `SceneContext`
+> `Onity → Contexts → Create ProjectContext Prefab`. A `SceneContext`
 > automatically becomes its child, so scene services can resolve project-wide
 > services. For this walkthrough a lone `SceneContext` is enough.
+
+> **Project vs scene — where does an installer go?** Put session-wide services that
+> must survive scene loads (catalogs, save/currency/inventory, settings, audio,
+> scene-flow) in an installer on the `ProjectContext` prefab; put per-scene
+> collaborators (a match's logic, presentation/spawn factories, per-screen
+> controllers) on that scene's `SceneContext`. Never put a project-scope installer
+> on a `SceneContext` — it is rebuilt on every scene load, so its singletons would
+> not persist. See
+> [Lifecycle &amp; Scopes → Project vs scene context](guide/lifecycle-and-scopes.html#project-vs-scene-context--where-each-installer-goes).
 
 **Now write a service and an installer.** An installer is a `MonoInstaller`
 subclass with one method, `InstallBindings`, where you register your types.

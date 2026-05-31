@@ -671,6 +671,43 @@ from `Onity.Unity.Contexts`), assign `CombatInstaller` to its installer list, an
 context root. The context creates the container, registers default bindings (container, `IResolver`, itself,
 `MessageBroker`, `OnityEventHub`), runs installers, builds, and auto-injects the hierarchy.
 
+### 5.1 Context scoping (project vs scene) — pick the right context for each installer
+
+> **RULE: put project-scope services on the `ProjectContext` prefab, not on a `SceneContext`.** Anything that
+> must live for the whole session and survive scene loads — card/item catalogs, save/currency/inventory,
+> settings, RNG/seed, the `MessageBroker`, audio, scene-flow — belongs in an installer on the auto-loaded
+> `ProjectContext`. Per-scene collaborators (a match's board/turn machine/combat, presentation/spawn
+> factories, per-screen controllers) belong in installers on that scene's `SceneContext`. **Never put a
+> project-scope installer on a `SceneContext`** — a `SceneContext` is created on every scene load, so its
+> singletons are rebuilt per scene and do not persist. Scene contexts resolve project bindings through the
+> parent chain automatically, so a scene installer can depend on project services without rebinding them.
+
+The three contexts (all `Onity.Unity.Contexts`, all extend `OnityContext`):
+
+| Context | Lifetime | Parent it resolves | Use for |
+| --- | --- | --- | --- |
+| `ProjectContext` | One persistent instance (`ProjectContext.Instance`, `DontDestroyOnLoad`); survives scene loads | none (root) | session-wide services that outlive scenes |
+| `SceneContext` | Rebuilt per scene load | explicit `m_projectContext` field else `ProjectContext.Instance` | per-scene services; inherits all project bindings |
+| `GameObjectContext` | Lives with its GameObject subtree | nearest parent `OnityContext` in the hierarchy, else `ProjectContext.Instance` | a sub-scope for one object subtree under a scene |
+
+`ProjectContext` is auto-loaded **before any scene** by `ProjectContextBootstrap`
+(`[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`) from `Resources/Onity/ProjectContext`
+(`ProjectContextBootstrap.ResourcePath`), i.e. the prefab at `Assets/Resources/Onity/ProjectContext.prefab`.
+It only loads if no `ProjectContext` already exists, so a scene may also hold one. Create the prefab via the
+menu **`Onity → Contexts → Create ProjectContext Prefab`** (writes that exact path), then add your
+project-scope installer(s) to its **Installers** list. A `SceneContext` then needs no parent wiring — it
+discovers `ProjectContext.Instance` and becomes its child automatically.
+
+```
+// DON'T: a session-wide service on a SceneContext — rebuilt every scene load, never persists.
+SceneContext  -> Installers: [SaveInstaller, CurrencyInstaller, MatchInstaller]   // wrong scope for Save/Currency
+
+// DO: split by lifetime.
+ProjectContext (Assets/Resources/Onity/ProjectContext.prefab)
+              -> Installers: [SaveInstaller, CurrencyInstaller, AudioInstaller]   // persist across scenes
+SceneContext  -> Installers: [MatchInstaller, PresentationInstaller]              // per match; resolves Save/Currency from the parent
+```
+
 ---
 
 ## 6. DO / DON'T

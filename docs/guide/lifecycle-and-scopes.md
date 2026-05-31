@@ -90,7 +90,7 @@ Every context auto-binds: the container, `IResolver`, the context itself, `Messa
 | Context | Role | Notes |
 | --- | --- | --- |
 | `ProjectContext` | Global root that persists across scene loads | Singleton (`ProjectContext.Instance`), `DontDestroyOnLoad`; the natural parent for scene scopes. Execution order `-10000`. |
-| `SceneContext` | Per-scene scope | Child of the project context when one exists. Execution order `-9500`. |
+| `SceneContext` | Per-scene scope | Child of the project context when one exists. Execution order `-9800`. |
 | `GameObjectContext` | Per-object subscope | A nested scope for a prefab/object subtree; child of the enclosing context. |
 
 Serialized context fields:
@@ -124,6 +124,22 @@ public sealed class CombatInstaller : MonoInstaller
 3. Put the consuming MonoBehaviours under the context root so they are auto-injected.
 
 The context creates the container, registers defaults, runs the installer, builds (firing `Initialize()`), injects the hierarchy, and from then on pumps `Tick()` / `FixedTick()` / `LateTick()` each frame.
+
+### Project vs scene context — where each installer goes
+
+The choice of context decides a service's lifetime, so put each installer on the context whose lifetime matches the service:
+
+- **Project-scope services go on the `ProjectContext` prefab.** Anything that must live for the whole session and survive scene loads — catalogs, save/currency/inventory, settings, RNG, the `MessageBroker`, audio, scene-flow — belongs in an installer on the auto-loaded `ProjectContext`.
+- **Per-scene collaborators go on that scene's `SceneContext`** — a match's board/turn machine/combat, presentation/spawn factories, per-screen controllers. A `SceneContext` is a **child** of the project context, so a scene installer can depend on project-scope services without rebinding them; the parent chain resolves them.
+- **Never put a project-scope installer on a `SceneContext`.** A `SceneContext` is created on every scene load, so its singletons are rebuilt per scene and do not persist — the session-wide instance you expected is gone after the next load.
+
+`ProjectContext` is auto-loaded **before any scene** by `ProjectContextBootstrap` (a `[RuntimeInitializeOnLoadMethod]` that runs `BeforeSceneLoad`) from `Resources/Onity/ProjectContext` — the prefab at `Assets/Resources/Onity/ProjectContext.prefab`. It loads only when no `ProjectContext` already exists. Create the prefab once via the menu **`Onity → Contexts → Create ProjectContext Prefab`**, then add your project-scope installer(s) to its **Installers** list. A `SceneContext` discovers `ProjectContext.Instance` automatically (or you can wire its explicit **Project Context** field), so no extra parenting is needed.
+
+```
+ProjectContext (Assets/Resources/Onity/ProjectContext.prefab)
+              -> Installers: [SaveInstaller, CurrencyInstaller, AudioInstaller]   // persist across scenes
+SceneContext  -> Installers: [MatchInstaller, PresentationInstaller]              // per scene; resolves the project services above
+```
 
 ## See also
 
