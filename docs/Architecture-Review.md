@@ -25,22 +25,9 @@ would risk the green test suite.
 
 ## 1. Layer and dependency model
 
-### 1.1 Layer diagram (as built)
+### 1.1 Architecture diagram (as built)
 
-```
-+-----------------------------------------------------------------------+
-|  ENGINE BRIDGE                                                        |
-|  Onity.Unity   (contexts, installers, reactive/async/UI/scene-flow,   |
-|                 input, physics bridges)   [UnityEngine]               |
-+-----------------------------------------------------------------------+
-|  Onity.DOTS  [Entities/Burst]      Onity.Pooling  [UnityEngine.Pool]  |
-+-----------------------------------------------------------------------+
-|  ENGINE-FREE CORE  (no UnityEngine reference)                         |
-|  Onity.DI  ->  Onity.Factory      Onity.Reactive     Onity.Messaging  |
-|         \________________________________/                           |
-|                     Onity.Core  (Unit, Lifetime, DisposableAction)    |
-+-----------------------------------------------------------------------+
-```
+![Onity runtime architecture diagram](assets/images/onity-architecture.svg)
 
 Dependencies flow strictly downward. No lower layer references a higher one.
 

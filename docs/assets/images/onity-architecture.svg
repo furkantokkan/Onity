@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720" role="img" aria-labelledby="title desc">
+  <title id="title">Onity runtime architecture diagram</title>
+  <desc id="desc">Layered Onity architecture showing the Unity engine bridge, DOTS and pooling adapters, engine-free core modules, and downward-only dependency direction.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#1f2937"/>
+    </linearGradient>
+    <linearGradient id="bridge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+    <linearGradient id="adapter" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#16a34a"/>
+      <stop offset="1" stop-color="#65a30d"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-15%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#020617" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#93c5fd"/>
+    </marker>
+    <style>
+      .label { font: 700 22px Inter, Segoe UI, Arial, sans-serif; fill: #f8fafc; }
+      .small { font: 500 16px Inter, Segoe UI, Arial, sans-serif; fill: #dbeafe; }
+      .micro { font: 500 14px Inter, Segoe UI, Arial, sans-serif; fill: #cbd5e1; }
+      .module { font: 700 18px Inter, Segoe UI, Arial, sans-serif; fill: #f8fafc; }
+      .moduleSmall { font: 500 13px Inter, Segoe UI, Arial, sans-serif; fill: #d1d5db; }
+      .rule { stroke: #475569; stroke-width: 2; stroke-dasharray: 8 8; }
+      .arrow { stroke: #93c5fd; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1120" height="720" rx="28" fill="url(#bg)"/>
+  <rect x="24" y="24" width="1072" height="672" rx="24" fill="#020617" opacity="0.24"/>
+
+  <text x="64" y="76" class="label">Onity Runtime Architecture</text>
+  <text x="64" y="106" class="small">Engine-facing adapters stay above the engine-free core. Dependencies flow downward only.</text>
+
+  <line x1="72" y1="154" x2="1048" y2="154" class="rule"/>
+
+  <g filter="url(#shadow)">
+    <rect x="130" y="176" width="860" height="132" rx="18" fill="url(#bridge)"/>
+    <text x="164" y="224" class="label">ENGINE BRIDGE</text>
+    <text x="164" y="259" class="module">Onity.Unity</text>
+    <text x="304" y="259" class="small">contexts, installers, scene flow, event shortcuts, input, UI, async, physics bridges</text>
+    <text x="164" y="288" class="micro">UnityEngine boundary: Unity APIs are isolated here.</text>
+  </g>
+
+  <path d="M560 314 L560 350" class="arrow"/>
+
+  <g filter="url(#shadow)">
+    <rect x="130" y="360" width="410" height="104" rx="16" fill="url(#adapter)"/>
+    <text x="164" y="402" class="module">Onity.DOTS</text>
+    <text x="164" y="432" class="moduleSmall">Entities/Burst bridge for blittable event buffers</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="580" y="360" width="410" height="104" rx="16" fill="#334155"/>
+    <text x="614" y="402" class="module">Onity.Pooling</text>
+    <text x="614" y="432" class="moduleSmall">UnityEngine.Pool-backed object and prefab pools</text>
+  </g>
+
+  <path d="M335 470 L335 508" class="arrow"/>
+  <path d="M785 470 L785 508" class="arrow"/>
+
+  <g filter="url(#shadow)">
+    <rect x="130" y="516" width="860" height="128" rx="18" fill="url(#core)"/>
+    <text x="164" y="560" class="label">ENGINE-FREE CORE</text>
+    <text x="164" y="590" class="small">No UnityEngine reference. Plain C# APIs are testable without scenes.</text>
+
+    <rect x="164" y="608" width="132" height="48" rx="10" fill="#052e16" opacity="0.82"/>
+    <text x="186" y="639" class="moduleSmall">Onity.DI</text>
+
+    <rect x="318" y="608" width="150" height="48" rx="10" fill="#052e16" opacity="0.82"/>
+    <text x="342" y="639" class="moduleSmall">Onity.Factory</text>
+
+    <rect x="492" y="608" width="168" height="48" rx="10" fill="#052e16" opacity="0.82"/>
+    <text x="516" y="639" class="moduleSmall">Onity.Reactive</text>
+
+    <rect x="684" y="608" width="184" height="48" rx="10" fill="#052e16" opacity="0.82"/>
+    <text x="706" y="639" class="moduleSmall">Onity.Messaging</text>
+
+    <rect x="408" y="536" width="272" height="42" rx="10" fill="#14532d" opacity="0.9"/>
+    <text x="474" y="563" class="moduleSmall">Onity.Core</text>
+  </g>
+
+  <path d="M246 632 L312 632" class="arrow"/>
+  <path d="M576 632 L670 632" class="arrow"/>
+
+  <g>
+    <path d="M74 184 L74 632" class="arrow"/>
+    <text x="48" y="396" transform="rotate(-90 48 396)" class="small">dependency direction</text>
+  </g>
+
+  <g>
+    <rect x="736" y="64" width="300" height="72" rx="14" fill="#0f172a" stroke="#334155"/>
+    <text x="758" y="95" class="moduleSmall">Rule</text>
+    <text x="758" y="121" class="micro">Lower layers never reference higher layers.</text>
+  </g>
+</svg>
