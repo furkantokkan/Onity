@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gameplay scenes under `Assets/Scenes/OnitySceneFlow`.
 - Added one-click 2-scene and 3-scene Scene Flow setup paths for quick project
   bootstrapping.
+- Added a Single Scene Setup preset that creates one gameplay scene with a
+  `SceneContext`, prepares the runtime-loaded `ProjectContext` prefab, and
+  applies Build Settings immediately.
 
 ### Changed
 

@@ -16,15 +16,24 @@ namespace Onity.Editor.Contexts
         [MenuItem(k_createMenuPath, false, 2050)]
         private static void CreateProjectContextPrefab()
         {
+            GameObject prefab = EnsureProjectContextPrefab();
+
+            if (prefab != null)
+            {
+                EditorGUIUtility.PingObject(prefab);
+            }
+        }
+
+        internal static GameObject EnsureProjectContextPrefab()
+        {
             EnsureParentFolder();
 
             GameObject existingPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(k_prefabAssetPath);
 
             if (existingPrefab != null && existingPrefab.GetComponent<ProjectContext>() != null)
             {
-                EditorGUIUtility.PingObject(existingPrefab);
                 Debug.Log($"Onity ProjectContext prefab already exists at '{k_prefabAssetPath}'.");
-                return;
+                return existingPrefab;
             }
 
             GameObject root = new GameObject("ProjectContext");
@@ -37,7 +46,7 @@ namespace Onity.Editor.Contexts
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
                 Debug.Log($"Created Onity ProjectContext prefab at '{k_prefabAssetPath}'.");
-                return;
+                return AssetDatabase.LoadAssetAtPath<GameObject>(k_prefabAssetPath);
             }
 
             bool overwrite = EditorUtility.DisplayDialog(
@@ -49,7 +58,7 @@ namespace Onity.Editor.Contexts
             if (overwrite == false)
             {
                 Object.DestroyImmediate(root);
-                return;
+                return null;
             }
 
             PrefabUtility.SaveAsPrefabAsset(root, k_prefabAssetPath);
@@ -57,6 +66,7 @@ namespace Onity.Editor.Contexts
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log($"Updated Onity ProjectContext prefab at '{k_prefabAssetPath}'.");
+            return AssetDatabase.LoadAssetAtPath<GameObject>(k_prefabAssetPath);
         }
 
         private static void EnsureParentFolder()
