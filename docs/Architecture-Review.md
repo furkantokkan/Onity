@@ -44,18 +44,18 @@ would risk the green test suite.
 
 Dependencies flow strictly downward. No lower layer references a higher one.
 
-### 1.2 Verified dependency edges (from the asmdef `references` fields)
+### 1.2 Verified dependency edges (from asmdef references)
 
-| Module | `references` (asmdef) | Matches `01-Architecture.md`? |
-|---|---|---|
-| `Onity.Core` | (none) | Yes |
-| `Onity.Factory` | Core | Yes |
-| `Onity.DI` | Core, Factory | Yes |
-| `Onity.Reactive` | Core | Yes |
-| `Onity.Messaging` | Core | Yes |
-| `Onity.Pooling` | Core, Factory | Yes |
-| `Onity.DOTS` | Core, Messaging (+ Unity ECS asmdefs) | Yes |
-| `Onity.Unity` | Core, DI, DOTS, Factory, Messaging, Reactive, Pooling (+ Unity asmdefs) | Yes |
+| Module | `references` (asmdef) |
+|---|---|
+| `Onity.Core` | (none) |
+| `Onity.Factory` | Core |
+| `Onity.DI` | Core, Factory |
+| `Onity.Reactive` | Core |
+| `Onity.Messaging` | Core |
+| `Onity.Pooling` | Core, Factory |
+| `Onity.DOTS` | Core, Messaging (+ Unity ECS asmdefs) |
+| `Onity.Unity` | Core, DI, DOTS, Factory, Messaging, Reactive, Pooling (+ Unity asmdefs) |
 
 The documented `Onity.Async` module is **not yet a separate asmdef**; async
 code currently lives inside `Onity.Unity/Scripts/Async`. This is a
@@ -64,7 +64,7 @@ To extract"), not a violation. The Reactive/Messaging modules each depend only
 on `Onity.Core`, exactly as specified, so the eventual `Onity.Async` extraction
 will not invert any existing edge.
 
-**Finding A1 (PASS):** Every runtime asmdef edge matches the documented
+**Finding A1 (PASS):** Every runtime asmdef edge follows the documented
 dependency rules with zero exceptions. The dependency direction is acyclic and
 downward-only, enforced mechanically by Unity's asmdef resolver rather than by
 convention.
@@ -256,7 +256,7 @@ These are deliberate, working design strengths and should be preserved as-is:
 3. **Disciplined encapsulation.** 125 public vs 21 internal types, with the
    volatile performance machinery (DI activator/baked/setter compilers, the v2
    observable bridge) sealed behind `internal` and `Onity.DI.Internal`. The
-   public surface matches the documented AI guide surface.
+   public surface stays aligned with the documented AI guide surface.
 4. **One coherent mental model across pillars.** `broker.Observe<T>()` returns
    the same `IOnityObservable<T>` as `Subject<T>`/`ReactiveProperty<T>`; every
    `Subscribe` returns `IDisposable` disposed via one `AddTo(...)` family;
