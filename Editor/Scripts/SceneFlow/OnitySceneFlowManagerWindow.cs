@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Onity.Editor.Contexts;
 using Onity.Unity.Contexts;
 using Onity.Unity.SceneFlow;
 using UnityEditor;
@@ -21,6 +22,7 @@ namespace Onity.Editor.SceneFlow
         private const string k_defaultLoadingSceneName = "LoadingScene";
         private const string k_defaultMainMenuSceneName = "MainMenuHub";
         private const string k_defaultGameplaySceneName = "GameModeOrGameScene";
+        private const string k_defaultSingleSceneName = "GameScene";
 
         private readonly List<SceneAsset> m_mainMenuScenes = new List<SceneAsset>();
         private readonly List<SceneAsset> m_gameplayScenes = new List<SceneAsset>();
@@ -35,7 +37,8 @@ namespace Onity.Editor.SceneFlow
         private enum ReadyProfilePreset
         {
             LoadingToGame,
-            LoadingToMenuToGame
+            LoadingToMenuToGame,
+            SingleScene
         }
 
         [MenuItem("Onity/Tools/Scene Flow Manager", false, 122)]
@@ -106,8 +109,17 @@ namespace Onity.Editor.SceneFlow
             }
 
             EditorGUILayout.EndHorizontal();
+
+            if (GUILayout.Button("Single Scene Setup"))
+            {
+                CreateReadyProfile(ReadyProfilePreset.SingleScene);
+            }
+
             EditorGUILayout.HelpBox(
-                "Select an existing Scene Flow Profile asset or create a ready preset. Missing preset scenes are created under Assets/Scenes/OnitySceneFlow.",
+                "Select an existing Scene Flow Profile asset or create a ready preset. "
+                + "Single Scene Setup creates one gameplay scene with SceneContext, "
+                + "prepares the ProjectContext prefab, and applies Build Settings. "
+                + "Scene Flow presets create missing scenes under Assets/Scenes/OnitySceneFlow.",
                 MessageType.None);
             EditorGUILayout.EndVertical();
         }
@@ -383,6 +395,12 @@ namespace Onity.Editor.SceneFlow
 
             try
             {
+                if (preset == ReadyProfilePreset.SingleScene
+                    && OnityProjectContextPrefabMenu.EnsureProjectContextPrefab() == null)
+                {
+                    return;
+                }
+
                 profile = ResolveOrCreateReadyProfileAsset(preset);
 
                 if (profile == null)
@@ -403,6 +421,12 @@ namespace Onity.Editor.SceneFlow
             m_profile = profile;
             SaveLastProfilePath();
             LoadProfileIntoWindow();
+
+            if (preset == ReadyProfilePreset.SingleScene)
+            {
+                ApplySceneFlow();
+            }
+
             Selection.activeObject = profile;
             EditorGUIUtility.PingObject(profile);
 
@@ -470,12 +494,24 @@ namespace Onity.Editor.SceneFlow
         {
             List<SceneAsset> mainMenuScenes = new List<SceneAsset>(1);
             List<SceneAsset> gameplayScenes = new List<SceneAsset>(1);
-            SceneAsset loadingScene = ResolveOrCreateReadyScene(
-                k_defaultLoadingSceneName,
-                "OnityLoadingScene");
+            SceneAsset loadingScene = null;
+            string gameplaySceneName = preset == ReadyProfilePreset.SingleScene
+                ? k_defaultSingleSceneName
+                : k_defaultGameplaySceneName;
+            string gameplayRootObjectName = preset == ReadyProfilePreset.SingleScene
+                ? "OnitySingleScene"
+                : "OnityGameplayScene";
+
+            if (preset != ReadyProfilePreset.SingleScene)
+            {
+                loadingScene = ResolveOrCreateReadyScene(
+                    k_defaultLoadingSceneName,
+                    "OnityLoadingScene");
+            }
+
             SceneAsset gameplayScene = ResolveOrCreateReadyScene(
-                k_defaultGameplaySceneName,
-                "OnityGameplayScene");
+                gameplaySceneName,
+                gameplayRootObjectName);
 
             if (preset == ReadyProfilePreset.LoadingToMenuToGame)
             {
@@ -487,7 +523,7 @@ namespace Onity.Editor.SceneFlow
 
             AddUniqueSceneAssetByPath(gameplayScene, gameplayScenes);
 
-            profile.SetRouteTransitionsThroughLoadingScene(true);
+            profile.SetRouteTransitionsThroughLoadingScene(preset != ReadyProfilePreset.SingleScene);
             profile.SetSceneName(OnitySceneFlowStateId.Bootstrap, string.Empty);
             profile.SetSceneName(OnitySceneFlowStateId.Loading, GetSceneName(loadingScene));
             profile.SetSceneNames(OnitySceneFlowStateId.MainMenuHub, GetSceneNames(mainMenuScenes));
@@ -582,6 +618,9 @@ namespace Onity.Editor.SceneFlow
                 case ReadyProfilePreset.LoadingToMenuToGame:
                     return "Onity3SceneFlowProfile";
 
+                case ReadyProfilePreset.SingleScene:
+                    return "OnitySingleSceneProfile";
+
                 default:
                     return "OnitySceneFlowProfile";
             }
@@ -596,6 +635,9 @@ namespace Onity.Editor.SceneFlow
 
                 case ReadyProfilePreset.LoadingToMenuToGame:
                     return "3 Scene Flow (Loading -> Menu -> Game)";
+
+                case ReadyProfilePreset.SingleScene:
+                    return "Single Scene Setup";
 
                 default:
                     return "Scene Flow";
