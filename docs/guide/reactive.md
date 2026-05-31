@@ -49,6 +49,24 @@ bag.Dispose();                          // dispose all, final
 
 A `ReactiveProperty<T>` is the only primitive that replays its current value to a new subscriber. Model **current state** (health, score, current wave) as a `ReactiveProperty<T>`; model **transient notifications** as messages (see [Events & Messaging](events-messaging.html)).
 
+## Feature map
+
+Use this table when choosing the shape of a gameplay flow.
+
+| Feature | Use it for | Example |
+| --- | --- | --- |
+| `Subject<T>` | A local hot stream owned by one class. | Input samples, local callbacks, internal model events. |
+| `ReactiveProperty<T>` | Current state that late subscribers must see immediately. | Health, score, selected weapon, current wave. |
+| `OnityEventHub.Observe<T>()` / `Onity.Observe<T>()` | Transient game events as a stream. | Damage dealt, enemy killed, level loaded. |
+| `Where` / `Select` / `CombineLatest` / `Scan` | Filtering, projection, derived state, accumulation. | Critical-hit only stream, effective HP, combo counter. |
+| `SelectAwait` / `WhereAwait` | Sequential async work where source order matters. | Validate one request at a time. |
+| `ObserveOnThreadPool` / `SelectOnThreadPool` | Pure managed CPU work away from the Unity main thread. | Score calculation, path-cost estimation, rule evaluation. |
+| `ObserveOnMainThread` / `ObserveOn` | Return to a Unity frame loop before touching Unity APIs. | Update `Transform`, UI Toolkit, UGUI, Animator, AudioSource. |
+| `EveryUpdate(... OnityUnityThreadMode ...)` | Unity frame streams with optional Jobs/Burst/DOTS frame boundaries. | High-frequency frame signals, DOTS-driven frame emission. |
+
+All of these still compose through `IOnityObservable<T>`, so the operator shape
+is the same whether the source is state, a local subject, or an event bus stream.
+
 ## Synchronous operators
 
 All synchronous operators return `IOnityObservable<T>` and allocate only at subscribe time (no allocation per emitted value).
@@ -87,7 +105,9 @@ score.Pairwise()
 These extend `IOnityObservable<T>` directly. Each time-based operator takes an optional `OnityTimeProvider` — deterministic in tests (`OnityTimeProvider.System`), or a Unity time provider in gameplay (see Unity bridges below).
 
 - `Debounce(TimeSpan dueTime, OnityTimeProvider = null)` — emit the **last** value after a quiet window.
-- `ThrottleLast(TimeSpan interval, OnityTimeProvider = null)` — emit the latest value once per interval. The operator is named **`ThrottleLast`**; there is no leading-edge `Throttle`.
+- `ThrottleLast(TimeSpan interval, OnityTimeProvider = null)` — emit the latest value once per interval.
+- `Throttle(TimeSpan interval, OnityTimeProvider = null)` — emit the first value immediately, then ignore values until the interval elapses.
+- `Buffer(TimeSpan timeSpan, OnityTimeProvider = null)` — collect values during a time window and emit the collected list.
 - `TakeUntil(CancellationToken)` / `TakeUntil(Task)` — stop on a signal.
 - `SelectAwait(Func<T,CancellationToken,ValueTask<TResult>>)` / `WhereAwait(Func<T,CancellationToken,ValueTask<bool>>)` — sequential async projection / filter.
 
@@ -107,6 +127,57 @@ requests
     .Subscribe(result => transform.position = result.Spawn)   // safe: on the main thread
     .AddTo(this);
 ```
+
+### Pure managed CPU work — thread-pool operators
+
+Use `SelectOnThreadPool` when a reactive stream needs CPU-bound pure C# work.
+Do not call Unity APIs inside the selector. Return to the Unity main thread
+before updating scene objects or UI.
+
+```csharp
+using Onity.Reactive;
+using Onity.Unity;
+using Onity.Unity.Reactive;
+using UnityEngine;
+
+public sealed class DamageScorePresenter : MonoBehaviour
+{
+    private void OnEnable()
+    {
+        Onity.Observe<PlayerDamaged>(this)
+             .Where(message => message.Amount > 0)
+             .SelectOnThreadPool(
+                 (message, ct) => CalculateScoreDelta(message),
+                 maxConcurrency: 4)
+             .ObserveOnMainThread()
+             .Subscribe(scoreDelta => ShowScore(scoreDelta))
+             .TakeUntilDisable(this);
+    }
+
+    private static int CalculateScoreDelta(PlayerDamaged message)
+    {
+        // Pure managed CPU work only. No Transform, GameObject, Time, UI, etc.
+        return message.Amount * 10;
+    }
+
+    private void ShowScore(int scoreDelta)
+    {
+        // Safe again: ObserveOnMainThread returned to the Unity Update loop.
+    }
+}
+```
+
+`ObserveOnThreadPool()` is the lighter hop when the downstream work itself owns
+the processing:
+
+```csharp
+damageEvents
+    .ObserveOnThreadPool()
+    .Subscribe(message => WriteAnalytics(message));   // pure managed code
+```
+
+`SelectOnThreadPool(..., maxConcurrency: 1)` preserves source order. Higher
+concurrency emits results as worker tasks complete.
 
 ## Disposal
 
@@ -138,7 +209,170 @@ OnityUnityObservable.Interval(1f)         // IOnityObservable<int> tick index ev
 
 `OnityTimeProviders` exposes ready-made providers for `Debounce`/`ThrottleLast` — for example `OnityTimeProviders.UpdateScaled`, `UpdateUnscaled`, and `UpdateRealtime` (with `Fixed*` and `Late*` variants). `OnityFrameProviders.Update` / `FixedUpdate` / `LateUpdate` back `ObserveOn`.
 
+### Unity frame threading modes
+
+`OnityUnityThreadMode` is for Unity frame streams. It is not the same thing as
+running managed observers inside Burst. Use thread-pool operators for managed
+CPU selectors; use frame threading modes when you want a frame source with a
+Jobs/Burst/DOTS boundary.
+
+| Mode | Use |
+| --- | --- |
+| `SingleThread` | Direct main-thread frame signal. |
+| `JobMultiThread` | Adds a lightweight Unity Job boundary around the frame stream. |
+| `BurstJobMultiThread` | Uses the Burst-compiled frame marker job when Burst AOT is enabled. |
+| `DotsEventDriven` | Emits when the DOTS integer bridge accumulator changes, falling back to per-frame behavior when the bridge is unavailable. |
+
+```csharp
+using Onity.Unity.Reactive;
+using UnityEngine;
+
+public sealed class SimulationHeartbeat : MonoBehaviour
+{
+    private void OnEnable()
+    {
+        OnityUnityObservable
+            .EveryUpdate(
+                OnityUnityThreadMode.BurstJobMultiThread,
+                jobWorkItemCount: 128,
+                minCommandsPerJob: 32)
+            .Subscribe(_ => TickPresentation())
+            .TakeUntilDisable(this);
+    }
+
+    private void TickPresentation()
+    {
+        // Still use normal Unity main-thread rules in observers.
+    }
+}
+```
+
 ## Recipes
+
+### Shared state from DI
+
+Bind a `ReactiveProperty<T>` once, expose it as read-only to consumers, and
+update it from services. This is the usual replacement for scattered "current
+state" fields plus custom change events.
+
+```csharp
+using Onity.DI;
+using Onity.Reactive;
+using Onity.Unity.Installers;
+
+public sealed class GameInstaller : MonoInstaller
+{
+    public override void InstallBindings(OnityContainer container)
+    {
+        ReactiveProperty<int> health = new ReactiveProperty<int>(100);
+        container.BindInstance(health);
+        container.BindInstance<IReadOnlyReactiveProperty<int>>(health);
+        container.Bind<HealthService>().AsSingle();
+    }
+}
+
+public sealed class HealthService
+{
+    private readonly ReactiveProperty<int> m_health;
+
+    public HealthService(ReactiveProperty<int> health)
+    {
+        m_health = health;
+    }
+
+    public void ApplyDamage(int amount)
+    {
+        if (amount > 0)
+        {
+            m_health.SetValue(m_health.Value - amount);
+        }
+    }
+}
+```
+
+UI and gameplay listeners should depend on the read-only contract:
+
+```csharp
+using Onity.DI;
+using Onity.Reactive;
+using Onity.Unity.Reactive;
+using UnityEngine;
+
+public sealed class HealthHud : MonoBehaviour
+{
+    [Inject] private IReadOnlyReactiveProperty<int> m_health;
+
+    private void OnEnable()
+    {
+        m_health
+            .Subscribe(SetHealth)
+            .TakeUntilDisable(this);
+    }
+
+    private void SetHealth(int value)
+    {
+        // Update UI.
+    }
+}
+```
+
+### Event stream updates reactive state
+
+Events are for past-tense notifications; reactive properties are for current
+state. Because both expose `IOnityObservable<T>`, one flow can connect them
+without an adapter package.
+
+```csharp
+using System;
+using Onity.Reactive;
+using Onity.Unity.Messaging;
+
+public readonly struct PlayerDamaged
+{
+    public readonly int Amount;
+
+    public PlayerDamaged(int amount)
+    {
+        Amount = amount;
+    }
+}
+
+public readonly struct PlayerDied { }
+
+public sealed class HealthModel : IDisposable
+{
+    private readonly ReactiveProperty<int> m_hp;
+    private readonly OnityEventHub m_events;
+    private readonly IDisposable m_damageSubscription;
+
+    public HealthModel(OnityEventHub events)
+    {
+        m_events = events;
+        m_hp = new ReactiveProperty<int>(100);
+        m_damageSubscription = events.Observe<PlayerDamaged>()
+            .Where(message => message.Amount > 0)
+            .Subscribe(ApplyDamage);
+    }
+
+    public IReadOnlyReactiveProperty<int> Hp => m_hp;
+
+    public void Dispose()
+    {
+        m_damageSubscription.Dispose();
+        m_hp.Dispose();
+    }
+
+    private void ApplyDamage(PlayerDamaged message)
+    {
+        int nextHp = Math.Max(0, m_hp.Value - message.Amount);
+
+        if (m_hp.SetValue(nextHp) && nextHp == 0)
+        {
+            m_events.Publish(new PlayerDied());
+        }
+    }
+}
+```
 
 ### Health reaches zero
 
@@ -230,7 +464,11 @@ public sealed class WaveGate
 
 ## What is not shipped
 
-`Merge`, `CombineLatest`, `Scan`, `Pairwise`, `Sample`, leading-edge naming aside (`ThrottleLast`), and `ObserveOn` **are** shipped. Still intentionally absent: `Window`, `Zip`, `Switch`, `Concat`, and the multicast set (`Publish`, `Share`, `RefCount`). Do not assume R3/UniRx parity beyond the operators listed here.
+`Merge`, `CombineLatest`, `Scan`, `Pairwise`, `Sample`, `Throttle`,
+`ThrottleLast`, `Buffer`, `ObserveOn`, `ObserveOnThreadPool`, and
+`SelectOnThreadPool` **are** shipped. Still intentionally absent: `Window`,
+`Zip`, `Switch`, `Concat`, and the multicast set (`Publish`, `Share`,
+`RefCount`). Do not assume R3/UniRx parity beyond the operators listed here.
 
 ## Error handling
 

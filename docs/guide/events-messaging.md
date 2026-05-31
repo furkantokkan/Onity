@@ -182,6 +182,190 @@ Onity.Observe<PlayerDamaged>(this)
      .AddTo(this);
 ```
 
+Filtering has three levels:
+
+| Filter level | Use | Example |
+| --- | --- | --- |
+| Message type | Separate event meanings. | `Subscribe<PlayerDamaged>` never receives `PlayerHealed`. |
+| Reactive operator | Per-listener payload rules. | `Observe<PlayerDamaged>().Where(m => m.Amount > 0)`. |
+| Keyed channel | Same message type routed by key. | `KeyedMessageChannel<int, UnitSpawned>` for `teamId`. |
+
+```csharp
+using Onity.Reactive;
+using Onity.Unity;
+using Onity.Unity.Reactive;
+using UnityEngine;
+
+public sealed class HeavyDamageHud : MonoBehaviour
+{
+    private void OnEnable()
+    {
+        Onity.Observe<PlayerDamaged>(this)
+             .Where(message => message.Amount >= 25)
+             .Subscribe(ShowHeavyHit)
+             .TakeUntilDisable(this);
+    }
+
+    private void ShowHeavyHit(PlayerDamaged message)
+    {
+        // Update heavy-damage UI.
+    }
+}
+```
+
+The channel does not run a MessagePipe-style filter pipeline on publish. That
+keeps the publish path lean; each listener owns its own `Where(...)` chain.
+
+### Publish from a ScriptableObject or plain class
+
+`Onity.Publish(message)` can be called from a `ScriptableObject` or any plain C#
+object as long as an active `ProjectContext`, `SceneContext`, or
+`GameObjectContext` exists.
+
+```csharp
+using Onity.Unity;
+using UnityEngine;
+
+public readonly struct SkillTriggered
+{
+    public readonly SkillDefinition Skill;
+
+    public SkillTriggered(SkillDefinition skill)
+    {
+        Skill = skill;
+    }
+}
+
+[CreateAssetMenu]
+public sealed class SkillDefinition : ScriptableObject
+{
+    public void Trigger()
+    {
+        Onity.Publish(new SkillTriggered(this));
+    }
+}
+```
+
+Use the owner overload (`Onity.Publish(this, message)`) when the publisher is a
+`Component` and should route through the nearest `GameObjectContext`. A
+`ScriptableObject` has no transform hierarchy, so it uses the default active
+context shortcut or an injected `OnityEventHub`.
+
+### Event flow into reactive state
+
+Use messages for things that happened; use `ReactiveProperty<T>` for state that
+new listeners must read immediately. The same operator chain can connect them.
+
+```csharp
+using System;
+using Onity.Reactive;
+using Onity.Unity.Messaging;
+
+public readonly struct PlayerDamaged
+{
+    public readonly int Amount;
+
+    public PlayerDamaged(int amount)
+    {
+        Amount = amount;
+    }
+}
+
+public readonly struct PlayerDied { }
+
+public sealed class HealthModel : IDisposable
+{
+    private readonly ReactiveProperty<int> m_hp;
+    private readonly OnityEventHub m_events;
+    private readonly IDisposable m_damageSubscription;
+
+    public HealthModel(OnityEventHub events)
+    {
+        m_events = events;
+        m_hp = new ReactiveProperty<int>(100);
+        m_damageSubscription = events.Observe<PlayerDamaged>()
+            .Where(message => message.Amount > 0)
+            .Subscribe(ApplyDamage);
+    }
+
+    public IReadOnlyReactiveProperty<int> Hp => m_hp;
+
+    public void Dispose()
+    {
+        m_damageSubscription.Dispose();
+        m_hp.Dispose();
+    }
+
+    private void ApplyDamage(PlayerDamaged message)
+    {
+        int nextHp = Math.Max(0, m_hp.Value - message.Amount);
+
+        if (m_hp.SetValue(nextHp) && nextHp == 0)
+        {
+            m_events.Publish(new PlayerDied());
+        }
+    }
+}
+```
+
+This is the standard flow for UI and gameplay state:
+
+1. gameplay publishes `PlayerDamaged`;
+2. a model filters the event stream and updates `ReactiveProperty<int>`;
+3. UI subscribes to the read-only property and receives the current value first;
+4. the model can publish follow-up events such as `PlayerDied`.
+
+### Event stream with thread-pool work
+
+Event handlers run synchronously by default. For expensive pure managed work,
+turn the event into a stream, process on the .NET thread pool, then hop back to
+Unity before touching scene or UI APIs.
+
+```csharp
+using Onity.Reactive;
+using Onity.Unity;
+using Onity.Unity.Reactive;
+using UnityEngine;
+
+public readonly struct DamageAnalyticsPayload
+{
+    public readonly int Amount;
+
+    public DamageAnalyticsPayload(int amount)
+    {
+        Amount = amount;
+    }
+}
+
+public sealed class DamageAnalyticsView : MonoBehaviour
+{
+    private void OnEnable()
+    {
+        Onity.Observe<PlayerDamaged>(this)
+             .SelectOnThreadPool(
+                 (message, ct) => BuildAnalyticsPayload(message),
+                 maxConcurrency: 2)
+             .ObserveOnMainThread()
+             .Subscribe(payload => Show(payload))
+             .TakeUntilDisable(this);
+    }
+
+    private static DamageAnalyticsPayload BuildAnalyticsPayload(PlayerDamaged message)
+    {
+        // Pure managed work only. No UnityEngine API here.
+        return new DamageAnalyticsPayload(message.Amount);
+    }
+
+    private void Show(DamageAnalyticsPayload payload)
+    {
+        // Safe to update Unity UI here.
+    }
+}
+```
+
+For order-sensitive work, pass `maxConcurrency: 1`. Higher concurrency emits
+results as workers complete.
+
 ### Inject only a publisher or subscriber
 
 Use this when a class should only publish or only listen. This is the closest
