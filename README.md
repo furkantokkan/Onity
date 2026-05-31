@@ -50,9 +50,9 @@ Split-ready optional modules are documented in:
 - Reactive:
   - `Subject<T>`, `ReactiveProperty<T>`, `CompositeDisposable`
   - `Where`, `Select`, `FromEvent`
-  - `Debounce`, `ThrottleLast`, `TakeUntil(Task/Token)`
+  - `Debounce`, `Throttle`, `ThrottleLast`, `Buffer`, `TakeUntil(Task/Token)`
   - `SelectAwait`, `WhereAwait`
-  - `ObserveOnThreadPool`, `SelectOnThreadPool`
+  - `ObserveOnThreadPool`, `SelectOnThreadPool`, `ObserveOnMainThread`
   - `EveryUpdate`, `EveryFixedUpdate`, `EveryLateUpdate`
   - Optional thread mode for frame streams:
     - `OnityUnityThreadMode.SingleThread`
