@@ -66,6 +66,9 @@ Split-ready optional modules are documented in:
   - `OnityTimeoutController`
   - `AsyncOperation.AsTask()`, `WithCancellation(...)`, direct `await`
 - Pool and factory convenience:
+  - `IFactory<T>`, `IFactory<TParam,T>`, `IFactory<TParam1,TParam2,T>`
+  - `IPool<T>`, `OnityObjectPool<T>`, `PrefabComponentPool<T>`
+  - `IPoolHooks` for pooled component reset callbacks
   - `BindPooledFactory(...)`
   - `BindScriptableObject(...)`
 - Scene flow helpers:
