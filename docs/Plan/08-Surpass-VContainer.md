@@ -125,7 +125,7 @@ AI-friendliness.
 ## P3 - Documentation and samples
 
 - Generate an API reference site from the XML docs (DocFX) and link from the README.
-- 2-3 more focused samples (RollABall-style, a HUD/reactive sample, an events sample).
+- 2-3 focused external example projects covering HUD/reactive state and events.
 - Publish the public GitHub repo + UPM git-URL + a `v0.1.0` release.
 - Effort: M. Risk: low. (AI usage guide + migration guides already done.)
 

@@ -1,6 +1,6 @@
 {
   "name": "com.onity.framework",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "displayName": "Onity",
   "description": "One Unity package for dependency injection, reactive programming, and events - one idiom, one disposal model, an engine-free core, and low-allocation hot paths. Replaces Zenject/VContainer, R3/UniRx, and MessagePipe with a single coherent API.",
   "unity": "2022.3",
@@ -20,12 +20,5 @@
     "com.unity.burst": "1.8.21",
     "com.unity.collections": "2.5.1",
     "com.unity.mathematics": "1.3.2"
-  },
-  "samples": [
-    {
-      "displayName": "Onity Showcase - Coin Rush",
-      "description": "A runnable mini-game wiring DI + Reactive + Events together through one installer with thin MonoBehaviours.",
-      "path": "Samples/OnityShowcase"
-    }
-  ]
+  }
 }

@@ -2,10 +2,10 @@
 
 **One Unity package for dependency injection, reactive programming, and events — one idiom, one disposal model, an engine-free core, and hot paths designed to avoid per-call managed allocation.**
 
-[![Onity CI](https://github.com/furkantokkan/Onity/actions/workflows/onity-ci.yml/badge.svg)](.github/workflows/onity-ci.yml)
+[![Onity CI](https://github.com/furkantokkan/Onity/actions/workflows/onity-ci.yml/badge.svg)](https://github.com/furkantokkan/Onity/actions/workflows/onity-ci.yml)
 ![Unity 2022.3+](https://img.shields.io/badge/Unity-2022.3%2B-black?logo=unity)
 ![EditMode tests green](https://img.shields.io/badge/EditMode%20tests-green-brightgreen)
-![IL2CPP AOT activators](https://img.shields.io/badge/IL2CPP-AOT%20activators-blue)
+![IL2CPP verified](https://img.shields.io/badge/IL2CPP-verified-blue)
 ![DOTS / ECS bridge](https://img.shields.io/badge/DOTS%2FECS-Burst%20event%20bridge-orange)
 ![AI-indexed docs](https://img.shields.io/badge/docs-AI--indexed-blueviolet)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
@@ -136,7 +136,7 @@ The **timing** numbers above are the trustworthy part. The committed allocation 
 
 On Mono/JIT, the speed comes from a process-wide compiled-activator cache (`Expression.Compile` once per `ConstructorInfo`), compiled member setters, a `[ThreadStatic]` lock-free argument-array pool, and a per-plan per-slot constructor-dependency cache — with no `builder.Build()` ceremony before resolve and no engine coupling (`Onity.DI` is `noEngineReferences: true`). On IL2CPP, generated activators register direct `new T(...)` delegates before the container builds its construction plans, so resolve avoids `ConstructorInfo.Invoke` on AOT builds too. Full Editor numbers and deltas: [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md). Player details: [`di-benchmark-player-latest.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-player-latest.md).
 
-0.3.2 benchmark verification: Unity batchmode Editor DI benchmark, Windows IL2CPP player DI benchmark with generated activators, `dotnet build tools/Onity.SourceGen/Onity.SourceGen.csproj -c Release`, and the release branch CI build (`dotnet build onity-core-ci.csproj -c Release`). CI runs EditMode and PlayMode on every push — see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
+0.3.3 verification: Unity batchmode Editor DI benchmark, Windows IL2CPP player DI benchmark with generated activators, `dotnet build tools/Onity.SourceGen/Onity.SourceGen.csproj -c Release`, and release branch CI build (`dotnet build onity-core-ci.csproj -c Release -nologo`). CI runs EditMode and PlayMode on every push — see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
 
 ---
 
@@ -157,7 +157,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.2
+https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.3
 ```
 
 …or in `Packages/manifest.json`:
@@ -170,7 +170,7 @@ https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3
 }
 ```
 
-(`#upm` tracks the latest package; use the `?path=…#v0.3.2` form to pin a specific release.)
+(`#upm` tracks the latest package; use the `?path=…#v0.3.3` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 
@@ -192,7 +192,6 @@ Copy or submodule the package folder into your project's `Packages/` directory a
         DOTS/        Onity.DOTS.asmdef
       Editor/
       Tests/
-      Samples/
 ```
 
 Reference the assemblies you need from your own asmdef (`Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Unity`, …). The engine-free core assemblies (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`) carry no `UnityEngine` reference, so plain-C# domain assemblies can depend on them directly.
@@ -268,7 +267,6 @@ For the complete, source-verified API across all three pillars, read the [Onity 
 - **[Onity AI Usage Guide](docs/Onity-AI-Usage-Guide.md)** — the source-of-truth, machine-readable reference for the real public API across DI, Reactive, and Events. Read this first.
 - **[Getting Started](docs/Getting-Started.md)** — a step-by-step human walkthrough: install, your first installer, DI + reactive state + events, and common mistakes.
 - **[Architecture review](docs/Architecture-Review.md)** — module/dependency map, SOLID assessment, and the PASS verdict on the structure.
-- **Sample — Coin Rush** (`Packages/com.onity.framework/Samples/OnityShowcase/`) — a runnable mini-game wiring DI + Reactive + Events with thin MonoBehaviours; see its folder README for scene setup.
 - **Migration guides** — moving an existing project over:
   - [From Zenject](docs/Migration/From-Zenject.md)
   - [From VContainer](docs/Migration/From-VContainer.md)

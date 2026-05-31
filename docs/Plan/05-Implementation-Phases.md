@@ -560,7 +560,7 @@ Store.
 - Add `package.json` to each `Assets/Onity-Packages/Onity*/` folder.
 - Pin a version (`0.1.0` for the first cut).
 - Add per-package `README.md`, `CHANGELOG.md`, `LICENSE.md`.
-- Configure `samples~/` folder so Unity importer offers sample scenes.
+- Keep the distributable package sample-free; host examples outside the package.
 - Build an Asset Store metadata bundle.
 
 ### 5.2 Migration guide
@@ -576,7 +576,7 @@ paragraph intro.
 ### 5.3 Phase 5 exit gate
 
 - A fresh Unity project can install `com.onity.framework` via Git URL and
-  build the RollABall sample.
+  compile a small scene using DI, messaging, and reactive state without sample imports.
 - The Asset Store package validates against Unity's submission tool.
 
 ## Phase deferral rules

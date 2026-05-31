@@ -67,7 +67,7 @@ https://github.com/furkantokkan/Onity.git#upm
 
 The `upm` branch is the package at its repository root (auto-mirrored by CI on
 every change). To pin a release instead, use the explicit form
-`https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.2`.
+`https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.3`.
 Git must be installed on your machine.
 
 ### B. Embedded package
@@ -78,9 +78,8 @@ Copy the package folder into your project's `Packages/` directory:
 <YourProject>/Packages/com.onity.framework/
 ```
 
-That folder contains everything: `Runtime/` (the assemblies), `Editor/`
-(Inspector and menu tooling), `Tests/`, and `Samples/`. If you cloned this
-repository, it is already there.
+That folder contains the package runtime, editor tooling, tests, benchmarks, and
+metadata. It intentionally does not ship bundled samples.
 
 ### No third-party dependencies
 

@@ -220,8 +220,8 @@ Primary tools:
 - `Onity/Diagnostics/Observable Tracker`
 - `Onity/Diagnostics/Pool Monitor`
 - `Onity/Diagnostics/Scene Flow Manager`
-- `Tools/Onity/Validation/Validate Scene`
-- `Tools/Onity/Validation/Validate All Scenes`
+- `Onity/Validation/Validate Scene`
+- `Onity/Validation/Validate All Scenes`
 
 Engineering intent:
 
@@ -260,8 +260,7 @@ Current intended split:
 1. `onity-core` (this folder, `Assets/Onity`)
 2. `onity-physics` (`Assets/Onity.Physics`)
 3. `onity-skillstats` (`Assets/Onity.SkillStats`)
-4. `onity-samples` (`Assets/Onity/Samples`)
-5. `onity-benchmarks` + third-party comparison repo
+4. `onity-benchmarks` + third-party comparison repo
 
 Each split should preserve:
 

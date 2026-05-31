@@ -39,7 +39,7 @@ should not need to learn five mental models.
 1. DOTS bridges beyond the current `int` event queue.
 2. Plugins: `Onity.Physics`, `Onity.SkillStats`, `Onity.Input`, `Onity.UI`,
    `Onity.SceneFlow`.
-3. Sample projects covering common Unity game patterns.
+3. External example projects and docs covering common Unity game patterns.
 4. Asset Store and GitHub UPM release packaging.
 
 ## Non-goals
@@ -77,8 +77,8 @@ As of 2026-02-12 the runtime modules under
 | `Onity.DOTS` | 6 | Only int-event queue + session bridge |
 
 Editor tooling (`Onity/Diagnostics/*`, scene validation) and benchmark runner
-already work. Samples scenes (RollABall, GameObjectContextScope,
-BasicGameplay) generate from a menu.
+already work. The package itself stays sample-free; example projects should live
+outside the distributable package.
 
 ### Latest DI benchmark
 

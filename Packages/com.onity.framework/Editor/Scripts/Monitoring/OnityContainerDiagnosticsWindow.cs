@@ -27,7 +27,6 @@ namespace Onity.Editor.Monitoring
         private string m_searchText = string.Empty;
         private double m_nextRefreshTime;
 
-        [MenuItem("Window/Onity/Container Diagnostics")]
         [MenuItem("Onity/Tools/Container Diagnostics", false, 101)]
         private static void OpenWindow()
         {
@@ -122,9 +121,15 @@ namespace Onity.Editor.Monitoring
                 m_searchText = nextSearchText;
             }
 
-            GUIStyle cancelStyle = GUI.skin.FindStyle("ToolbarSeachCancelButton") ?? EditorStyles.miniButton;
-
-            if (GUILayout.Button(GUIContent.none, cancelStyle, GUILayout.Width(18f)) && string.IsNullOrEmpty(m_searchText) == false)
+            bool hasSearchText = string.IsNullOrEmpty(m_searchText) == false;
+            if (hasSearchText == false)
+            {
+                GUILayout.Space(18f);
+            }
+            else if (GUILayout.Button(
+                GUIContent.none,
+                GUI.skin.FindStyle("ToolbarSeachCancelButton") ?? EditorStyles.miniButton,
+                GUILayout.Width(18f)))
             {
                 m_searchText = string.Empty;
                 GUI.FocusControl(null);

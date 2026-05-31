@@ -3,10 +3,6 @@
 ## Layer diagram
 
 ```
-+----------------------------------------------------------------------+
-|  SAMPLES (Assets/Onity-Packages/Onity/Samples)                       |
-|  RollABall  |  GameObjectScope  |  BasicGameplay  |  ...             |
-+----------------------------------------------------------------------+
 |  PLUGINS (split-ready, opt-in)                                       |
 |  Onity.Physics  |  Onity.SkillStats  |  Onity.Input                  |
 |  Onity.UI       |  Onity.SceneFlow                                   |
