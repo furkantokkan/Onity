@@ -44,7 +44,7 @@ The committed DI benchmark reports resolve **timing** (speed) numbers. Treat the
 | Run | Result |
 | --- | --- |
 | Editor / Mono (`2026-05-30T19:38:06Z`) | Onity baked is faster than VContainer and Zenject on every measured timing path. |
-| Windows IL2CPP Player (`2026-05-31T00:48:27Z`, 10,000 iterations) | Onity baked, with 19 generated activators registered for the benchmark graph, is faster than VContainer and Zenject on every measured timing path. |
+| Windows IL2CPP Player (`2026-05-31T15:26:19Z`, 10,000 iterations) | Onity baked, with 19 generated activators registered for the benchmark graph, is faster than VContainer and Zenject on every measured timing path. |
 
 ## IL2CPP checklist
 

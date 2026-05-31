@@ -123,15 +123,15 @@ Editor / Mono run (`2026-05-30T19:38:06Z`, `WindowsEditor`, 512 warmup / 8 sampl
 | Resolve Complex (6-level) | ~22,905 ns | ~42,158 ns | ~289,823 ns | ~+46% |
 | Prepare & Register Complex | ~61,044 ns | ~150,730 ns | ~215,537 ns | ~+60% |
 
-IL2CPP player run (`2026-05-31T00:48:27Z`, `WindowsPlayer`, source-generated activators registered, 512 warmup / 8 samples / 10,000 iterations):
+IL2CPP player run (`2026-05-31T15:26:19Z`, `WindowsPlayer`, source-generated activators registered, 512 warmup / 8 samples / 10,000 iterations):
 
 | Scenario | Onity | VContainer | Zenject | Onity vs VContainer |
 | --- | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~17 ns | ~79 ns | ~547 ns | ~+79% |
-| Resolve Transient | ~191 ns | ~576 ns | ~2,742 ns | ~+67% |
-| Resolve Combined | ~232 ns | ~794 ns | ~3,531 ns | ~+71% |
-| Resolve Complex (6-level) | ~5,399 ns | ~12,740 ns | ~61,072 ns | ~+58% |
-| Prepare & Register Complex | ~31,084 ns | ~42,446 ns | ~66,386 ns | ~+27% |
+| Resolve Singleton | ~20 ns | ~98 ns | ~488 ns | ~+80% |
+| Resolve Transient | ~133 ns | ~528 ns | ~2,302 ns | ~+75% |
+| Resolve Combined | ~159 ns | ~679 ns | ~3,052 ns | ~+77% |
+| Resolve Complex (6-level) | ~4,782 ns | ~13,552 ns | ~61,999 ns | ~+65% |
+| Prepare & Register Complex | ~26,944 ns | ~39,694 ns | ~65,937 ns | ~+32% |
 
 The **timing** numbers above are the published benchmark evidence. Allocation numbers are intentionally not shown until the allocation harness is re-measured.
 

@@ -124,16 +124,16 @@ The gates ratchet:
 player benchmark. The player run completed without crashing, registered the
 benchmark graph's generated activators, and wrote `di-benchmark-player-latest.*`.
 
-Latest Windows IL2CPP player timing (`2026-05-31T00:48:27Z`, 512 warmup /
+Latest Windows IL2CPP player timing (`2026-05-31T15:26:19Z`, 512 warmup /
 8 samples / 10,000 iterations):
 
 | Scenario | Onity Baked | VContainer | Status |
 |---|---:|---:|---|
-| Resolve Singleton (ns/op) | 17 | 79 | Pass |
-| Resolve Transient (ns/op) | 191 | 576 | Pass |
-| Resolve Combined (ns/op) | 232 | 794 | Pass |
-| Resolve Complex (ns/op) | 5,399 | 12,740 | Pass |
-| Prepare and Register Complex (ns/op) | 31,084 | 42,446 | Pass |
+| Resolve Singleton (ns/op) | 20 | 98 | Pass |
+| Resolve Transient (ns/op) | 133 | 528 | Pass |
+| Resolve Combined (ns/op) | 159 | 679 | Pass |
+| Resolve Complex (ns/op) | 4,782 | 13,552 | Pass |
+| Prepare and Register Complex (ns/op) | 26,944 | 39,694 | Pass |
 
 The result closes the measured Windows IL2CPP resolve-speed gap against
 VContainer for this benchmark graph. Remaining IL2CPP work is target-device

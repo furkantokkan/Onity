@@ -78,10 +78,10 @@ the benchmark graph and keeps the same relative ordering:
 
 | Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject | Onity Baked vs VContainer |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~17 ns | ~157 ns | ~79 ns | ~547 ns | ~+79% |
-| Resolve Transient | ~191 ns | ~348 ns | ~576 ns | ~2,742 ns | ~+67% |
-| Resolve Combined | ~232 ns | ~634 ns | ~794 ns | ~3,531 ns | ~+71% |
-| Resolve Complex (6-level graph) | ~5,399 ns | ~6,095 ns | ~12,740 ns | ~61,072 ns | ~+58% |
+| Resolve Singleton | ~20 ns | ~126 ns | ~98 ns | ~488 ns | ~+80% |
+| Resolve Transient | ~133 ns | ~276 ns | ~528 ns | ~2,302 ns | ~+75% |
+| Resolve Combined | ~159 ns | ~431 ns | ~679 ns | ~3,052 ns | ~+77% |
+| Resolve Complex (6-level graph) | ~4,782 ns | ~4,890 ns | ~13,552 ns | ~61,999 ns | ~+65% |
 
 On Mono/JIT, the speed comes from a process-wide compiled-activator cache
 (`Expression.Compile` runs once per `ConstructorInfo`), compiled
@@ -106,7 +106,7 @@ Onity on the benchmark machine:
 | Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject |
 | --- | ---: | ---: | ---: | ---: |
 | Prepare & Register Complex (Editor/Mono) | ~61,044 ns | ~42,929 ns | ~150,730 ns | ~215,537 ns |
-| Prepare & Register Complex (IL2CPP Player) | ~31,084 ns | ~24,958 ns | ~42,446 ns | ~66,386 ns |
+| Prepare & Register Complex (IL2CPP Player) | ~26,944 ns | ~21,544 ns | ~39,694 ns | ~65,937 ns |
 
 Onity avoids VContainer's separate builder object and shares activation metadata
 across the whole process. The baked mode adds a lean dense-id map during `Build()`
