@@ -1,104 +1,113 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720" role="img" aria-labelledby="title desc">
-  <title id="title">Onity runtime architecture diagram</title>
-  <desc id="desc">Layered Onity architecture showing the Unity engine bridge, DOTS and pooling adapters, engine-free core modules, and downward-only dependency direction.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780" role="img" aria-labelledby="title desc">
+  <title id="title">Onity dependency tree</title>
+  <desc id="desc">Tree-style Onity architecture diagram. Higher modules point down to lower modules. Onity.Unity sits above adapter modules, engine-free modules sit below, and Onity.Core is the base dependency.</desc>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#111827"/>
-      <stop offset="1" stop-color="#1f2937"/>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#111827"/>
     </linearGradient>
-    <linearGradient id="bridge" x1="0" y1="0" x2="1" y2="0">
+    <linearGradient id="unity" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#2563eb"/>
-      <stop offset="1" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#0891b2"/>
     </linearGradient>
     <linearGradient id="adapter" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="0" stop-color="#6d28d9"/>
       <stop offset="1" stop-color="#0284c7"/>
     </linearGradient>
-    <linearGradient id="core" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#16a34a"/>
-      <stop offset="1" stop-color="#65a30d"/>
+    <linearGradient id="engineFree" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#15803d"/>
+      <stop offset="1" stop-color="#4d7c0f"/>
     </linearGradient>
-    <filter id="shadow" x="-10%" y="-15%" width="120%" height="140%">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#020617" flood-opacity="0.35"/>
+    <filter id="nodeShadow" x="-8%" y="-18%" width="116%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#020617" flood-opacity="0.35"/>
     </filter>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#93c5fd"/>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,7 L10,3.5 z" fill="#93c5fd"/>
     </marker>
     <style>
-      .label { font: 700 22px Inter, Segoe UI, Arial, sans-serif; fill: #f8fafc; }
-      .small { font: 500 16px Inter, Segoe UI, Arial, sans-serif; fill: #dbeafe; }
-      .micro { font: 500 14px Inter, Segoe UI, Arial, sans-serif; fill: #cbd5e1; }
-      .module { font: 700 18px Inter, Segoe UI, Arial, sans-serif; fill: #f8fafc; }
-      .moduleSmall { font: 500 13px Inter, Segoe UI, Arial, sans-serif; fill: #d1d5db; }
-      .rule { stroke: #475569; stroke-width: 2; stroke-dasharray: 8 8; }
-      .arrow { stroke: #93c5fd; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .titleText { font: 700 30px Inter, Segoe UI, Arial, sans-serif; fill: #f8fafc; }
+      .subtitleText { font: 500 18px Inter, Segoe UI, Arial, sans-serif; fill: #cbd5e1; }
+      .sectionText { font: 700 15px Inter, Segoe UI, Arial, sans-serif; fill: #93c5fd; letter-spacing: 0; }
+      .nodeTitle { font: 700 22px Inter, Segoe UI, Arial, sans-serif; fill: #f8fafc; }
+      .nodeText { font: 500 15px Inter, Segoe UI, Arial, sans-serif; fill: #dbeafe; }
+      .smallText { font: 500 14px Inter, Segoe UI, Arial, sans-serif; fill: #cbd5e1; }
+      .edge { stroke: #93c5fd; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .edgeThin { stroke: #64748b; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .guide { stroke: #334155; stroke-width: 2; stroke-dasharray: 7 9; }
     </style>
   </defs>
 
-  <rect width="1120" height="720" rx="28" fill="url(#bg)"/>
-  <rect x="24" y="24" width="1072" height="672" rx="24" fill="#020617" opacity="0.24"/>
+  <rect width="1200" height="780" rx="24" fill="url(#background)"/>
+  <rect x="34" y="34" width="1132" height="712" rx="20" fill="#020617" opacity="0.23"/>
 
-  <text x="64" y="76" class="label">Onity Runtime Architecture</text>
-  <text x="64" y="106" class="small">Engine-facing adapters stay above the engine-free core. Dependencies flow downward only.</text>
-
-  <line x1="72" y1="154" x2="1048" y2="154" class="rule"/>
-
-  <g filter="url(#shadow)">
-    <rect x="130" y="176" width="860" height="132" rx="18" fill="url(#bridge)"/>
-    <text x="164" y="224" class="label">ENGINE BRIDGE</text>
-    <text x="164" y="259" class="module">Onity.Unity</text>
-    <text x="304" y="259" class="small">contexts, installers, scene flow, event shortcuts, input, UI, async, physics bridges</text>
-    <text x="164" y="288" class="micro">UnityEngine boundary: Unity APIs are isolated here.</text>
-  </g>
-
-  <path d="M560 314 L560 350" class="arrow"/>
-
-  <g filter="url(#shadow)">
-    <rect x="130" y="360" width="410" height="104" rx="16" fill="url(#adapter)"/>
-    <text x="164" y="402" class="module">Onity.DOTS</text>
-    <text x="164" y="432" class="moduleSmall">Entities/Burst bridge for blittable event buffers</text>
-  </g>
-  <g filter="url(#shadow)">
-    <rect x="580" y="360" width="410" height="104" rx="16" fill="#334155"/>
-    <text x="614" y="402" class="module">Onity.Pooling</text>
-    <text x="614" y="432" class="moduleSmall">UnityEngine.Pool-backed object and prefab pools</text>
-  </g>
-
-  <path d="M335 470 L335 508" class="arrow"/>
-  <path d="M785 470 L785 508" class="arrow"/>
-
-  <g filter="url(#shadow)">
-    <rect x="130" y="516" width="860" height="128" rx="18" fill="url(#core)"/>
-    <text x="164" y="560" class="label">ENGINE-FREE CORE</text>
-    <text x="164" y="590" class="small">No UnityEngine reference. Plain C# APIs are testable without scenes.</text>
-
-    <rect x="164" y="608" width="132" height="48" rx="10" fill="#052e16" opacity="0.82"/>
-    <text x="186" y="639" class="moduleSmall">Onity.DI</text>
-
-    <rect x="318" y="608" width="150" height="48" rx="10" fill="#052e16" opacity="0.82"/>
-    <text x="342" y="639" class="moduleSmall">Onity.Factory</text>
-
-    <rect x="492" y="608" width="168" height="48" rx="10" fill="#052e16" opacity="0.82"/>
-    <text x="516" y="639" class="moduleSmall">Onity.Reactive</text>
-
-    <rect x="684" y="608" width="184" height="48" rx="10" fill="#052e16" opacity="0.82"/>
-    <text x="706" y="639" class="moduleSmall">Onity.Messaging</text>
-
-    <rect x="408" y="536" width="272" height="42" rx="10" fill="#14532d" opacity="0.9"/>
-    <text x="474" y="563" class="moduleSmall">Onity.Core</text>
-  </g>
-
-  <path d="M246 632 L312 632" class="arrow"/>
-  <path d="M576 632 L670 632" class="arrow"/>
+  <text x="64" y="82" class="titleText">Onity Dependency Tree</text>
+  <text x="64" y="116" class="subtitleText">Higher modules reference lower modules only. Core stays engine-free and reusable.</text>
 
   <g>
-    <path d="M74 184 L74 632" class="arrow"/>
-    <text x="48" y="396" transform="rotate(-90 48 396)" class="small">dependency direction</text>
+    <rect x="868" y="60" width="250" height="76" rx="14" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+    <text x="890" y="92" class="smallText">Direction</text>
+    <text x="890" y="120" class="smallText">arrows point to dependencies</text>
   </g>
 
-  <g>
-    <rect x="736" y="64" width="300" height="72" rx="14" fill="#0f172a" stroke="#334155"/>
-    <text x="758" y="95" class="moduleSmall">Rule</text>
-    <text x="758" y="121" class="micro">Lower layers never reference higher layers.</text>
+  <line x1="84" y1="172" x2="1116" y2="172" class="guide"/>
+
+  <text x="84" y="213" class="sectionText">UNITY BOUNDARY</text>
+  <g filter="url(#nodeShadow)">
+    <rect x="390" y="188" width="420" height="86" rx="16" fill="url(#unity)"/>
+    <text x="430" y="226" class="nodeTitle">Onity.Unity</text>
+    <text x="430" y="254" class="nodeText">contexts, scene flow, shortcuts, input, UI</text>
+  </g>
+
+  <path d="M600 274 L600 318" class="edge"/>
+
+  <text x="84" y="338" class="sectionText">UNITY ADAPTERS</text>
+  <g filter="url(#nodeShadow)">
+    <rect x="230" y="326" width="280" height="78" rx="15" fill="url(#adapter)"/>
+    <text x="264" y="360" class="nodeTitle">Onity.DOTS</text>
+    <text x="264" y="386" class="nodeText">ECS / Burst bridge</text>
+  </g>
+  <g filter="url(#nodeShadow)">
+    <rect x="690" y="326" width="280" height="78" rx="15" fill="#334155"/>
+    <text x="724" y="360" class="nodeTitle">Onity.Pooling</text>
+    <text x="724" y="386" class="nodeText">UnityEngine.Pool bridge</text>
+  </g>
+
+  <path d="M600 318 C600 306 370 306 370 326" class="edgeThin"/>
+  <path d="M600 318 C600 306 830 306 830 326" class="edgeThin"/>
+
+  <path d="M370 404 C370 432 955 432 955 456" class="edgeThin"/>
+  <path d="M830 404 C830 432 445 432 445 456" class="edgeThin"/>
+
+  <text x="84" y="468" class="sectionText">ENGINE-FREE MODULES</text>
+  <g filter="url(#nodeShadow)">
+    <rect x="80" y="456" width="210" height="76" rx="14" fill="url(#engineFree)"/>
+    <text x="118" y="490" class="nodeTitle">Onity.DI</text>
+    <text x="118" y="516" class="nodeText">container</text>
+  </g>
+  <g filter="url(#nodeShadow)">
+    <rect x="340" y="456" width="210" height="76" rx="14" fill="url(#engineFree)"/>
+    <text x="370" y="490" class="nodeTitle">Onity.Factory</text>
+    <text x="370" y="516" class="nodeText">creation contracts</text>
+  </g>
+  <g filter="url(#nodeShadow)">
+    <rect x="600" y="456" width="210" height="76" rx="14" fill="url(#engineFree)"/>
+    <text x="624" y="490" class="nodeTitle">Onity.Reactive</text>
+    <text x="624" y="516" class="nodeText">observables</text>
+  </g>
+  <g filter="url(#nodeShadow)">
+    <rect x="860" y="456" width="240" height="76" rx="14" fill="url(#engineFree)"/>
+    <text x="890" y="490" class="nodeTitle">Onity.Messaging</text>
+    <text x="890" y="516" class="nodeText">publish / subscribe</text>
+  </g>
+
+  <path d="M185 532 C185 580 500 580 500 616" class="edgeThin"/>
+  <path d="M445 532 L500 616" class="edgeThin"/>
+  <path d="M705 532 L700 616" class="edgeThin"/>
+  <path d="M980 532 C980 580 700 580 700 616" class="edgeThin"/>
+
+  <g filter="url(#nodeShadow)">
+    <rect x="390" y="616" width="420" height="86" rx="16" fill="#14532d"/>
+    <text x="490" y="654" class="nodeTitle">Onity.Core</text>
+    <text x="490" y="682" class="nodeText">Unit, Lifetime, DisposableAction</text>
   </g>
 </svg>
