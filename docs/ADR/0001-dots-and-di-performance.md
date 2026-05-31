@@ -1,5 +1,6 @@
 ---
 title: "ADR 0001: DOTS and DI Performance"
+parent: "Architecture Decisions"
 nav_order: 1
 ---
 

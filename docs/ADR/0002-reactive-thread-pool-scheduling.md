@@ -1,5 +1,6 @@
 ---
 title: "ADR 0002: Reactive Thread-Pool Scheduling"
+parent: "Architecture Decisions"
 nav_order: 2
 ---
 

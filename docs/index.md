@@ -38,5 +38,4 @@ Onity is one Unity package that unifies dependency injection, reactive programmi
 - [AI Usage Guide](Onity-AI-Usage-Guide.html) — machine-readable usage guide verified against the source.
 - [Comparison: VContainer & Zenject](Onity-vs-VContainer-Zenject.html) — per-axis DI comparison.
 - [Architecture](Architecture-Review.html) — clean-OOP / SOLID review of the framework.
-- [ADR 0001: DOTS and DI Performance](ADR/0001-dots-and-di-performance.html) — decision record for DOTS boundaries and DI optimization.
-- [ADR 0003: Unity Event Shortcuts](ADR/0003-unity-event-shortcuts.html) — decision record for scoped `Onity.Publish` / `Subscribe` shortcuts.
+- [Architecture Decisions](ADR/) — accepted ADRs for performance, threading, and Unity API boundaries.

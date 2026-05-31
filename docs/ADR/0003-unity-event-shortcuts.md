@@ -1,5 +1,6 @@
 ---
 title: "ADR 0003: Unity Event Shortcuts"
+parent: "Architecture Decisions"
 nav_order: 3
 ---
 

@@ -20,8 +20,10 @@
 * [Comparison: Onity vs VContainer / Zenject](Onity-vs-VContainer-Zenject.md)
 * [AI Usage Guide](Onity-AI-Usage-Guide.md)
 * [Architecture Review](Architecture-Review.md)
-* [ADR 0001: DOTS and DI Performance](ADR/0001-dots-and-di-performance.md)
-* [ADR 0003: Unity Event Shortcuts](ADR/0003-unity-event-shortcuts.md)
+* [Architecture Decisions](ADR/index.md)
+  * [ADR 0001: DOTS and DI Performance](ADR/0001-dots-and-di-performance.md)
+  * [ADR 0002: Reactive Thread-Pool Scheduling](ADR/0002-reactive-thread-pool-scheduling.md)
+  * [ADR 0003: Unity Event Shortcuts](ADR/0003-unity-event-shortcuts.md)
 
 ## Migration
 
