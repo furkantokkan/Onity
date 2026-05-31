@@ -39,12 +39,12 @@ The reactive and messaging emit paths follow the same principle: `Subject<T>.OnN
 
 ## Timing claims
 
-The committed DI benchmark reports resolve **timing** (speed) numbers. Treat them as **indicative only**: they were measured on one machine and are not a guaranteed result on your hardware or build target. They are useful for relative comparison of resolve paths within the same run, not as an absolute performance guarantee.
+The committed DI benchmark reports resolve **timing** (speed) numbers. Treat them as **indicative only**: they were measured on a Windows PC and are not a guaranteed result for every Unity version, scripting backend, or graph shape. They are useful for relative comparison of resolve paths within the same run, not as an absolute performance guarantee.
 
 | Run | Result |
 | --- | --- |
 | Editor / Mono (`2026-05-30T19:38:06Z`) | Onity baked is faster than VContainer and Zenject on every measured timing path. |
-| Windows IL2CPP Player (`2026-05-30T23:02:24Z`) | Onity baked, with 19 generated activators registered for the benchmark graph, is faster than VContainer and Zenject on every measured timing path. |
+| Windows IL2CPP Player (`2026-05-31T00:48:27Z`, 10,000 iterations) | Onity baked, with 19 generated activators registered for the benchmark graph, is faster than VContainer and Zenject on every measured timing path. |
 
 ## IL2CPP checklist
 
@@ -57,7 +57,7 @@ The committed DI benchmark reports resolve **timing** (speed) numbers. Treat the
 
 ## What remains
 
-The current generator is explicit: it emits activators for types marked with `[OnityGenerateActivator]`. Future work can improve discovery, generate member setters, and add more platform/device benchmark coverage. For now, use the generated path for hot implementation types, keep the reflection fallback for correctness, and re-run the player benchmark on your target hardware before treating the published Windows numbers as a target-platform result.
+The current generator is explicit: it emits activators for types marked with `[OnityGenerateActivator]`. Future work can improve discovery, generate member setters, and add more platform/device benchmark coverage. For now, use the generated path for hot implementation types, keep the reflection fallback for correctness, and re-run the player benchmark for your target platform before treating the published Windows numbers as target-platform results.
 
 ## See also
 

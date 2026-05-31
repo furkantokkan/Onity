@@ -94,7 +94,7 @@ Onity is deliberately structured — and its documentation is **indexed for AI**
 | Events → reactive stream | hand-write a `MessagePipe → R3` adapter | `broker.Observe<T>()` returns `IOnityObservable<T>` |
 | Observable type | R3 `Observable<T>`; events need bridging | one `IOnityObservable<T>` for subjects, properties, and events |
 | Disposal | 3+ different disposal idioms | one `IDisposable` + `AddTo(...)` everywhere |
-| DI resolve / build speed | baseline | faster than VContainer and Zenject on the measured Editor-Mono and Windows IL2CPP player paths below (one machine — indicative, not guaranteed) |
+| DI resolve / build speed | baseline | faster than VContainer and Zenject on the measured Editor-Mono and Windows IL2CPP player paths below (Windows PC — indicative, not guaranteed) |
 | Hot-path allocation (steady state) | varies | resolve machinery designed allocation-free (a transient still allocates the returned instance; alloc figures pending a corrected re-measure) |
 | Entry-point lifecycle | automatic (Zenject); manual wiring (VContainer) | **automatic** — `IOnityTickable` etc. need no registration |
 | Collection / open-generic binds | yes (both) | **yes** — `IEnumerable<T>`…`T[]` and `Bind(typeof(IRepo<>))` |
@@ -110,9 +110,9 @@ Onity's DI now covers the feature axes VContainer and Zenject are known for — 
 
 ## Benchmarks
 
-Measured by `OnityDiBenchmarkRunner` / `OnityDiBenchmarkPlayerRunner` (Unity 2022.3.62f3, Windows; mean reported). These numbers were measured on a single machine and are **indicative, not a guarantee**; hardware, Unity version, backend, and graph shape can change both absolute timings and relative ordering.
+Measured by `OnityDiBenchmarkRunner` / `OnityDiBenchmarkPlayerRunner` (Unity 2022.3.62f3, Windows; mean reported). These numbers were measured on a Windows PC and are **indicative, not a guarantee**; Unity version, scripting backend, and graph shape can change both absolute timings and relative ordering.
 
-Editor / Mono run (`2026-05-30T19:38:06Z`, `WindowsEditor`):
+Editor / Mono run (`2026-05-30T19:38:06Z`, `WindowsEditor`, 512 warmup / 8 samples / 10,000 iterations):
 
 | Scenario | Onity | VContainer | Zenject | Onity vs VContainer |
 | --- | ---: | ---: | ---: | ---: |
@@ -122,21 +122,21 @@ Editor / Mono run (`2026-05-30T19:38:06Z`, `WindowsEditor`):
 | Resolve Complex (6-level) | ~22,905 ns | ~42,158 ns | ~289,823 ns | ~+46% |
 | Prepare & Register Complex | ~61,044 ns | ~150,730 ns | ~215,537 ns | ~+60% |
 
-IL2CPP player run (`2026-05-30T23:02:24Z`, `WindowsPlayer`, source-generated activators registered, 128 warmup / 3 samples / 1000 iterations):
+IL2CPP player run (`2026-05-31T00:48:27Z`, `WindowsPlayer`, source-generated activators registered, 512 warmup / 8 samples / 10,000 iterations):
 
 | Scenario | Onity | VContainer | Zenject | Result |
 | --- | ---: | ---: | ---: | --- |
-| Resolve Singleton | ~18 ns | ~88 ns | ~599 ns | Onity faster |
-| Resolve Transient | ~179 ns | ~507 ns | ~2,239 ns | Onity faster |
-| Resolve Combined | ~178 ns | ~630 ns | ~2,871 ns | Onity faster |
-| Resolve Complex (6-level) | ~5,115 ns | ~12,092 ns | ~61,944 ns | Onity faster |
-| Prepare & Register Complex | ~35,345 ns | ~46,053 ns | ~72,173 ns | Onity faster |
+| Resolve Singleton | ~17 ns | ~79 ns | ~547 ns | Onity faster |
+| Resolve Transient | ~191 ns | ~576 ns | ~2,742 ns | Onity faster |
+| Resolve Combined | ~232 ns | ~794 ns | ~3,531 ns | Onity faster |
+| Resolve Complex (6-level) | ~5,399 ns | ~12,740 ns | ~61,072 ns | Onity faster |
+| Prepare & Register Complex | ~31,084 ns | ~42,446 ns | ~66,386 ns | Onity faster |
 
 The **timing** numbers above are the trustworthy part. The committed allocation figures were **not reliable** — the same harness reported 0 B for VContainer and Zenject too, which cannot be correct (a transient resolve allocates the instance it returns, a 6-level graph allocates roughly one object per level, and Zenject is allocation-heavy), so the measurement was not capturing gross allocations. The resolve machinery (generated/compiled activators, a pooled argument array, cached construction plans) is **designed** to avoid per-call managed allocation beyond the constructed instances themselves, but the published alloc numbers are withdrawn pending a corrected in-editor re-measure.
 
 On Mono/JIT, the speed comes from a process-wide compiled-activator cache (`Expression.Compile` once per `ConstructorInfo`), compiled member setters, a `[ThreadStatic]` lock-free argument-array pool, and a per-plan per-slot constructor-dependency cache — with no `builder.Build()` ceremony before resolve and no engine coupling (`Onity.DI` is `noEngineReferences: true`). On IL2CPP, generated activators register direct `new T(...)` delegates before the container builds its construction plans, so resolve avoids `ConstructorInfo.Invoke` on AOT builds too. Full Editor numbers and deltas: [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md). Player details: [`di-benchmark-player-latest.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-player-latest.md).
 
-0.3.3 verification: Unity batchmode Editor DI benchmark, Windows IL2CPP player DI benchmark with generated activators, `dotnet build tools/Onity.SourceGen/Onity.SourceGen.csproj -c Release`, and release branch CI build (`dotnet build onity-core-ci.csproj -c Release -nologo`). CI runs EditMode and PlayMode on every push — see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
+0.3.3 verification: Unity batchmode Editor DI benchmark, Windows IL2CPP player DI benchmark with generated activators at 10,000 iterations per sample, `dotnet build tools/Onity.SourceGen/Onity.SourceGen.csproj -c Release`, and release branch CI build (`dotnet build onity-core-ci.csproj -c Release -nologo`). CI runs EditMode and PlayMode on every push — see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
 
 ---
 

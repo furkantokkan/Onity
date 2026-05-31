@@ -65,29 +65,31 @@ Editor/Mono, 512 warmup iterations, 8 measured samples, arithmetic mean.
 | Resolve Complex (6-level) | ~22,905 ns | ~25,940 ns | ~42,158 ns | ~289,823 ns | ~+46% |
 | Prepare & Register Complex | ~61,044 ns | ~42,929 ns | ~150,730 ns | ~215,537 ns | ~+60% |
 
-Latest Windows IL2CPP Player run: `2026-05-30T20:09:24Z`, Unity 2022.3.62f3,
-512 warmup iterations, 8 measured samples, arithmetic mean.
+Latest Windows IL2CPP Player run: `2026-05-31T00:48:27Z`, Unity 2022.3.62f3,
+512 warmup iterations, 8 measured samples, 10,000 measured iterations per
+sample, arithmetic mean.
 
 | Scenario | Onity Baked | Onity Reflection | VContainer | Zenject | Result |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Resolve Singleton | ~17 ns | ~102 ns | ~86 ns | ~469 ns | Onity faster |
-| Resolve Transient | ~1,431 ns | ~1,581 ns | ~580 ns | ~2,458 ns | VContainer faster |
-| Resolve Combined | ~1,263 ns | ~1,505 ns | ~602 ns | ~3,525 ns | VContainer faster |
-| Resolve Complex (6-level) | ~34,729 ns | ~37,379 ns | ~12,918 ns | ~62,689 ns | VContainer faster |
-| Prepare & Register Complex | ~23,872 ns | ~20,939 ns | ~38,465 ns | ~61,060 ns | Onity faster |
+| Resolve Singleton | ~17 ns | ~157 ns | ~79 ns | ~547 ns | Onity faster |
+| Resolve Transient | ~191 ns | ~348 ns | ~576 ns | ~2,742 ns | Onity faster |
+| Resolve Combined | ~232 ns | ~634 ns | ~794 ns | ~3,531 ns | Onity faster |
+| Resolve Complex (6-level) | ~5,399 ns | ~6,095 ns | ~12,740 ns | ~61,072 ns | Onity faster |
+| Prepare & Register Complex | ~31,084 ns | ~24,958 ns | ~42,446 ns | ~66,386 ns | Onity faster |
 
 These timings are indicative, not a guarantee. They were captured in the Editor
-and in a Windows IL2CPP player on one machine; hardware, Unity version, scripting
-backend, and graph shape will change the absolute numbers. The allocation
+and in a Windows IL2CPP player on one Windows PC; Unity version, scripting
+backend, and graph shape can change the absolute numbers. The allocation
 columns currently emitted by the Editor runner are not reliable and should not
 be used for public claims until the allocation harness is corrected. The player
 runner marks allocation measurement unavailable because Unity 2022 IL2CPP crashed
 when reading managed allocation counters from the benchmark loop.
 
-IL2CPP note: Onity runs correctly in the player benchmark, but the current
-IL2CPP timing order differs from Editor/Mono. VContainer is faster on transient,
-combined, and complex resolve until Onity has a source-generated/AOT-specialized
-activation path.
+IL2CPP note: the current player benchmark uses Onity's generated AOT activator
+registry for the benchmark graph, so hot implementation construction avoids
+`ConstructorInfo.Invoke` on AOT builds. The current 10,000-iteration Windows
+player timing order matches the Editor/Mono headline: Onity baked is ahead of
+VContainer and Zenject on every measured scenario.
 
 ## 3. Render Charts
 

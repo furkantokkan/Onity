@@ -20,11 +20,11 @@ repository.
 - **The benchmark timing numbers are indicative, not guaranteed.** They were
   measured in the **Unity Editor with the Mono scripting backend** and in a
   **Windows IL2CPP player**, on a single Windows machine (Unity 2022.3.62f3).
-  The Editor run used 512 warmup iterations / 8 samples; the IL2CPP player run
-  used 128 warmup iterations / 3 samples / 1000 measured iterations. Your
-  hardware, Unity version, scripting backend, and graph shape will produce
-  different absolute numbers and possibly different relative ordering.
-  Treat the numbers as "this is what one machine measured," not "Onity is always
+  The Editor and IL2CPP player runs both used 512 warmup iterations / 8 samples /
+  10,000 measured iterations per sample. Different Unity versions, scripting
+  backends, and graph shapes can produce different
+  absolute numbers and possibly different relative ordering. Treat the numbers
+  as "this is what this Windows PC measured," not "Onity is always
   faster." They were produced by the Onity project's own `OnityDiBenchmarkRunner`
   and have **not been independently audited** — the runner ships in this
   repository specifically so any reader can reproduce, or challenge, them.
@@ -78,10 +78,10 @@ the benchmark graph and keeps the same relative ordering:
 
 | Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject | Result |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Resolve Singleton | ~18 ns | ~138 ns | ~88 ns | ~599 ns | Onity fastest |
-| Resolve Transient | ~179 ns | ~370 ns | ~507 ns | ~2,239 ns | Onity fastest |
-| Resolve Combined | ~178 ns | ~451 ns | ~630 ns | ~2,871 ns | Onity fastest |
-| Resolve Complex (6-level graph) | ~5,115 ns | ~6,172 ns | ~12,092 ns | ~61,944 ns | Onity fastest |
+| Resolve Singleton | ~17 ns | ~157 ns | ~79 ns | ~547 ns | Onity fastest |
+| Resolve Transient | ~191 ns | ~348 ns | ~576 ns | ~2,742 ns | Onity fastest |
+| Resolve Combined | ~232 ns | ~634 ns | ~794 ns | ~3,531 ns | Onity fastest |
+| Resolve Complex (6-level graph) | ~5,399 ns | ~6,095 ns | ~12,740 ns | ~61,072 ns | Onity fastest |
 
 On Mono/JIT, the speed comes from a process-wide compiled-activator cache
 (`Expression.Compile` runs once per `ConstructorInfo`), compiled
@@ -106,7 +106,7 @@ Onity on the benchmark machine:
 | Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject |
 | --- | ---: | ---: | ---: | ---: |
 | Prepare & Register Complex (Editor/Mono) | ~61,044 ns | ~42,929 ns | ~150,730 ns | ~215,537 ns |
-| Prepare & Register Complex (IL2CPP Player) | ~35,345 ns | ~30,551 ns | ~46,053 ns | ~72,173 ns |
+| Prepare & Register Complex (IL2CPP Player) | ~31,084 ns | ~24,958 ns | ~42,446 ns | ~66,386 ns |
 
 Onity avoids VContainer's separate builder object and shares activation metadata
 across the whole process. The baked mode adds a lean dense-id map during `Build()`
