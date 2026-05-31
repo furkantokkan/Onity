@@ -11,9 +11,8 @@ Current Unity target in this repository: `2022.3.62f3`.
 - Tests root: `Tests`
 - Benchmarks root: `Benchmarks`
 
-In this development repository the package is mirrored at
-`Assets/Onity-Packages/Onity`. On the published `upm` branch these paths are at
-the package root.
+In this development repository the package lives at `Packages/com.onity.framework`.
+On the published `upm` branch these paths are at the package root.
 
 Core assemblies in this package:
 
@@ -79,7 +78,7 @@ Split-ready optional modules are documented in:
 ## Quick Start
 
 1. Create a runtime-loadable `ProjectContext` prefab:
-   - `Tools/Onity/Contexts/Create ProjectContext Prefab`
+   - `Onity/Contexts/Create ProjectContext Prefab`
 2. Add `SceneContext` to gameplay scenes and assign installers.
 3. Add `GameObjectContext` for local per-prefab scope when needed.
 4. Use `OnitySceneFlow` + `OnitySceneInitiator` for SEP-style scene entry.
@@ -155,8 +154,8 @@ public static class BootFlow
 - `Onity/Diagnostics/Observable Tracker`
 - `Onity/Diagnostics/Pool Monitor`
 - `Onity/Diagnostics/Scene Flow Manager`
-- `Tools/Onity/Validation/Validate Scene`
-- `Tools/Onity/Validation/Validate All Scenes`
+- `Onity/Validation/Validate Scene`
+- `Onity/Validation/Validate All Scenes`
 
 Task tracker parity notes:
 
@@ -196,23 +195,22 @@ Editor / Mono (`2026-05-30T19:38:06Z`):
 | Resolve Complex (6-level) | ~22,905 ns | ~42,158 ns | ~289,823 ns | ~+46% |
 | Prepare & Register Complex | ~61,044 ns | ~150,730 ns | ~215,537 ns | ~+60% |
 
-Windows IL2CPP Player (`2026-05-30T20:09:24Z`):
+Windows IL2CPP Player (`2026-05-30T23:02:24Z`, source-generated activators):
 
 | Scenario | Onity Baked | VContainer | Zenject | Result |
 | --- | ---: | ---: | ---: | --- |
-| Resolve Singleton | ~17 ns | ~86 ns | ~469 ns | Onity faster |
-| Resolve Transient | ~1,431 ns | ~580 ns | ~2,458 ns | VContainer faster |
-| Resolve Combined | ~1,263 ns | ~602 ns | ~3,525 ns | VContainer faster |
-| Resolve Complex (6-level) | ~34,729 ns | ~12,918 ns | ~62,689 ns | VContainer faster |
-| Prepare & Register Complex | ~23,872 ns | ~38,465 ns | ~61,060 ns | Onity faster |
+| Resolve Singleton | ~18 ns | ~88 ns | ~599 ns | Onity faster |
+| Resolve Transient | ~179 ns | ~507 ns | ~2,239 ns | Onity faster |
+| Resolve Combined | ~178 ns | ~630 ns | ~2,871 ns | Onity faster |
+| Resolve Complex (6-level) | ~5,115 ns | ~12,092 ns | ~61,944 ns | Onity faster |
+| Prepare & Register Complex | ~35,345 ns | ~46,053 ns | ~72,173 ns | Onity faster |
 
 Timing numbers are from one machine and are indicative, not a guarantee. The
 committed allocation columns are withdrawn until the allocation harness is
 corrected, because the earlier Editor harness reported 0 B for every container.
-Onity is ahead on every measured Editor/Mono timing path, but the current IL2CPP
-player run shows VContainer ahead on transient, combined, and complex resolve
-paths. A source-generated/AOT-specialized activator is required before Onity can
-claim an IL2CPP speed lead across every scenario.
+Onity is ahead on every measured Editor/Mono and Windows IL2CPP player timing
+path in the current benchmark reports. Source-generated activators are what keep
+IL2CPP resolve away from `ConstructorInfo.Invoke` on AOT builds.
 
 ## Build and Test
 

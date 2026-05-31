@@ -22,7 +22,6 @@ namespace Onity.Editor.Monitoring
         private bool m_showStackTrace;
         private double m_nextRefreshTime;
 
-        [MenuItem("Window/Onity/Observable Tracker")]
         [MenuItem("Onity/Tools/Observable Tracker", false, 121)]
         private static void OpenWindow()
         {
@@ -76,7 +75,7 @@ namespace Onity.Editor.Monitoring
                 OnityObservableTracker.EnableTracking,
                 "Tracking Enabled",
                 EditorStyles.toolbarButton,
-                GUILayout.Width(110f));
+                GUILayout.Width(124f));
 
             if (nextTrackingEnabled != OnityObservableTracker.EnableTracking)
             {
@@ -88,7 +87,7 @@ namespace Onity.Editor.Monitoring
                 m_showStackTrace,
                 "StackTrace",
                 EditorStyles.toolbarButton,
-                GUILayout.Width(80f));
+                GUILayout.Width(92f));
 
             if (nextStackTraceEnabled != m_showStackTrace)
             {
@@ -112,7 +111,7 @@ namespace Onity.Editor.Monitoring
                 m_includeDisposed,
                 "Include Disposed",
                 EditorStyles.toolbarButton,
-                GUILayout.Width(120f));
+                GUILayout.Width(132f));
 
             if (nextIncludeDisposed != m_includeDisposed)
             {
@@ -125,7 +124,7 @@ namespace Onity.Editor.Monitoring
                 RefreshRows();
             }
 
-            if (GUILayout.Button("Clear Disposed", EditorStyles.toolbarButton, GUILayout.Width(90f)))
+            if (GUILayout.Button("Clear Disposed", EditorStyles.toolbarButton, GUILayout.Width(116f)))
             {
                 OnityObservableTracker.ClearDisposed();
                 RefreshRows();
@@ -144,22 +143,25 @@ namespace Onity.Editor.Monitoring
                 m_searchText,
                 searchStyle,
                 GUILayout.MinWidth(180f),
-                GUILayout.MaxWidth(280f));
+                GUILayout.MaxWidth(240f));
 
             if (string.Equals(nextSearch, m_searchText, StringComparison.Ordinal) == false)
             {
                 m_searchText = nextSearch;
             }
 
-            GUIStyle cancelStyle = GUI.skin.FindStyle("ToolbarSeachCancelButton") ?? EditorStyles.miniButton;
-
-            if (GUILayout.Button(GUIContent.none, cancelStyle, GUILayout.Width(18f)))
+            bool hasSearchText = string.IsNullOrEmpty(m_searchText) == false;
+            if (hasSearchText == false)
             {
-                if (string.IsNullOrEmpty(m_searchText) == false)
-                {
-                    m_searchText = string.Empty;
-                    GUI.FocusControl(null);
-                }
+                GUILayout.Space(18f);
+            }
+            else if (GUILayout.Button(
+                GUIContent.none,
+                GUI.skin.FindStyle("ToolbarSeachCancelButton") ?? EditorStyles.miniButton,
+                GUILayout.Width(18f)))
+            {
+                m_searchText = string.Empty;
+                GUI.FocusControl(null);
             }
 
             GUILayout.FlexibleSpace();

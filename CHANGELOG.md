@@ -5,6 +5,30 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-05-31
+
+### Added
+
+- Added Scene Flow ready profile presets that create missing loading, menu, and
+  gameplay scenes under `Assets/Scenes/OnitySceneFlow`.
+- Added one-click 2-scene and 3-scene Scene Flow setup paths for quick project
+  bootstrapping.
+
+### Changed
+
+- Removed bundled package samples and the `samples` manifest entry so the UPM
+  package stays focused on the runtime, editor tooling, tests, and benchmarks.
+- Consolidated editor entries under the `Onity/...` menu and removed duplicate
+  `Tools/Onity` / `Window/Onity` aliases.
+- Polished diagnostics, pool, observable, and task tracker toolbars so the search
+  clear button is only drawn when needed and toolbar labels do not overlap.
+- Updated docs to describe the package as sample-free and to use the consolidated
+  `Onity/...` menu paths.
+
+### Tested
+
+- `dotnet build onity-core-ci.csproj -c Release -nologo`
+
 ## [0.3.2] - 2026-05-30
 
 ### Added
@@ -176,6 +200,7 @@ dependency (used by the `Onity.Unity` layer).
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.3]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.3
 [0.3.2]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.2
 [0.3.1]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.1
 [0.3.0]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.0

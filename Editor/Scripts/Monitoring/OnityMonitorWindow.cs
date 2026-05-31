@@ -31,7 +31,6 @@ namespace Onity.Editor.Monitoring
         private OnityContext m_selectedContext;
         private double m_nextRefreshTime;
 
-        [MenuItem("Window/Onity/Monitor")]
         [MenuItem("Onity/Tools/Monitor", false, 100)]
         private static void OpenWindow()
         {

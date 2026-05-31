@@ -10,7 +10,7 @@ namespace Onity.Editor.Contexts
     /// </summary>
     public static class OnityProjectContextPrefabMenu
     {
-        private const string k_createMenuPath = "Tools/Onity/Contexts/Create ProjectContext Prefab";
+        private const string k_createMenuPath = "Onity/Contexts/Create ProjectContext Prefab";
         private const string k_prefabAssetPath = "Assets/Resources/Onity/ProjectContext.prefab";
 
         [MenuItem(k_createMenuPath, false, 2050)]

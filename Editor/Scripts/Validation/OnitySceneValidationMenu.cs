@@ -15,8 +15,8 @@ namespace Onity.Editor.Validation
     /// </summary>
     public static class OnitySceneValidationMenu
     {
-        private const string k_validateSceneMenuPath = "Tools/Onity/Validation/Validate Scene";
-        private const string k_validateAllScenesMenuPath = "Tools/Onity/Validation/Validate All Scenes";
+        private const string k_validateSceneMenuPath = "Onity/Validation/Validate Scene";
+        private const string k_validateAllScenesMenuPath = "Onity/Validation/Validate All Scenes";
         private const string k_dialogTitle = "Onity Scene Validation";
         private const int k_validateScenePriority = 2200;
         private const int k_validateAllScenesPriority = 2201;
