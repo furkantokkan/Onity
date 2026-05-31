@@ -5,6 +5,22 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] - 2026-05-31
+
+### Changed
+
+- Renamed the Unity event shortcut facade from `Onity` to `OnityEvent` so event
+  publishing, subscribing, observing, and event hub access are explicit at call
+  sites.
+- Gated benchmark comparison assemblies behind `ONITY_BENCHMARKS` so package
+  users do not need VContainer or Zenject installed unless they run benchmarks.
+- Updated README and documentation examples to use `OnityEvent.Publish`,
+  `OnityEvent.Subscribe`, and `OnityEvent.Observe`.
+
+### Tested
+
+- `dotnet build onity-core-ci.csproj -c Release -nologo`
+
 ## [0.3.3] - 2026-05-31
 
 ### Added
@@ -16,9 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a Single Scene Setup preset that creates one gameplay scene with a
   `SceneContext`, prepares the runtime-loaded `ProjectContext` prefab, and
   applies Build Settings immediately.
-- Added `Onity.Publish`, `Onity.Subscribe`, and `Onity.Observe` Unity shortcuts
-  over the auto-bound event hub, plus component-scoped overloads for
-  `GameObjectContext` usage.
+- Added Unity event shortcuts over the auto-bound event hub, plus
+  component-scoped overloads for `GameObjectContext` usage.
 
 ### Changed
 
@@ -206,6 +221,7 @@ dependency (used by the `Onity.Unity` layer).
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.4]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.4
 [0.3.3]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.3
 [0.3.2]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.2
 [0.3.1]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.1

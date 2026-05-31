@@ -45,7 +45,7 @@ Split-ready optional modules are documented in:
 - Messaging:
   - `IMessageBroker`, `IPublisher<TMessage>`, `ISubscriber<TMessage>`
   - `IMessageBroker.Publish(...)`, `Subscribe(...)`
-  - `Onity.Publish(...)`, `Onity.Subscribe(...)`, `Onity.Observe<TMessage>()`
+  - `OnityEvent.Publish(...)`, `OnityEvent.Subscribe(...)`, `OnityEvent.Observe<TMessage>()`
   - `OnityEventHub` with `Publish`, `Subscribe`, `Observe<TMessage>()`
 - Reactive:
   - `Subject<T>`, `ReactiveProperty<T>`, `CompositeDisposable`
