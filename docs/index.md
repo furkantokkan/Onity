@@ -20,6 +20,7 @@ Onity is one Unity package that unifies dependency injection, reactive programmi
 - [Lifecycle & Scopes](guide/lifecycle-and-scopes.html)
 - [Factories & Pooling](guide/factories-and-pooling.html)
 - [Performance & IL2CPP](guide/performance-and-il2cpp.html)
+- [Refactoring from Existing Architecture](guide/refactoring-from-existing-architecture.html)
 
 ## Reference
 

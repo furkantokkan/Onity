@@ -11,3 +11,4 @@ Accepted design decisions for Onity architecture, performance, and Unity-facing 
 - [ADR 0001: DOTS and DI Performance](0001-dots-and-di-performance.html)
 - [ADR 0002: Reactive Thread-Pool Scheduling](0002-reactive-thread-pool-scheduling.html)
 - [ADR 0003: Unity Event Shortcuts](0003-unity-event-shortcuts.html)
+- [ADR 0004: Refactoring from Existing Architecture](0004-refactoring-from-existing-architecture.html)

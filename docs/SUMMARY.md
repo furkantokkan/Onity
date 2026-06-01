@@ -11,6 +11,7 @@
 * [Lifecycle & Scopes](guide/lifecycle-and-scopes.md)
 * [Factories & Pooling](guide/factories-and-pooling.md)
 * [Performance & IL2CPP](guide/performance-and-il2cpp.md)
+* [Refactoring from Existing Architecture](guide/refactoring-from-existing-architecture.md)
 
 ## Reference
 
@@ -24,6 +25,7 @@
   * [ADR 0001: DOTS and DI Performance](ADR/0001-dots-and-di-performance.md)
   * [ADR 0002: Reactive Thread-Pool Scheduling](ADR/0002-reactive-thread-pool-scheduling.md)
   * [ADR 0003: Unity Event Shortcuts](ADR/0003-unity-event-shortcuts.md)
+  * [ADR 0004: Refactoring from Existing Architecture](ADR/0004-refactoring-from-existing-architecture.md)
 
 ## Migration
 
