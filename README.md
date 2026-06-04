@@ -277,6 +277,7 @@ For the complete, source-verified API across all three pillars, read the [Onity 
   - [From VContainer](docs/Migration/From-VContainer.md)
   - [From R3 / UniRx](docs/Migration/From-R3.md)
 - **[Competitive analysis & AI roadmap](docs/Plan/07-Competitive-And-AI-Roadmap.md)** — per-pillar feature comparison vs Zenject / VContainer / R3 / MessagePipe, the adopt/non-goal matrix, and the development roadmap.
+- **[OnityTask integration plan](docs/Plan/09-OnityTask-Integration-Plan.md)** — target and phased roadmap for replacing UniTask usage with Onity-native async.
 - **[Project overview & plan](docs/Plan/00-Overview.md)** — vision, goals, current state, and the implementation phases.
 - **Package engineering notes** — [`Packages/com.onity.framework/ENGINEERING.md`](Packages/com.onity.framework/ENGINEERING.md).
 - **DI benchmark results** — [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md).

@@ -19,6 +19,7 @@
 * [DI API](reference/di-api.md)
 * [Messaging API](reference/messaging-api.md)
 * [Comparison: Onity vs VContainer / Zenject](Onity-vs-VContainer-Zenject.md)
+* [OnityTask Integration Plan](Plan/09-OnityTask-Integration-Plan.md)
 * [AI Usage Guide](Onity-AI-Usage-Guide.md)
 * [Architecture Review](Architecture-Review.md)
 * [Architecture Decisions](ADR/index.md)

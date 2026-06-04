@@ -19,6 +19,12 @@ Read these in order on first contact:
    ticket list.
 7. [`06-Agent-Playbook.md`](06-Agent-Playbook.md) - rules of engagement for AI
    agents working on the framework.
+8. [`07-Competitive-And-AI-Roadmap.md`](07-Competitive-And-AI-Roadmap.md) -
+   competitive positioning and AI-friendliness roadmap.
+9. [`08-Surpass-VContainer.md`](08-Surpass-VContainer.md) - remaining work to
+   keep Onity ahead of VContainer across speed, scope, and proof.
+10. [`09-OnityTask-Integration-Plan.md`](09-OnityTask-Integration-Plan.md) -
+    target and phased plan for replacing UniTask usage with OnityTask.
 
 ## Scope discipline
 
@@ -39,6 +45,9 @@ revisit `00-Overview.md` Section "Non-Goals".
 | 04-Performance-Targets | Draft v1 | - |
 | 05-Implementation-Phases | Draft v1 | - |
 | 06-Agent-Playbook | Draft v1 | - |
+| 07-Competitive-And-AI-Roadmap | Draft v1 | - |
+| 08-Surpass-VContainer | Draft v1 | - |
+| 09-OnityTask-Integration-Plan | Draft v1 | - |
 
 Draft v1 = first complete pass, not yet validated against running benchmarks.
 

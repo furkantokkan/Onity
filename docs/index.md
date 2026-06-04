@@ -38,5 +38,6 @@ Onity is one Unity package that unifies dependency injection, reactive programmi
 
 - [AI Usage Guide](Onity-AI-Usage-Guide.html) — machine-readable usage guide verified against the source.
 - [Comparison: VContainer & Zenject](Onity-vs-VContainer-Zenject.html) — per-axis DI comparison.
+- [OnityTask Integration Plan](Plan/09-OnityTask-Integration-Plan.html) — target and roadmap for replacing UniTask usage with Onity-native async.
 - [Architecture](Architecture-Review.html) — clean-OOP / SOLID review of the framework.
 - [Architecture Decisions](ADR/) — accepted ADRs for performance, threading, and Unity API boundaries.
