@@ -4,20 +4,25 @@ This folder contains benchmark tooling for comparing:
 - `Onity`
 - `VContainer`
 - `Zenject`
+- `OnityTask` vs `UniTask` async hot-path primitives
 
 ## 1. Run DI Benchmarks in Unity
 
 Benchmark comparison assemblies reference VContainer and Zenject. To compile and
 run them in a package-only project, install those comparison packages and add
 `ONITY_BENCHMARKS` to **Project Settings > Player > Scripting Define Symbols**.
+The optional OnityTask comparison also requires UniTask when that same define is
+enabled; it is benchmark-only and not a runtime dependency of Onity.
 
 From the Unity menu:
 - `Onity/Benchmarks/Run DI Benchmarks (Editor)`
 - `Onity/Benchmarks/Build and Run DI Benchmarks (IL2CPP Player)`
+- `Onity/Benchmarks/Run OnityTask Benchmarks (Play Mode)`
 
 Command line (batchmode) entry point:
 - `Onity.Editor.Benchmarks.OnityDiBenchmarkRunner.RunBenchmarksFromCommandLine`
 - `Onity.Editor.Benchmarks.OnityDiBenchmarkPlayerBuildRunner.BuildAndRunFromCommandLine`
+- `Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine`
 
 Example:
 
@@ -40,6 +45,9 @@ Output files are generated at:
 - `Benchmarks/Results/di-benchmark-player-latest.json`
 - `Benchmarks/Results/di-benchmark-player-latest.csv`
 - `Benchmarks/Results/di-benchmark-player-latest.md`
+- `Benchmarks/Results/onity-task-benchmark-latest.json`
+- `Benchmarks/Results/onity-task-benchmark-latest.csv`
+- `Benchmarks/Results/onity-task-benchmark-latest.md`
 
 On GitHub `main`, the package copy is under
 `Packages/com.onity.framework/Benchmarks`. On the `upm` branch, these paths are

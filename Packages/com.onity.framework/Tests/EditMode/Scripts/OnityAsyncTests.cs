@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using Onity.Messaging;
 using Onity.Reactive;
 using Onity.Unity.Async;
 using UnityEngine;
@@ -55,6 +56,96 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public async Task NextLateFrameAsync_CanceledToken_ThrowsOperationCanceledException()
+        {
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            Task task = OnityAsync.NextLateFrameAsync(cancellationTokenSource.Token);
+
+            try
+            {
+                await task;
+                Assert.Fail("Expected OperationCanceledException.");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        [Test]
+        public async Task OnityTask_DelayZero_CompletesSuccessfully()
+        {
+            OnityTask task = OnityTask.Delay(0f);
+
+            await task;
+
+            Assert.That(task.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
+        public async Task OnityTask_WaitUntilTrue_CompletesSuccessfully()
+        {
+            OnityTask task = OnityTask.WaitUntil(() => true);
+
+            await task;
+
+            Assert.That(task.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
+        public async Task OnityTask_WaitWhileFalse_CompletesSuccessfully()
+        {
+            OnityTask task = OnityTask.WaitWhile(() => false);
+
+            await task;
+
+            Assert.That(task.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
+        public void OnityTask_DelayCanceledToken_ThrowsOperationCanceledException()
+        {
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            OnityTask task = OnityTask.Delay(1f, cancellationTokenSource.Token);
+
+            Assert.ThrowsAsync<OperationCanceledException>(
+                async () => await task.AsTask());
+        }
+
+        [Test]
+        public async Task OnityTask_FromResult_ReturnsValue()
+        {
+            OnityTask<int> task = OnityTask<int>.FromResult(42);
+            int value = await task;
+
+            Assert.That(value, Is.EqualTo(42));
+            Assert.That(task.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
+        public async Task OnityTaskMethodBuilder_AsyncMethodCompletesSuccessfully()
+        {
+            OnityTask task = CompleteWithOnityTaskAsync();
+
+            await task;
+
+            Assert.That(task.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
+        public async Task OnityTaskMethodBuilder_AsyncTypedMethodReturnsValue()
+        {
+            OnityTask<int> task = ReturnWithOnityTaskAsync();
+            int value = await task;
+
+            Assert.That(value, Is.EqualTo(13));
+            Assert.That(task.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
         public async Task WaitUntilAsync_CanceledToken_ThrowsOperationCanceledException()
         {
             using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -77,6 +168,13 @@ namespace Onity.Tests.EditMode
         {
             Assert.ThrowsAsync<ArgumentException>(
                 async () => await OnitySceneLoader.LoadSingleAsync(string.Empty));
+        }
+
+        [Test]
+        public void OnityTask_LoadSceneEmpty_ThrowsArgumentException()
+        {
+            Assert.ThrowsAsync<ArgumentException>(
+                async () => await OnityTask.LoadScene(string.Empty).AsTask());
         }
 
         [Test]
@@ -131,6 +229,50 @@ namespace Onity.Tests.EditMode
             await whenAllTask;
 
             Assert.That(whenAllTask.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
+        public async Task OnityTask_WhenAll_AllTasksComplete_CompletesSuccessfully()
+        {
+            OnityTask first = OnityTask.Completed;
+            OnityTask second = OnityTask.Delay(0f);
+            OnityTask whenAllTask = OnityTask.WhenAll(first, second);
+
+            await whenAllTask;
+
+            Assert.That(whenAllTask.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
+        public async Task PublishOnityTask_DeliversToOnityTaskSubscriber()
+        {
+            using AsyncMessageChannel<int> channel = new AsyncMessageChannel<int>();
+            int receivedValue = 0;
+
+            using IDisposable subscription =
+                channel.SubscribeOnityTask(
+                    async (value, cancellationToken) =>
+                    {
+                        await OnityTask.Delay(0f, cancellationToken);
+                        receivedValue = value;
+                    });
+
+            await channel.PublishOnityTask(17);
+
+            Assert.That(receivedValue, Is.EqualTo(17));
+        }
+
+        [Test]
+        public void PublishOnityTask_CanceledToken_ThrowsOperationCanceledException()
+        {
+            using AsyncMessageChannel<int> channel = new AsyncMessageChannel<int>();
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            OnityTask task = channel.PublishOnityTask(17, cancellationTokenSource.Token);
+
+            Assert.ThrowsAsync<OperationCanceledException>(
+                async () => await task.AsTask());
         }
 
         [Test]
@@ -236,6 +378,57 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public async Task AsyncOperationAsOnityTask_MissingResource_CompletesWithOriginalOperation()
+        {
+            ResourceRequest request = Resources.LoadAsync<TextAsset>("OnityAsyncTests_OnityTaskResource");
+            OnityTask<ResourceRequest> task = request.AsOnityTask();
+            ResourceRequest completedOperation = await task;
+
+            Assert.That(completedOperation, Is.SameAs(request));
+            Assert.That(task.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
+        public void AsyncOperationAsOnityTask_NullOperation_ThrowsArgumentNullException()
+        {
+            Assert.That(
+                () => OnityTaskBridgeExtensions.AsOnityTask<ResourceRequest>(null),
+                Throws.TypeOf<ArgumentNullException>());
+        }
+
+        [Test]
+        public void AsyncOperationAsOnityTask_CanceledToken_ThrowsOperationCanceledException()
+        {
+            ResourceRequest request = Resources.LoadAsync<TextAsset>("OnityAsyncTests_OnityTaskCanceledResource");
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            OnityTask<ResourceRequest> task = request.AsOnityTask(cancellationToken: cancellationTokenSource.Token);
+
+            Assert.ThrowsAsync<OperationCanceledException>(
+                async () => await task.AsTask());
+        }
+
+        [Test]
+        public void OnityTask_GetJsonEmptyUrl_ThrowsArgumentException()
+        {
+            Assert.ThrowsAsync<ArgumentException>(
+                async () => await OnityTask.GetJson<DummyWebResponse>(string.Empty).AsTask());
+        }
+
+        [Test]
+        public async Task ObservableFirstOnityTask_ReturnsFirstValue()
+        {
+            using Subject<int> subject = new Subject<int>();
+            OnityTask<int> task = subject.FirstOnityTask();
+
+            subject.OnNext(7);
+
+            int value = await task;
+            Assert.That(value, Is.EqualTo(7));
+        }
+
+        [Test]
         public async Task AsyncOperationWithCancellation_CanceledToken_ThrowsOperationCanceledException()
         {
             ResourceRequest request = Resources.LoadAsync<TextAsset>("OnityAsyncTests_CanceledResource");
@@ -293,6 +486,23 @@ namespace Onity.Tests.EditMode
                 TaskCompletionSource<bool> completionSource = m_pending.Dequeue();
                 completionSource.TrySetResult(true);
             }
+        }
+
+        [Serializable]
+        private sealed class DummyWebResponse
+        {
+            public string Value;
+        }
+
+        private static async OnityTask CompleteWithOnityTaskAsync()
+        {
+            await OnityTask.Delay(0f);
+        }
+
+        private static async OnityTask<int> ReturnWithOnityTaskAsync()
+        {
+            await OnityTask.Delay(0f);
+            return 13;
         }
     }
 }

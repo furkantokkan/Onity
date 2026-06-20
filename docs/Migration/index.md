@@ -11,3 +11,4 @@ Mechanical mappings for moving an existing project onto Onity, verified against 
 - [From Zenject](From-Zenject.html)
 - [From VContainer](From-VContainer.html)
 - [From R3 / UniRx](From-R3.html)
+- [From UniTask](From-UniTask.html)

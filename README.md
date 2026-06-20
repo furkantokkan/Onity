@@ -156,7 +156,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.4
+https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.5
 ```
 
 …or in `Packages/manifest.json`:
@@ -169,7 +169,7 @@ https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3
 }
 ```
 
-(`#upm` tracks the latest package; use the `?path=…#v0.3.4` form to pin a specific release.)
+(`#upm` tracks the latest package; use the `?path=…#v0.3.5` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 
@@ -276,6 +276,7 @@ For the complete, source-verified API across all three pillars, read the [Onity 
   - [From Zenject](docs/Migration/From-Zenject.md)
   - [From VContainer](docs/Migration/From-VContainer.md)
   - [From R3 / UniRx](docs/Migration/From-R3.md)
+  - [From UniTask](docs/Migration/From-UniTask.md)
 - **[Competitive analysis & AI roadmap](docs/Plan/07-Competitive-And-AI-Roadmap.md)** — per-pillar feature comparison vs Zenject / VContainer / R3 / MessagePipe, the adopt/non-goal matrix, and the development roadmap.
 - **[OnityTask integration plan](docs/Plan/09-OnityTask-Integration-Plan.md)** — target and phased roadmap for replacing UniTask usage with Onity-native async.
 - **[Project overview & plan](docs/Plan/00-Overview.md)** — vision, goals, current state, and the implementation phases.

@@ -33,6 +33,7 @@ Onity is one Unity package that unifies dependency injection, reactive programmi
 - [From Zenject](Migration/From-Zenject.html)
 - [From VContainer](Migration/From-VContainer.html)
 - [From R3 / UniRx](Migration/From-R3.html)
+- [From UniTask](Migration/From-UniTask.html)
 
 ## More
 

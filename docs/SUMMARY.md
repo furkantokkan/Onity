@@ -33,3 +33,4 @@
 * [From Zenject](Migration/From-Zenject.md)
 * [From VContainer](Migration/From-VContainer.md)
 * [From R3 / UniRx](Migration/From-R3.md)
+* [From UniTask](Migration/From-UniTask.md)

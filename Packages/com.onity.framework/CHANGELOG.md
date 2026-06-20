@@ -5,6 +5,27 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5] - 2026-06-21
+
+### Added
+
+- Added `OnityTask` / `OnityTask<T>` as the Onity-owned Unity async awaitable
+  surface for frame waits, delays, scene loads, `AsyncOperation`,
+  `UnityWebRequest`, reactive awaits, and async messaging bridges.
+- Added OnityTask vs UniTask benchmark tooling behind `ONITY_BENCHMARKS`.
+- Added a UniTask migration guide covering common async mappings and web/scene
+  request examples.
+
+### Changed
+
+- Bumped package and release pin examples to `0.3.5`.
+
+### Tested
+
+- `dotnet build Onity.Unity.csproj -nologo`
+- `dotnet build Onity.Tests.EditMode.csproj -nologo`
+- `dotnet build onity-core-ci.csproj -c Release -nologo`
+
 ## [0.3.4] - 2026-05-31
 
 ### Changed
@@ -219,6 +240,7 @@ allocation. The core uses no `System.Linq`.
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.5]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.5
 [0.3.4]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.4
 [0.3.3]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.3
 [0.3.2]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.2
