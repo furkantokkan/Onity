@@ -155,15 +155,16 @@ The first resolve of `IRepository<Player>` builds the closed `Repository<Player>
 | `IFixedTickable.FixedTick()` / `ILateTickable.LateTick()` | `IOnityFixedTickable.FixedTick()` / `IOnityLateTickable.LateTick()` | Pumped from the context's `FixedUpdate` / `LateUpdate`. Same automatic, singleton-only rule. |
 | Tick a plain stream / non-singleton per frame | `OnityUnityObservable.EveryUpdate().Subscribe(...).AddTo(this)` (`Onity.Unity.Reactive`) | For per-frame work that is not a bound singleton, subscribe the frame loop directly. |
 | `IDisposable` / `OnDestroy` cleanup | `container.Dispose()` | Disposes owned singletons (including lifecycle singletons) in reverse registration order. |
-| *(none)* | `container.Build()` / `await container.BuildAsync(ct)` | Runs build callbacks (sync, then async). Bindings cannot be added after build is finalized (throws `OnityBindingException`). Note: a bare `Resolve` works without an explicit build, unlike a strict builder ceremony. |
+| *(none)* | `container.Build()` / `await container.BuildAsync(ct)` | Runs build callbacks (sync, then async). Post-build binding registration is unsupported because baked lookup and lifecycle collections are already finalized; only late build-callback registration is explicitly rejected with `OnityBindingException`. Note: a bare `Resolve` works without an explicit build, unlike a strict builder ceremony. |
 
 ## Errors
 
-Onity ships two DI exception types, both in `Onity.DI`: `OnityResolveException` (resolve/inject failures, including circular dependencies and unresolvable types) and `OnityBindingException` (binding/config failures: null instance, non-assignable `To<>`, multiple `[Inject]` ctors, setterless/indexer/generic `[Inject]`, post-build registration). Map any Zenject `ZenjectException` catch onto these two.
+Onity ships two DI exception types, both in `Onity.DI`: `OnityResolveException` (resolve/inject failures, including circular dependencies and unresolvable types) and `OnityBindingException` (binding/config failures: null instance, non-assignable `To<>`, multiple `[Inject]` ctors, setterless/indexer/generic `[Inject]`, or build callbacks registered after finalization). Map any Zenject `ZenjectException` catch onto these two.
 
 ## Not supported — do this instead
 
-These Zenject features are deliberate Onity non-goals (see `docs/Plan/07-Competitive-And-AI-Roadmap.md` section 6). Do not attempt the Zenject API; use the Onity replacement.
+These Zenject features are deliberate Onity non-goals. Do not attempt the
+Zenject API; use the Onity replacement.
 
 | Zenject feature | Why it is a non-goal | Do this in Onity |
 | --- | --- | --- |
@@ -173,7 +174,8 @@ These Zenject features are deliberate Onity non-goals (see `docs/Plan/07-Competi
 | Signals (`SignalBus`, `DeclareSignal`, `BindSignal`) | Messaging is a separate pillar with one model. | Use `Onity.Messaging` — `IPublisher<T>`/`ISubscriber<T>` via the auto-bound `MessageBroker`/`OnityEventHub`, and `broker.Observe<T>()` for reactive chains. |
 | Sub-container facades (`FromSubContainerResolve`, `ByInstaller`) | Adds facade indirection; child containers already cover scoping. | Compose a child `new OnityContainer(parent)` and bind into it directly. |
 | `Container.Instantiate<T>(args)` | No runtime-arg construction on the container. | Author an `IFactory<TParam, TValue>` and `BindFactory`. |
-| Unbind / Rebind API | Conflicts with the "no bindings after Build" rule and the cached resolution model. | Rely on last-binding-wins to override a binding before `Build()`. |
+| Unbind / Rebind API | Conflicts with the finalized baked/lifecycle model. | Rely on last-binding-wins to override a binding before `Build()`; post-build binding is unsupported. |
 | `IInitializable`/`ITickable` auto-tick **inside the `Onity.DI` core** | Per-frame dispatch in the engine-free DI core would couple it to the Unity loop. | The interfaces themselves **are supported** (`IOnityInitializable`/`IOnityTickable`/…) — they live in `Onity.DI` but are pumped by the Unity **context**, not by the core in isolation. See the lifecycle section above. |
 
-> **Now supported (no longer non-goals):** **collection injection** and **open-generic binds** ship today — see the dedicated sections above. The roadmap (`docs/Plan/07-Competitive-And-AI-Roadmap.md`) marks both as *Adopt*, and they are implemented in the shipped `Onity.DI`.
+> **Now supported (no longer non-goals):** **collection injection** and
+> **open-generic binds** ship today — see the dedicated sections above.

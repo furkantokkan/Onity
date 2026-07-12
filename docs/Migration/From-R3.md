@@ -42,6 +42,7 @@ All return `IOnityObservable<T>` and allocate only at subscribe time (0 alloc pe
 | `Merge(a, b, …)` | `Merge(params IOnityObservable<T>[])` | |
 | `CombineLatest(other, selector)` | `CombineLatest<T1, T2, TResult>(IOnityObservable<T2>, Func<T1, T2, TResult>)` | **2-arity only** today; 3-4 arity is planned, not shipped. |
 | `Sample(sampler)` | `Sample<TSignal>(IOnityObservable<TSignal> signalSource)` | |
+| `Buffer(count)` | `Buffer(int count)` → `IOnityObservable<IReadOnlyList<T>>` | Emits each full count-sized batch. |
 | `Subscribe(onNext)` | `Subscribe(Action<T>)` | Returns `IDisposable`. |
 | `Subscribe(onNext, onError, onCompleted)` | `Subscribe(Action<T>, Action<Exception>, Action<OnityResult>)` | Completion carries an `OnityResult`. |
 | `TakeUntil(cancellationToken)` | `TakeUntilCancellation(CancellationToken)` | Stop on a token. |
@@ -67,6 +68,7 @@ Each takes an optional `OnityTimeProvider` (deterministic in tests; pass a Unity
 | `ThrottleLast(interval)` | `ThrottleLast(TimeSpan interval, OnityTimeProvider = null)` | Emit the latest value once per interval. |
 | `Throttle(dueTime)` (leading edge) | `Throttle(TimeSpan interval, OnityTimeProvider = null)` | Emits the first value immediately, then ignores values until the interval elapses. |
 | trailing throttle / sample latest | `ThrottleLast(TimeSpan interval, OnityTimeProvider = null)` | Emits the latest value once per interval. Use this when you want trailing/sampled behavior. |
+| `Buffer(timeSpan)` | `Buffer(TimeSpan timeSpan, OnityTimeProvider = null)` → `IOnityObservable<IReadOnlyList<T>>` | Emits accumulated values once per time window. |
 | `TakeUntil(otherObservable)` | `TakeUntil(CancellationToken)` / `TakeUntil(Task)` | Signal is a token or a task, not another observable. |
 | `SelectAwait(async selector)` | `SelectAwait(Func<T, CancellationToken, ValueTask<TResult>>)` | Sequential async projection. **Resumes on a threadpool thread** — follow it with `ObserveOnMainThread()` before any `Subscribe` that touches `UnityEngine`. |
 | `WhereAwait(async predicate)` | `WhereAwait(Func<T, CancellationToken, ValueTask<bool>>)` | Sequential async filter; same off-main-thread caveat — re-marshal with `ObserveOnMainThread()`. |
@@ -153,7 +155,9 @@ broker.Observe<DamageEvent>()
 
 ## Errors
 
-`Onity.Reactive` does **not** ship dedicated exception types yet; it throws standard .NET exceptions. Map your R3 error handling accordingly:
+`Onity.Reactive` defines `OnityReactiveException`, but the shipped guard paths
+below throw standard .NET exceptions. Do not catch only the Onity-specific type;
+map your R3 error handling to the actual operation instead:
 
 | Exception | Cause | Fix |
 | --- | --- | --- |
@@ -164,15 +168,15 @@ broker.Observe<DamageEvent>()
 
 ## Not supported — do this instead
 
-These R3 / UniRx features are deliberate Onity non-goals (see `docs/Plan/07-Competitive-And-AI-Roadmap.md` sections 2.2 and 6). Do not call the R3 API; use the Onity replacement.
+These R3 / UniRx features are deliberate Onity non-goals. Do not call the R3 or
+UniRx API; use the Onity replacement.
 
 | R3 / UniRx feature | Why it is a non-goal | Do this in Onity |
 | --- | --- | --- |
 | Hot/cold conversion `Publish` / `Share` / `RefCount` / `Multicast` | Implicit ref-counting contradicts the "one subscribe = one disposable" principle. | Multicast is already served by `Subject<T>` — subscribe a `Subject<T>` directly; share one instance via DI (`BindInstance` / `BindInterfacesAndSelfTo`). |
-| Leading-edge `Throttle` | Only the trailing/sampled variant ships. | Use `ThrottleLast(interval, timeProvider)` (latest-per-interval) or `Debounce(dueTime, timeProvider)` (last-after-quiet). |
 | Cold factories `Create` / `Defer` / `Never` | Onity is hot-by-default; cold factories are deferred (some docs once claimed them — they are not implemented). | Drive a `Subject<T>` / `ReactiveProperty<T>` yourself, or use `OnityObservable.Return`/`Empty`/`FromEvent`. |
 | `ObserveEveryValueChanged(poll)` | Inherently a per-frame polling allocation/CPU pattern that conflicts with push-based + 0-alloc. | Hold the value in a `ReactiveProperty<T>` and subscribe, or expose it as a message and `Observe<T>()`. |
-| `Buffer` / `Window` / `Zip` / `Switch` / `Concat` | Not shipped yet (planned). | Compose with shipped operators (`Scan`/`Pairwise`/`Merge`/`CombineLatest`/`Sample`), or accumulate in a `ReactiveProperty<T>`. |
+| `Window` / `Zip` / `Switch` / `Concat` | Not shipped yet (planned). | Compose with shipped operators (`Buffer`/`Scan`/`Pairwise`/`Merge`/`CombineLatest`/`Sample`), or accumulate in a `ReactiveProperty<T>`. |
 | Error-flow `Catch` / `Retry` / `Timeout` | The model does not yet carry a rich `OnError` channel through operators. | Handle failures in the `Subscribe(onNext, onError, onCompleted)` overload, or guard inside the operator delegate. |
 | `IObservable<T>` (System.Reactive) compatibility adapters | Explicitly not shipped to avoid a third-party type leak. | Stay on `IOnityObservable<T>`; bridge events via `Observe<T>()`. |
 | Job/Burst/DOTS **parallel** managed operator execution | Unity Job/Burst frame modes are frame boundaries, not a way to run managed observers or DI inside Burst. | Use `SelectOnThreadPool` for pure managed CPU work, `ObserveOnThreadPool` for ordered thread-pool hops, and `ObserveOnMainThread` before Unity API access. Keep Burst/DOTS work in blittable bridge modules. |

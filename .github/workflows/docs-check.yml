@@ -1,0 +1,46 @@
+name: Docs check
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "Gemfile"
+      - "Gemfile.lock"
+      - ".github/workflows/docs-check.yml"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Build and validate docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Build with Jekyll (strict front matter)
+        run: >-
+          bundle exec jekyll build
+          --source ./docs
+          --destination ./_site
+          --baseurl /Onity
+          --strict_front_matter
+        env:
+          JEKYLL_ENV: production
+
+      - name: Validate generated links and assets
+        run: >-
+          bundle exec htmlproofer ./_site
+          --disable-external
+          --swap-urls '^/Onity/:/'

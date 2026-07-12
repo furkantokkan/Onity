@@ -17,7 +17,7 @@ broker.Publish(new PlayerDamaged(10));
 token.Dispose();
 ```
 
-Threading: publish and subscribe on the Unity **main thread**. Channel *creation* in the broker is locked; per-channel publish is not internally locked. Handlers run in subscription order.
+Threading: publish and subscribe on the Unity **main thread**. Channel *creation* in the broker is locked; per-channel publish is not internally locked. Initial delivery follows subscription order, but unsubscribe uses swap-back removal, so handler order is not a stable priority contract.
 
 `MessageBroker` (and thus `IPublisher<T>` / `ISubscriber<T>` via `GetPublisher` / `GetSubscriber`) and `OnityEventHub` are auto-bound in every `OnityContext`, so a service can inject `OnityEventHub` or `IMessageBroker` with no installer line. `BindMessageChannel<T>()` is only needed to inject the typed `IPublisher<T>` / `ISubscriber<T>` directly.
 
@@ -31,7 +31,7 @@ Threading: publish and subscribe on the Unity **main thread**. Channel *creation
 | --- | --- | --- |
 | `IMessageBroker.GetPublisher<TMessage>` | `GetPublisher<TMessage>() -> IPublisher<TMessage>` | Returns the typed channel for the message type (created on first request). |
 | `IMessageBroker.GetSubscriber<TMessage>` | `GetSubscriber<TMessage>() -> ISubscriber<TMessage>` | Same channel instance as the matching publisher. |
-| `IPublisher<TMessage>.Publish` | `Publish(TMessage message) -> void` | Deliver `message` to all subscribers of the channel, in subscription order. |
+| `IPublisher<TMessage>.Publish` | `Publish(TMessage message) -> void` | Deliver `message` to all current subscribers. Initial insertion order is observable, but must not be used as a priority guarantee after removals. |
 | `ISubscriber<TMessage>.Subscribe` | `Subscribe(MessageHandler<TMessage> handler) -> IDisposable` | Register `handler`. Dispose the token to unsubscribe. Null handler throws `ArgumentNullException`. |
 | `MessageHandler<TMessage>` | `delegate void MessageHandler<TMessage>(TMessage message)` | The subscription callback signature. |
 

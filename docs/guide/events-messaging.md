@@ -24,7 +24,7 @@ public sealed class DamageButton : MonoBehaviour
 }
 ```
 
-> Threading: publish and subscribe on the Unity **main thread**. Channels are not internally locked for publish (only broker channel *creation* is locked). Handlers run in subscription order.
+> Threading: publish and subscribe on the Unity **main thread**. Channels are not internally locked for publish (only broker channel *creation* is locked). Initial delivery follows subscription order, but unsubscribe uses swap-back removal; do not rely on a stable order or priority contract.
 
 ## Quick event trigger recipes
 

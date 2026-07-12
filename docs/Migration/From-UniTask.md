@@ -2,6 +2,7 @@
 title: "From UniTask"
 parent: "Migration"
 nav_order: 4
+description: "Map common UniTask patterns to OnityTask, including scene loading, web requests, cancellation, and safe pooled-task consumption."
 ---
 
 # Migrating from UniTask to OnityTask
@@ -16,10 +17,17 @@ waits, delays, predicates, and `AsyncOperation.AsOnityTask()` use PlayerLoop
 sources directly; `Task` remains available through `AsTask()` and legacy interop
 helpers.
 
+For a task-oriented introduction, read [Async with OnityTask](../guide/onitytask.html).
+
+> **Pooled-task safety:** frame, delay, predicate, and
+> `AsyncOperation.AsOnityTask()` values are single-consumer. Await each value
+> once. If several consumers must share the operation, call `AsTask()` once and
+> share the returned `Task`; do not copy or re-await the pooled `OnityTask`.
+
 For local timing evidence, run `Onity/Benchmarks/Run OnityTask Benchmarks (Play Mode)`.
 It writes `Packages/com.onity.framework/Benchmarks/Results/onity-task-benchmark-latest.*`.
-Latest local Play Mode run measured OnityTask ahead of UniTask in completed,
-completed-result, and `NextFrame` awaiter paths.
+Treat that local output as machine-specific evidence; no OnityTask-vs-UniTask
+result artifact is currently published with the package.
 
 ## Namespace
 

@@ -1,7 +1,8 @@
 ---
 title: "Performance & IL2CPP"
 parent: "Guides"
-nav_order: 6
+nav_order: 7
+description: "How Onity selects DI activation paths on Mono and IL2CPP, with current benchmark evidence and allocation caveats."
 ---
 
 # Performance & IL2CPP

@@ -1,7 +1,7 @@
 ---
 title: "Refactoring from Existing Architecture"
 parent: "Guides"
-nav_order: 7
+nav_order: 8
 ---
 
 # Refactoring from Existing Architecture

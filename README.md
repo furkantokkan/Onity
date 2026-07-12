@@ -10,7 +10,7 @@
 ![AI-indexed docs](https://img.shields.io/badge/docs-AI--indexed-blueviolet)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
 
-**📖 [Documentation, guides & API reference](https://furkantokkan.github.io/Onity/)**  ·  [Install](#install)  ·  [AI usage guide](docs/Onity-AI-Usage-Guide.md)  ·  [Onity vs VContainer / Zenject](docs/Onity-vs-VContainer-Zenject.md)
+**📖 [Documentation, guides & API reference](https://furkantokkan.github.io/Onity/)**  ·  [Install](#install)  ·  [OnityTask](docs/guide/onitytask.md)  ·  [AI usage guide](docs/Onity-AI-Usage-Guide.md)  ·  [Onity vs VContainer / Zenject](docs/Onity-vs-VContainer-Zenject.md)
 
 ---
 
@@ -25,7 +25,7 @@ Onity replaces all of that with **one package and one mental model**:
 - **Reactive operators ride both.** `Subject<T>`, `ReactiveProperty<T>`, and `broker.Observe<T>()` are all the *same* `IOnityObservable<T>`, so `Where`/`Select`/`Subscribe` work on state and events alike.
 - **Everything disposes the same way.** Every `Subscribe` returns `IDisposable`; `AddTo(this)` (Unity) or `AddTo(CompositeDisposable)` (plain C#) scopes its lifetime — across DI, events, and reactive, identically.
 
-The runtime core (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`) is **engine-free** — no `UnityEngine` dependency — so domain logic is testable in plain EditMode with no scene. The hot-path machinery (resolve via compiled activators, pooled argument arrays, and cached construction plans; publish, `OnNext`, `EveryUpdate`, subscription steady state) is **designed to avoid per-call managed allocation** — though a transient resolve still allocates the instance it returns. The core uses no `System.Linq`; **Onity has no non-Unity third-party runtime dependencies**. The Zenject-familiar `Bind<T>().To<C>().AsSingle()` vocabulary, fluent discoverable builders, a verified [machine-readable usage guide](docs/Onity-AI-Usage-Guide.md), and a [Roslyn analyzer pack](tools/Onity.Analyzers) (`ONITY001`–`ONITY006`) make it **AI-friendly** by design: an agent reading one guide writes correct, compiling code across all three pillars, and the analyzer turns common misuse into inline diagnostics.
+The runtime core (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`, `Onity.Composition`) is **engine-free** — no `UnityEngine` dependency — so domain logic is testable in plain EditMode with no scene. The hot-path machinery (resolve via compiled activators, pooled argument arrays, and cached construction plans; publish, `OnNext`, `EveryUpdate`, subscription steady state) is **designed to avoid per-call managed allocation** — though a transient resolve still allocates the instance it returns. The core uses no `System.Linq`; **Onity has no non-Unity third-party runtime dependencies**. The Zenject-familiar `Bind<T>().To<C>().AsSingle()` vocabulary, fluent discoverable builders, a verified [machine-readable usage guide](docs/Onity-AI-Usage-Guide.md), and a [Roslyn analyzer pack](tools/Onity.Analyzers) (`ONITY001`–`ONITY006`) make it **AI-friendly** by design: an agent reading one guide writes correct, compiling code across all three pillars, and the analyzer turns common misuse into inline diagnostics.
 
 The DI fast path uses source-generated constructor activators when available, compiles constructor activators and member setters with `Expression.Compile` on JIT runtimes, and **falls back to reflection when neither generated nor compiled activation is available** — so the same container runs across Editor, Mono player, and IL2CPP player builds. IL2CPP correctness and timing are covered separately because AOT backends do not behave like Editor/Mono.
 
@@ -105,7 +105,7 @@ Onity is deliberately structured — and its documentation is **indexed for AI**
 | Compile-time analyzer | partial (Zenject validation) | **yes** — `ONITY001`–`ONITY006` with code fixes |
 | Machine-readable AI usage guide | none | **yes** — verified against source |
 
-Onity's DI now covers the feature axes VContainer and Zenject are known for — collection injection, open-generic binds, and automatic entry-point lifecycle (where Onity is actually *ahead*: no manual registration). It still deliberately omits a few competitor features that fight the predictable single-model and allocation-conscious hot-path goals — e.g. no `WhenInjectedInto`/`WithId` conditional binds, no `Unbind`, and no buffered/request-response messaging. See **[Onity vs VContainer / Zenject](docs/Onity-vs-VContainer-Zenject.md)** for the per-axis breakdown, and the [competitive roadmap](docs/Plan/07-Competitive-And-AI-Roadmap.md) for the full adopt/non-goal matrix.
+Onity's DI now covers the feature axes VContainer and Zenject are known for — collection injection, open-generic binds, and automatic entry-point lifecycle (where Onity is actually *ahead*: no manual registration). It still deliberately omits a few competitor features that fight the predictable single-model and allocation-conscious hot-path goals — e.g. no `WhenInjectedInto`/`WithId` conditional binds, no `Unbind`, and no buffered/request-response messaging. See **[Onity vs VContainer / Zenject](docs/Onity-vs-VContainer-Zenject.md)** for the maintained per-axis breakdown and adopt/non-goal matrix.
 
 ---
 
@@ -115,29 +115,29 @@ Measured by `OnityDiBenchmarkRunner` / `OnityDiBenchmarkPlayerRunner` (Unity 202
 
 Editor / Mono run (`2026-07-12T13:31:37Z`, `WindowsEditor`, 512 warmup / 8 samples / 10,000 iterations):
 
-| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Standard vs VContainer |
+| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Lower ns/op vs VContainer |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~69 ns | ~78 ns | ~217 ns | ~2,778 ns | ~+68% |
-| Resolve Transient | ~1,030 ns | ~1,366 ns | ~2,352 ns | ~12,561 ns | ~+56% |
-| Resolve Combined | ~980 ns | ~875 ns | ~1,905 ns | ~14,382 ns | ~+49% |
-| Resolve Complex (6-level) | ~20,874 ns | ~20,828 ns | ~40,270 ns | ~281,814 ns | ~+48% |
-| Prepare & Register Complex | ~40,613 ns | ~54,996 ns | ~139,246 ns | ~188,865 ns | ~+71% |
+| Resolve Singleton | ~69 ns | ~78 ns | ~217 ns | ~2,778 ns | ~68% |
+| Resolve Transient | ~1,030 ns | ~1,366 ns | ~2,352 ns | ~12,561 ns | ~56% |
+| Resolve Combined | ~980 ns | ~875 ns | ~1,905 ns | ~14,382 ns | ~49% |
+| Resolve Complex (6-level) | ~20,874 ns | ~20,828 ns | ~40,270 ns | ~281,814 ns | ~48% |
+| Prepare & Register Complex | ~40,613 ns | ~54,996 ns | ~139,246 ns | ~188,865 ns | ~71% |
 
 IL2CPP player run (`2026-07-12T13:34:55Z`, `WindowsPlayer`, source-generated activators registered, 512 warmup / 8 samples / 10,000 iterations):
 
-| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Standard vs VContainer |
+| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Lower ns/op vs VContainer |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~18 ns | ~18 ns | ~95 ns | ~449 ns | ~+82% |
-| Resolve Transient | ~159 ns | ~191 ns | ~541 ns | ~2,448 ns | ~+71% |
-| Resolve Combined | ~176 ns | ~196 ns | ~612 ns | ~3,080 ns | ~+71% |
-| Resolve Complex (6-level) | ~5,107 ns | ~5,071 ns | ~12,475 ns | ~59,327 ns | ~+59% |
-| Prepare & Register Complex | ~21,128 ns | ~24,490 ns | ~34,888 ns | ~59,567 ns | ~+39% |
+| Resolve Singleton | ~18 ns | ~18 ns | ~95 ns | ~449 ns | ~82% |
+| Resolve Transient | ~159 ns | ~191 ns | ~541 ns | ~2,448 ns | ~71% |
+| Resolve Combined | ~176 ns | ~196 ns | ~612 ns | ~3,080 ns | ~71% |
+| Resolve Complex (6-level) | ~5,107 ns | ~5,071 ns | ~12,475 ns | ~59,327 ns | ~59% |
+| Prepare & Register Complex | ~21,128 ns | ~24,490 ns | ~34,888 ns | ~59,567 ns | ~39% |
 
 The standard generic path is labeled `Onity (Reflection)` in the raw reports for
 historical continuity; it now uses dense type-id provider slots, while reflection
 is only the activation fallback when no generated or compiled activator exists.
 The focused `1000`-sample IL2CPP singleton gate measured Onity standard at
-`18.80 ns/op` versus VContainer at `94.39 ns/op` (~80% faster). Full Editor
+`18.80 ns/op` versus VContainer at `94.39 ns/op` (~80.1% lower resolve time). Full Editor
 numbers and deltas: [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md).
 Player details: [`di-benchmark-player-latest.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-player-latest.md).
 Focused gate: [`di-benchmark-player-singleton-1000.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-player-singleton-1000.md).
@@ -197,6 +197,7 @@ Copy or submodule the package folder into your project's `Packages/` directory a
         Reactive/    Onity.Reactive.asmdef
         Messaging/   Onity.Messaging.asmdef
         Factory/     Onity.Factory.asmdef
+        Composition/ Onity.Composition.asmdef
         Pooling/     Onity.Pooling.asmdef
         Unity/       Onity.Unity.asmdef
         DOTS/        Onity.DOTS.asmdef
@@ -204,7 +205,7 @@ Copy or submodule the package folder into your project's `Packages/` directory a
       Tests/
 ```
 
-Reference the assemblies you need from your own asmdef (`Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Unity`, …). The engine-free core assemblies (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`) carry no `UnityEngine` reference, so plain-C# domain assemblies can depend on them directly.
+Reference the assemblies you need from your own asmdef (`Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Unity`, …). The engine-free core assemblies (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`, `Onity.Composition`) carry no `UnityEngine` reference, so plain-C# domain assemblies can depend on them directly.
 
 ---
 
@@ -218,6 +219,7 @@ using Onity.Reactive;
 using Onity.Unity;              // OnityEvent.Publish / Subscribe / Observe
 using Onity.Unity.Installers;   // MonoInstaller
 using Onity.Unity.Messaging;    // BindMessageChannel<T>
+using Onity.Unity.Reactive;     // TakeUntilDisable
 using UnityEngine;
 
 public readonly struct PlayerDamaged
@@ -255,12 +257,13 @@ public sealed class HealthHud : MonoBehaviour
 
     private void OnEnable()
     {
-        m_health.Subscribe(value => Debug.Log($"Health: {value}")).AddTo(this);   // emits current value first
+        m_health.Subscribe(value => Debug.Log($"Health: {value}"))
+                .TakeUntilDisable(this);                       // no duplicate after re-enable
 
         OnityEvent.Observe<PlayerDamaged>(this)                 // event -> reactive stream
               .Where(e => e.Amount > 0)
               .Subscribe(e => m_health.Value -= e.Amount)
-              .AddTo(this);                                // disposed on Destroy
+              .TakeUntilDisable(this);                     // disposed on Disable
 
         OnityEvent.Publish(new PlayerDamaged(10));
     }
@@ -279,18 +282,16 @@ For the complete, source-verified API across all three pillars, read the [Onity 
 
 - **[Onity AI Usage Guide](docs/Onity-AI-Usage-Guide.md)** — the source-of-truth, machine-readable reference for the real public API across DI, Reactive, and Events. Read this first.
 - **[Getting Started](docs/Getting-Started.md)** — a step-by-step human walkthrough: install, your first installer, DI + reactive state + events, and common mistakes.
+- **[Async with OnityTask](docs/guide/onitytask.md)** — Unity frame waits, cancellation, scene/web operations, task interop, and pooled-task safety.
 - **[Events & Messaging](docs/guide/events-messaging.md)** — MessageBroker/MessagePipe-style publish, subscribe, typed channel, and reactive event examples.
 - **[Factories & Pooling](docs/guide/factories-and-pooling.md)** — `BindFactory`, `BindPooledFactory`, `IPool<T>`, `IPoolHooks`, and prefab pool examples.
 - **[Refactoring from Existing Architecture](docs/guide/refactoring-from-existing-architecture.md)** — moving from `GameManager.Instance`, Unity reference graphs, ScriptableObject config, VContainer, Zenject, or static events to Onity services.
-- **[Architecture review](docs/Architecture-Review.md)** — module/dependency map, SOLID assessment, and the PASS verdict on the structure.
+- **[Architecture](docs/Architecture-Review.md)** — current v0.3.6 module boundaries, composition roots, activation paths, and Unity adapters.
 - **Migration guides** — moving an existing project over:
   - [From Zenject](docs/Migration/From-Zenject.md)
   - [From VContainer](docs/Migration/From-VContainer.md)
   - [From R3 / UniRx](docs/Migration/From-R3.md)
   - [From UniTask](docs/Migration/From-UniTask.md)
-- **[Competitive analysis & AI roadmap](docs/Plan/07-Competitive-And-AI-Roadmap.md)** — per-pillar feature comparison vs Zenject / VContainer / R3 / MessagePipe, the adopt/non-goal matrix, and the development roadmap.
-- **[OnityTask integration plan](docs/Plan/09-OnityTask-Integration-Plan.md)** — target and phased roadmap for replacing UniTask usage with Onity-native async.
-- **[Project overview & plan](docs/Plan/00-Overview.md)** — vision, goals, current state, and the implementation phases.
 - **Package engineering notes** — [`Packages/com.onity.framework/ENGINEERING.md`](Packages/com.onity.framework/ENGINEERING.md).
 - **DI benchmark results** — [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md).
 

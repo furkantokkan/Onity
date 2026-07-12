@@ -1,6 +1,7 @@
 ---
 title: "Comparison: VContainer & Zenject"
 nav_order: 7
+description: "A caveated, reproducible comparison of Onity, VContainer, and Zenject features and DI benchmark results."
 ---
 
 # Onity vs VContainer / Zenject
@@ -31,8 +32,6 @@ repository.
   repository specifically so any reader can reproduce, or challenge, them.
 - Full DI benchmark detail:
   [`di-benchmark-summary.md`](https://github.com/furkantokkan/Onity/blob/main/Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md).
-  The competitive roadmap and adopt/non-goal matrix:
-  [`docs/Plan/07-Competitive-And-AI-Roadmap.md`](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/07-Competitive-And-AI-Roadmap.md).
 
 ---
 
@@ -71,12 +70,12 @@ and Zenject on every scenario:
 The Windows IL2CPP player run uses Onity's generated AOT activator registry for
 the benchmark graph and keeps the same relative ordering:
 
-| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Standard vs VContainer |
+| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Lower ns/op vs VContainer |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~18 ns | ~18 ns | ~95 ns | ~449 ns | ~+82% |
-| Resolve Transient | ~159 ns | ~191 ns | ~541 ns | ~2,448 ns | ~+71% |
-| Resolve Combined | ~176 ns | ~196 ns | ~612 ns | ~3,080 ns | ~+71% |
-| Resolve Complex (6-level graph) | ~5,107 ns | ~5,071 ns | ~12,475 ns | ~59,327 ns | ~+59% |
+| Resolve Singleton | ~18 ns | ~18 ns | ~95 ns | ~449 ns | ~82% |
+| Resolve Transient | ~159 ns | ~191 ns | ~541 ns | ~2,448 ns | ~71% |
+| Resolve Combined | ~176 ns | ~196 ns | ~612 ns | ~3,080 ns | ~71% |
+| Resolve Complex (6-level graph) | ~5,107 ns | ~5,071 ns | ~12,475 ns | ~59,327 ns | ~59% |
 
 The focused 1000-sample IL2CPP singleton gate measured Onity standard at
 `18.80 ns/op`, Onity baked at `17.40 ns/op`, VContainer at `94.39 ns/op`, and
