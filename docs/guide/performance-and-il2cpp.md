@@ -31,7 +31,14 @@ bool compiled = OnityContainer.IsCompiledActivationSupported;
 
 ## Hot-path design
 
-The resolve machinery is **designed to avoid per-call managed allocation**: generated or compiled activators, pooled constructor-argument arrays, and cached per-type construction plans keep the steady-state resolve path off the allocator. An internal baked-graph fast path can further replace the per-resolve dictionary lookup for explicit local bindings; it is off by default (the reflection-driven map is the shipping default) and produces identical results either way.
+The resolve machinery is **designed to avoid per-call managed allocation**:
+generated or compiled activators, pooled constructor-argument arrays, and cached
+per-type construction plans keep the steady-state resolve path off the
+allocator. Standard generic `Resolve<T>()` uses a container-local dense type-id
+provider slot, avoiding a `Dictionary<Type, ...>` lookup for explicit local
+bindings. Dynamic `Resolve(Type)` and misses retain the general map/fallback
+path. The optional baked graph adds flat lifetime and singleton slots; both
+lanes produce identical results.
 
 The reactive and messaging emit paths follow the same principle: `Subject<T>.OnNext`, `MessageChannel<T>.Publish`, `EveryUpdate()`, and steady-state subscription delivery are array-backed and designed to be allocation-free in steady state, allocating only at subscribe time.
 
@@ -43,8 +50,9 @@ The committed DI benchmark reports resolve **timing** (speed) numbers. Treat the
 
 | Run | Result |
 | --- | --- |
-| Editor / Mono (`2026-05-30T19:38:06Z`) | Onity baked is faster than VContainer and Zenject on every measured timing path. |
-| Windows IL2CPP Player (`2026-05-31T15:26:19Z`, 10,000 iterations) | Onity baked, with 19 generated activators registered for the benchmark graph, is faster than VContainer and Zenject on every measured timing path. |
+| Editor / Mono (`2026-07-12T13:31:37Z`) | Onity standard and baked lanes are faster than VContainer and Zenject on every measured timing path. |
+| Windows IL2CPP Player (`2026-07-12T13:34:55Z`, 10,000 iterations) | Both Onity lanes, with 19 generated activators registered for the benchmark graph, are faster than VContainer and Zenject on every measured timing path. |
+| Windows IL2CPP singleton gate (`2026-07-12T13:30:25Z`) | 1000 samples measured Onity standard at 18.80 ns/op versus VContainer at 94.39 ns/op. |
 
 ## IL2CPP checklist
 

@@ -101,13 +101,13 @@ agent rotates:
 
 ### 3.1 Headline gates (Phase 1 exit)
 
-| Scenario | Current Onity Baked | Current VContainer | Internal target | Status |
+| Scenario | Current Onity Standard | Current VContainer | Internal target | Status |
 |---|---:|---:|---:|---|
-| Resolve Singleton (ns/op) | 63 | 214 | <= 150 | Pass |
-| Resolve Transient (ns/op) | 1,083 | 1,879 | <= 1,500 | Pass |
-| Resolve Combined (ns/op) | 972 | 2,079 | <= 1,550 | Pass |
-| Resolve Complex (ns/op) | 22,905 | 42,158 | <= 35,000 | Pass |
-| Prepare and Register Complex (ns/op) | 61,044 | 150,730 | <= 15,000 | Misses internal gate, but is ~60% faster than VContainer |
+| Resolve Singleton (ns/op) | 69 | 217 | <= 150 | Pass |
+| Resolve Transient (ns/op) | 1,030 | 2,352 | <= 1,500 | Pass |
+| Resolve Combined (ns/op) | 980 | 1,905 | <= 1,550 | Pass |
+| Resolve Complex (ns/op) | 20,874 | 40,270 | <= 35,000 | Pass |
+| Prepare and Register Complex (ns/op) | 40,613 | 139,246 | <= 15,000 | Misses internal gate, but is ~71% faster than VContainer |
 | Resolve allocation per sample (B) | pending corrected harness | pending corrected harness | 0 measured correctly | Not enforceable yet |
 
 The gates ratchet:
@@ -124,16 +124,20 @@ The gates ratchet:
 player benchmark. The player run completed without crashing, registered the
 benchmark graph's generated activators, and wrote `di-benchmark-player-latest.*`.
 
-Latest Windows IL2CPP player timing (`2026-05-31T15:26:19Z`, 512 warmup /
+Latest Windows IL2CPP player timing (`2026-07-12T13:34:55Z`, 512 warmup /
 8 samples / 10,000 iterations):
 
-| Scenario | Onity Baked | VContainer | Status |
+| Scenario | Onity Standard | VContainer | Status |
 |---|---:|---:|---|
-| Resolve Singleton (ns/op) | 20 | 98 | Pass |
-| Resolve Transient (ns/op) | 133 | 528 | Pass |
-| Resolve Combined (ns/op) | 159 | 679 | Pass |
-| Resolve Complex (ns/op) | 4,782 | 13,552 | Pass |
-| Prepare and Register Complex (ns/op) | 26,944 | 39,694 | Pass |
+| Resolve Singleton (ns/op) | 18 | 95 | Pass |
+| Resolve Transient (ns/op) | 159 | 541 | Pass |
+| Resolve Combined (ns/op) | 176 | 612 | Pass |
+| Resolve Complex (ns/op) | 5,107 | 12,475 | Pass |
+| Prepare and Register Complex (ns/op) | 21,128 | 34,888 | Pass |
+
+The focused Windows IL2CPP singleton release gate (`1000` samples, `10,000`
+resolves per sample) measured Onity standard at `18.80 ns/op` and VContainer at
+`94.39 ns/op`, an approximately `80.1%` lead in the same run.
 
 The result closes the measured Windows IL2CPP resolve-speed gap against
 VContainer for this benchmark graph. Remaining IL2CPP work is target-device

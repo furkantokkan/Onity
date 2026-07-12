@@ -130,6 +130,21 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void GenericResolve_SelfContractsOverrideExplicitBindings()
+        {
+            using OnityContainer container = new OnityContainer();
+            using OnityContainer other = new OnityContainer();
+            container.BindInstance(other);
+            container.BindInstance<IResolver>(other);
+
+            OnityContainer resolvedContainer = container.Resolve<OnityContainer>();
+            IResolver resolvedResolver = container.Resolve<IResolver>();
+
+            Assert.That(resolvedContainer, Is.SameAs(container));
+            Assert.That(resolvedResolver, Is.SameAs(container));
+        }
+
+        [Test]
         public void PushBindingSource_RegistersSourceForExplicitBinding()
         {
             using OnityContainer container = new OnityContainer();

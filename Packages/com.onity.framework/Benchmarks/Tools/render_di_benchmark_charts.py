@@ -205,6 +205,7 @@ def render_summary_markdown(
     rows: List[Tuple[str, Dict[str, float], Dict[str, float]]],
     containers: List[str],
     output_path: str,
+    allocation_available: bool,
 ) -> None:
     lines: List[str] = []
     lines.append("# DI Benchmark Summary")
@@ -214,8 +215,9 @@ def render_summary_markdown(
 
     for scenario_name, ms_map, alloc_map in rows:
         for container in containers:
+            allocation = f"{alloc_map[container]:.2f}" if allocation_available else "n/a"
             lines.append(
-                f"| {scenario_name} | {container} | {ms_map[container]:.4f} | {alloc_map[container]:.2f} |"
+                f"| {scenario_name} | {container} | {ms_map[container]:.4f} | {allocation} |"
             )
 
     lines.append("")
@@ -273,18 +275,26 @@ def main() -> int:
     report = load_report(input_path)
     containers = collect_containers(report)
     rows = collect_scenario_rows(report, containers)
+    allocation_available = bool(report.get("allocationMeasurementAvailable", False))
 
     runtime_chart = os.path.join(output_directory, "di-runtime-comparison.png")
     gc_chart = os.path.join(output_directory, "di-gc-alloc-comparison.png")
     summary_md = os.path.join(output_directory, "di-benchmark-summary.md")
 
     render_runtime_chart(report, rows, containers, runtime_chart)
-    render_gc_chart(rows, containers, gc_chart)
-    render_summary_markdown(rows, containers, summary_md)
+    if allocation_available:
+        render_gc_chart(rows, containers, gc_chart)
+    elif os.path.exists(gc_chart):
+        os.remove(gc_chart)
+
+    render_summary_markdown(rows, containers, summary_md, allocation_available)
 
     print("Rendered benchmark artifacts:")
     print(f"- {runtime_chart}")
-    print(f"- {gc_chart}")
+    if allocation_available:
+        print(f"- {gc_chart}")
+    else:
+        print("- GC allocation chart skipped (measurement unavailable)")
     print(f"- {summary_md}")
     return 0
 

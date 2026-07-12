@@ -1,30 +1,31 @@
-# Onity DI Benchmark
+﻿# Onity DI Benchmark
 
-- Generated (UTC): `2026-05-30T19:38:06Z`
+- Generated (UTC): `2026-07-12T13:31:37Z`
 - Unity: `2022.3.62f3`
 - Platform: `WindowsEditor`
+- Allocation measurement available: `False`
 - Samples per case: `8`
 - Warmup iterations: `512`
 
 | Scenario | Container | Mean (ms) | ns/op | Alloc/sample (B) | Alloc/op (B) |
 |---|---|---:|---:|---:|---:|
-| Resolve (Singleton) | Onity (Reflection) | 1.6397 | 163.97 | 0.00 | 0.000000 |
-| Resolve (Singleton) | Onity (Baked) | 0.6313 | 63.13 | 0.00 | 0.000000 |
-| Resolve (Singleton) | VContainer | 2.1413 | 214.13 | 0.00 | 0.000000 |
-| Resolve (Singleton) | Zenject | 28.6625 | 2866.25 | 0.00 | 0.000000 |
-| Resolve (Transient) | Onity (Reflection) | 9.4297 | 942.97 | 0.00 | 0.000000 |
-| Resolve (Transient) | Onity (Baked) | 10.8281 | 1082.81 | 0.00 | 0.000000 |
-| Resolve (Transient) | VContainer | 18.7881 | 1878.81 | 0.00 | 0.000000 |
-| Resolve (Transient) | Zenject | 123.5602 | 12356.02 | 0.00 | 0.000000 |
-| Resolve (Combined) | Onity (Reflection) | 12.3304 | 1233.04 | 0.00 | 0.000000 |
-| Resolve (Combined) | Onity (Baked) | 9.7196 | 971.96 | 0.00 | 0.000000 |
-| Resolve (Combined) | VContainer | 20.7888 | 2078.88 | 0.00 | 0.000000 |
-| Resolve (Combined) | Zenject | 172.4822 | 17248.22 | 0.00 | 0.000000 |
-| Resolve (Complex) | Onity (Reflection) | 259.4010 | 25940.10 | 0.00 | 0.000000 |
-| Resolve (Complex) | Onity (Baked) | 229.0521 | 22905.21 | 0.00 | 0.000000 |
-| Resolve (Complex) | VContainer | 421.5842 | 42158.42 | 0.00 | 0.000000 |
-| Resolve (Complex) | Zenject | 2898.2338 | 289823.38 | 0.00 | 0.000000 |
-| Prepare & Register (Complex) | Onity (Reflection) | 429.2859 | 42928.59 | 0.00 | 0.000000 |
-| Prepare & Register (Complex) | Onity (Baked) | 610.4435 | 61044.35 | 0.00 | 0.000000 |
-| Prepare & Register (Complex) | VContainer | 1507.3011 | 150730.11 | 0.00 | 0.000000 |
-| Prepare & Register (Complex) | Zenject | 2155.3699 | 215536.99 | 0.00 | 0.000000 |
+| Resolve (Singleton) | Onity (Reflection) | 0.6906 | 69.06 | n/a | n/a |
+| Resolve (Singleton) | Onity (Baked) | 0.7796 | 77.96 | n/a | n/a |
+| Resolve (Singleton) | VContainer | 2.1729 | 217.29 | n/a | n/a |
+| Resolve (Singleton) | Zenject | 27.7802 | 2778.02 | n/a | n/a |
+| Resolve (Transient) | Onity (Reflection) | 10.3020 | 1030.20 | n/a | n/a |
+| Resolve (Transient) | Onity (Baked) | 13.6585 | 1365.85 | n/a | n/a |
+| Resolve (Transient) | VContainer | 23.5158 | 2351.58 | n/a | n/a |
+| Resolve (Transient) | Zenject | 125.6114 | 12561.14 | n/a | n/a |
+| Resolve (Combined) | Onity (Reflection) | 9.7991 | 979.91 | n/a | n/a |
+| Resolve (Combined) | Onity (Baked) | 8.7471 | 874.71 | n/a | n/a |
+| Resolve (Combined) | VContainer | 19.0485 | 1904.85 | n/a | n/a |
+| Resolve (Combined) | Zenject | 143.8201 | 14382.01 | n/a | n/a |
+| Resolve (Complex) | Onity (Reflection) | 208.7402 | 20874.02 | n/a | n/a |
+| Resolve (Complex) | Onity (Baked) | 208.2796 | 20827.96 | n/a | n/a |
+| Resolve (Complex) | VContainer | 402.6962 | 40269.62 | n/a | n/a |
+| Resolve (Complex) | Zenject | 2818.1413 | 281814.13 | n/a | n/a |
+| Prepare & Register (Complex) | Onity (Reflection) | 406.1332 | 40613.32 | n/a | n/a |
+| Prepare & Register (Complex) | Onity (Baked) | 549.9569 | 54995.69 | n/a | n/a |
+| Prepare & Register (Complex) | VContainer | 1392.4649 | 139246.49 | n/a | n/a |
+| Prepare & Register (Complex) | Zenject | 1888.6533 | 188865.33 | n/a | n/a |

@@ -20,8 +20,9 @@ repository.
 - **The benchmark timing numbers are indicative, not guaranteed.** They were
   measured in the **Unity Editor with the Mono scripting backend** and in a
   **Windows IL2CPP player**, on a single Windows machine (Unity 2022.3.62f3).
-  The Editor and IL2CPP player runs both used 512 warmup iterations / 8 samples /
-  10,000 measured iterations per sample. Different Unity versions, scripting
+  The full Editor and IL2CPP player runs both used 512 warmup iterations / 8
+  samples / 10,000 measured iterations per sample. A separate IL2CPP singleton
+  release gate used 1000 samples at the same iteration count. Different Unity versions, scripting
   backends, and graph shapes can produce different
   absolute numbers and possibly different relative ordering. Treat the numbers
   as "this is what this Windows PC measured," not "Onity is always
@@ -39,8 +40,8 @@ repository.
 
 | Axis | Onity | VContainer | Zenject / Extenject |
 | --- | --- | --- | --- |
-| Resolve speed (Editor-Mono, indicative) | Fastest in this run with baked resolve | Behind Onity baked | Slowest of the three |
-| Resolve speed (Windows IL2CPP player, indicative) | Fastest in this run with generated AOT activators | Behind Onity baked in this run | Slowest of the three |
+| Resolve speed (Editor-Mono, indicative) | Standard and baked lanes lead every measured path in this run | Behind both Onity lanes | Slowest of the three |
+| Resolve speed (Windows IL2CPP player, indicative) | Standard and baked lanes lead every measured path; singleton rechecked with 1000 samples | Behind both Onity lanes in this run | Slowest of the three |
 | Build / registration speed (indicative) | Fastest in both current Editor/Mono and IL2CPP player prepare/register runs | Slower than Onity on prepare/register | Slow |
 | Steady-state resolve allocation | Resolve machinery is designed allocation-free; transients allocate the returned instance | Low (codegen mode) | Higher |
 | DI feature breadth | Feature-complete for common Unity needs | Broad | Broadest |
@@ -60,27 +61,35 @@ repository.
 On the Editor-Mono benchmark machine, Onity resolved faster than both VContainer
 and Zenject on every scenario:
 
-| Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject |
+| Scenario | Onity Standard | Onity Baked | VContainer | Zenject |
 | --- | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~63 ns | ~164 ns | ~214 ns | ~2,866 ns |
-| Resolve Transient | ~1,083 ns | ~943 ns | ~1,879 ns | ~12,356 ns |
-| Resolve Combined | ~972 ns | ~1,233 ns | ~2,079 ns | ~17,248 ns |
-| Resolve Complex (6-level graph) | ~22,905 ns | ~25,940 ns | ~42,158 ns | ~289,823 ns |
+| Resolve Singleton | ~69 ns | ~78 ns | ~217 ns | ~2,778 ns |
+| Resolve Transient | ~1,030 ns | ~1,366 ns | ~2,352 ns | ~12,561 ns |
+| Resolve Combined | ~980 ns | ~875 ns | ~1,905 ns | ~14,382 ns |
+| Resolve Complex (6-level graph) | ~20,874 ns | ~20,828 ns | ~40,270 ns | ~281,814 ns |
 
 The Windows IL2CPP player run uses Onity's generated AOT activator registry for
 the benchmark graph and keeps the same relative ordering:
 
-| Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject | Onity Baked vs VContainer |
+| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Standard vs VContainer |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~20 ns | ~126 ns | ~98 ns | ~488 ns | ~+80% |
-| Resolve Transient | ~133 ns | ~276 ns | ~528 ns | ~2,302 ns | ~+75% |
-| Resolve Combined | ~159 ns | ~431 ns | ~679 ns | ~3,052 ns | ~+77% |
-| Resolve Complex (6-level graph) | ~4,782 ns | ~4,890 ns | ~13,552 ns | ~61,999 ns | ~+65% |
+| Resolve Singleton | ~18 ns | ~18 ns | ~95 ns | ~449 ns | ~+82% |
+| Resolve Transient | ~159 ns | ~191 ns | ~541 ns | ~2,448 ns | ~+71% |
+| Resolve Combined | ~176 ns | ~196 ns | ~612 ns | ~3,080 ns | ~+71% |
+| Resolve Complex (6-level graph) | ~5,107 ns | ~5,071 ns | ~12,475 ns | ~59,327 ns | ~+59% |
+
+The focused 1000-sample IL2CPP singleton gate measured Onity standard at
+`18.80 ns/op`, Onity baked at `17.40 ns/op`, VContainer at `94.39 ns/op`, and
+Zenject at `435.24 ns/op`. The raw reports retain the historical
+`Onity (Reflection)` label for the standard lane; generic resolves now use a
+dense type-id provider slot, while reflection remains only an activation
+fallback.
 
 On Mono/JIT, the speed comes from a process-wide compiled-activator cache
 (`Expression.Compile` runs once per `ConstructorInfo`), compiled
 field/property/method setters, a `[ThreadStatic]` lock-free argument-array pool,
-and a per-plan per-slot constructor-dependency cache. On IL2CPP, generated
+  a per-plan per-slot constructor-dependency cache, and dense type-id provider
+  slots for standard generic resolves. On IL2CPP, generated
 activators register direct `new T(...)` delegates before construction plans are
 built, so the resolve path avoids `ConstructorInfo.Invoke` on AOT builds too.
 There is no `builder.Build()` ceremony before a resolve, and the container has
@@ -99,8 +108,8 @@ Onity on the benchmark machine:
 
 | Scenario | Onity (Baked) | Onity (Reflection) | VContainer | Zenject |
 | --- | ---: | ---: | ---: | ---: |
-| Prepare & Register Complex (Editor/Mono) | ~61,044 ns | ~42,929 ns | ~150,730 ns | ~215,537 ns |
-| Prepare & Register Complex (IL2CPP Player) | ~26,944 ns | ~21,544 ns | ~39,694 ns | ~65,937 ns |
+| Prepare & Register Complex (Editor/Mono) | ~54,996 ns | ~40,613 ns | ~139,246 ns | ~188,865 ns |
+| Prepare & Register Complex (IL2CPP Player) | ~24,490 ns | ~21,128 ns | ~34,888 ns | ~59,567 ns |
 
 Onity avoids VContainer's separate builder object and shares activation metadata
 across the whole process. The baked mode adds a lean dense-id map during `Build()`

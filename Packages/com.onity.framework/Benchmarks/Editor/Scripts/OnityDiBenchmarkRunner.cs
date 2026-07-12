@@ -20,6 +20,10 @@ namespace Onity.Editor.Benchmarks
     {
         private const int k_warmupIterations = 512;
         private const int k_samplesPerCase = 8;
+        // Unity 2022.3 Editor probes still report a flat zero for known allocating
+        // paths. Keep collecting the raw counters, but do not publish them until a
+        // calibrated run can distinguish transient and allocation-heavy baselines.
+        private const bool k_allocationMeasurementAvailable = false;
         private const string k_resultsDirectory = "Packages/com.onity.framework/Benchmarks/Results";
         private const string k_latestJsonFileName = "di-benchmark-latest.json";
         private const string k_latestCsvFileName = "di-benchmark-latest.csv";
@@ -99,6 +103,7 @@ namespace Onity.Editor.Benchmarks
                 generatedAtUtc = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture),
                 unityVersion = Application.unityVersion,
                 platform = Application.platform.ToString(),
+                allocationMeasurementAvailable = k_allocationMeasurementAvailable,
                 samplesPerCase = k_samplesPerCase,
                 warmupIterations = k_warmupIterations,
                 scenarios = new ScenarioReport[k_scenarios.Length]
@@ -621,8 +626,15 @@ namespace Onity.Editor.Benchmarks
                     builder.Append(ToInvariant(metric.maxMilliseconds)).Append(',');
                     builder.Append(ToInvariant(metric.standardDeviationMilliseconds)).Append(',');
                     builder.Append(ToInvariant(metric.nanosecondsPerOperation)).Append(',');
-                    builder.Append(ToInvariant(metric.allocBytesPerSampleMean)).Append(',');
-                    builder.Append(ToInvariant(metric.allocBytesPerOperationMean)).AppendLine();
+                    if (report.allocationMeasurementAvailable)
+                    {
+                        builder.Append(ToInvariant(metric.allocBytesPerSampleMean)).Append(',');
+                        builder.Append(ToInvariant(metric.allocBytesPerOperationMean)).AppendLine();
+                    }
+                    else
+                    {
+                        builder.Append("n/a,n/a").AppendLine();
+                    }
                 }
             }
 
@@ -637,6 +649,7 @@ namespace Onity.Editor.Benchmarks
             builder.AppendLine($"- Generated (UTC): `{report.generatedAtUtc}`");
             builder.AppendLine($"- Unity: `{report.unityVersion}`");
             builder.AppendLine($"- Platform: `{report.platform}`");
+            builder.AppendLine($"- Allocation measurement available: `{report.allocationMeasurementAvailable}`");
             builder.AppendLine($"- Samples per case: `{report.samplesPerCase}`");
             builder.AppendLine($"- Warmup iterations: `{report.warmupIterations}`");
             builder.AppendLine();
@@ -655,8 +668,15 @@ namespace Onity.Editor.Benchmarks
                     builder.Append(metric.container).Append(" | ");
                     builder.Append(metric.meanMilliseconds.ToString("F4", CultureInfo.InvariantCulture)).Append(" | ");
                     builder.Append(metric.nanosecondsPerOperation.ToString("F2", CultureInfo.InvariantCulture)).Append(" | ");
-                    builder.Append(metric.allocBytesPerSampleMean.ToString("F2", CultureInfo.InvariantCulture)).Append(" | ");
-                    builder.Append(metric.allocBytesPerOperationMean.ToString("F6", CultureInfo.InvariantCulture)).AppendLine(" |");
+                    if (report.allocationMeasurementAvailable)
+                    {
+                        builder.Append(metric.allocBytesPerSampleMean.ToString("F2", CultureInfo.InvariantCulture)).Append(" | ");
+                        builder.Append(metric.allocBytesPerOperationMean.ToString("F6", CultureInfo.InvariantCulture)).AppendLine(" |");
+                    }
+                    else
+                    {
+                        builder.AppendLine("n/a | n/a |");
+                    }
                 }
             }
 
@@ -694,10 +714,10 @@ namespace Onity.Editor.Benchmarks
         // a per-op allocation figure should report.
         //
         // Primary source: System.GC.GetTotalAllocatedBytes(precise: true). This is
-        // process-wide and cumulative, and is reliable on Unity 2022.3 / .NET
-        // Standard 2.1 Mono. It is read on a quiet benchmark thread immediately
-        // around the loop, so other-thread noise is negligible at the 10k-iteration
-        // scale used here.
+        // process-wide and cumulative. The final Unity 2022.3 Editor calibration
+        // still returned a flat zero for known allocating paths, so allocation
+        // publication remains disabled even though the raw probe is retained for
+        // future backend validation.
         //
         // Why the previous source was wrong: the runner used
         // GC.GetAllocatedBytesForCurrentThread(). On Unity 2022.3 Editor-Mono that
@@ -711,8 +731,9 @@ namespace Onity.Editor.Benchmarks
         // GetTotalAllocatedBytes(precise: true) shipped with the .NET Standard 2.1
         // surface Unity 2022.3 targets, but it is invoked through a guarded reflected
         // MethodInfo so that if a given Mono build does not expose it the runner
-        // falls back to GetAllocatedBytesForCurrentThread() (documented as unreliable
-        // on this backend) rather than failing to compile or throwing.
+        // falls back to GetAllocatedBytesForCurrentThread() rather than failing to
+        // compile or throwing. Neither source is marked publishable until the
+        // calibration gate passes on the active backend.
         // ---------------------------------------------------------------------
 
         // Cached reflected accessor for GC.GetTotalAllocatedBytes(bool). Resolved
@@ -807,6 +828,7 @@ namespace Onity.Editor.Benchmarks
             public string generatedAtUtc;
             public string unityVersion;
             public string platform;
+            public bool allocationMeasurementAvailable;
             public int samplesPerCase;
             public int warmupIterations;
             public ScenarioReport[] scenarios;

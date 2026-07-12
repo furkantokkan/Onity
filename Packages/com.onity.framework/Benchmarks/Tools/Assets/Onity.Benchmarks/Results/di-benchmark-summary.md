@@ -2,28 +2,33 @@
 
 | Scenario | Container | Mean (ms) | Alloc/sample (B) |
 |---|---|---:|---:|
-| Resolve (Singleton) | Onity | 1.7540 | 0.00 |
-| Resolve (Singleton) | VContainer | 1.8708 | 0.00 |
-| Resolve (Singleton) | Zenject | 26.8265 | 0.00 |
-| Resolve (Transient) | Onity | 20.8758 | 0.00 |
-| Resolve (Transient) | VContainer | 18.0105 | 0.00 |
-| Resolve (Transient) | Zenject | 113.6180 | 0.00 |
-| Resolve (Combined) | Onity | 21.6289 | 0.00 |
-| Resolve (Combined) | VContainer | 18.3269 | 0.00 |
-| Resolve (Combined) | Zenject | 142.6761 | 0.00 |
-| Resolve (Complex) | Onity | 523.8602 | 0.00 |
-| Resolve (Complex) | VContainer | 409.1614 | 0.00 |
-| Resolve (Complex) | Zenject | 2650.5408 | 0.00 |
-| Prepare & Register (Complex) | Onity | 124.9193 | 0.00 |
-| Prepare & Register (Complex) | VContainer | 1431.2299 | 0.00 |
-| Prepare & Register (Complex) | Zenject | 1793.4749 | 0.00 |
+| Resolve (Singleton) | Onity (Baked) | 0.7796 | n/a |
+| Resolve (Singleton) | Onity (Reflection) | 0.6906 | n/a |
+| Resolve (Singleton) | VContainer | 2.1728 | n/a |
+| Resolve (Singleton) | Zenject | 27.7802 | n/a |
+| Resolve (Transient) | Onity (Baked) | 13.6585 | n/a |
+| Resolve (Transient) | Onity (Reflection) | 10.3020 | n/a |
+| Resolve (Transient) | VContainer | 23.5158 | n/a |
+| Resolve (Transient) | Zenject | 125.6114 | n/a |
+| Resolve (Combined) | Onity (Baked) | 8.7471 | n/a |
+| Resolve (Combined) | Onity (Reflection) | 9.7991 | n/a |
+| Resolve (Combined) | VContainer | 19.0485 | n/a |
+| Resolve (Combined) | Zenject | 143.8201 | n/a |
+| Resolve (Complex) | Onity (Baked) | 208.2796 | n/a |
+| Resolve (Complex) | Onity (Reflection) | 208.7402 | n/a |
+| Resolve (Complex) | VContainer | 402.6962 | n/a |
+| Resolve (Complex) | Zenject | 2818.1413 | n/a |
+| Prepare & Register (Complex) | Onity (Baked) | 549.9569 | n/a |
+| Prepare & Register (Complex) | Onity (Reflection) | 406.1332 | n/a |
+| Prepare & Register (Complex) | VContainer | 1392.4649 | n/a |
+| Prepare & Register (Complex) | Zenject | 1888.6533 | n/a |
 
 ## Relative Speedup vs VContainer
 
-| Scenario | Onity speedup |
-|---|---:|
-| Resolve (Singleton) | +6.24% |
-| Resolve (Transient) | -15.91% |
-| Resolve (Combined) | -18.02% |
-| Resolve (Complex) | -28.03% |
-| Prepare & Register (Complex) | +91.27% |
+| Scenario | Onity (Baked) speedup | Onity (Reflection) speedup |
+|---|---:|---:|
+| Resolve (Singleton) | +64.12% | +68.22% |
+| Resolve (Transient) | +41.92% | +56.19% |
+| Resolve (Combined) | +54.08% | +48.56% |
+| Resolve (Complex) | +48.28% | +48.16% |
+| Prepare & Register (Complex) | +60.50% | +70.83% |

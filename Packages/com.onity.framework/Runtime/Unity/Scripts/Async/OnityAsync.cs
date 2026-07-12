@@ -16,6 +16,7 @@ namespace Onity.Unity.Async
 {
     /// <summary>
     /// Onity-owned awaitable facade for Unity gameplay async flows.
+    /// Pooled Unity operations are single-consumer and must be awaited only once.
     /// </summary>
     [AsyncMethodBuilder(typeof(OnityTaskMethodBuilder))]
     public readonly struct OnityTask
@@ -26,6 +27,7 @@ namespace Onity.Unity.Async
         public static readonly OnityTask CompletedTask = default;
 
         private readonly object m_state;
+        private readonly int m_token;
 
         /// <summary>
         /// Initializes a task wrapper.
@@ -35,12 +37,14 @@ namespace Onity.Unity.Async
         public OnityTask(Task task)
         {
             m_state = task ?? throw new ArgumentNullException(nameof(task));
+            m_token = 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal OnityTask(IOnityTaskSource source)
         {
             m_state = source ?? throw new ArgumentNullException(nameof(source));
+            m_token = source.Version;
         }
 
         /// <summary>
@@ -68,7 +72,9 @@ namespace Onity.Unity.Async
         /// True when the wrapped task completed.
         /// </summary>
         public bool IsCompleted => m_state == null
-            || (m_state is IOnityTaskSource source ? source.IsCompleted : ((Task)m_state).IsCompleted);
+            || (m_state is IOnityTaskSource source
+                ? source.GetStatus(m_token) != OnityTaskSourceStatus.Pending
+                : ((Task)m_state).IsCompleted);
 
         /// <summary>
         /// True when the wrapped task completed successfully.
@@ -76,20 +82,24 @@ namespace Onity.Unity.Async
         public bool IsCompletedSuccessfully =>
             m_state == null
             || (m_state is IOnityTaskSource source
-                ? source.IsCompletedSuccessfully
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Succeeded
                 : ((Task)m_state).IsCompletedSuccessfully);
 
         /// <summary>
         /// True when the wrapped task is canceled.
         /// </summary>
         public bool IsCanceled => m_state != null
-            && (m_state is IOnityTaskSource source ? source.IsCanceled : ((Task)m_state).IsCanceled);
+            && (m_state is IOnityTaskSource source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Canceled
+                : ((Task)m_state).IsCanceled);
 
         /// <summary>
         /// True when the wrapped task is faulted.
         /// </summary>
         public bool IsFaulted => m_state != null
-            && (m_state is IOnityTaskSource source ? source.IsFaulted : ((Task)m_state).IsFaulted);
+            && (m_state is IOnityTaskSource source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Faulted
+                : ((Task)m_state).IsFaulted);
 
         /// <summary>
         /// Wraps a task as an Onity task.
@@ -132,7 +142,7 @@ namespace Onity.Unity.Async
                 return Task.CompletedTask;
             }
 
-            return m_state is IOnityTaskSource source ? source.AsTask() : (Task)m_state;
+            return m_state is IOnityTaskSource source ? source.AsTask(m_token) : (Task)m_state;
         }
 
         /// <summary>
@@ -142,7 +152,7 @@ namespace Onity.Unity.Async
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public OnityTaskAwaiter GetAwaiter()
         {
-            return new OnityTaskAwaiter(m_state);
+            return new OnityTaskAwaiter(m_state, m_token);
         }
 
         /// <summary>
@@ -746,6 +756,7 @@ namespace Onity.Unity.Async
 
     /// <summary>
     /// Onity-owned awaitable facade for Unity gameplay async flows with a typed result.
+    /// Pooled Unity operations are single-consumer and must be awaited only once.
     /// </summary>
     /// <typeparam name="T">Result type.</typeparam>
     [AsyncMethodBuilder(typeof(OnityTaskMethodBuilder<>))]
@@ -753,6 +764,7 @@ namespace Onity.Unity.Async
     {
         private readonly object m_state;
         private readonly T m_result;
+        private readonly int m_token;
 
         /// <summary>
         /// Initializes a typed task wrapper.
@@ -763,6 +775,7 @@ namespace Onity.Unity.Async
         {
             m_state = task ?? throw new ArgumentNullException(nameof(task));
             m_result = default;
+            m_token = 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -770,6 +783,7 @@ namespace Onity.Unity.Async
         {
             m_state = source ?? throw new ArgumentNullException(nameof(source));
             m_result = default;
+            m_token = source.Version;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -777,13 +791,16 @@ namespace Onity.Unity.Async
         {
             m_state = null;
             m_result = result;
+            m_token = 0;
         }
 
         /// <summary>
         /// True when the wrapped task completed.
         /// </summary>
         public bool IsCompleted => m_state == null
-            || (m_state is IOnityTaskSource<T> source ? source.IsCompleted : ((Task<T>)m_state).IsCompleted);
+            || (m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token) != OnityTaskSourceStatus.Pending
+                : ((Task<T>)m_state).IsCompleted);
 
         /// <summary>
         /// True when the wrapped task completed successfully.
@@ -791,20 +808,24 @@ namespace Onity.Unity.Async
         public bool IsCompletedSuccessfully =>
             m_state == null
             || (m_state is IOnityTaskSource<T> source
-                ? source.IsCompletedSuccessfully
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Succeeded
                 : ((Task<T>)m_state).IsCompletedSuccessfully);
 
         /// <summary>
         /// True when the wrapped task is canceled.
         /// </summary>
         public bool IsCanceled => m_state != null
-            && (m_state is IOnityTaskSource<T> source ? source.IsCanceled : ((Task<T>)m_state).IsCanceled);
+            && (m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Canceled
+                : ((Task<T>)m_state).IsCanceled);
 
         /// <summary>
         /// True when the wrapped task is faulted.
         /// </summary>
         public bool IsFaulted => m_state != null
-            && (m_state is IOnityTaskSource<T> source ? source.IsFaulted : ((Task<T>)m_state).IsFaulted);
+            && (m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Faulted
+                : ((Task<T>)m_state).IsFaulted);
 
         /// <summary>
         /// Wraps a typed task as an Onity task.
@@ -858,7 +879,7 @@ namespace Onity.Unity.Async
                 return EqualityComparer<T>.Default.Equals(m_result, default) ? DefaultTaskCache.Value : Task.FromResult(m_result);
             }
 
-            return m_state is IOnityTaskSource<T> source ? source.AsTask() : (Task<T>)m_state;
+            return m_state is IOnityTaskSource<T> source ? source.AsTask(m_token) : (Task<T>)m_state;
         }
 
         /// <summary>
@@ -868,7 +889,7 @@ namespace Onity.Unity.Async
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public OnityTaskAwaiter<T> GetAwaiter()
         {
-            return new OnityTaskAwaiter<T>(m_state, m_result);
+            return new OnityTaskAwaiter<T>(m_state, m_result, m_token);
         }
 
         /// <summary>
@@ -892,18 +913,22 @@ namespace Onity.Unity.Async
     public readonly struct OnityTaskAwaiter : ICriticalNotifyCompletion
     {
         private readonly object m_state;
+        private readonly int m_token;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal OnityTaskAwaiter(object state)
+        internal OnityTaskAwaiter(object state, int token)
         {
             m_state = state;
+            m_token = token;
         }
 
         /// <summary>
         /// True when the awaited operation completed.
         /// </summary>
         public bool IsCompleted => m_state == null
-            || (m_state is IOnityTaskSource source ? source.IsCompleted : ((Task)m_state).IsCompleted);
+            || (m_state is IOnityTaskSource source
+                ? source.GetStatus(m_token) != OnityTaskSourceStatus.Pending
+                : ((Task)m_state).IsCompleted);
 
         /// <summary>
         /// Completes the await and throws if the operation failed or was canceled.
@@ -917,15 +942,15 @@ namespace Onity.Unity.Async
                 return;
             }
 
-            GetResultSlow(state);
+            GetResultSlow(state, m_token);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void GetResultSlow(object state)
+        private static void GetResultSlow(object state, int token)
         {
             if (state is IOnityTaskSource source)
             {
-                source.GetResult();
+                source.GetResult(token);
                 return;
             }
 
@@ -946,7 +971,7 @@ namespace Onity.Unity.Async
 
             if (m_state is IOnityTaskSource source)
             {
-                source.OnCompleted(continuation);
+                source.OnCompleted(continuation, m_token);
                 return;
             }
 
@@ -971,21 +996,26 @@ namespace Onity.Unity.Async
     {
         private readonly object m_state;
         private readonly T m_result;
+        private readonly int m_token;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal OnityTaskAwaiter(
             object state,
-            T result)
+            T result,
+            int token)
         {
             m_state = state;
             m_result = result;
+            m_token = token;
         }
 
         /// <summary>
         /// True when the awaited operation completed.
         /// </summary>
         public bool IsCompleted => m_state == null
-            || (m_state is IOnityTaskSource<T> source ? source.IsCompleted : ((Task<T>)m_state).IsCompleted);
+            || (m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token) != OnityTaskSourceStatus.Pending
+                : ((Task<T>)m_state).IsCompleted);
 
         /// <summary>
         /// Completes the await and returns the result.
@@ -1000,15 +1030,15 @@ namespace Onity.Unity.Async
                 return m_result;
             }
 
-            return GetResultSlow(state);
+            return GetResultSlow(state, m_token);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static T GetResultSlow(object state)
+        private static T GetResultSlow(object state, int token)
         {
             if (state is IOnityTaskSource<T> source)
             {
-                return source.GetResult();
+                return source.GetResult(token);
             }
 
             return ((Task<T>)state).GetAwaiter().GetResult();
@@ -1028,7 +1058,7 @@ namespace Onity.Unity.Async
 
             if (m_state is IOnityTaskSource<T> source)
             {
-                source.OnCompleted(continuation);
+                source.OnCompleted(continuation, m_token);
                 return;
             }
 
@@ -1062,45 +1092,47 @@ namespace Onity.Unity.Async
 
     internal interface IOnityTaskSource
     {
-        bool IsCompleted { get; }
+        int Version { get; }
 
-        bool IsCompletedSuccessfully { get; }
+        OnityTaskSourceStatus GetStatus(int token);
 
-        bool IsCanceled { get; }
+        Task AsTask(int token);
 
-        bool IsFaulted { get; }
+        void OnCompleted(Action continuation, int token);
 
-        Task AsTask();
-
-        void OnCompleted(Action continuation);
-
-        void GetResult();
+        void GetResult(int token);
     }
 
     internal interface IOnityTaskSource<T>
     {
-        bool IsCompleted { get; }
+        int Version { get; }
 
-        bool IsCompletedSuccessfully { get; }
+        OnityTaskSourceStatus GetStatus(int token);
 
-        bool IsCanceled { get; }
+        Task<T> AsTask(int token);
 
-        bool IsFaulted { get; }
+        void OnCompleted(Action continuation, int token);
 
-        Task<T> AsTask();
-
-        void OnCompleted(Action continuation);
-
-        T GetResult();
+        T GetResult(int token);
     }
 
     internal interface IOnityTaskTickSource
     {
+        int Version { get; }
+
+        bool IsCancellationRequested { get; }
+
+        bool TrySetCanceledFromRunner(int token);
+
         bool Tick(float deltaTime, float unscaledDeltaTime);
     }
 
     internal abstract class OnityTaskSourceBase : IOnityTaskSource
     {
+        private const int k_noConsumption = 0;
+        private const int k_nativeConsumption = 1;
+        private const int k_taskConsumption = 2;
+
         private static readonly Action<object> s_cancelCallback = CancelFromToken;
 
         private Action m_continuation;
@@ -1109,23 +1141,62 @@ namespace Onity.Unity.Async
         private CancellationToken m_cancellationToken;
         private Exception m_exception;
         private int m_status;
+        private int m_version;
+        private int m_consumptionMode;
+        private int m_consumed;
+        private int m_cancellationRequested;
         private int m_taskMaterialized;
         private int m_released;
 
-        public bool IsCompleted => Volatile.Read(ref m_status) != (int)OnityTaskSourceStatus.Pending;
+        public int Version => Volatile.Read(ref m_version);
 
-        public bool IsCompletedSuccessfully => Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Succeeded;
-
-        public bool IsCanceled => Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Canceled;
-
-        public bool IsFaulted => Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Faulted;
+        public bool IsCancellationRequested => Volatile.Read(ref m_cancellationRequested) != 0;
 
         protected bool IsPending => Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Pending;
 
-        public Task AsTask()
+        public OnityTaskSourceStatus GetStatus(int token)
         {
+            int versionBefore = Volatile.Read(ref m_version);
+            if (token != versionBefore)
+            {
+                ThrowInvalidToken();
+            }
+
+            OnityTaskSourceStatus status = (OnityTaskSourceStatus)Volatile.Read(ref m_status);
+            if (token != Volatile.Read(ref m_version))
+            {
+                ThrowInvalidToken();
+            }
+
+            return status;
+        }
+
+        public Task AsTask(int token)
+        {
+            Task task;
+            bool releaseSource;
+
             lock (this)
             {
+                ValidateToken(token);
+
+                if (m_consumed != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (m_released != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been materialized and released.");
+                }
+
+                if (m_consumptionMode == k_nativeConsumption)
+                {
+                    throw new InvalidOperationException(
+                        "OnityTask is already being consumed by its native awaiter.");
+                }
+
+                m_consumptionMode = k_taskConsumption;
                 Volatile.Write(ref m_taskMaterialized, 1);
 
                 if (m_taskCompletionSource == null)
@@ -1135,11 +1206,25 @@ namespace Onity.Unity.Async
                     ApplyStatusToTask(m_taskCompletionSource);
                 }
 
-                return m_taskCompletionSource.Task;
+                task = m_taskCompletionSource.Task;
+                releaseSource = m_status != (int)OnityTaskSourceStatus.Pending
+                    && TryClaimTaskReleaseUnsafe();
+
+                if (releaseSource)
+                {
+                    ClearCompletionReferencesUnsafe();
+                }
             }
+
+            if (releaseSource)
+            {
+                ReleaseSource();
+            }
+
+            return task;
         }
 
-        public void OnCompleted(Action continuation)
+        public void OnCompleted(Action continuation, int token)
         {
             if (continuation == null)
             {
@@ -1149,10 +1234,23 @@ namespace Onity.Unity.Async
             bool invokeNow;
             lock (this)
             {
+                ValidateToken(token);
+
+                if (m_consumed != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (m_consumptionMode != k_noConsumption)
+                {
+                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
+                }
+
+                m_consumptionMode = k_nativeConsumption;
                 invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
                 if (invokeNow == false)
                 {
-                    m_continuation += continuation;
+                    m_continuation = continuation;
                 }
             }
 
@@ -1162,21 +1260,49 @@ namespace Onity.Unity.Async
             }
         }
 
-        public void GetResult()
+        public void GetResult(int token)
         {
-            if (Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Succeeded)
+            Exception exception;
+
+            lock (this)
             {
-                ReleaseAfterResult();
-                return;
+                ValidateToken(token);
+
+                if (m_consumed != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (m_consumptionMode == k_taskConsumption)
+                {
+                    throw new InvalidOperationException(
+                        "OnityTask is already being consumed through AsTask().");
+                }
+
+                if (m_status == (int)OnityTaskSourceStatus.Pending)
+                {
+                    throw new InvalidOperationException("OnityTask is not completed.");
+                }
+
+                m_consumptionMode = k_nativeConsumption;
+                m_consumed = 1;
+                exception = GetCompletionExceptionUnsafe();
+                ClearCompletionReferencesUnsafe();
             }
 
-            Exception exception = GetCompletionException();
             ReleaseAfterResult();
 
             if (exception != null)
             {
                 throw exception;
             }
+        }
+
+        public bool TrySetCanceledFromRunner(int token)
+        {
+            return token == Volatile.Read(ref m_version)
+                && IsCancellationRequested
+                && TrySetStatus(OnityTaskSourceStatus.Canceled, null);
         }
 
         protected void Reset(CancellationToken cancellationToken)
@@ -1187,7 +1313,12 @@ namespace Onity.Unity.Async
                 m_taskCompletionSource = null;
                 m_cancellationToken = cancellationToken;
                 m_exception = null;
+                int nextVersion = unchecked(m_version + 1);
+                Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
                 Volatile.Write(ref m_status, (int)OnityTaskSourceStatus.Pending);
+                m_consumptionMode = k_noConsumption;
+                m_consumed = 0;
+                Volatile.Write(ref m_cancellationRequested, 0);
                 Volatile.Write(ref m_taskMaterialized, 0);
                 Volatile.Write(ref m_released, 0);
             }
@@ -1223,13 +1354,16 @@ namespace Onity.Unity.Async
 
         private static void CancelFromToken(object state)
         {
-            ((OnityTaskSourceBase)state).TrySetCanceled();
+            OnityTaskSourceBase source = (OnityTaskSourceBase)state;
+            Volatile.Write(ref source.m_cancellationRequested, 1);
+            OnityTaskRunner.NotifyCancellationRequested();
         }
 
         private bool TrySetStatus(OnityTaskSourceStatus status, Exception exception)
         {
             Action continuation;
             TaskCompletionSource<bool> taskCompletionSource;
+            bool releaseSource;
 
             lock (this)
             {
@@ -1242,11 +1376,23 @@ namespace Onity.Unity.Async
                 continuation = m_continuation;
                 taskCompletionSource = m_taskCompletionSource;
                 m_continuation = null;
+                m_cancellationRegistration.Dispose();
+                m_cancellationRegistration = default;
                 Volatile.Write(ref m_status, (int)status);
+                releaseSource = TryClaimTaskReleaseUnsafe();
             }
 
-            m_cancellationRegistration.Dispose();
             ApplyStatusToTask(taskCompletionSource);
+            if (releaseSource)
+            {
+                lock (this)
+                {
+                    ClearCompletionReferencesUnsafe();
+                }
+
+                ReleaseSource();
+            }
+
             continuation?.Invoke();
             return true;
         }
@@ -1273,23 +1419,29 @@ namespace Onity.Unity.Async
             }
         }
 
-        private Exception GetCompletionException()
+        private Exception GetCompletionExceptionUnsafe()
         {
-            lock (this)
+            int status = m_status;
+            if (status == (int)OnityTaskSourceStatus.Canceled)
             {
-                int status = m_status;
-                if (status == (int)OnityTaskSourceStatus.Pending)
-                {
-                    throw new InvalidOperationException("OnityTask is not completed.");
-                }
-
-                if (status == (int)OnityTaskSourceStatus.Canceled)
-                {
-                    return new OperationCanceledException(m_cancellationToken);
-                }
-
-                return status == (int)OnityTaskSourceStatus.Faulted ? m_exception : null;
+                return new OperationCanceledException(m_cancellationToken);
             }
+
+            return status == (int)OnityTaskSourceStatus.Faulted ? m_exception : null;
+        }
+
+        private void ValidateToken(int token)
+        {
+            if (token != m_version)
+            {
+                ThrowInvalidToken();
+            }
+        }
+
+        private static void ThrowInvalidToken()
+        {
+            throw new InvalidOperationException(
+                "The OnityTask source is no longer valid. Pooled OnityTask instances can be awaited only once.");
         }
 
         private void ReleaseAfterResult()
@@ -1300,10 +1452,33 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
         }
+
+        private bool TryClaimTaskReleaseUnsafe()
+        {
+            if (m_taskMaterialized == 0 || m_released != 0)
+            {
+                return false;
+            }
+
+            m_released = 1;
+            return true;
+        }
+
+        private void ClearCompletionReferencesUnsafe()
+        {
+            m_taskCompletionSource = null;
+            m_cancellationRegistration = default;
+            m_cancellationToken = default;
+            m_exception = null;
+        }
     }
 
     internal abstract class OnityTaskSourceBase<T> : IOnityTaskSource<T>
     {
+        private const int k_noConsumption = 0;
+        private const int k_nativeConsumption = 1;
+        private const int k_taskConsumption = 2;
+
         private static readonly Action<object> s_cancelCallback = CancelFromToken;
 
         private Action m_continuation;
@@ -1313,23 +1488,62 @@ namespace Onity.Unity.Async
         private Exception m_exception;
         private int m_status;
         private T m_result;
+        private int m_version;
+        private int m_consumptionMode;
+        private int m_consumed;
+        private int m_cancellationRequested;
         private int m_taskMaterialized;
         private int m_released;
 
-        public bool IsCompleted => Volatile.Read(ref m_status) != (int)OnityTaskSourceStatus.Pending;
+        public int Version => Volatile.Read(ref m_version);
 
-        public bool IsCompletedSuccessfully => Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Succeeded;
-
-        public bool IsCanceled => Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Canceled;
-
-        public bool IsFaulted => Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Faulted;
+        public bool IsCancellationRequested => Volatile.Read(ref m_cancellationRequested) != 0;
 
         protected bool IsPending => Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Pending;
 
-        public Task<T> AsTask()
+        public OnityTaskSourceStatus GetStatus(int token)
         {
+            int versionBefore = Volatile.Read(ref m_version);
+            if (token != versionBefore)
+            {
+                ThrowInvalidToken();
+            }
+
+            OnityTaskSourceStatus status = (OnityTaskSourceStatus)Volatile.Read(ref m_status);
+            if (token != Volatile.Read(ref m_version))
+            {
+                ThrowInvalidToken();
+            }
+
+            return status;
+        }
+
+        public Task<T> AsTask(int token)
+        {
+            Task<T> task;
+            bool releaseSource;
+
             lock (this)
             {
+                ValidateToken(token);
+
+                if (m_consumed != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (m_released != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been materialized and released.");
+                }
+
+                if (m_consumptionMode == k_nativeConsumption)
+                {
+                    throw new InvalidOperationException(
+                        "OnityTask is already being consumed by its native awaiter.");
+                }
+
+                m_consumptionMode = k_taskConsumption;
                 Volatile.Write(ref m_taskMaterialized, 1);
 
                 if (m_taskCompletionSource == null)
@@ -1339,11 +1553,25 @@ namespace Onity.Unity.Async
                     ApplyStatusToTask(m_taskCompletionSource);
                 }
 
-                return m_taskCompletionSource.Task;
+                task = m_taskCompletionSource.Task;
+                releaseSource = m_status != (int)OnityTaskSourceStatus.Pending
+                    && TryClaimTaskReleaseUnsafe();
+
+                if (releaseSource)
+                {
+                    ClearCompletionReferencesUnsafe();
+                }
             }
+
+            if (releaseSource)
+            {
+                ReleaseSource();
+            }
+
+            return task;
         }
 
-        public void OnCompleted(Action continuation)
+        public void OnCompleted(Action continuation, int token)
         {
             if (continuation == null)
             {
@@ -1353,10 +1581,23 @@ namespace Onity.Unity.Async
             bool invokeNow;
             lock (this)
             {
+                ValidateToken(token);
+
+                if (m_consumed != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (m_consumptionMode != k_noConsumption)
+                {
+                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
+                }
+
+                m_consumptionMode = k_nativeConsumption;
                 invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
                 if (invokeNow == false)
                 {
-                    m_continuation += continuation;
+                    m_continuation = continuation;
                 }
             }
 
@@ -1366,32 +1607,41 @@ namespace Onity.Unity.Async
             }
         }
 
-        public T GetResult()
+        public T GetResult(int token)
         {
-            if (Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Succeeded)
-            {
-                T succeededResult = m_result;
-                ReleaseAfterResult();
-                return succeededResult;
-            }
-
             Exception exception;
             T result;
 
             lock (this)
             {
+                ValidateToken(token);
+
+                if (m_consumed != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (m_consumptionMode == k_taskConsumption)
+                {
+                    throw new InvalidOperationException(
+                        "OnityTask is already being consumed through AsTask().");
+                }
+
                 int status = m_status;
                 if (status == (int)OnityTaskSourceStatus.Pending)
                 {
                     throw new InvalidOperationException("OnityTask is not completed.");
                 }
 
+                m_consumptionMode = k_nativeConsumption;
+                m_consumed = 1;
                 exception = status == (int)OnityTaskSourceStatus.Canceled
                     ? new OperationCanceledException(m_cancellationToken)
                     : status == (int)OnityTaskSourceStatus.Faulted
                         ? m_exception
                         : null;
                 result = m_result;
+                ClearCompletionReferencesUnsafe();
             }
 
             ReleaseAfterResult();
@@ -1404,6 +1654,13 @@ namespace Onity.Unity.Async
             return result;
         }
 
+        public bool TrySetCanceledFromRunner(int token)
+        {
+            return token == Volatile.Read(ref m_version)
+                && IsCancellationRequested
+                && TrySetStatus(OnityTaskSourceStatus.Canceled, default, null);
+        }
+
         protected void Reset(CancellationToken cancellationToken)
         {
             lock (this)
@@ -1413,7 +1670,12 @@ namespace Onity.Unity.Async
                 m_cancellationToken = cancellationToken;
                 m_exception = null;
                 m_result = default;
+                int nextVersion = unchecked(m_version + 1);
+                Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
                 Volatile.Write(ref m_status, (int)OnityTaskSourceStatus.Pending);
+                m_consumptionMode = k_noConsumption;
+                m_consumed = 0;
+                Volatile.Write(ref m_cancellationRequested, 0);
                 Volatile.Write(ref m_taskMaterialized, 0);
                 Volatile.Write(ref m_released, 0);
             }
@@ -1450,13 +1712,16 @@ namespace Onity.Unity.Async
 
         private static void CancelFromToken(object state)
         {
-            ((OnityTaskSourceBase<T>)state).TrySetCanceled();
+            OnityTaskSourceBase<T> source = (OnityTaskSourceBase<T>)state;
+            Volatile.Write(ref source.m_cancellationRequested, 1);
+            OnityTaskRunner.NotifyCancellationRequested();
         }
 
         private bool TrySetStatus(OnityTaskSourceStatus status, T result, Exception exception)
         {
             Action continuation;
             TaskCompletionSource<T> taskCompletionSource;
+            bool releaseSource;
 
             lock (this)
             {
@@ -1470,11 +1735,23 @@ namespace Onity.Unity.Async
                 continuation = m_continuation;
                 taskCompletionSource = m_taskCompletionSource;
                 m_continuation = null;
+                m_cancellationRegistration.Dispose();
+                m_cancellationRegistration = default;
                 Volatile.Write(ref m_status, (int)status);
+                releaseSource = TryClaimTaskReleaseUnsafe();
             }
 
-            m_cancellationRegistration.Dispose();
             ApplyStatusToTask(taskCompletionSource);
+            if (releaseSource)
+            {
+                lock (this)
+                {
+                    ClearCompletionReferencesUnsafe();
+                }
+
+                ReleaseSource();
+            }
+
             continuation?.Invoke();
             return true;
         }
@@ -1501,6 +1778,20 @@ namespace Onity.Unity.Async
             }
         }
 
+        private void ValidateToken(int token)
+        {
+            if (token != m_version)
+            {
+                ThrowInvalidToken();
+            }
+        }
+
+        private static void ThrowInvalidToken()
+        {
+            throw new InvalidOperationException(
+                "The OnityTask source is no longer valid. Pooled OnityTask instances can be awaited only once.");
+        }
+
         private void ReleaseAfterResult()
         {
             if (Volatile.Read(ref m_taskMaterialized) == 0
@@ -1509,12 +1800,33 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
         }
+
+        private bool TryClaimTaskReleaseUnsafe()
+        {
+            if (m_taskMaterialized == 0 || m_released != 0)
+            {
+                return false;
+            }
+
+            m_released = 1;
+            return true;
+        }
+
+        private void ClearCompletionReferencesUnsafe()
+        {
+            m_taskCompletionSource = null;
+            m_cancellationRegistration = default;
+            m_cancellationToken = default;
+            m_exception = null;
+            m_result = default;
+        }
     }
 
     [ExecuteAlways]
     internal sealed class OnityTaskRunner : MonoBehaviour
     {
         private static OnityTaskRunner s_instance;
+        private static int s_cancellationRequestCount;
 
         private readonly List<IOnityTaskTickSource> m_updateSources = new List<IOnityTaskTickSource>(64);
         private readonly List<IOnityTaskTickSource> m_fixedUpdateSources = new List<IOnityTaskTickSource>(16);
@@ -1542,6 +1854,11 @@ namespace Onity.Unity.Async
             }
         }
 
+        public static void NotifyCancellationRequested()
+        {
+            Interlocked.Increment(ref s_cancellationRequestCount);
+        }
+
         private static OnityTaskRunner GetOrCreate()
         {
             if (s_instance != null)
@@ -1563,6 +1880,7 @@ namespace Onity.Unity.Async
 
         private void Update()
         {
+            DrainCancellationRequests();
             TickSources(m_updateSources, Time.deltaTime, Time.unscaledDeltaTime);
         }
 
@@ -1593,18 +1911,62 @@ namespace Onity.Unity.Async
             for (int i = count - 1; i >= 0; i--)
             {
                 IOnityTaskTickSource source = sources[i];
+                if (source.IsCancellationRequested)
+                {
+                    int version = source.Version;
+                    RemoveAtSwapBack(sources, i);
+                    source.TrySetCanceledFromRunner(version);
+                    continue;
+                }
+
                 if (source.Tick(deltaTime, unscaledDeltaTime))
                 {
-                    int lastIndex = sources.Count - 1;
-                    sources[i] = sources[lastIndex];
-                    sources.RemoveAt(lastIndex);
+                    RemoveAtSwapBack(sources, i);
                 }
             }
         }
+
+        private void DrainCancellationRequests()
+        {
+            if (Interlocked.Exchange(ref s_cancellationRequestCount, 0) == 0)
+            {
+                return;
+            }
+
+            CancelRequestedSources(m_updateSources);
+            CancelRequestedSources(m_fixedUpdateSources);
+            CancelRequestedSources(m_lateUpdateSources);
+        }
+
+        private static void CancelRequestedSources(List<IOnityTaskTickSource> sources)
+        {
+            for (int i = sources.Count - 1; i >= 0; i--)
+            {
+                IOnityTaskTickSource source = sources[i];
+                if (source.IsCancellationRequested == false)
+                {
+                    continue;
+                }
+
+                int version = source.Version;
+                RemoveAtSwapBack(sources, i);
+                source.TrySetCanceledFromRunner(version);
+            }
+        }
+
+        private static void RemoveAtSwapBack(List<IOnityTaskTickSource> sources, int index)
+        {
+            int lastIndex = sources.Count - 1;
+            sources[index] = sources[lastIndex];
+            sources.RemoveAt(lastIndex);
+        }
+
     }
 
     internal sealed class OnityFrameTaskSource : OnityTaskSourceBase, IOnityTaskTickSource
     {
+        private const int k_maxPoolSize = 256;
+
         private static readonly Stack<OnityFrameTaskSource> s_pool = new Stack<OnityFrameTaskSource>(32);
 
         public static OnityFrameTaskSource Rent(
@@ -1637,13 +1999,18 @@ namespace Onity.Unity.Async
         {
             lock (s_pool)
             {
-                s_pool.Push(this);
+                if (s_pool.Count < k_maxPoolSize)
+                {
+                    s_pool.Push(this);
+                }
             }
         }
     }
 
     internal sealed class OnityDelayTaskSource : OnityTaskSourceBase, IOnityTaskTickSource
     {
+        private const int k_maxPoolSize = 256;
+
         private static readonly Stack<OnityDelayTaskSource> s_pool = new Stack<OnityDelayTaskSource>(32);
 
         private float m_remainingSeconds;
@@ -1690,13 +2057,18 @@ namespace Onity.Unity.Async
             m_useUnscaledTime = false;
             lock (s_pool)
             {
-                s_pool.Push(this);
+                if (s_pool.Count < k_maxPoolSize)
+                {
+                    s_pool.Push(this);
+                }
             }
         }
     }
 
     internal sealed class OnityPredicateTaskSource : OnityTaskSourceBase, IOnityTaskTickSource
     {
+        private const int k_maxPoolSize = 256;
+
         private static readonly Stack<OnityPredicateTaskSource> s_pool = new Stack<OnityPredicateTaskSource>(16);
 
         private Func<bool> m_predicate;
@@ -1752,7 +2124,10 @@ namespace Onity.Unity.Async
             m_waitWhile = false;
             lock (s_pool)
             {
-                s_pool.Push(this);
+                if (s_pool.Count < k_maxPoolSize)
+                {
+                    s_pool.Push(this);
+                }
             }
         }
     }
@@ -1762,6 +2137,8 @@ namespace Onity.Unity.Async
         IOnityTaskTickSource
         where TAsyncOperation : AsyncOperation
     {
+        private const int k_maxPoolSize = 256;
+
         private static readonly Stack<OnityAsyncOperationTaskSource<TAsyncOperation>> s_pool =
             new Stack<OnityAsyncOperationTaskSource<TAsyncOperation>>(16);
 
@@ -1822,7 +2199,10 @@ namespace Onity.Unity.Async
             m_onProgress = null;
             lock (s_pool)
             {
-                s_pool.Push(this);
+                if (s_pool.Count < k_maxPoolSize)
+                {
+                    s_pool.Push(this);
+                }
             }
         }
     }

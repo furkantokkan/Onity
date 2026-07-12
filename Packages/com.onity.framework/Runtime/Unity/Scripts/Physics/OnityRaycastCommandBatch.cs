@@ -16,6 +16,8 @@ namespace Onity.Unity.Physics
         private readonly int m_maxHitsPerRaycast;
         private int m_capacity;
         private int m_lastScheduledCount;
+        private JobHandle m_pendingHandle;
+        private bool m_hasPendingJob;
         private bool m_isDisposed;
 
         /// <summary>
@@ -43,6 +45,8 @@ namespace Onity.Unity.Physics
             m_maxHitsPerRaycast = maxHitsPerRaycast;
             m_capacity = 0;
             m_lastScheduledCount = 0;
+            m_pendingHandle = default;
+            m_hasPendingJob = false;
             m_isDisposed = false;
 
             EnsureCapacity(initialCapacity);
@@ -59,7 +63,7 @@ namespace Onity.Unity.Physics
         public int MaxHitsPerRaycast => m_maxHitsPerRaycast;
 
         /// <summary>
-        /// Schedules a raycast command batch.
+        /// Schedules a raycast command batch after completing any previous batch owned by this instance.
         /// </summary>
         /// <param name="origins">Ray origins.</param>
         /// <param name="directions">Ray directions.</param>
@@ -95,6 +99,11 @@ namespace Onity.Unity.Physics
                 throw new ArgumentOutOfRangeException(nameof(maxDistance));
             }
 
+            if (minCommandsPerJob <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(minCommandsPerJob));
+            }
+
             int rayCount = rayCountOverride >= 0
                 ? rayCountOverride
                 : Math.Min(origins.Length, directions.Length);
@@ -109,8 +118,9 @@ namespace Onity.Unity.Physics
                 throw new ArgumentOutOfRangeException(nameof(rayCountOverride));
             }
 
+            CompletePendingJob();
             EnsureCapacity(rayCount);
-            m_lastScheduledCount = rayCount;
+            m_lastScheduledCount = 0;
 
             if (rayCount == 0)
             {
@@ -134,21 +144,24 @@ namespace Onity.Unity.Physics
                     maxDistance);
             }
 
-            for (int i = rayCount; i < m_capacity; i++)
-            {
-                m_commands[i] = default;
-            }
+            NativeArray<RaycastCommand> activeCommands = m_commands.GetSubArray(0, rayCount);
+            NativeArray<RaycastHit> activeHits = m_hits.GetSubArray(0, rayCount * m_maxHitsPerRaycast);
 
-            return RaycastCommand.ScheduleBatch(
-                m_commands,
-                m_hits,
+            JobHandle handle = RaycastCommand.ScheduleBatch(
+                activeCommands,
+                activeHits,
                 minCommandsPerJob,
                 m_maxHitsPerRaycast,
                 dependency);
+
+            m_pendingHandle = handle;
+            m_hasPendingJob = true;
+            m_lastScheduledCount = rayCount;
+            return handle;
         }
 
         /// <summary>
-        /// Copies hits for one ray into caller-owned buffer.
+        /// Completes the pending batch and copies hits for one ray into caller-owned buffer.
         /// </summary>
         /// <param name="rayIndex">Ray index used during scheduling.</param>
         /// <param name="destination">Destination buffer.</param>
@@ -173,6 +186,8 @@ namespace Onity.Unity.Physics
                 throw new ArgumentOutOfRangeException(nameof(destinationOffset));
             }
 
+            CompletePendingJob();
+
             int sourceOffset = rayIndex * m_maxHitsPerRaycast;
             int available = destination.Length - destinationOffset;
             int copyLimit = available < m_maxHitsPerRaycast ? available : m_maxHitsPerRaycast;
@@ -195,7 +210,7 @@ namespace Onity.Unity.Physics
         }
 
         /// <summary>
-        /// Returns first hit entry for one ray.
+        /// Completes the pending batch and returns the first hit entry for one ray.
         /// </summary>
         /// <param name="rayIndex">Ray index used during scheduling.</param>
         /// <returns>First hit entry for the given ray.</returns>
@@ -208,15 +223,26 @@ namespace Onity.Unity.Physics
                 throw new ArgumentOutOfRangeException(nameof(rayIndex));
             }
 
+            CompletePendingJob();
             return m_hits[rayIndex * m_maxHitsPerRaycast];
         }
 
         /// <summary>
-        /// Clears command and hit buffers.
+        /// Completes the currently scheduled batch, if any.
+        /// </summary>
+        public void Complete()
+        {
+            ThrowIfDisposed();
+            CompletePendingJob();
+        }
+
+        /// <summary>
+        /// Completes the pending batch and clears command and hit buffers.
         /// </summary>
         public void Clear()
         {
             ThrowIfDisposed();
+            CompletePendingJob();
             m_lastScheduledCount = 0;
 
             for (int i = 0; i < m_commands.Length; i++)
@@ -232,6 +258,7 @@ namespace Onity.Unity.Physics
 
         /// <summary>
         /// Ensures internal buffers can hold at least <paramref name="requiredCapacity" /> rays.
+        /// A resize completes the pending batch before replacing native buffers.
         /// </summary>
         /// <param name="requiredCapacity">Required ray capacity.</param>
         public void EnsureCapacity(int requiredCapacity)
@@ -248,6 +275,7 @@ namespace Onity.Unity.Physics
                 return;
             }
 
+            CompletePendingJob();
             int targetCapacity = NextPowerOfTwo(requiredCapacity);
 
             NativeArray<RaycastCommand> nextCommands =
@@ -280,6 +308,7 @@ namespace Onity.Unity.Physics
                 return;
             }
 
+            CompletePendingJob();
             m_isDisposed = true;
 
             if (m_commands.IsCreated)
@@ -294,6 +323,8 @@ namespace Onity.Unity.Physics
 
             m_capacity = 0;
             m_lastScheduledCount = 0;
+            m_pendingHandle = default;
+            m_hasPendingJob = false;
         }
 
         private static int NextPowerOfTwo(int value)
@@ -306,6 +337,18 @@ namespace Onity.Unity.Physics
             }
 
             return next;
+        }
+
+        private void CompletePendingJob()
+        {
+            if (m_hasPendingJob == false)
+            {
+                return;
+            }
+
+            m_pendingHandle.Complete();
+            m_pendingHandle = default;
+            m_hasPendingJob = false;
         }
 
         private void ThrowIfDisposed()

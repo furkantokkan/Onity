@@ -61,11 +61,18 @@ Split-ready optional modules are documented in:
     - `OnityUnityThreadMode.DotsEventDriven`
   - Task bridge (`FirstAsync`, `ToTask`)
 - Async helpers:
+  - `OnityTask` / `OnityTask<T>` for allocation-aware Unity async flows
+  - `OnityTask.NextFrame`, `Delay`, `WaitUntil`, scene/web/`AsyncOperation` bridges
   - `OnityAsync.DelayAsync`, `NextFrameAsync`, `NextFixedFrameAsync`
   - `OnityAsync.WhenAll`, `OnityAsync.WhenAny`
   - `CancellationTokenSource.CancelAfterSlim(...)`
   - `OnityTimeoutController`
   - `AsyncOperation.AsTask()`, `WithCancellation(...)`, direct `await`
+
+Pooled `OnityTask` values returned by frame, delay, predicate, and Unity
+operation helpers are single-consumer. Await each value once. If several
+consumers must share an operation, call `AsTask()` once and share the returned
+`Task` instead of copying the pooled `OnityTask` value.
 - Pool and factory convenience:
   - `IFactory<T>`, `IFactory<TParam,T>`, `IFactory<TParam1,TParam2,T>`
   - `IPool<T>`, `OnityObjectPool<T>`, `PrefabComponentPool<T>`
@@ -189,32 +196,35 @@ Latest published DI runs: Unity 2022.3.62f3, Windows, 512 warmup iterations,
 8 measured samples, mean ns/op. See `Benchmarks/Results/di-benchmark-summary.md`
 and `Benchmarks/Results/di-benchmark-player-latest.md` for full reports.
 
-Editor / Mono (`2026-05-30T19:38:06Z`):
+Editor / Mono (`2026-07-12T13:31:37Z`):
 
-| Scenario | Onity Baked | VContainer | Zenject | Onity vs VContainer |
-| --- | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~63 ns | ~214 ns | ~2,866 ns | ~+71% |
-| Resolve Transient | ~1,083 ns | ~1,879 ns | ~12,356 ns | ~+42% |
-| Resolve Combined | ~972 ns | ~2,079 ns | ~17,248 ns | ~+53% |
-| Resolve Complex (6-level) | ~22,905 ns | ~42,158 ns | ~289,823 ns | ~+46% |
-| Prepare & Register Complex | ~61,044 ns | ~150,730 ns | ~215,537 ns | ~+60% |
+| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Standard vs VContainer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Resolve Singleton | ~69 ns | ~78 ns | ~217 ns | ~2,778 ns | ~+68% |
+| Resolve Transient | ~1,030 ns | ~1,366 ns | ~2,352 ns | ~12,561 ns | ~+56% |
+| Resolve Combined | ~980 ns | ~875 ns | ~1,905 ns | ~14,382 ns | ~+49% |
+| Resolve Complex (6-level) | ~20,874 ns | ~20,828 ns | ~40,270 ns | ~281,814 ns | ~+48% |
+| Prepare & Register Complex | ~40,613 ns | ~54,996 ns | ~139,246 ns | ~188,865 ns | ~+71% |
 
-Windows IL2CPP Player (`2026-05-31T15:26:19Z`, source-generated activators, 10,000 iterations):
+Windows IL2CPP Player (`2026-07-12T13:34:55Z`, source-generated activators, 10,000 iterations):
 
-| Scenario | Onity Baked | VContainer | Zenject | Onity vs VContainer |
-| --- | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~20 ns | ~98 ns | ~488 ns | ~+80% |
-| Resolve Transient | ~133 ns | ~528 ns | ~2,302 ns | ~+75% |
-| Resolve Combined | ~159 ns | ~679 ns | ~3,052 ns | ~+77% |
-| Resolve Complex (6-level) | ~4,782 ns | ~13,552 ns | ~61,999 ns | ~+65% |
-| Prepare & Register Complex | ~26,944 ns | ~39,694 ns | ~65,937 ns | ~+32% |
+| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Standard vs VContainer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Resolve Singleton | ~18 ns | ~18 ns | ~95 ns | ~449 ns | ~+82% |
+| Resolve Transient | ~159 ns | ~191 ns | ~541 ns | ~2,448 ns | ~+71% |
+| Resolve Combined | ~176 ns | ~196 ns | ~612 ns | ~3,080 ns | ~+71% |
+| Resolve Complex (6-level) | ~5,107 ns | ~5,071 ns | ~12,475 ns | ~59,327 ns | ~+59% |
+| Prepare & Register Complex | ~21,128 ns | ~24,490 ns | ~34,888 ns | ~59,567 ns | ~+39% |
 
 Timing numbers are from a Windows PC and are indicative, not a guarantee. The
 committed allocation columns are withdrawn until the allocation harness is
 corrected, because the earlier Editor harness reported 0 B for every container.
 Onity is ahead on every measured Editor/Mono and Windows IL2CPP player timing
-path in the current benchmark reports. Source-generated activators are what keep
-IL2CPP resolve away from `ConstructorInfo.Invoke` on AOT builds.
+path in the current benchmark reports. The raw `Onity (Reflection)` label is the
+standard dense-provider lane; reflection is only its activation fallback. A
+focused 1000-sample IL2CPP singleton gate measured standard Onity at `18.80 ns/op`
+versus VContainer at `94.39 ns/op`. Source-generated activators keep hot
+IL2CPP construction away from `ConstructorInfo.Invoke` on AOT builds.
 
 ## Build and Test
 
