@@ -44,3 +44,9 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Jekyll documentation build output
+_site/
+.jekyll-cache/
+.sass-cache/
+.bundle/

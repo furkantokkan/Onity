@@ -18,10 +18,12 @@ Accepted.
 
 Onity's DI benchmark currently has two measured managed resolve modes:
 
-- `Onity (Baked)`: dense-id lookup plus the same managed providers used by the
-  standard provider path.
-- `Onity (Reflection)`: managed dictionary/provider path with cached reflection
-  metadata and AOT-safe activation.
+- `Onity (Baked)`: a precomputed graph with flat lifetime and singleton slots.
+- `Onity (Reflection)`: the historical raw-report label for the standard lane.
+  In v0.3.6, generic local resolves use dense type-id provider slots; dynamic
+  `Resolve(Type)`, misses, and parent fallback retain the general map path.
+  Reflection is only the activation fallback when no generated or compiled
+  activator is available.
 
 The latest Editor/Mono benchmark shows `Onity (Baked)` ahead of VContainer in
 the measured resolve and prepare/register scenarios, including

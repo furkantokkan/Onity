@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- Added a first-class OnityTask guide, current architecture overview, custom
+  404 page, canonical metadata, and sitemap-backed GitHub Pages navigation.
+- Corrected stale DI/reactive API claims, subscription lifetime examples,
+  messaging-order wording, benchmark delta labels, and package setup examples.
+- Added reproducible Jekyll dependencies plus strict build and internal-link
+  checks for documentation pull requests and Pages deployments.
+
 ## [0.3.6] - 2026-07-12
 
 ### Added

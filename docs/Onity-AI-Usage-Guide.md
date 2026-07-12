@@ -1,6 +1,7 @@
 ---
 title: "AI Usage Guide"
 nav_order: 6
+description: "Source-verified Onity API rules and recipes for DI, reactive state, messaging, Unity integration, and OnityTask."
 ---
 
 # Onity AI Usage Guide
@@ -12,7 +13,7 @@ This guide is verified against the real Onity source. Every code block compiles 
 public API. When this guide and any older design doc disagree, **this guide and the source win**.
 
 - Target: Unity. Core asmdefs (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`,
-  `Onity.Factory`) are **engine-free** (no `UnityEngine`). Unity glue lives in `Onity.Unity`.
+  `Onity.Factory`, `Onity.Composition`) are **engine-free** (no `UnityEngine`). Unity glue lives in `Onity.Unity`.
 - Constraints baked into the code: hot-path machinery **designed to avoid per-call managed allocation** (a transient resolve still allocates the instance it returns; the published alloc figures were unreliable and are being re-measured), **no `System.Linq`** in the core, and **no non-Unity third-party runtime dependencies**.
 - Naming convention in Onity source: private instance `m_camelCase`, private static `s_camelCase`,
   constants `k_camelCase`, Allman braces. Match it when adding code to the package.
@@ -218,8 +219,8 @@ Callbacks cannot be registered after Build is finalized (throws `OnityBindingExc
 | Shared instance across contracts | DON'T expect two `Bind<IFoo>().To<C>()` + `Bind<IBar>().To<C>()` to share one instance — they produce **distinct** singletons. DO use `BindInterfacesAndSelfTo<C>().AsSingle()`. |
 | Circular dependency | Constructor AND member cycles throw `OnityResolveException` at **resolve time** (not build time). DO break the cycle (e.g. inject a factory or `IResolver`). |
 | Constructor selection | Greediest **public** ctor wins (or the single `[Inject]` ctor). DON'T add a second `[Inject]` ctor — throws. |
-| Open generics | DON'T bind `typeof(Repository<>)`. Only **closed** generics resolve. Bind `Repository<int>` explicitly. |
-| Collection injection | There is NO `IEnumerable<T>` multi-injection. DON'T inject `IEnumerable<IHandler>`. DO inject a single registry/factory, or resolve a known set. |
+| Open generics | DO bind an open contract to an open implementation with `Bind(typeof(IRepository<>)).To(typeof(Repository<>)).AsSingle()`. Resolve closed forms such as `IRepository<Player>`; preserve those closed types on IL2CPP. |
+| Collection injection | Multiple explicit bindings can be injected as `IEnumerable<T>`, `IReadOnlyList<T>`, `IReadOnlyCollection<T>`, `IList<T>`, `ICollection<T>`, `List<T>`, or `T[]`. Registration order is the initial collection order. |
 | Statics | `[Inject]` on a static member is silently ignored. DON'T use it. |
 | Conditional / keyed binds | No `WhenInjectedInto`, no `WithId`. DON'T attempt them; use a typed factory or distinct contracts. |
 
@@ -317,13 +318,14 @@ Callable directly on `IOnityObservable<T>`. Each takes an optional `OnityTimePro
 tests; pass a Unity time provider in gameplay — see 3.5):
 
 - `Debounce(TimeSpan dueTime, OnityTimeProvider = null)` — emit the LAST value after a quiet window.
+- `Throttle(TimeSpan interval, OnityTimeProvider = null)` — emit the first value immediately, then drop values during the cool-down window.
 - `ThrottleLast(TimeSpan interval, OnityTimeProvider = null)` — emit the latest value once per interval.
-  **The operator is named `ThrottleLast`, NOT `Throttle`.** There is no leading-edge `Throttle`.
+- `Buffer(int count)` / `Buffer(TimeSpan, OnityTimeProvider = null)` — emit count- or time-windowed lists.
 - `TakeUntil(CancellationToken)` / `TakeUntil(Task)` — stop on a signal.
 - `SelectAwait(Func<T,CancellationToken,ValueTask<TResult>>)` / `WhereAwait(Func<T,CancellationToken,ValueTask<bool>>)`
-  — sequential async projection/filter. **These resume on a threadpool thread** (`Task.Run` internally).
-  DON'T touch `UnityEngine` APIs directly in a `Subscribe` after them (there is no main-thread post-back
-  operator yet — keep async results pure, or marshal back yourself).
+  — sequential async projection/filter. These can resume away from the Unity main thread. Call
+  `ObserveOnMainThread()` (or `ObserveOn(OnityFrameProviders.Update)`) before a downstream observer
+  touches `UnityEngine` APIs.
 
 ### 3.4 Unity bridges — frame loops, timers, lifetime (`Onity.Unity.Reactive`)
 
@@ -445,7 +447,7 @@ public sealed class FireControl : MonoBehaviour
     {
         m_fire.action.PerformedAsObservable()
             .Subscribe(_ => Fire())
-            .AddTo(this);
+            .TakeUntilDisable(this);
     }
 
     private void Fire() { }
@@ -460,7 +462,8 @@ Typed pub/sub. `MessageChannel<T>` is the same `SubscriptionEntry[]` design as `
 `Publish` designed allocation-free, re-entrancy-safe (unsubscribe inside a handler is OK), throws after `Dispose`.
 
 > Threading: publish/subscribe on the Unity **main thread**. Channels are not internally locked for
-> publish (broker channel CREATION is locked). Messages run in subscription order.
+> publish (broker channel CREATION is locked). Initial delivery follows subscription order, but
+> unsubscribe uses swap-back removal, so no stable priority/order contract exists afterward.
 
 ### 4.1 Surface
 
@@ -650,7 +653,7 @@ public sealed class ScoreService : IDisposable
 using Onity.DI;                          // Inject
 using Onity.Reactive;                    // Where, Subscribe
 using Onity.Unity.Messaging;             // OnityEventHub
-using Onity.Unity.Reactive;              // OnityUnityObservable, AddTo(Component)
+using Onity.Unity.Reactive;              // OnityUnityObservable, TakeUntilDisable
 using UnityEngine;
 
 public sealed class HealthHud : MonoBehaviour
@@ -660,16 +663,17 @@ public sealed class HealthHud : MonoBehaviour
 
     private void OnEnable()
     {
-        m_health.Subscribe(value => Debug.Log($"Health: {value}")).AddTo(this);   // emits current value first
+        m_health.Subscribe(value => Debug.Log($"Health: {value}"))
+                .TakeUntilDisable(this);   // emits current value first; no duplicate after re-enable
 
         m_events.Observe<PlayerDamaged>()
                 .Where(evt => evt.IsCritical)
                 .Subscribe(_ => Debug.Log("Critical hit!"))
-                .AddTo(this);
+                .TakeUntilDisable(this);
 
         OnityUnityObservable.EveryUpdate()
                 .Subscribe(_ => { /* per-frame HUD tween */ })
-                .AddTo(this);
+                .TakeUntilDisable(this);
     }
 }
 ```
@@ -730,18 +734,19 @@ DO:
 - DO model shared current-state as `ReactiveProperty<T>`; model transient notifications as messages.
 - DO use a child container (`new OnityContainer(parent)`) for a "scoped" instance.
 - DO pass an `OnityTimeProvider` (e.g. `OnityTimeProviders.UpdateUnscaled`) to `Debounce`/`ThrottleLast` in gameplay.
-- DO write the operator name `ThrottleLast` (not `Throttle`).
+- DO use `Throttle` for leading-edge cool-down and `ThrottleLast` for trailing/latest-value sampling.
 
 DON'T:
-- DON'T resolve before `Build()` is reasonable, but NEVER add bindings AFTER `Build()` (throws).
+- DON'T add bindings after `Build()`. Post-build registration is unsupported because baked lookup and
+  lifecycle collections are already finalized; only late build-callback registration is explicitly rejected.
 - DON'T `Resolve<T>()` inside `Update`/`FixedUpdate`/`LateUpdate` — resolve once in ctor/`Awake` and cache.
 - DON'T `new` up services that have dependencies — bind them and let DI construct them.
 - DON'T expect two separate `Bind<I>().To<C>()` calls to share one instance (they don't).
-- DON'T inject `IEnumerable<T>` / `T[]` collections — collection injection is not supported.
-- DON'T bind open generics `typeof(Foo<>)` — only closed generics resolve.
+- DON'T hand-build registries when collection injection fits; bind each implementation and inject a supported collection shape.
+- DON'T resolve an open generic definition. Bind open definitions, then resolve a preserved closed form such as `IRepository<Player>`.
 - DON'T add a second `[Inject]` constructor, a setterless `[Inject]` property, an `[Inject]` indexer, or a generic `[Inject]` method — each throws `OnityBindingException`.
 - DON'T use `System.Linq` in Onity package code (write plain loops; Onity has no non-Unity third-party runtime dependencies); avoid LINQ/allocations in hot paths.
-- DON'T touch `UnityEngine` members in a `Subscribe` directly after `SelectAwait`/`WhereAwait` (they resume off the main thread).
+- DON'T touch `UnityEngine` members directly after `SelectAwait`/`WhereAwait`; call `ObserveOnMainThread()` first.
 - DON'T publish/subscribe to a broker or `Subject<T>` from a background thread.
 - DON'T call APIs that aren't in this guide assuming Zenject/R3/MessagePipe parity: no `Instantiate(args)`,
   no `WhenInjectedInto`/`WithId`. Reactive: `Merge`/`CombineLatest`/`Scan`/`Pairwise`/`Sample`/`Buffer`,
@@ -771,6 +776,7 @@ DON'T:
   static `DiagnosticsCollectionEnabled`. Ctor: `new OnityContainer(OnityContainer parent = null)`.
 - `IResolver` (`Resolve<T>`, `Resolve(Type)`, `TryResolve<T>`, `TryResolve(Type,...)`, `Inject`)
 - `TypeBindingBuilder<TContract>` (`To<TConcrete>()`, `AsSingle()`, `AsTransient()`, `NonLazy()`)
+- `RuntimeTypeBindingBuilder` from `Bind(Type)` (`To(Type)`, `AsSingle()`, `AsTransient()`, `NonLazy()`)
 - `MultiTypeBindingBuilder` (`AsSingle()`, `AsTransient()`, `NonLazy()`)
 - `InjectAttribute` (`[Inject]`; targets Constructor | Field | Property | Method)
 - `OnityResolveException`, `OnityBindingException`
@@ -790,8 +796,10 @@ DON'T:
 - `CompositeDisposable` (`Add`, `Remove`, `Clear`, `Count`, `Dispose`)
 - `OnityObservable<T>` (delegate-backed) + static `OnityObservable`: `FromEvent<T>`, `Return<T>`, `Empty<T>`
 - `OnityObservableExtensions`: `Where`, `Select`, `DistinctUntilChanged`, `Skip`, `SkipWhile`, `Take`,
-  `TakeWhile`, `StartWith`, `Subscribe(Action<T>)`, `Subscribe(onNext,onError,onCompleted)`,
-  `TakeUntilCancellation`, `FirstAsync`, `ToTask`
+  `TakeWhile`, `StartWith`, `Scan`, `Pairwise`, `Merge`, `CombineLatest`, `Sample`, `Throttle`,
+  `Buffer(count)`, `Buffer(timeSpan)`, `ObserveOn`, `Subscribe(Action<T>)`,
+  `Subscribe(onNext,onError,onCompleted)`, `TakeUntilCancellation`, `FirstAsync`, `ToTask`,
+  `ObserveOnThreadPool`, `SelectOnThreadPool`
 - `OnityObservableAsyncExtensions`: `Debounce`, `ThrottleLast`, `TakeUntil(CancellationToken)`,
   `TakeUntil(Task)`, `SelectAwait`, `WhereAwait`
 - `OnityDisposableExtensions`: `AddTo(this IDisposable, CompositeDisposable)`
@@ -804,8 +812,20 @@ DON'T:
 - `MessageHandler<T>` (delegate `void(T)`)
 - `MessageBroker` (`IMessageBroker`, `IDisposable`; `ChannelCount`, `GetDiagnostics(List<...>)`)
 - `MessageChannel<T>` (`IPublisher<T>` + `ISubscriber<T>` + diagnostics + `IDisposable`)
+- keyed channels: `IKeyedPublisher<TKey,TMessage>`, `IKeyedSubscriber<TKey,TMessage>`,
+  `KeyedMessageChannel<TKey,TMessage>`
+- async channels: `IAsyncPublisher<TMessage>`, `IAsyncSubscriber<TMessage>`,
+  `AsyncMessageChannel<TMessage>`
 - `MessageBrokerExtensions`: `Publish<T>(this IMessageBroker, T)`, `Subscribe<T>(this IMessageBroker, MessageHandler<T>)`
 - `MessageChannelDiagnostics` (struct: `MessageType`, `SubscriberCount`)
+
+### `Onity.Composition` (engine-free)
+- `BindReactiveProperty<T>(initialValue)`, `BindSubject<T>()`, and `DeclareMessage<T>()`
+  register one shared primitive against its useful contracts.
+
+### `Onity.Pooling`
+- `IPool<T>`, `IPoolHooks`, `OnityObjectPool<T>`, `PrefabComponentPool<T>`,
+  `PooledFactory<T>`, and pool diagnostics snapshots/registry.
 
 ### `Onity.Unity` (UnityEngine)
 - Static shortcut (`Onity.Unity.OnityEvent`):
@@ -834,18 +854,23 @@ DON'T:
   `InputAction.StartedAsObservable()/PerformedAsObservable()/CanceledAsObservable()`;
   `OnityReactiveInputPlayer` (`GetButtonObservable`/`GetVector2Observable`/`GetFloatObservable`/
   `GetLongPressObservable`/`GetLongPressProgressObservable`, `PushContext`/`PopContext`/`SetContext`/`ClearContexts`)
+- Async (`Onity.Unity.Async`): `OnityTask`, `OnityTask<T>`, frame/fixed/late waits,
+  scaled/unscaled delays, predicate waits, scene/web/`AsyncOperation` bridges,
+  `AsTask`, `Forget`, reactive/message bridges, timeout helpers, and task tracking.
+  Pooled task values are single-consumer; see [Async with OnityTask](guide/onitytask.html).
 
 ---
 
 ## 8. Error -> fix
 
-What the runtime throws and how to fix it. Four dedicated exception types now ship,
-each `sealed : Exception`: **`OnityResolveException`** (resolve/inject failures) and
-**`OnityBindingException`** (binding/config failures) in `Onity.DI`;
-**`OnityReactiveException`** in `Onity.Reactive`; and **`OnityMessagingException`** in
-`Onity.Messaging`. Reactive also exposes a settable `OnityObservableExceptionHandler`
-hook: `Subject<T>.OnNext` catches a throwing subscriber, routes it to the handler, and
-keeps notifying the rest (one bad observer never breaks a frame).
+What the runtime throws and how to fix it. DI uses the dedicated
+**`OnityResolveException`** and **`OnityBindingException`** types. Reactive and
+messaging also define `OnityReactiveException` / `OnityMessagingException`, but
+the current shipped guard paths documented below use standard .NET exceptions
+such as `ObjectDisposedException` and `ArgumentNullException`; do not catch only
+the Onity-specific types. Reactive's settable `OnityObservableExceptionHandler`
+receives subscriber/operator callback failures so one bad observer does not stop
+delivery to the remaining observers.
 
 ### 8.1 `OnityResolveException` (DI resolve / inject)
 
@@ -911,6 +936,6 @@ Composition: any message stream can become reactive with `events.Observe<T>()`
 like over a `ReactiveProperty<T>`. Do **not** reach for messaging to model
 current state (new listeners would miss it) and do **not** reach for a
 `ReactiveProperty<T>` to model a one-shot command with a result (use a direct
-call). There is no keyed/buffered/request-response messaging — if you find
-yourself wanting "the last message for a late subscriber", that is a
-`ReactiveProperty<T>`.
+call). Keyed messaging ships through `KeyedMessageChannel<TKey, TMessage>`;
+buffered/replay and request-response messaging do not. If you want "the last
+message for a late subscriber", use a `ReactiveProperty<T>`.

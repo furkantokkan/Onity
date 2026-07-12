@@ -1,6 +1,7 @@
 ---
 title: "Getting Started"
 nav_order: 1
+description: "Install Onity and build a first Unity scene with dependency injection, reactive state, and typed events."
 ---
 
 # Getting Started with Onity
@@ -26,7 +27,8 @@ frameworks.
 > first read; that page is the lookup table. Migrating from another framework?
 > See [`Migration/From-Zenject.md`](Migration/From-Zenject.html),
 > [`Migration/From-VContainer.md`](Migration/From-VContainer.html), and
-> [`Migration/From-R3.md`](Migration/From-R3.html).
+> [`Migration/From-R3.md`](Migration/From-R3.html), or
+> [`Migration/From-UniTask.md`](Migration/From-UniTask.html).
 
 Everything below compiles against the real shipped API. Copy the blocks as-is.
 
@@ -37,7 +39,8 @@ Everything below compiles against the real shipped API. Copy the blocks as-is.
 Onity's namespaces split along a simple line:
 
 - The **core** (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`,
-  `Onity.Factory`) is **engine-free** — no `UnityEngine` dependency. You can unit
+  `Onity.Factory`, `Onity.Composition`) is **engine-free** — no `UnityEngine`
+  dependency. You can unit
   test it with no scene.
 - The **Unity glue** (`Onity.Unity.*`) is where the `MonoBehaviour` contexts,
   frame loops, and lifetime helpers live.
@@ -90,7 +93,7 @@ uses no `System.Linq`. Unity first-party package dependencies are declared in
 ### Referencing the assemblies
 
 The package's runtime assemblies are auto-referenced (`Onity.Core`, `Onity.DI`,
-`Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`, `Onity.Unity`), so your game
+`Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`, `Onity.Composition`, `Onity.Unity`), so your game
 scripts can call Onity without editing any `.asmdef` — you only need the right
 `using` directives. If your game code lives in its own assembly definition that
 turns off auto-referencing, add the assemblies you use (typically `Onity.DI`,
@@ -104,13 +107,14 @@ A one-line script anywhere in your project — if it compiles, Onity is wired in
 ```csharp
 using Onity.DI;
 
-public static class OnityInstallCheck
+public sealed class OnityInstallCheck
 {
     public static bool Works()
     {
         using OnityContainer container = new OnityContainer();
         container.Bind<OnityInstallCheck>().AsSingle();
-        return container.CanResolve(typeof(OnityInstallCheck));
+        container.Build();
+        return container.Resolve<OnityInstallCheck>() != null;
     }
 }
 ```
@@ -368,10 +372,10 @@ public sealed class RegenTicker : MonoBehaviour
 
     private void OnEnable()
     {
-        // EveryUpdate() emits once per frame. AddTo(this) cleans it up on Destroy.
+        // EveryUpdate() emits once per frame. Stop it whenever this Behaviour disables.
         OnityUnityObservable.EveryUpdate()
             .Subscribe(_ => { /* slowly regenerate, tween a bar, etc. */ })
-            .AddTo(this);
+            .TakeUntilDisable(this);
     }
 }
 ```
@@ -550,10 +554,13 @@ because `ReactiveProperty<T>` and `events.Observe<T>()` are the *same*
 > subscription outlives the object and leaks. This is the single most common Onity
 > mistake. Tie *every* subscription to a lifetime.
 
-> **Do not resolve before the container is built.** The `SceneContext` builds the
+> **Register before the container is built.** The `SceneContext` builds the
 > container in `Awake` and injects the hierarchy before `Start`. Read injected
 > dependencies in `Start` (or later), not in `Awake`/field initializers of an
-> injected `MonoBehaviour`. Never add bindings after `Build()` — it throws.
+> injected `MonoBehaviour`. Add every binding before `Build()`; post-build
+> registration is unsupported because baked lookup and lifecycle collections
+> have already been finalized. Build callbacks explicitly throw when registered
+> after finalization.
 
 > **Do not `Resolve<T>()` every frame.** Resolve once (constructor, or `[Inject]`)
 > and cache the reference. Calling `Resolve` inside `Update`/`FixedUpdate` is slow
@@ -577,10 +584,10 @@ because `ReactiveProperty<T>` and `events.Observe<T>()` are the *same*
 > **One idiom, not three.** Do not bolt R3, UniRx, MessagePipe, or another DI
 > container alongside Onity to fill a perceived gap. Model current state as a
 > `ReactiveProperty<T>`, transient notifications as events, and single-owner
-> commands as direct service calls. The operator named for rate-limiting is
-> `ThrottleLast` (there is no leading-edge `Throttle`); `Buffer`/`Zip`/`Switch` and
-> keyed/buffered messaging are intentionally not shipped — reach for the
-> primitives above instead.
+> commands as direct service calls. Use `Throttle` for the leading edge and
+> `ThrottleLast` for the trailing/latest value. `Buffer` ships for count and time
+> windows; `Zip`/`Switch` and buffered/replay messaging are intentionally not
+> shipped.
 
 ---
 
@@ -588,6 +595,8 @@ because `ReactiveProperty<T>` and `events.Observe<T>()` are the *same*
 
 - **Full API reference:** [`Onity-AI-Usage-Guide.md`](Onity-AI-Usage-Guide.html) —
   every binding form, operator, and error-to-fix table.
+- **Unity async:** [Async with OnityTask](guide/onitytask.html) — frame waits,
+  cancellation, scene/web operations, and pooled-task safety.
 - **Coming from another framework:**
   [`Migration/From-Zenject.md`](Migration/From-Zenject.html),
   [`Migration/From-VContainer.md`](Migration/From-VContainer.html),

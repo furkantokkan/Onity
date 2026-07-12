@@ -151,11 +151,12 @@ The first resolve of a closed contract builds and caches it as a normal binding.
 
 ## Errors
 
-VContainer throws `VContainerException` for both registration and resolution problems. Onity splits these: `OnityBindingException` (binding/config: null instance, non-assignable `To<>`, multiple `[Inject]` ctors, setterless/indexer/generic `[Inject]`, post-build registration) and `OnityResolveException` (unresolvable type, circular dependency, ctor throw, inject into null). Both live in `Onity.DI`.
+VContainer throws `VContainerException` for both registration and resolution problems. Onity splits these: `OnityBindingException` (binding/config: null instance, non-assignable `To<>`, multiple `[Inject]` ctors, setterless/indexer/generic `[Inject]`, or build callbacks registered after finalization) and `OnityResolveException` (unresolvable type, circular dependency, ctor throw, inject into null). Both live in `Onity.DI`.
 
 ## Not supported — do this instead
 
-These VContainer features are deliberate Onity non-goals (see `docs/Plan/07-Competitive-And-AI-Roadmap.md` section 6). Do not call the VContainer API; use the Onity replacement.
+These VContainer features are deliberate Onity non-goals. Do not call the
+VContainer API; use the Onity replacement.
 
 | VContainer feature | Why it is a non-goal | Do this in Onity |
 | --- | --- | --- |
