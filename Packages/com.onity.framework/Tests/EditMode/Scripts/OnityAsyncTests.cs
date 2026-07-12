@@ -111,7 +111,7 @@ namespace Onity.Tests.EditMode
 
             OnityTask task = OnityTask.Delay(1f, cancellationTokenSource.Token);
 
-            Assert.ThrowsAsync<OperationCanceledException>(
+            Assert.CatchAsync<OperationCanceledException>(
                 async () => await task.AsTask());
         }
 
@@ -271,7 +271,7 @@ namespace Onity.Tests.EditMode
 
             OnityTask task = channel.PublishOnityTask(17, cancellationTokenSource.Token);
 
-            Assert.ThrowsAsync<OperationCanceledException>(
+            Assert.CatchAsync<OperationCanceledException>(
                 async () => await task.AsTask());
         }
 
@@ -405,7 +405,7 @@ namespace Onity.Tests.EditMode
 
             OnityTask<ResourceRequest> task = request.AsOnityTask(cancellationToken: cancellationTokenSource.Token);
 
-            Assert.ThrowsAsync<OperationCanceledException>(
+            Assert.CatchAsync<OperationCanceledException>(
                 async () => await task.AsTask());
         }
 

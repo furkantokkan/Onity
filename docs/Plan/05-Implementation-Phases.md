@@ -61,9 +61,9 @@ build-time circular detection; most-params ctor selection; scope == child contai
 are asserted against Onity's real behavior with inline comments, not faked parity.
 
 **Verification status:** `dotnet build Onity.DI.csproj` clean (0 errors).
-The 2026-05-30 follow-up Unity benchmark confirmed that baked resolve now beats
-VContainer in every measured timing scenario, including
-`Prepare & Register Complex` (~61,044 ns vs VContainer ~150,730 ns). The
+The 2026-07-12 follow-up Unity benchmark confirmed that standard and baked
+resolve beat VContainer in every measured timing scenario, including
+`Prepare & Register Complex` (~40,613 ns standard vs VContainer ~139,246 ns). The
 internal 15,000 ns build gate and allocation measurement remain
 open release-hardening work.
 

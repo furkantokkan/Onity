@@ -5,6 +5,78 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.3.6] - 2026-07-12
+
+### Added
+
+- Added `OnityRaycastCommandBatch.Complete()` as an explicit synchronization
+  point for scheduled raycast jobs.
+- Added `-onityBenchmarkScenario <name>` to the IL2CPP benchmark runner for
+  focused high-sample release gates.
+
+### Changed
+
+- Added a dense type-id provider slot to the standard generic DI resolve path,
+  removing the steady-state `Dictionary<Type, ...>` lookup while preserving
+  provider lifetime, diagnostics, rebind, parent fallback, and self-resolve
+  behavior.
+- Bumped the package and release pin examples to `0.3.6`.
+
+### Fixed
+
+- Added generation validation and single-consumer guards to pooled `OnityTask`
+  sources so stale task copies cannot observe a later pooled operation.
+- Routed `OnityTask` cancellation completion through the Unity runner so
+  continuations resume on the main thread, including fixed-frame waits while
+  `Time.timeScale` is zero.
+- Returned sources materialized through `AsTask()` / `Forget()` to their pools
+  after the independent `Task` completes.
+- Made `OnityRaycastCommandBatch` own and complete pending jobs before reading,
+  reusing, resizing, clearing, or disposing native buffers, and schedule only
+  the active command range.
+- Made the IL2CPP benchmark runner preserve menu scene/build-target state and
+  delete only its generated temporary scene.
+- Marked uncalibrated Editor allocation metrics unavailable, published them as
+  `n/a`, and removed the stale zero-allocation comparison chart.
+
+### Performance
+
+- Windows IL2CPP focused singleton gate (`1000` samples, `10,000` resolves per
+  sample): Onity standard/reflection `18.80 ns/op`, Onity baked `17.40 ns/op`,
+  VContainer `94.39 ns/op`, and Zenject `435.24 ns/op`.
+- The final full Windows IL2CPP suite keeps both Onity resolve lanes ahead of
+  VContainer on every measured resolve and prepare/register scenario.
+
+### Tested
+
+- Unity EditMode: `434/434` passed.
+- Unity PlayMode: `10/10` passed after adding OnityTask safety coverage.
+- Editor/Mono DI, Windows IL2CPP DI, and OnityTask vs UniTask benchmarks rerun
+  on Unity `2022.3.62f3`.
+
+## [0.3.5] - 2026-06-21
+
+### Added
+
+- Added `OnityTask` / `OnityTask<T>` as the Onity-owned Unity async awaitable
+  surface for frame waits, delays, scene loads, `AsyncOperation`,
+  `UnityWebRequest`, reactive awaits, and async messaging bridges.
+- Added OnityTask vs UniTask benchmark tooling behind `ONITY_BENCHMARKS`.
+- Added a UniTask migration guide covering common async mappings and web/scene
+  request examples.
+
+### Changed
+
+- Bumped package and release pin examples to `0.3.5`.
+
+### Tested
+
+- `dotnet build Onity.Unity.csproj -nologo`
+- `dotnet build Onity.Tests.EditMode.csproj -nologo`
+- `dotnet build onity-core-ci.csproj -c Release -nologo`
+
 ## [0.3.4] - 2026-05-31
 
 ### Changed
@@ -29,6 +101,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gameplay scenes under `Assets/Scenes/OnitySceneFlow`.
 - Added one-click 2-scene and 3-scene Scene Flow setup paths for quick project
   bootstrapping.
+- Added a Single Scene Setup preset that creates one gameplay scene with a
+  `SceneContext`, prepares the runtime-loaded `ProjectContext` prefab, and
+  applies Build Settings immediately.
+- Added Unity event shortcuts over the auto-bound event hub, plus
+  component-scoped overloads for `GameObjectContext` usage.
 
 ### Changed
 
@@ -77,9 +154,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Removed the external LINQ replacement dependency — Onity now has **zero non-Unity third-party runtime
+- Removed the external LINQ replacement dependency — Onity now has **zero third-party runtime
   dependencies**. `OnityUiPresenterFactory` uses a hand-rolled loop instead of
   `AsValueEnumerable`; install no longer needs NuGetForUnity.
+
+## [0.3.0] - 2026-05-30
+
+### Added
+
+- Added engine-free reactive thread-pool scheduling:
+  - `ObserveOnThreadPool()` re-posts values to a .NET thread-pool worker while
+    preserving source order.
+  - `SelectOnThreadPool(...)` runs CPU-bound selectors on the .NET thread pool
+    with configurable max concurrency.
+- Added EditMode coverage for thread-pool scheduling, configured parallelism,
+  source-order preservation when concurrency is one, and invalid argument
+  validation.
+- Added ADR 0002 documenting the managed thread-pool boundary and why Unity
+  Job/Burst modes remain separate from managed reactive operator execution.
+
+### Changed
+
+- Updated reactive architecture and migration docs to distinguish real managed
+  thread-pool operators from the experimental Unity job/Burst frame boundary.
+- Bumped package version to `0.3.0`.
+- Updated UPM install documentation and release pin examples to `v0.3.0`.
+
+### Tested
+
+- `dotnet build onity-core-ci.csproj -c Release`
+- Focused reactive thread-pool smoke coverage for ordered thread hops and
+  configured selector parallelism.
 
 ## [0.2.1] - 2026-05-30
 
@@ -109,7 +214,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First public preview. Three feature-complete pillars on a shared engine-free core
 with one disposal model and hot-path machinery designed to avoid per-call managed
-allocation. In this 0.1.0 preview, the core used no `System.Linq`.
+allocation. The core uses no `System.Linq`.
 
 ### Added
 
@@ -180,15 +285,18 @@ allocation. In this 0.1.0 preview, the core used no `System.Linq`.
 ### Tested
 
 - Full EditMode suite green: **203/203** in Unity 6.4.
-- Timing benchmarks captured on 2022.3.62f3 (Editor-Mono, one machine — indicative,
+- Timing benchmarks captured on 2022.3.62f3 (Editor-Mono, Windows PC — indicative,
   not guaranteed). The resolve/publish/`OnNext`/`EveryUpdate` paths are designed to
   avoid per-call managed allocation, but the published allocation figures were
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.6]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.6
+[0.3.5]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.5
 [0.3.4]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.4
 [0.3.3]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.3
 [0.3.2]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.2
 [0.3.1]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.1
+[0.3.0]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.0
 [0.2.1]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.2.1
 [0.1.0]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.1.0

@@ -22,7 +22,7 @@ the performance gates in `04-Performance-Targets.md`, the architecture rules in
 
 | Pillar | Competitor target | Status | One-line verdict |
 |---|---|---|---|
-| DI | Zenject, VContainer | **Editor + IL2CPP lead in current benchmarks** | Faster than both on all 5 Editor/Mono timing scenarios with baked resolve; Windows IL2CPP player with generated AOT activators is also faster than VContainer and Zenject on all 5 measured timing scenarios |
+| DI | Zenject, VContainer | **Editor + IL2CPP lead in current benchmarks** | Standard and baked lanes are faster than both competitors on all 5 Editor/Mono and Windows IL2CPP timing scenarios; the IL2CPP singleton lead is also verified with 1000 samples |
 | Reactive | R3, UniRx | **Strong core, expanding coverage** | Subject/ReactiveProperty are re-entrancy-correct and allocation-aware; core combinators, error isolation, and Unity timing bridges are present, with broader operator/perf proof still planned |
 | Events | MessagePipe | **On-philosophy, smaller surface** | Same algebra as reactive, DI-native auto-bind, keyed channels, async channels, and broker examples; no published MessagePipe publish microbenchmark yet |
 | Cross-cutting | (all three combined) | **Unified DX now documented** | DI is the spine; broker + hub auto-bound in every scope; events bridge into reactive operators; AI usage guide and analyzer scaffold exist, with compile-time guidance still expanding |
@@ -30,16 +30,16 @@ the performance gates in `04-Performance-Targets.md`, the architecture rules in
 ### 1.2 The measured DI win (already true)
 
 From `di-benchmark-summary.md` (Unity 2022.3.62f3, Windows, Mono editor,
-512 warmup / 8 samples / mean). Onity baked resolve beats **both** VContainer
-and Zenject on every measured Editor/Mono timing scenario:
+512 warmup / 8 samples / mean). Onity standard and baked resolve beat **both**
+VContainer and Zenject on every measured Editor/Mono timing scenario:
 
-| Scenario | Onity Baked (ns/op) | VContainer (ns/op) | Zenject (ns/op) | Onity vs VContainer |
-|---|---:|---:|---:|---:|
-| Resolve Singleton | 63 | 214 | 2,866 | **+71%** |
-| Resolve Transient | 1,083 | 1,879 | 12,356 | **+42%** |
-| Resolve Combined | 972 | 2,079 | 17,248 | **+53%** |
-| Resolve Complex (6-level) | 22,905 | 42,158 | 289,823 | **+46%** |
-| Prepare & Register Complex | 61,044 | 150,730 | 215,537 | **+60%** |
+| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Standard vs VContainer |
+|---|---:|---:|---:|---:|---:|
+| Resolve Singleton | 69 | 78 | 217 | 2,778 | **+68%** |
+| Resolve Transient | 1,030 | 1,366 | 2,352 | 12,561 | **+56%** |
+| Resolve Combined | 980 | 875 | 1,905 | 14,382 | **+49%** |
+| Resolve Complex (6-level) | 20,874 | 20,828 | 40,270 | 281,814 | **+48%** |
+| Prepare & Register Complex | 40,613 | 54,996 | 139,246 | 188,865 | **+71%** |
 
 The Editor/Mono "beats VContainer everywhere" claim is true **including build**,
 not just resolve. The Windows IL2CPP player run now uses generated AOT activators
@@ -47,8 +47,9 @@ for the benchmark graph and also beats the local VContainer baseline across
 singleton, transient, combined, complex, and prepare/register. On Mono/JIT, the
 speed comes from a process-wide compiled-activator cache (`Expression.Compile`
 once per `ConstructorInfo`), compiled member setters, a `[ThreadStatic]`
-lock-free `ArgumentArrayPool`, per-plan constructor-dependency caches, and a
-baked provider-slot map. On IL2CPP, generated direct `new T(...)` activators
+  lock-free `ArgumentArrayPool`, per-plan constructor-dependency caches, dense
+  type-id provider slots for standard generic resolve, and a baked provider-slot
+  map. On IL2CPP, generated direct `new T(...)` activators
 avoid `ConstructorInfo.Invoke` for hot types. Both paths avoid an explicit
 `builder.Build()` ceremony before resolve and keep `Onity.DI.asmdef`
 `noEngineReferences: true`.
@@ -102,7 +103,7 @@ Non-goal (deliberately omitted, see section 6).
 | Edit-time validation | `ValidateAll` / Roslyn (both) | No | Detects missing/circular only at resolve time | **Adopt** (Roslyn analyzer) |
 | Engine-free, test-without-scene | No (Zenject); partial (VContainer) | **Yes** | `new OnityContainer()` in EditMode, zero Unity setup | **Onity win** |
 | Binding-source attribution | No (default) | Yes | `PushBindingSource` / `TryGetBindingSource` per-binding | **Onity win** |
-| Resolve performance | Baseline | **Faster** | Beats both on all 5 scenarios; 0 B/op resolve | **Onity win** |
+| Resolve performance | Baseline | **Faster** | Beats both on all 5 scenarios; allocation metric pending calibration | **Onity win** |
 
 ### 2.2 Reactive - Onity vs R3 / UniRx
 
@@ -175,13 +176,13 @@ DI already meets its competitive goal. The gates in
 `04-Performance-Targets.md` section 3.1 are the contract to **not regress**
 (ratchet rule: a >5% regression without a documented reason fails CI).
 
-| Scenario | Onity baked now (ns/op) | Phase 1 gate | Stretch | Gate status |
+| Scenario | Onity standard now (ns/op) | Phase 1 gate | Stretch | Gate status |
 |---|---:|---:|---:|---|
-| Resolve Singleton | 63 | <= 150 | <= 130 | **Beats stretch** |
-| Resolve Transient | 1,083 | <= 1,500 | <= 1,200 | **Passes gate** |
-| Resolve Combined | 972 | <= 1,550 | <= 1,250 | **Beats stretch** |
-| Resolve Complex | 22,905 | <= 35,000 | <= 28,000 | **Beats stretch** |
-| Prepare & Register Complex | 61,044 | <= 15,000 | <= 12,000 | **Missed internal gate** (still ~60% faster than VContainer) |
+| Resolve Singleton | 69 | <= 150 | <= 130 | **Beats stretch** |
+| Resolve Transient | 1,030 | <= 1,500 | <= 1,200 | **Beats stretch** |
+| Resolve Combined | 980 | <= 1,550 | <= 1,250 | **Beats stretch** |
+| Resolve Complex | 20,874 | <= 35,000 | <= 28,000 | **Beats stretch** |
+| Prepare & Register Complex | 40,613 | <= 15,000 | <= 12,000 | **Missed internal gate** (still ~71% faster than VContainer) |
 | Resolve alloc / sample (B) | Pending | 0 | 0 | Add allocation benchmark coverage |
 
 Benchmark note: Onity wins every Editor/Mono timing head-to-head, but the internal
@@ -189,7 +190,9 @@ Benchmark note: Onity wins every Editor/Mono timing head-to-head, but the intern
 tracked separately. The Windows IL2CPP player benchmark now proves the
 benchmark graph runs without crashing, registers generated AOT activators, and
 beats the measured VContainer baseline on singleton, transient, combined,
-complex, and prepare/register. The next meaningful step is broader
+complex, and prepare/register. A focused 1000-sample singleton gate measured
+Onity standard at 18.80 ns/op versus VContainer at 94.39 ns/op. The next
+meaningful step is broader
 generated-activator coverage plus Android/WebGL/device runs.
 
 ### 3.2 Reactive - strong primitives, prove the rest

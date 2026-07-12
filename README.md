@@ -113,29 +113,40 @@ Onity's DI now covers the feature axes VContainer and Zenject are known for — 
 
 Measured by `OnityDiBenchmarkRunner` / `OnityDiBenchmarkPlayerRunner` (Unity 2022.3.62f3, Windows; mean reported). These numbers were measured on a Windows PC and are **indicative, not a guarantee**; Unity version, scripting backend, and graph shape can change both absolute timings and relative ordering.
 
-Editor / Mono run (`2026-05-30T19:38:06Z`, `WindowsEditor`, 512 warmup / 8 samples / 10,000 iterations):
+Editor / Mono run (`2026-07-12T13:31:37Z`, `WindowsEditor`, 512 warmup / 8 samples / 10,000 iterations):
 
-| Scenario | Onity | VContainer | Zenject | Onity vs VContainer |
-| --- | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~63 ns | ~214 ns | ~2,866 ns | ~+71% |
-| Resolve Transient | ~1,083 ns | ~1,879 ns | ~12,356 ns | ~+42% |
-| Resolve Combined | ~972 ns | ~2,079 ns | ~17,248 ns | ~+53% |
-| Resolve Complex (6-level) | ~22,905 ns | ~42,158 ns | ~289,823 ns | ~+46% |
-| Prepare & Register Complex | ~61,044 ns | ~150,730 ns | ~215,537 ns | ~+60% |
+| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Standard vs VContainer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Resolve Singleton | ~69 ns | ~78 ns | ~217 ns | ~2,778 ns | ~+68% |
+| Resolve Transient | ~1,030 ns | ~1,366 ns | ~2,352 ns | ~12,561 ns | ~+56% |
+| Resolve Combined | ~980 ns | ~875 ns | ~1,905 ns | ~14,382 ns | ~+49% |
+| Resolve Complex (6-level) | ~20,874 ns | ~20,828 ns | ~40,270 ns | ~281,814 ns | ~+48% |
+| Prepare & Register Complex | ~40,613 ns | ~54,996 ns | ~139,246 ns | ~188,865 ns | ~+71% |
 
-IL2CPP player run (`2026-05-31T15:26:19Z`, `WindowsPlayer`, source-generated activators registered, 512 warmup / 8 samples / 10,000 iterations):
+IL2CPP player run (`2026-07-12T13:34:55Z`, `WindowsPlayer`, source-generated activators registered, 512 warmup / 8 samples / 10,000 iterations):
 
-| Scenario | Onity | VContainer | Zenject | Onity vs VContainer |
-| --- | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~20 ns | ~98 ns | ~488 ns | ~+80% |
-| Resolve Transient | ~133 ns | ~528 ns | ~2,302 ns | ~+75% |
-| Resolve Combined | ~159 ns | ~679 ns | ~3,052 ns | ~+77% |
-| Resolve Complex (6-level) | ~4,782 ns | ~13,552 ns | ~61,999 ns | ~+65% |
-| Prepare & Register Complex | ~26,944 ns | ~39,694 ns | ~65,937 ns | ~+32% |
+| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Standard vs VContainer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Resolve Singleton | ~18 ns | ~18 ns | ~95 ns | ~449 ns | ~+82% |
+| Resolve Transient | ~159 ns | ~191 ns | ~541 ns | ~2,448 ns | ~+71% |
+| Resolve Combined | ~176 ns | ~196 ns | ~612 ns | ~3,080 ns | ~+71% |
+| Resolve Complex (6-level) | ~5,107 ns | ~5,071 ns | ~12,475 ns | ~59,327 ns | ~+59% |
+| Prepare & Register Complex | ~21,128 ns | ~24,490 ns | ~34,888 ns | ~59,567 ns | ~+39% |
 
-On Mono/JIT, Onity uses cached compiled activators. On IL2CPP, generated activators provide the AOT fast path for hot types. Full Editor numbers and deltas: [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md). Player details: [`di-benchmark-player-latest.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-player-latest.md).
+The standard generic path is labeled `Onity (Reflection)` in the raw reports for
+historical continuity; it now uses dense type-id provider slots, while reflection
+is only the activation fallback when no generated or compiled activator exists.
+The focused `1000`-sample IL2CPP singleton gate measured Onity standard at
+`18.80 ns/op` versus VContainer at `94.39 ns/op` (~80% faster). Full Editor
+numbers and deltas: [`di-benchmark-summary.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md).
+Player details: [`di-benchmark-player-latest.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-player-latest.md).
+Focused gate: [`di-benchmark-player-singleton-1000.md`](Packages/com.onity.framework/Benchmarks/Results/di-benchmark-player-singleton-1000.md).
 
-Benchmark verification behind these numbers: Unity batchmode Editor DI benchmark, Windows IL2CPP player DI benchmark with generated activators at 10,000 iterations per sample, `dotnet build tools/Onity.SourceGen/Onity.SourceGen.csproj -c Release`, and release branch CI build (`dotnet build onity-core-ci.csproj -c Release -nologo`). CI runs EditMode and PlayMode on every push — see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
+Benchmark verification behind these numbers: Unity batchmode Editor DI benchmark,
+Windows IL2CPP player DI benchmark, the focused 1000-sample singleton gate, and
+the local EditMode/PlayMode suites. GitHub runs the engine-free build on every
+push; Unity jobs run when the repository Unity license secret is configured —
+see [`.github/workflows/onity-ci.yml`](.github/workflows/onity-ci.yml).
 
 ---
 
@@ -156,7 +167,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.5
+https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.6
 ```
 
 …or in `Packages/manifest.json`:
@@ -169,7 +180,7 @@ https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3
 }
 ```
 
-(`#upm` tracks the latest package; use the `?path=…#v0.3.5` form to pin a specific release.)
+(`#upm` tracks the latest package; use the `?path=…#v0.3.6` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 

@@ -26,6 +26,7 @@ namespace Onity.Benchmarks
         private const string k_iterationsArgument = "-onityBenchmarkIterations";
         private const string k_samplesArgument = "-onityBenchmarkSamples";
         private const string k_warmupArgument = "-onityBenchmarkWarmup";
+        private const string k_scenarioArgument = "-onityBenchmarkScenario";
         private const string k_latestJsonFileName = "di-benchmark-player-latest.json";
         private static int s_warmupIterations = k_defaultWarmupIterations;
         private static int s_samplesPerCase = k_defaultSamplesPerCase;
@@ -120,7 +121,9 @@ namespace Onity.Benchmarks
             int iterationsPerSample = GetPositiveIntArgument(args, k_iterationsArgument, k_defaultIterationsPerSample);
             s_samplesPerCase = GetPositiveIntArgument(args, k_samplesArgument, k_defaultSamplesPerCase);
             s_warmupIterations = GetPositiveIntArgument(args, k_warmupArgument, k_defaultWarmupIterations);
-            ScenarioConfig[] scenarios = CreateScenarios(iterationsPerSample);
+            ScenarioConfig[] scenarios = CreateScenarios(
+                iterationsPerSample,
+                GetArgumentValue(args, k_scenarioArgument));
 
             BenchmarkReport report = new BenchmarkReport
             {
@@ -273,9 +276,9 @@ namespace Onity.Benchmarks
             }
         }
 
-        private static ScenarioConfig[] CreateScenarios(int iterationsPerSample)
+        private static ScenarioConfig[] CreateScenarios(int iterationsPerSample, string scenarioFilter)
         {
-            return new[]
+            ScenarioConfig[] scenarios =
             {
                 new ScenarioConfig(BenchmarkScenario.ResolveSingleton, "Resolve (Singleton)", iterationsPerSample),
                 new ScenarioConfig(BenchmarkScenario.ResolveTransient, "Resolve (Transient)", iterationsPerSample),
@@ -283,6 +286,31 @@ namespace Onity.Benchmarks
                 new ScenarioConfig(BenchmarkScenario.ResolveComplex, "Resolve (Complex)", iterationsPerSample),
                 new ScenarioConfig(BenchmarkScenario.PrepareAndRegisterComplex, "Prepare & Register (Complex)", iterationsPerSample)
             };
+
+            if (string.IsNullOrWhiteSpace(scenarioFilter))
+            {
+                return scenarios;
+            }
+
+            if (Enum.TryParse(scenarioFilter, true, out BenchmarkScenario selectedScenario) == false)
+            {
+                throw new ArgumentException(
+                    $"Unknown benchmark scenario '{scenarioFilter}'. Use a {nameof(BenchmarkScenario)} enum name.",
+                    nameof(scenarioFilter));
+            }
+
+            for (int i = 0; i < scenarios.Length; i++)
+            {
+                if (scenarios[i].scenario == selectedScenario)
+                {
+                    return new[] { scenarios[i] };
+                }
+            }
+
+            throw new ArgumentOutOfRangeException(
+                nameof(scenarioFilter),
+                scenarioFilter,
+                "Benchmark scenario is not configured.");
         }
 
         private static BenchmarkOperation CreateOnityOperation(BenchmarkScenario scenario)

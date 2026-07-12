@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Onity.Core;
@@ -20,6 +21,8 @@ namespace Onity.DI
         [ThreadStatic]
         private static Stack<string> s_bindingSourceStack;
         private static bool s_diagnosticsCollectionEnabled;
+        private static readonly int s_containerTypeId = TypeIdRegistry.Register(typeof(OnityContainer));
+        private static readonly int s_resolverTypeId = TypeIdRegistry.Register(typeof(IResolver));
         // Phase 1 baked-resolve flag. DEFAULTS TO FALSE so the proven reflection
         // path stays the shipping path and the existing EditMode suite is
         // unaffected. When true, Build() compiles a BakedGraph and Resolve takes a
@@ -69,6 +72,7 @@ namespace Onity.DI
 
         private readonly OnityContainer m_parent;
         private readonly Dictionary<Type, IProvider> m_providerMap;
+        private IProvider[] m_providerByTypeId;
         private readonly Dictionary<Type, IProvider> m_implicitProviderMap;
         private readonly Dictionary<Type, BindingSourceRecord> m_bindingSourceMap;
         private readonly Dictionary<Type, TypeInjectionPlan> m_planMap;
@@ -646,20 +650,44 @@ namespace Onity.DI
         }
 
         /// <inheritdoc />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TService Resolve<TService>()
         {
             EnsureNotDisposed();
+
+            int serviceTypeId = TypeIdCache<TService>.Id;
+
+            if (serviceTypeId == s_containerTypeId || serviceTypeId == s_resolverTypeId)
+            {
+                return (TService)(object)this;
+            }
 
             // Baked fast path: dense-id array lookup with no dictionary hash. Only
             // hits explicit local bindings; misses fall through to the identical
             // reflection path so parent/implicit/unbound behavior is unchanged.
             BakedGraph baked = m_baked;
 
-            if (baked != null && baked.TryResolve(TypeIdCache<TService>.Id, out object bakedInstance))
+            if (baked != null && baked.TryResolve(serviceTypeId, out object bakedInstance))
             {
                 return (TService)bakedInstance;
             }
 
+            IProvider[] providers = m_providerByTypeId;
+            if (providers != null && (uint)serviceTypeId < (uint)providers.Length)
+            {
+                IProvider provider = providers[serviceTypeId];
+                if (provider != null)
+                {
+                    return (TService)provider.Get(this);
+                }
+            }
+
+            return ResolveGenericSlow<TService>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private TService ResolveGenericSlow<TService>()
+        {
             if (TryResolveInternal(typeof(TService), out object service))
             {
                 return (TService)service;
@@ -834,6 +862,7 @@ namespace Onity.DI
             m_asyncBuildCallbacks.Clear();
             m_cachedBuildTask = null;
             m_baked = null;
+            m_providerByTypeId = null;
             // Lifecycle instances are owned by their providers (disposed above);
             // just drop the references so a disposed container ticks nothing.
             m_initializables = null;
@@ -871,7 +900,7 @@ namespace Onity.DI
 
             for (int i = 0; i < contractTypes.Length; i++)
             {
-                m_providerMap[contractTypes[i]] = provider;
+                SetLocalProvider(contractTypes[i], provider);
                 AddToMultiProviderMap(contractTypes[i], provider);
                 RegisterBindingSource(contractTypes[i], provider, false);
             }
@@ -1115,7 +1144,7 @@ namespace Onity.DI
 
         private void RegisterProvider(Type contractType, IProvider provider, bool isImplicitRegistration)
         {
-            m_providerMap[contractType] = provider;
+            SetLocalProvider(contractType, provider);
             m_ownedProviders.Add(provider);
             m_bindingVersion++;
 
@@ -1127,6 +1156,28 @@ namespace Onity.DI
             }
 
             RegisterBindingSource(contractType, provider, isImplicitRegistration);
+        }
+
+        private void SetLocalProvider(Type contractType, IProvider provider)
+        {
+            m_providerMap[contractType] = provider;
+
+            int typeId = TypeIdRegistry.Register(contractType);
+            IProvider[] providers = m_providerByTypeId;
+
+            if (providers == null || typeId >= providers.Length)
+            {
+                int newLength = providers == null ? 16 : providers.Length;
+                while (newLength <= typeId)
+                {
+                    newLength *= 2;
+                }
+
+                Array.Resize(ref m_providerByTypeId, newLength);
+                providers = m_providerByTypeId;
+            }
+
+            providers[typeId] = provider;
         }
 
         private void AddToMultiProviderMap(Type contractType, IProvider provider)
@@ -1875,6 +1926,7 @@ namespace Onity.DI
             return dependencyTypes;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EnsureNotDisposed()
         {
             if (m_isDisposed)

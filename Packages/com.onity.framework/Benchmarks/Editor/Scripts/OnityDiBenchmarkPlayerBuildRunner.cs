@@ -24,6 +24,7 @@ namespace Onity.Editor.Benchmarks
         private const string k_iterationsArgument = "-onityBenchmarkIterations";
         private const string k_samplesArgument = "-onityBenchmarkSamples";
         private const string k_warmupArgument = "-onityBenchmarkWarmup";
+        private const string k_scenarioArgument = "-onityBenchmarkScenario";
         private const string k_benchmarkPlayerDefine = "ONITY_DI_BENCHMARK_PLAYER";
         private const string k_benchmarkScenePath = "Assets/OnityBenchmarkTemp/OnityDiBenchmarkPlayer.unity";
 
@@ -43,10 +44,21 @@ namespace Onity.Editor.Benchmarks
 
         private static void BuildAndRunPlayerBenchmark()
         {
+            if (Application.isBatchMode == false
+                && EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo() == false)
+            {
+                return;
+            }
+
             BuildTargetGroup targetGroup = BuildTargetGroup.Standalone;
             BuildTarget target = BuildTarget.StandaloneWindows64;
+            BuildTarget originalTarget = EditorUserBuildSettings.activeBuildTarget;
+            BuildTargetGroup originalTargetGroup = BuildPipeline.GetBuildTargetGroup(originalTarget);
             ScriptingImplementation originalBackend = PlayerSettings.GetScriptingBackend(targetGroup);
             string originalDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
+            SceneSetup[] originalSceneSetup = EditorSceneManager.GetSceneManagerSetup();
+            string benchmarkScene = null;
+            bool benchmarkFolderCreated = false;
 
             string buildPath = GetArgumentValue(k_buildPathArgument);
             string latestJson = GetArgumentValue(k_outputArgument);
@@ -80,7 +92,7 @@ namespace Onity.Editor.Benchmarks
                     targetGroup,
                     AddDefine(originalDefines, k_benchmarkPlayerDefine));
 
-                string benchmarkScene = CreateBenchmarkScene();
+                benchmarkScene = CreateBenchmarkScene(out benchmarkFolderCreated);
                 string[] scenes = { benchmarkScene };
 
                 BuildPlayerOptions options = new BuildPlayerOptions
@@ -107,9 +119,45 @@ namespace Onity.Editor.Benchmarks
             }
             finally
             {
-                DeleteBenchmarkScene();
-                PlayerSettings.SetScriptingBackend(targetGroup, originalBackend);
-                PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, originalDefines);
+                try
+                {
+                    DeleteBenchmarkScene(benchmarkScene, benchmarkFolderCreated);
+                }
+                finally
+                {
+                    try
+                    {
+                        PlayerSettings.SetScriptingBackend(targetGroup, originalBackend);
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, originalDefines);
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                if (originalTarget != target
+                                    && EditorUserBuildSettings.SwitchActiveBuildTarget(
+                                        originalTargetGroup,
+                                        originalTarget) == false)
+                                {
+                                    throw new InvalidOperationException(
+                                        $"Failed to restore active build target to {originalTarget}.");
+                                }
+                            }
+                            finally
+                            {
+                                if (Application.isBatchMode == false && originalSceneSetup.Length > 0)
+                                {
+                                    EditorSceneManager.RestoreSceneManagerSetup(originalSceneSetup);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -199,28 +247,47 @@ namespace Onity.Editor.Benchmarks
             return scenes;
         }
 
-        private static string CreateBenchmarkScene()
+        private static string CreateBenchmarkScene(out bool benchmarkFolderCreated)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(k_benchmarkScenePath));
+            string benchmarkFolder = Path.GetDirectoryName(k_benchmarkScenePath);
+            benchmarkFolderCreated = Directory.Exists(benchmarkFolder) == false;
+            Directory.CreateDirectory(benchmarkFolder);
 
-            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             GameObject runner = new GameObject("Onity DI Benchmark Player");
             runner.AddComponent<OnityDiBenchmarkPlayerBootstrap>();
-            EditorSceneManager.SaveScene(scene, k_benchmarkScenePath);
-            AssetDatabase.Refresh();
-            return k_benchmarkScenePath;
-        }
-
-        private static void DeleteBenchmarkScene()
-        {
-            Scene scene = SceneManager.GetSceneByPath(k_benchmarkScenePath);
-
-            if (scene.IsValid())
+            string scenePath = AssetDatabase.GenerateUniqueAssetPath(k_benchmarkScenePath);
+            if (EditorSceneManager.SaveScene(scene, scenePath) == false)
             {
                 EditorSceneManager.CloseScene(scene, true);
+                throw new InvalidOperationException($"Failed to save benchmark scene at '{scenePath}'.");
             }
 
-            AssetDatabase.DeleteAsset("Assets/OnityBenchmarkTemp");
+            AssetDatabase.Refresh();
+            return scenePath;
+        }
+
+        private static void DeleteBenchmarkScene(string benchmarkScenePath, bool benchmarkFolderCreated)
+        {
+            if (string.IsNullOrEmpty(benchmarkScenePath) == false)
+            {
+                Scene scene = SceneManager.GetSceneByPath(benchmarkScenePath);
+
+                if (scene.IsValid())
+                {
+                    EditorSceneManager.CloseScene(scene, true);
+                }
+
+                AssetDatabase.DeleteAsset(benchmarkScenePath);
+            }
+
+            string benchmarkFolder = Path.GetDirectoryName(k_benchmarkScenePath);
+            if (benchmarkFolderCreated
+                && Directory.Exists(benchmarkFolder)
+                && Directory.GetFileSystemEntries(benchmarkFolder).Length == 0)
+            {
+                AssetDatabase.DeleteAsset(benchmarkFolder);
+            }
         }
 
         private static string GetArgumentValue(string argumentName)
@@ -244,6 +311,7 @@ namespace Onity.Editor.Benchmarks
             AppendPassthroughArgument(builder, k_iterationsArgument);
             AppendPassthroughArgument(builder, k_samplesArgument);
             AppendPassthroughArgument(builder, k_warmupArgument);
+            AppendPassthroughArgument(builder, k_scenarioArgument);
             return builder.ToString();
         }
 

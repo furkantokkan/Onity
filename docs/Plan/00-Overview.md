@@ -83,19 +83,20 @@ outside the distributable package.
 ### Latest DI benchmark
 
 From `Packages/com.onity.framework/Benchmarks/Results/di-benchmark-summary.md`,
-Unity 2022.3.62f3, Windows Editor/Mono, generated 2026-05-30:
+Unity 2022.3.62f3, Windows Editor/Mono, generated 2026-07-12:
 
 | Scenario | Onity (ns/op) | VContainer (ns/op) | Onity vs VContainer |
 |---|---:|---:|---:|
-| Resolve Singleton | 63 | 214 | +70.5% |
-| Resolve Transient | 1,083 | 1,879 | +42.4% |
-| Resolve Combined | 972 | 2,079 | +53.2% |
-| Resolve Complex | 22,905 | 42,158 | +45.7% |
-| Prepare and Register Complex | 61,044 | 150,730 | +59.5% |
+| Resolve Singleton | 69 | 217 | +68.2% |
+| Resolve Transient | 1,030 | 2,352 | +56.2% |
+| Resolve Combined | 980 | 1,905 | +48.6% |
+| Resolve Complex | 20,874 | 40,270 | +48.2% |
+| Prepare and Register Complex | 40,613 | 139,246 | +70.8% |
 
 The timing table above is the current benchmark output.
 
-Onity Baked is faster than VContainer on every measured Editor/Mono timing path.
+Onity standard and baked lanes are faster than VContainer on every measured
+Editor/Mono timing path.
 The Windows IL2CPP player benchmark also runs with generated AOT activators and
 is faster than VContainer on singleton, transient, combined, complex, and
 prepare/register in the current run. The remaining performance tasks are broader
