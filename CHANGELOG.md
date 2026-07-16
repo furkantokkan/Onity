@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated the Unity 2022.3-compatible package baselines to Input System `1.19.0`,
   Entities `1.4.8`, Burst `1.8.29`, Collections `2.6.8`, and Mathematics `1.3.3`.
+- Updated first-party GitHub Actions to Node 24-backed major versions, removing
+  the Node.js 20 runner deprecation warning.
 
 ### Fixed
 
