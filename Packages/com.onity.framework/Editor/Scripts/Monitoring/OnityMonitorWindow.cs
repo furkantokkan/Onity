@@ -213,7 +213,7 @@ namespace Onity.Editor.Monitoring
 
         private void RefreshContextList()
         {
-            int selectedInstanceId = m_selectedContext != null ? m_selectedContext.GetInstanceID() : 0;
+            int selectedInstanceId = m_selectedContext != null ? m_selectedContext.GetHashCode() : 0;
             m_contextEntries.Clear();
 
             OnityContext[] contexts = UnityEngine.Object.FindObjectsByType<OnityContext>(
@@ -253,7 +253,7 @@ namespace Onity.Editor.Monitoring
 
             for (int i = 0; i < m_contextEntries.Count; i++)
             {
-                if (m_contextEntries[i].Context != null && m_contextEntries[i].Context.GetInstanceID() == selectedInstanceId)
+                if (m_contextEntries[i].Context != null && m_contextEntries[i].Context.GetHashCode() == selectedInstanceId)
                 {
                     selectedIndex = i;
                     break;

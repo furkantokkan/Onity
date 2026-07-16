@@ -251,7 +251,7 @@ namespace Onity.Editor.Validation
                         installer);
                 }
 
-                int installerId = installer.GetInstanceID();
+                int installerId = installer.GetHashCode();
 
                 if (installerIds.Add(installerId) == false)
                 {
