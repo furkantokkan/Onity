@@ -85,6 +85,7 @@ for cancellation, scene/web operations, interop, and diagnostics.
   - `OnitySceneTransitionStore`
   - `OnitySceneFlowProfile`
   - `OnitySceneFlowStateMachine`
+  - Bootstrap readiness and default UI Toolkit loading initiators
 
 ## Quick Start
 
@@ -95,7 +96,9 @@ for cancellation, scene/web operations, interop, and diagnostics.
 4. Use `OnitySceneFlow` + `OnitySceneInitiator` for SEP-style scene entry.
 5. Optional: create and assign an `OnitySceneFlowProfile` to drive
    grouped scene routing with optional singleton `Bootstrap` / `Loading`
-   scenes plus as many `Menu` and `Level` scenes as your game needs.
+   scenes plus as many `Menu`, `Hub`, and `Gameplay` scenes as your game needs.
+   The Scene Flow Manager includes 2-, 3-, and 4-stage ready presets plus a
+   Blank Template that creates only an empty profile asset.
 
 ## Minimal Installer Example
 

@@ -8,7 +8,7 @@ namespace Onity.Unity.SceneFlow
     /// <summary>
     /// Shared scene-flow profile used by SEP runtime state transitions.
     /// Bootstrap and Loading remain optional singleton groups.
-    /// MainMenuHub and Gameplay can each contain multiple grouped scenes.
+    /// MainMenuHub, Hub, and Gameplay can each contain multiple grouped scenes.
     /// </summary>
     [CreateAssetMenu(
         fileName = "OnitySceneFlowProfile",
@@ -35,12 +35,18 @@ namespace Onity.Unity.SceneFlow
         [FormerlySerializedAs("m_gameplaySceneName")]
         [SerializeField] private string m_defaultGameplaySceneName = "GameModeOrGameScene - 3";
 
+        [Tooltip("Default hub scene name in Build Settings.")]
+        [SerializeField] private string m_defaultHubSceneName = string.Empty;
+
         [Header("Grouped Scene Lists")]
         [Tooltip("All grouped main menu scenes. Default scene is selected from this list.")]
         [SerializeField] private List<string> m_mainMenuSceneNames = new List<string>();
 
         [Tooltip("All grouped gameplay scenes. Default scene is selected from this list.")]
         [SerializeField] private List<string> m_gameplaySceneNames = new List<string>();
+
+        [Tooltip("All grouped hub scenes. Default scene is selected from this list.")]
+        [SerializeField] private List<string> m_hubSceneNames = new List<string>();
 
         /// <summary>
         /// Gets whether transitions should route through loading scene by default.
@@ -56,6 +62,11 @@ namespace Onity.Unity.SceneFlow
         /// Gets grouped gameplay scene names in configured order.
         /// </summary>
         public IReadOnlyList<string> GameplaySceneNames => m_gameplaySceneNames;
+
+        /// <summary>
+        /// Gets grouped hub scene names in configured order.
+        /// </summary>
+        public IReadOnlyList<string> HubSceneNames => m_hubSceneNames;
 
         private void OnValidate()
         {
@@ -104,6 +115,9 @@ namespace Onity.Unity.SceneFlow
                 case OnitySceneFlowStateId.Gameplay:
                     return ResolveDefaultSceneName(m_defaultGameplaySceneName, m_gameplaySceneNames);
 
+                case OnitySceneFlowStateId.Hub:
+                    return ResolveDefaultSceneName(m_defaultHubSceneName, m_hubSceneNames);
+
                 default:
                     return string.Empty;
             }
@@ -139,6 +153,10 @@ namespace Onity.Unity.SceneFlow
 
                 case OnitySceneFlowStateId.Gameplay:
                     CopyGroupedSceneNames(m_gameplaySceneNames, m_defaultGameplaySceneName, results);
+                    return;
+
+                case OnitySceneFlowStateId.Hub:
+                    CopyGroupedSceneNames(m_hubSceneNames, m_defaultHubSceneName, results);
                     return;
             }
         }
@@ -181,6 +199,12 @@ namespace Onity.Unity.SceneFlow
                 return true;
             }
 
+            if (ContainsSceneName(m_hubSceneNames, m_defaultHubSceneName, sceneName))
+            {
+                stateId = OnitySceneFlowStateId.Hub;
+                return true;
+            }
+
             stateId = OnitySceneFlowStateId.Unknown;
             return false;
         }
@@ -213,6 +237,11 @@ namespace Onity.Unity.SceneFlow
                     m_defaultGameplaySceneName = value;
                     AddUniqueSceneName(m_gameplaySceneNames, value);
                     break;
+
+                case OnitySceneFlowStateId.Hub:
+                    m_defaultHubSceneName = value;
+                    AddUniqueSceneName(m_hubSceneNames, value);
+                    break;
             }
 
             NormalizeSceneGroups();
@@ -238,10 +267,20 @@ namespace Onity.Unity.SceneFlow
 
                 case OnitySceneFlowStateId.MainMenuHub:
                     ReplaceSceneNames(m_mainMenuSceneNames, sceneNames);
+                    m_defaultMainMenuSceneName =
+                        GetReplacementDefault(m_mainMenuSceneNames, m_defaultMainMenuSceneName);
                     break;
 
                 case OnitySceneFlowStateId.Gameplay:
                     ReplaceSceneNames(m_gameplaySceneNames, sceneNames);
+                    m_defaultGameplaySceneName =
+                        GetReplacementDefault(m_gameplaySceneNames, m_defaultGameplaySceneName);
+                    break;
+
+                case OnitySceneFlowStateId.Hub:
+                    ReplaceSceneNames(m_hubSceneNames, sceneNames);
+                    m_defaultHubSceneName =
+                        GetReplacementDefault(m_hubSceneNames, m_defaultHubSceneName);
                     break;
             }
 
@@ -250,7 +289,7 @@ namespace Onity.Unity.SceneFlow
 
         /// <summary>
         /// Sets default grouped scene for the requested scene group.
-        /// Only MainMenuHub and Gameplay use grouped defaults.
+        /// Only MainMenuHub, Hub, and Gameplay use grouped defaults.
         /// </summary>
         /// <param name="stateId">Scene group id.</param>
         /// <param name="sceneName">Default scene name.</param>
@@ -269,6 +308,11 @@ namespace Onity.Unity.SceneFlow
                     m_defaultGameplaySceneName = value;
                     AddUniqueSceneName(m_gameplaySceneNames, value);
                     break;
+
+                case OnitySceneFlowStateId.Hub:
+                    m_defaultHubSceneName = value;
+                    AddUniqueSceneName(m_hubSceneNames, value);
+                    break;
             }
 
             NormalizeSceneGroups();
@@ -276,7 +320,7 @@ namespace Onity.Unity.SceneFlow
 
         /// <summary>
         /// Tries to resolve startup scene in preferred order.
-        /// Bootstrap is preferred, then default main menu, then default gameplay, then loading.
+        /// Bootstrap is preferred, then default main menu, hub, gameplay, and finally loading.
         /// </summary>
         /// <param name="sceneName">Resolved startup scene name.</param>
         /// <returns>True when any startup candidate exists.</returns>
@@ -288,6 +332,11 @@ namespace Onity.Unity.SceneFlow
             }
 
             if (TryGetSceneName(OnitySceneFlowStateId.MainMenuHub, out sceneName))
+            {
+                return true;
+            }
+
+            if (TryGetSceneName(OnitySceneFlowStateId.Hub, out sceneName))
             {
                 return true;
             }
@@ -306,6 +355,7 @@ namespace Onity.Unity.SceneFlow
             m_loadingSceneName = SanitizeSceneName(m_loadingSceneName);
             NormalizeGroupedScenes(m_mainMenuSceneNames, ref m_defaultMainMenuSceneName);
             NormalizeGroupedScenes(m_gameplaySceneNames, ref m_defaultGameplaySceneName);
+            NormalizeGroupedScenes(m_hubSceneNames, ref m_defaultHubSceneName);
         }
 
         private static void NormalizeGroupedScenes(List<string> sceneNames, ref string defaultSceneName)
@@ -362,6 +412,24 @@ namespace Onity.Unity.SceneFlow
             {
                 AddUniqueSceneName(targetList, sceneName);
             }
+        }
+
+        private static string GetReplacementDefault(
+            List<string> sceneNames,
+            string currentDefaultSceneName)
+        {
+            for (int i = 0; i < sceneNames.Count; i++)
+            {
+                if (string.Equals(
+                        sceneNames[i],
+                        currentDefaultSceneName,
+                        StringComparison.Ordinal))
+                {
+                    return currentDefaultSceneName;
+                }
+            }
+
+            return sceneNames.Count > 0 ? sceneNames[0] : string.Empty;
         }
 
         private static void CopyGroupedSceneNames(

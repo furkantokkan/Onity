@@ -2,7 +2,7 @@ namespace Onity.Unity.SceneFlow
 {
     /// <summary>
     /// Canonical SEP scene-flow groups for Onity-driven game loops.
-    /// Bootstrap and Loading are singleton groups; MainMenuHub and Gameplay can contain multiple scenes.
+    /// Bootstrap and Loading are singleton groups; MainMenuHub, Hub, and Gameplay can contain multiple scenes.
     /// </summary>
     public enum OnitySceneFlowStateId
     {
@@ -29,6 +29,11 @@ namespace Onity.Unity.SceneFlow
         /// <summary>
         /// Gameplay state.
         /// </summary>
-        Gameplay = 4
+        Gameplay = 4,
+
+        /// <summary>
+        /// Post-menu hub state.
+        /// </summary>
+        Hub = 5
     }
 }

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added a distinct `Hub` scene-flow state while preserving all existing enum
+  values, plus a four-stage `Loading -> Menu -> Hub -> Game` ready profile.
+- Added Bootstrap readiness and default UI Toolkit Loading scene initiators,
+  including progress text and a non-interactive normalized slider.
+- Added a Blank Template action that creates only an empty scene-flow profile.
+
+### Fixed
+
+- Bootstrap scene flow now waits for synchronous and asynchronous
+  `ProjectContext` build callbacks before transitioning exactly once.
+- Scene Flow Manager Apply now adds or repairs Bootstrap and Loading support
+  idempotently and keeps Menu, Hub, and Gameplay groups distinct.
+
 ### Documentation
 
 - Added a first-class OnityTask guide, current architecture overview, custom
@@ -15,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   messaging-order wording, benchmark delta labels, and package setup examples.
 - Added reproducible Jekyll dependencies plus strict build and internal-link
   checks for documentation pull requests and Pages deployments.
+
+### Tested
+
+- Unity 2022.3.62f3 focused scene-flow EditMode tests: `11/11` passed.
+- Unity 2022.3.62f3 transition-store EditMode tests: `2/2` passed.
+- Unity 2022.3.62f3 context-readiness PlayMode test: `1/1` passed.
 
 ## [0.3.6] - 2026-07-12
 
