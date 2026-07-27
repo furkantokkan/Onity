@@ -23,6 +23,8 @@ namespace Onity.Editor.SceneFlow
         private const string k_generatedAssetFolderPath = "Assets/OnitySceneFlowGenerated";
         private const string k_loadingPanelSettingsPath =
             k_generatedAssetFolderPath + "/OnityDefaultLoadingPanelSettings.asset";
+        private const string k_projectContextPrefabPath =
+            k_generatedAssetFolderPath + "/Resources/Onity/ProjectContext.prefab";
         private const string k_loadingVisualTreePath =
             "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/UI/OnityDefaultLoading.uxml";
         private const string k_defaultLoadingSceneName = "LoadingScene";
@@ -853,6 +855,11 @@ namespace Onity.Editor.SceneFlow
         {
             SaveWindowToProfile();
 
+            if (m_bootstrapScene != null && EnsureGeneratedProjectContextPrefab() == null)
+            {
+                return;
+            }
+
             if (EnsureProfileSceneSupport() == false)
             {
                 return;
@@ -860,6 +867,66 @@ namespace Onity.Editor.SceneFlow
 
             ApplySceneFlowToBuildSettings();
             SetPlayModeStartScene();
+        }
+
+        private static GameObject EnsureGeneratedProjectContextPrefab()
+        {
+            ProjectContext loadedContext =
+                Resources.Load<ProjectContext>(ProjectContextBootstrap.ResourcePath);
+
+            if (loadedContext != null)
+            {
+                return loadedContext.gameObject;
+            }
+
+            string parentFolder = Path.GetDirectoryName(k_projectContextPrefabPath);
+
+            if (string.IsNullOrWhiteSpace(parentFolder))
+            {
+                return null;
+            }
+
+            EnsureAssetFolder(parentFolder.Replace('\\', '/'));
+            GameObject existingPrefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(k_projectContextPrefabPath);
+
+            if (existingPrefab != null && existingPrefab.GetComponent<ProjectContext>() != null)
+            {
+                return existingPrefab;
+            }
+
+            GameObject root = new GameObject("ProjectContext");
+
+            try
+            {
+                root.AddComponent<ProjectContext>();
+                PrefabUtility.SaveAsPrefabAsset(root, k_projectContextPrefabPath);
+            }
+            finally
+            {
+                DestroyImmediate(root);
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.ImportAsset(
+                k_projectContextPrefabPath,
+                ImportAssetOptions.ForceUpdate);
+
+            GameObject generatedPrefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(k_projectContextPrefabPath);
+
+            if (generatedPrefab == null
+                || generatedPrefab.GetComponent<ProjectContext>() == null)
+            {
+                Debug.LogError(
+                    $"Failed to create Onity ProjectContext prefab at "
+                    + $"'{k_projectContextPrefabPath}'.");
+                return null;
+            }
+
+            Debug.Log(
+                $"Created Onity ProjectContext prefab at '{k_projectContextPrefabPath}'.");
+            return generatedPrefab;
         }
 
         private bool EnsureProfileSceneSupport()
