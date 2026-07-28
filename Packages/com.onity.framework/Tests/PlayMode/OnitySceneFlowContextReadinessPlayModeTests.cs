@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using Onity.DI;
 using Onity.Unity.Contexts;
 using Onity.Unity.Installers;
+using Onity.Unity.SceneFlow;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -51,6 +53,62 @@ namespace Onity.Tests.PlayMode
             finally
             {
                 Object.Destroy(contextObject);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator LoadingGate_WaitsForFrameAndUnscaledMinimumDuration()
+        {
+            const float minimumVisibleDurationSeconds = 0.2f;
+            GameObject initiatorObject =
+                new GameObject(nameof(LoadingGate_WaitsForFrameAndUnscaledMinimumDuration));
+            initiatorObject.SetActive(false);
+
+            OnityLoadingSceneInitiator initiator =
+                initiatorObject.AddComponent<OnityLoadingSceneInitiator>();
+            FieldInfo durationField = typeof(OnityLoadingSceneInitiator).GetField(
+                "m_minimumVisibleDurationSeconds",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo waitMethod = typeof(OnityLoadingSceneInitiator).GetMethod(
+                "WaitForMinimumVisibleDurationAsync",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            float originalTimeScale = Time.timeScale;
+
+            try
+            {
+                Assert.That(durationField, Is.Not.Null);
+                Assert.That(waitMethod, Is.Not.Null);
+
+                durationField.SetValue(initiator, minimumVisibleDurationSeconds);
+                Time.timeScale = 0f;
+
+                Task waitTask = (Task)waitMethod.Invoke(
+                    initiator,
+                    new object[] { CancellationToken.None });
+
+                Assert.That(waitTask.IsCompleted, Is.False);
+
+                yield return null;
+
+                Assert.That(
+                    waitTask.IsCompleted,
+                    Is.False,
+                    "The loading gate must remain open after its first rendered frame.");
+
+                float timeoutAt = Time.realtimeSinceStartup + 2f;
+
+                while (waitTask.IsCompleted == false &&
+                       Time.realtimeSinceStartup < timeoutAt)
+                {
+                    yield return null;
+                }
+
+                Assert.That(waitTask.Status, Is.EqualTo(TaskStatus.RanToCompletion));
+            }
+            finally
+            {
+                Time.timeScale = originalTimeScale;
+                Object.DestroyImmediate(initiatorObject);
             }
         }
 
