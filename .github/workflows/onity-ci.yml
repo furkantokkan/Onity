@@ -28,6 +28,24 @@ jobs:
         with:
           lfs: false
 
+      - name: Validate package metadata
+        shell: bash
+        run: |
+          status=0
+          while IFS= read -r -d '' file; do
+            filename="$(basename "$file")"
+            if [[ "$filename" == .* || "$file" == *.meta ]]; then
+              continue
+            fi
+
+            if [[ ! -f "${file}.meta" ]]; then
+              echo "::error file=${file}::Missing Unity metadata file: ${file}.meta"
+              status=1
+            fi
+          done < <(find Packages/com.onity.framework -type f -print0)
+
+          exit "$status"
+
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
         with:

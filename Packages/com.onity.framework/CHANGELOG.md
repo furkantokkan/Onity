@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.7] - 2026-07-29
+## [0.3.7] - 2026-07-30
 
 ### Added
 
@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Added stable Unity metadata for the retained benchmark JSON so immutable UPM
+  installs import it without repeated missing-meta errors.
 - Replaced editor-only `UnityEngine.Object.GetInstanceID()` usage with the
   compatible object hash identity path so Onity compiles on Unity `6000.5` while
   preserving Unity `2022.3` support.
@@ -36,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tested
 
+- Package metadata completeness validation passes for every non-hidden file in
+  `Packages/com.onity.framework`.
 - Unity `2022.3.62f3`: EditMode `439/439` and PlayMode `12/12` passed.
 - Unity `6000.5.2f1`: EditMode `434/434` and PlayMode `10/10` passed.
 - Unity `2022.3.62f3` focused scene-flow EditMode tests: `11/11` passed.
