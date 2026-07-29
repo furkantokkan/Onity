@@ -1,0 +1,38 @@
+{
+  "name": "Onity.Tests.EditMode",
+  "rootNamespace": "Onity.Tests.EditMode",
+  "references": [
+    "Onity.Core",
+    "Onity.Composition",
+    "Onity.DI",
+    "Onity.DOTS",
+    "Onity.Factory",
+    "Onity.Messaging",
+    "Onity.Reactive",
+    "Onity.Pooling",
+    "Onity.Unity",
+    "Unity.Collections",
+    "Unity.Entities",
+    "Unity.Mathematics"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [
+    {
+      "name": "com.unity.entities",
+      "expression": "1.0.0",
+      "define": "ONITY_ENTITIES"
+    }
+  ],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
