@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-07-29
+
+### Added
+
+- Added a distinct `Hub` scene-flow state while preserving all existing enum
+  values, plus a four-stage `Loading -> Menu -> Hub -> Game` ready profile.
+- Added Bootstrap readiness and default UI Toolkit Loading scene initiators,
+  including progress text and a non-interactive normalized slider.
+- Added a Blank Template action that creates only an empty scene-flow profile.
+
+### Changed
+
+- Updated the Unity 2022.3-compatible package baselines to Input System `1.19.0`,
+  Entities `1.4.8`, Burst `1.8.29`, Collections `2.6.8`, and Mathematics `1.3.3`.
+- Updated first-party GitHub Actions to Node 24-backed major versions, removing
+  the Node.js 20 runner deprecation warning.
+
+### Fixed
+
+- Replaced editor-only `UnityEngine.Object.GetInstanceID()` usage with the
+  compatible object hash identity path so Onity compiles on Unity `6000.5` while
+  preserving Unity `2022.3` support.
+- Bootstrap scene flow now waits for synchronous and asynchronous
+  `ProjectContext` build callbacks before transitioning exactly once.
+- Scene Flow Manager Apply now adds or repairs Bootstrap and Loading support
+  idempotently and keeps Menu, Hub, and Gameplay groups distinct.
+
+### Tested
+
+- Unity `2022.3.62f3`: EditMode `439/439` and PlayMode `12/12` passed.
+- Unity `6000.5.2f1`: EditMode `434/434` and PlayMode `10/10` passed.
+- Unity `2022.3.62f3` focused scene-flow EditMode tests: `11/11` passed.
+- Unity `2022.3.62f3` transition-store EditMode tests: `2/2` passed.
+- Unity `2022.3.62f3` context-readiness/loading-gate PlayMode tests: `2/2` passed.
+
 ### Documentation
 
 - Added a first-class OnityTask guide, current architecture overview, custom
@@ -300,6 +335,7 @@ allocation. The core uses no `System.Linq`.
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.7]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.7
 [0.3.6]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.6
 [0.3.5]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.5
 [0.3.4]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.4

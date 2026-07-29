@@ -33,7 +33,7 @@ namespace Onity.Unity.Contexts
 
         private OnityContainer m_container;
         private readonly TaskCompletionSource<bool> m_readyCompletionSource =
-            new TaskCompletionSource<bool>();
+            new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         /// <summary>
         /// Container instance owned by this context.
