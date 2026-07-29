@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Onity.DI;
 using Onity.Messaging;
 using Onity.Unity.Installers;
@@ -31,11 +32,23 @@ namespace Onity.Unity.Contexts
         [SerializeField] private bool m_runAsyncBuildCallbacks = true;
 
         private OnityContainer m_container;
+        private readonly TaskCompletionSource<bool> m_readyCompletionSource =
+            new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         /// <summary>
         /// Container instance owned by this context.
         /// </summary>
         public OnityContainer Container => m_container;
+
+        /// <summary>
+        /// Gets whether synchronous and configured asynchronous container build callbacks completed.
+        /// </summary>
+        public bool IsReady { get; private set; }
+
+        /// <summary>
+        /// Completes when synchronous and configured asynchronous container build callbacks complete.
+        /// </summary>
+        public Task ReadyTask => m_readyCompletionSource.Task;
 
         /// <summary>
         /// Creates and configures the container.
@@ -61,15 +74,18 @@ namespace Onity.Unity.Contexts
         {
             if (m_runAsyncBuildCallbacks == false || m_container == null)
             {
+                SetReady();
                 return;
             }
 
             try
             {
                 await m_container.BuildAsync();
+                SetReady();
             }
             catch (Exception exception)
             {
+                m_readyCompletionSource.TrySetException(exception);
                 Debug.LogException(exception, this);
             }
         }
@@ -104,6 +120,7 @@ namespace Onity.Unity.Contexts
         protected virtual void OnDestroy()
         {
             UnregisterActiveContext();
+            m_readyCompletionSource.TrySetCanceled();
             m_container?.Dispose();
             m_container = null;
         }
@@ -275,6 +292,12 @@ namespace Onity.Unity.Contexts
         private void UnregisterActiveContext()
         {
             s_activeContexts.Remove(this);
+        }
+
+        private void SetReady()
+        {
+            IsReady = true;
+            m_readyCompletionSource.TrySetResult(true);
         }
 
         private void RegisterDefaultBindings()

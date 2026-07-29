@@ -25,6 +25,13 @@ namespace Onity.Tests.EditMode
                 });
             m_profile.SetDefaultSceneName(OnitySceneFlowStateId.MainMenuHub, "MainMenuScene");
             m_profile.SetSceneNames(
+                OnitySceneFlowStateId.Hub,
+                new[]
+                {
+                    "HubScene"
+                });
+            m_profile.SetDefaultSceneName(OnitySceneFlowStateId.Hub, "HubScene");
+            m_profile.SetSceneNames(
                 OnitySceneFlowStateId.Gameplay,
                 new[]
                 {
@@ -32,6 +39,17 @@ namespace Onity.Tests.EditMode
                     "BossLevelScene"
                 });
             m_profile.SetDefaultSceneName(OnitySceneFlowStateId.Gameplay, "GameplayScene");
+        }
+
+        [Test]
+        public void StateIds_PreserveExistingValuesAndAppendHub()
+        {
+            Assert.That((int)OnitySceneFlowStateId.Unknown, Is.EqualTo(0));
+            Assert.That((int)OnitySceneFlowStateId.Bootstrap, Is.EqualTo(1));
+            Assert.That((int)OnitySceneFlowStateId.Loading, Is.EqualTo(2));
+            Assert.That((int)OnitySceneFlowStateId.MainMenuHub, Is.EqualTo(3));
+            Assert.That((int)OnitySceneFlowStateId.Gameplay, Is.EqualTo(4));
+            Assert.That((int)OnitySceneFlowStateId.Hub, Is.EqualTo(5));
         }
 
         [TearDown]
@@ -73,6 +91,20 @@ namespace Onity.Tests.EditMode
             Assert.That(transitionPlan.TargetStateId, Is.EqualTo(OnitySceneFlowStateId.Loading));
             Assert.That(transitionPlan.EntrySceneName, Is.EqualTo("LoadingScene"));
             Assert.That(transitionPlan.TargetSceneName, Is.EqualTo("LoadingScene"));
+        }
+
+        [Test]
+        public void BuildTransitionPlan_Hub_RoutesThroughLoadingScene()
+        {
+            OnitySceneFlowStateMachine stateMachine = new OnitySceneFlowStateMachine(m_profile);
+            OnitySceneFlowTransitionPlan transitionPlan =
+                stateMachine.BuildTransitionPlan(OnitySceneFlowStateId.Hub);
+
+            Assert.That(transitionPlan.RouteViaLoadingScene, Is.True);
+            Assert.That(transitionPlan.EntryStateId, Is.EqualTo(OnitySceneFlowStateId.Loading));
+            Assert.That(transitionPlan.TargetStateId, Is.EqualTo(OnitySceneFlowStateId.Hub));
+            Assert.That(transitionPlan.EntrySceneName, Is.EqualTo("LoadingScene"));
+            Assert.That(transitionPlan.TargetSceneName, Is.EqualTo("HubScene"));
         }
 
         [Test]
@@ -123,6 +155,36 @@ namespace Onity.Tests.EditMode
 
             Assert.That(resolved, Is.True);
             Assert.That(stateId, Is.EqualTo(OnitySceneFlowStateId.MainMenuHub));
+        }
+
+        [Test]
+        public void TryGetStateId_ReturnsHubWithoutChangingLegacyMenuState()
+        {
+            bool hubResolved = m_profile.TryGetStateId(
+                "HubScene",
+                out OnitySceneFlowStateId hubStateId);
+            bool menuResolved = m_profile.TryGetStateId(
+                "MainMenuScene",
+                out OnitySceneFlowStateId menuStateId);
+
+            Assert.That(hubResolved, Is.True);
+            Assert.That(hubStateId, Is.EqualTo(OnitySceneFlowStateId.Hub));
+            Assert.That(menuResolved, Is.True);
+            Assert.That(menuStateId, Is.EqualTo(OnitySceneFlowStateId.MainMenuHub));
+        }
+
+        [Test]
+        public void SetSceneNames_EmptyGroup_ClearsPreviousDefault()
+        {
+            m_profile.SetSceneNames(OnitySceneFlowStateId.Hub, System.Array.Empty<string>());
+
+            bool resolved = m_profile.TryGetSceneName(
+                OnitySceneFlowStateId.Hub,
+                out string sceneName);
+
+            Assert.That(resolved, Is.False);
+            Assert.That(sceneName, Is.Empty);
+            Assert.That(m_profile.HubSceneNames, Is.Empty);
         }
 
         private sealed class TestEnterData : IOnitySceneEnterData
