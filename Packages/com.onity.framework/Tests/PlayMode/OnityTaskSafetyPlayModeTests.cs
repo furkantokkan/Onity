@@ -160,6 +160,83 @@ namespace Onity.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Preserve_NextFrame_CompletesTwoPendingAndLateConsumers()
+        {
+            OnityTask shared = OnityTask.NextFrame().Preserve();
+            Task first = ObservePreservedTask(shared);
+            Task second = ObservePreservedTask(shared);
+
+            Assert.That(first.IsCompleted, Is.False);
+            Assert.That(second.IsCompleted, Is.False);
+
+            yield return WaitForFlag(() => first.IsCompleted && second.IsCompleted);
+
+            Assert.That(first.IsCompletedSuccessfully, Is.True);
+            Assert.That(second.IsCompletedSuccessfully, Is.True);
+            Task late = ObservePreservedTask(shared);
+            Assert.That(late.IsCompletedSuccessfully, Is.True);
+            Assert.DoesNotThrow(() => shared.GetAwaiter().GetResult());
+            Assert.DoesNotThrow(() => shared.GetAwaiter().GetResult());
+        }
+
+        [UnityTest]
+        public IEnumerator Preserve_BackgroundCancellation_CompletesOnMainThreadForBothConsumers()
+        {
+            int mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            using CancellationTokenSource cancellation = new CancellationTokenSource();
+            OnityTask shared = OnityTask.DelayFrames(1000, cancellation.Token).Preserve();
+            int firstThreadId = 0;
+            int secondThreadId = 0;
+            Exception firstException = null;
+            Exception secondException = null;
+            bool firstCompleted = false;
+            bool secondCompleted = false;
+
+            shared.GetAwaiter().OnCompleted(() =>
+            {
+                firstThreadId = Thread.CurrentThread.ManagedThreadId;
+                try
+                {
+                    shared.GetAwaiter().GetResult();
+                }
+                catch (Exception exception)
+                {
+                    firstException = exception;
+                }
+
+                firstCompleted = true;
+            });
+            shared.GetAwaiter().OnCompleted(() =>
+            {
+                secondThreadId = Thread.CurrentThread.ManagedThreadId;
+                try
+                {
+                    shared.GetAwaiter().GetResult();
+                }
+                catch (Exception exception)
+                {
+                    secondException = exception;
+                }
+
+                secondCompleted = true;
+            });
+
+            Task cancellationTask = Task.Run(() => cancellation.Cancel());
+            yield return WaitForFlag(() => firstCompleted && secondCompleted);
+
+            Assert.That(cancellationTask.IsCompletedSuccessfully, Is.True);
+            Assert.That(firstThreadId, Is.EqualTo(mainThreadId));
+            Assert.That(secondThreadId, Is.EqualTo(mainThreadId));
+            Assert.That(firstException, Is.TypeOf<OperationCanceledException>());
+            Assert.That(secondException, Is.TypeOf<OperationCanceledException>());
+            Assert.That(((OperationCanceledException)firstException).CancellationToken,
+                Is.EqualTo(cancellation.Token));
+            Assert.That(((OperationCanceledException)secondException).CancellationToken,
+                Is.EqualTo(cancellation.Token));
+            Assert.That(shared.IsCanceled, Is.True);
+        }
+
+        [UnityTest]
         public IEnumerator ReusedSource_OldCancellationTokenCannotCancelNewGeneration()
         {
             using CancellationTokenSource oldCancellationTokenSource = new CancellationTokenSource();
@@ -421,6 +498,11 @@ namespace Onity.Tests.PlayMode
             }
 
             Assert.That(task.IsCompleted, Is.True, "OnityTask did not complete before the test timeout.");
+        }
+
+        private static async Task ObservePreservedTask(OnityTask task)
+        {
+            await task;
         }
 
         private static IEnumerator WaitForFlag(Func<bool> predicate)

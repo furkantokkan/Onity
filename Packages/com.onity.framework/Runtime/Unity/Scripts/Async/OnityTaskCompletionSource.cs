@@ -194,6 +194,13 @@ namespace Onity.Unity.Async
             return TryComplete(OnityTaskSourceStatus.Faulted, default, exception, default);
         }
 
+        internal bool TrySetFault(Exception exception)
+        {
+            // A native source can fault with OperationCanceledException.
+            // Keep its fault status instead of applying the public cancellation rule.
+            return TryComplete(OnityTaskSourceStatus.Faulted, default, exception, default);
+        }
+
         /// <summary>
         /// Cancels the task if it is still pending.
         /// </summary>
@@ -478,6 +485,94 @@ namespace Onity.Unity.Async
             if (token != k_version)
             {
                 throw new InvalidOperationException("The OnityTask source token is invalid.");
+            }
+        }
+    }
+
+    internal sealed class OnityPreservedTaskSource : OnityTaskCompletionSource<bool>
+    {
+        private IOnityTaskSource m_source;
+        private readonly int m_token;
+
+        public OnityPreservedTaskSource(IOnityTaskSource source, int token)
+        {
+            m_source = source;
+            m_token = token;
+            source.OnCompleted(Complete, token);
+        }
+
+        public new OnityTask Task => new OnityTask((IOnityTaskSource)this);
+
+        private void Complete()
+        {
+            IOnityTaskSource source = m_source;
+            m_source = null;
+            int token = m_token;
+            OnityTaskSourceStatus status = OnityTaskSourceStatus.Pending;
+
+            try
+            {
+                status = source.GetStatus(token);
+                source.GetResult(token);
+                TrySetResult(true);
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (status != OnityTaskSourceStatus.Canceled)
+                {
+                    TrySetFault(exception);
+                }
+                else
+                {
+                    TrySetCanceled(exception.CancellationToken);
+                }
+            }
+            catch (Exception exception)
+            {
+                TrySetFault(exception);
+            }
+        }
+    }
+
+    internal sealed class OnityPreservedTaskSource<T> : OnityTaskCompletionSource<T>
+    {
+        private IOnityTaskSource<T> m_source;
+        private readonly int m_token;
+
+        public OnityPreservedTaskSource(IOnityTaskSource<T> source, int token)
+        {
+            m_source = source;
+            m_token = token;
+            source.OnCompleted(Complete, token);
+        }
+
+        private void Complete()
+        {
+            IOnityTaskSource<T> source = m_source;
+            m_source = null;
+            int token = m_token;
+            OnityTaskSourceStatus status = OnityTaskSourceStatus.Pending;
+
+            try
+            {
+                status = source.GetStatus(token);
+                T result = source.GetResult(token);
+                TrySetResult(result);
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (status != OnityTaskSourceStatus.Canceled)
+                {
+                    TrySetFault(exception);
+                }
+                else
+                {
+                    TrySetCanceled(exception.CancellationToken);
+                }
+            }
+            catch (Exception exception)
+            {
+                TrySetFault(exception);
             }
         }
     }

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added typed and untyped `OnityTask.Preserve()` for sharing one pooled native
+  operation with multiple pending or late consumers. The original task is
+  claimed once; completed, Task-backed, and completion-source tasks are returned
+  without a new retained source.
+
+### Tested
+
+- Unity `2022.3.62f3`: EditMode `524/524` and PlayMode `23/23` passed, including
+  native sharing, fault/cancellation propagation, source reuse, and main-thread
+  continuation tests.
+
 ## [0.3.12] - 2026-09-23
 
 ### Added

@@ -102,6 +102,8 @@ sources. Each returned `OnityTask` value is **single-consumer**:
 - `WhenAll` and `WhenAny` consume their input task values; do not await those
   inputs separately. `WhenAny` does not cancel the loser, which is consumed
   when it eventually completes.
+- Call `Preserve()` once before sharing a pooled task with multiple consumers.
+  Consume only the returned task; the original is claimed by `Preserve()`.
 
 `NextFrame` and `DelayFrames(1)` resume no earlier than the following rendered
 frame in Play Mode. `DelayFrames(0)` completes immediately. Negative frame
@@ -115,19 +117,29 @@ that source and two continuation delegates per call.
 Use the pooled frame, delay, predicate, and `AsyncOperation` waits directly in
 hot paths; do not assume every OnityTask composition is allocation-free.
 
-When several consumers must observe one operation, materialize one independent
-`Task` and share that instead:
+When several consumers must observe one operation, preserve it before the first
+consumer starts. Both pending and later consumers can await the retained result:
 
 ```csharp
-using System.Threading.Tasks;
 using Onity.Unity.Async;
 
-OnityTask wait = OnityTask.NextFrame();
-Task shared = wait.AsTask();
+OnityTask shared = OnityTask.NextFrame().Preserve();
+OnityTask first = ObserveAsync(shared);
+OnityTask second = ObserveAsync(shared);
+await OnityTask.WhenAll(first, second);
 
-await shared;
-// Other consumers may await the same Task instance.
+static async OnityTask ObserveAsync(OnityTask task)
+{
+    await task;
+}
 ```
+
+`Preserve()` returns completed, Task-backed, and completion-source tasks without
+an additional allocation. For a pooled native task it allocates one retained
+source and registers one native continuation. Use it only when sharing is needed;
+directly awaiting a pooled task remains cheaper. The retained result, fault, or
+cancellation can be observed repeatedly. Use `AsTask()` once when a .NET API
+requires a `Task`; the returned `Task` can also be shared.
 
 ## Complete a task from a callback
 

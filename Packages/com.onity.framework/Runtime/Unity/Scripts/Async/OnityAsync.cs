@@ -171,6 +171,24 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
+        /// Shares a single-consumer native task with multiple pending or later awaiters.
+        /// The original native task is claimed by this call and must not be consumed again.
+        /// Already shareable and Task-backed tasks are returned without allocation.
+        /// </summary>
+        /// <returns>A task that retains the completion result for multiple consumers.</returns>
+        public OnityTask Preserve()
+        {
+            if (!(m_state is IOnityTaskSource source)
+                || m_state is IOnityMultiConsumerTaskSource)
+            {
+                return this;
+            }
+
+            OnityPreservedTaskSource preserved = new OnityPreservedTaskSource(source, m_token);
+            return preserved.Task;
+        }
+
+        /// <summary>
         /// Returns the task awaiter.
         /// </summary>
         /// <returns>Task awaiter.</returns>
@@ -955,6 +973,25 @@ namespace Onity.Unity.Async
             }
 
             return m_state is IOnityTaskSource<T> source ? source.AsTask(m_token) : (Task<T>)m_state;
+        }
+
+        /// <summary>
+        /// Shares a single-consumer native task with multiple pending or later awaiters.
+        /// The original native task is claimed by this call and must not be consumed again.
+        /// Already shareable and Task-backed tasks are returned without allocation.
+        /// </summary>
+        /// <returns>A task that retains the completion result for multiple consumers.</returns>
+        public OnityTask<T> Preserve()
+        {
+            if (!(m_state is IOnityTaskSource<T> source)
+                || m_state is IOnityMultiConsumerTaskSource)
+            {
+                return this;
+            }
+
+            OnityPreservedTaskSource<T> preserved =
+                new OnityPreservedTaskSource<T>(source, m_token);
+            return preserved.Task;
         }
 
         /// <summary>
