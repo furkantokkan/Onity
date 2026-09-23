@@ -2587,6 +2587,347 @@ namespace Onity.Unity.Async
         }
     }
 
+    internal interface IOnityTaskMethodRunner<T>
+    {
+        OnityTask<T> PublishTask();
+
+        void CompleteStart();
+
+        void SetResult(T result);
+
+        void SetException(Exception exception);
+
+        void AwaitOnCompleted<TAwaiter>(ref TAwaiter awaiter)
+            where TAwaiter : INotifyCompletion;
+
+        void AwaitUnsafeOnCompleted<TAwaiter>(ref TAwaiter awaiter)
+            where TAwaiter : ICriticalNotifyCompletion;
+    }
+
+    internal sealed class OnityTaskStateMachineRunner<T, TStateMachine> :
+        OnityTaskSourceBase<T>, IOnityTaskMethodRunner<T>
+        where TStateMachine : IAsyncStateMachine
+    {
+        private const int k_maxPoolSize = 256;
+
+        private static readonly Stack<OnityTaskStateMachineRunner<T, TStateMachine>> s_pool =
+            new Stack<OnityTaskStateMachineRunner<T, TStateMachine>>(16);
+        private static readonly ContextCallback s_moveNextCallback = MoveNextWithContext;
+
+        private TStateMachine m_stateMachine;
+        private ExecutionContext m_queuedContext;
+        private int m_awaitSequence;
+        private bool m_awaitResumed;
+        private bool m_active;
+        private bool m_starting;
+        private bool m_published;
+        private bool m_running;
+        private bool m_finished;
+        private bool m_completionActive;
+        private bool m_resumeQueued;
+        private bool m_releaseRequested;
+
+        public static OnityTaskStateMachineRunner<T, TStateMachine> Rent()
+        {
+            OnityTaskStateMachineRunner<T, TStateMachine> runner;
+            lock (s_pool)
+            {
+                runner = s_pool.Count > 0
+                    ? s_pool.Pop()
+                    : new OnityTaskStateMachineRunner<T, TStateMachine>();
+            }
+
+            runner.Reset(default);
+            runner.m_awaitSequence = 0;
+            runner.m_awaitResumed = false;
+            runner.m_active = true;
+            runner.m_starting = true;
+            runner.m_published = false;
+            runner.m_running = false;
+            runner.m_finished = false;
+            runner.m_completionActive = false;
+            runner.m_resumeQueued = false;
+            runner.m_releaseRequested = false;
+            return runner;
+        }
+
+        public void CopyStateMachine(ref TStateMachine stateMachine)
+        {
+            m_stateMachine = stateMachine;
+        }
+
+        public OnityTask<T> PublishTask()
+        {
+            OnityTask<T> task = new OnityTask<T>(this);
+            bool release;
+            lock (this)
+            {
+                m_published = true;
+                release = TryReleaseUnsafe();
+            }
+
+            if (release)
+            {
+                ReturnToPool();
+            }
+
+            return task;
+        }
+
+        public void CompleteStart()
+        {
+            ExecutionContext context = null;
+            bool resume = false;
+            bool release;
+            lock (this)
+            {
+                m_starting = false;
+                if (m_finished)
+                {
+                    m_resumeQueued = false;
+                    m_queuedContext = null;
+                }
+                else if (m_resumeQueued && m_running == false)
+                {
+                    context = m_queuedContext;
+                    m_queuedContext = null;
+                    m_resumeQueued = false;
+                    m_running = true;
+                    resume = true;
+                }
+
+                release = TryReleaseUnsafe();
+            }
+
+            if (release)
+            {
+                ReturnToPool();
+            }
+
+            if (resume)
+            {
+                Drive(context);
+            }
+        }
+
+        public void SetResult(T result)
+        {
+            Complete(OnityTaskSourceStatus.Succeeded, result, null);
+        }
+
+        public void SetException(Exception exception)
+        {
+            if (exception == null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
+            if (exception is OperationCanceledException canceled)
+            {
+                Complete(OnityTaskSourceStatus.Canceled, default, canceled);
+            }
+            else
+            {
+                Complete(OnityTaskSourceStatus.Faulted, default, exception);
+            }
+        }
+
+        public void AwaitOnCompleted<TAwaiter>(ref TAwaiter awaiter)
+            where TAwaiter : INotifyCompletion
+        {
+            awaiter.OnCompleted(CreateContinuation());
+        }
+
+        public void AwaitUnsafeOnCompleted<TAwaiter>(ref TAwaiter awaiter)
+            where TAwaiter : ICriticalNotifyCompletion
+        {
+            awaiter.UnsafeOnCompleted(CreateContinuation());
+        }
+
+        protected override void ReleaseSource()
+        {
+            bool release;
+            lock (this)
+            {
+                m_releaseRequested = true;
+                release = TryReleaseUnsafe();
+            }
+
+            if (release)
+            {
+                ReturnToPool();
+            }
+        }
+
+        private static void MoveNextWithContext(object state)
+        {
+            OnityTaskStateMachineRunner<T, TStateMachine> runner =
+                (OnityTaskStateMachineRunner<T, TStateMachine>)state;
+            runner.m_stateMachine.MoveNext();
+        }
+
+        private Action CreateContinuation()
+        {
+            ExecutionContext context = ExecutionContext.Capture();
+            int lease = Version;
+            int sequence;
+            lock (this)
+            {
+                sequence = ++m_awaitSequence;
+                m_awaitResumed = false;
+            }
+
+            return () => Resume(lease, sequence, context);
+        }
+
+        private void Resume(int lease, int sequence, ExecutionContext context)
+        {
+            bool resume = false;
+            lock (this)
+            {
+                if (m_active == false || m_finished || lease != Version
+                    || sequence != m_awaitSequence || m_awaitResumed)
+                {
+                    return;
+                }
+
+                m_awaitResumed = true;
+                if (m_starting || m_running)
+                {
+                    m_queuedContext = context;
+                    m_resumeQueued = true;
+                }
+                else
+                {
+                    m_running = true;
+                    resume = true;
+                }
+            }
+
+            if (resume)
+            {
+                Drive(context);
+            }
+        }
+
+        private void Drive(ExecutionContext context)
+        {
+            while (true)
+            {
+                ExecutionContext nextContext = null;
+                bool resume;
+                bool release;
+                try
+                {
+                    if (context == null)
+                    {
+                        m_stateMachine.MoveNext();
+                    }
+                    else
+                    {
+                        ExecutionContext.Run(context, s_moveNextCallback, this);
+                    }
+                }
+                finally
+                {
+                    lock (this)
+                    {
+                        resume = m_finished == false && m_resumeQueued;
+                        if (resume)
+                        {
+                            nextContext = m_queuedContext;
+                        }
+
+                        m_queuedContext = null;
+                        m_resumeQueued = false;
+                        if (resume == false)
+                        {
+                            m_running = false;
+                        }
+
+                        release = TryReleaseUnsafe();
+                    }
+
+                    if (release)
+                    {
+                        ReturnToPool();
+                    }
+                }
+
+                if (resume == false)
+                {
+                    return;
+                }
+
+                context = nextContext;
+            }
+        }
+
+        private void Complete(OnityTaskSourceStatus status, T result, Exception exception)
+        {
+            bool release;
+            lock (this)
+            {
+                m_finished = true;
+                m_completionActive = true;
+            }
+
+            try
+            {
+                if (status == OnityTaskSourceStatus.Succeeded)
+                {
+                    TrySetResult(result);
+                }
+                else if (status == OnityTaskSourceStatus.Canceled)
+                {
+                    TrySetCanceled((OperationCanceledException)exception);
+                }
+                else
+                {
+                    TrySetException(exception);
+                }
+            }
+            finally
+            {
+                lock (this)
+                {
+                    m_completionActive = false;
+                    release = TryReleaseUnsafe();
+                }
+
+                if (release)
+                {
+                    ReturnToPool();
+                }
+            }
+        }
+
+        private bool TryReleaseUnsafe()
+        {
+            if (m_active == false || m_releaseRequested == false || m_starting
+                || m_published == false || m_running || m_completionActive)
+            {
+                return false;
+            }
+
+            m_active = false;
+            m_stateMachine = default;
+            m_queuedContext = null;
+            return true;
+        }
+
+        private void ReturnToPool()
+        {
+            lock (s_pool)
+            {
+                if (s_pool.Count < k_maxPoolSize)
+                {
+                    s_pool.Push(this);
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Async method builder for async methods returning <see cref="OnityTask{T}"/>.
     /// </summary>
@@ -2594,9 +2935,9 @@ namespace Onity.Unity.Async
     public struct OnityTaskMethodBuilder<T>
     {
         private AsyncTaskMethodBuilder<T> m_builder;
+        private IOnityTaskMethodRunner<T> m_runner;
         private T m_result;
         private bool m_hasResult;
-        private bool m_suspended;
 
         /// <summary>
         /// Creates a typed method builder.
@@ -2613,9 +2954,11 @@ namespace Onity.Unity.Async
         /// <summary>
         /// Gets the task controlled by this builder.
         /// </summary>
-        public OnityTask<T> Task => m_hasResult
-            ? OnityTask<T>.FromResult(m_result)
-            : OnityTask<T>.FromTask(m_builder.Task);
+        public OnityTask<T> Task => m_runner != null
+            ? m_runner.PublishTask()
+            : m_hasResult
+                ? OnityTask<T>.FromResult(m_result)
+                : OnityTask<T>.FromTask(m_builder.Task);
 
         /// <summary>
         /// Starts the async state machine.
@@ -2625,7 +2968,14 @@ namespace Onity.Unity.Async
         public void Start<TStateMachine>(ref TStateMachine stateMachine)
             where TStateMachine : IAsyncStateMachine
         {
-            m_builder.Start(ref stateMachine);
+            try
+            {
+                m_builder.Start(ref stateMachine);
+            }
+            finally
+            {
+                m_runner?.CompleteStart();
+            }
         }
 
         /// <summary>
@@ -2634,7 +2984,10 @@ namespace Onity.Unity.Async
         /// <param name="stateMachine">State machine.</param>
         public void SetStateMachine(IAsyncStateMachine stateMachine)
         {
-            m_builder.SetStateMachine(stateMachine);
+            if (m_runner == null)
+            {
+                m_builder.SetStateMachine(stateMachine);
+            }
         }
 
         /// <summary>
@@ -2650,8 +3003,17 @@ namespace Onity.Unity.Async
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
-            m_suspended = true;
-            m_builder.AwaitOnCompleted(ref awaiter, ref stateMachine);
+            IOnityTaskMethodRunner<T> runner = m_runner;
+            if (runner == null)
+            {
+                OnityTaskStateMachineRunner<T, TStateMachine> newRunner =
+                    OnityTaskStateMachineRunner<T, TStateMachine>.Rent();
+                m_runner = newRunner;
+                newRunner.CopyStateMachine(ref stateMachine);
+                runner = newRunner;
+            }
+
+            runner.AwaitOnCompleted(ref awaiter);
         }
 
         /// <summary>
@@ -2667,8 +3029,17 @@ namespace Onity.Unity.Async
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
-            m_suspended = true;
-            m_builder.AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine);
+            IOnityTaskMethodRunner<T> runner = m_runner;
+            if (runner == null)
+            {
+                OnityTaskStateMachineRunner<T, TStateMachine> newRunner =
+                    OnityTaskStateMachineRunner<T, TStateMachine>.Rent();
+                m_runner = newRunner;
+                newRunner.CopyStateMachine(ref stateMachine);
+                runner = newRunner;
+            }
+
+            runner.AwaitUnsafeOnCompleted(ref awaiter);
         }
 
         /// <summary>
@@ -2677,9 +3048,9 @@ namespace Onity.Unity.Async
         /// <param name="result">Async method result.</param>
         public void SetResult(T result)
         {
-            if (m_suspended)
+            if (m_runner != null)
             {
-                m_builder.SetResult(result);
+                m_runner.SetResult(result);
                 return;
             }
 
@@ -2693,7 +3064,14 @@ namespace Onity.Unity.Async
         /// <param name="exception">Failure exception.</param>
         public void SetException(Exception exception)
         {
-            m_builder.SetException(exception);
+            if (m_runner == null)
+            {
+                m_builder.SetException(exception);
+            }
+            else
+            {
+                m_runner.SetException(exception);
+            }
         }
     }
 
