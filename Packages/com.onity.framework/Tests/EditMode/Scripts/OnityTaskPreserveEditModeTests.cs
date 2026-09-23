@@ -124,6 +124,45 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void Preserve_UntypedOriginalCannotTakeResultBeforeAdapterCompletion()
+        {
+            var frame = NewStandaloneFrameTask();
+            OnityTask original = frame.task;
+            object source = frame.source;
+            OnityTask shared = original.Preserve();
+
+            Assert.Throws<InvalidOperationException>(() => original.GetAwaiter().GetResult());
+
+            PublishNativeSuccessWithoutCallback(source);
+            Assert.Throws<InvalidOperationException>(() => original.GetAwaiter().GetResult());
+
+            CompletePreservedAdapter(shared);
+            Assert.DoesNotThrow(() => shared.GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public void Preserve_TypedOriginalCannotTakeResultBeforeAdapterCompletion()
+        {
+            TaskCompletionSource<bool> firstInput = NewCompletionSource();
+            TaskCompletionSource<bool> secondInput = NewCompletionSource();
+            OnityTask<int> original = OnityTask.WhenAny(
+                OnityTask.FromTask(firstInput.Task),
+                OnityTask.FromTask(secondInput.Task));
+            object source = GetState(original);
+            OnityTask<int> shared = original.Preserve();
+
+            Assert.Throws<InvalidOperationException>(() => original.GetAwaiter().GetResult());
+
+            PublishNativeSuccessWithoutCallback(source);
+            Assert.Throws<InvalidOperationException>(() => original.GetAwaiter().GetResult());
+
+            CompletePreservedAdapter(shared);
+            Assert.That(shared.GetAwaiter().GetResult(), Is.EqualTo(0));
+            firstInput.SetResult(true);
+            secondInput.SetResult(true);
+        }
+
+        [Test]
         public async Task Preserve_ConcurrentNativeCompletion_DoesNotLoseResult()
         {
             for (int i = 0; i < 64; i++)
@@ -298,6 +337,32 @@ namespace Onity.Tests.EditMode
             return typeof(OnityTask<T>).GetField(
                 "m_state",
                 BindingFlags.Instance | BindingFlags.NonPublic).GetValue(task);
+        }
+
+        private static void PublishNativeSuccessWithoutCallback(object source)
+        {
+            // Reproduce the interval after terminal status is visible but before
+            // the preserved adapter receives its completion callback.
+            source.GetType().BaseType.GetField(
+                "m_status",
+                BindingFlags.Instance | BindingFlags.NonPublic).SetValue(source, 1);
+        }
+
+        private static void CompletePreservedAdapter(OnityTask task)
+        {
+            CompletePreservedAdapter(GetState(task));
+        }
+
+        private static void CompletePreservedAdapter<T>(OnityTask<T> task)
+        {
+            CompletePreservedAdapter(GetState(task));
+        }
+
+        private static void CompletePreservedAdapter(object adapter)
+        {
+            adapter.GetType().GetMethod(
+                "Complete",
+                BindingFlags.Instance | BindingFlags.NonPublic).Invoke(adapter, null);
         }
 
         private static (OnityTask task, object source, MethodInfo tick) NewStandaloneFrameTask(
