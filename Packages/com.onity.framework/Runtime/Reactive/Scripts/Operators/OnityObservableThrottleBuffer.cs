@@ -66,8 +66,14 @@ namespace Onity.Reactive
                                 return;
                             }
 
-                            observer(value);
-                            _ = CoolDownAsync();
+                            try
+                            {
+                                observer(value);
+                            }
+                            finally
+                            {
+                                _ = CoolDownAsync();
+                            }
                         });
 
                     async Task CoolDownAsync()

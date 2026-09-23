@@ -159,6 +159,43 @@ namespace Onity.Tests.EditMode
             Assert.That(service.Disposed, Is.True);
         }
 
+        [Test]
+        public void EqualDistinctLifecycleInstances_BothInitializeAndTick()
+        {
+            using OnityContainer container = new OnityContainer();
+            EqualLifecycleService first = new EqualLifecycleService();
+            EqualLifecycleService second = new EqualLifecycleService();
+
+            container.BindInstance(first);
+            container.BindInstance(second);
+            container.Build();
+            container.Tick();
+
+            Assert.That(first.InitializeCount, Is.EqualTo(1));
+            Assert.That(second.InitializeCount, Is.EqualTo(1));
+            Assert.That(first.TickCount, Is.EqualTo(1));
+            Assert.That(second.TickCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Dispose_ThrowingSingleton_StillDisposesRemainingProvidersAndStopsTicks()
+        {
+            OnityContainer container = new OnityContainer();
+            container.Bind<DisposableTickService>().AsSingle();
+            container.Bind<ThrowingDisposeService>().AsSingle();
+            container.Build();
+
+            DisposableTickService tickService = container.Resolve<DisposableTickService>();
+            container.Resolve<ThrowingDisposeService>();
+            container.Tick();
+
+            Assert.That(() => container.Dispose(), Throws.TypeOf<InvalidOperationException>());
+            Assert.That(tickService.DisposeCount, Is.EqualTo(1));
+
+            container.Tick();
+            Assert.That(tickService.TickCount, Is.EqualTo(1));
+        }
+
         private sealed class InitOnlyService : IOnityInitializable
         {
             public int InitializeCount { get; private set; }
@@ -249,6 +286,58 @@ namespace Onity.Tests.EditMode
             public void Dispose()
             {
                 Disposed = true;
+            }
+        }
+
+        private sealed class EqualLifecycleService : IOnityInitializable, IOnityTickable
+        {
+            public int InitializeCount { get; private set; }
+
+            public int TickCount { get; private set; }
+
+            public void Initialize()
+            {
+                InitializeCount++;
+            }
+
+            public void Tick()
+            {
+                TickCount++;
+            }
+
+            public override bool Equals(object other)
+            {
+                return other is EqualLifecycleService;
+            }
+
+            public override int GetHashCode()
+            {
+                return 1;
+            }
+        }
+
+        private sealed class DisposableTickService : IOnityTickable, IDisposable
+        {
+            public int TickCount { get; private set; }
+
+            public int DisposeCount { get; private set; }
+
+            public void Tick()
+            {
+                TickCount++;
+            }
+
+            public void Dispose()
+            {
+                DisposeCount++;
+            }
+        }
+
+        private sealed class ThrowingDisposeService : IDisposable
+        {
+            public void Dispose()
+            {
+                throw new InvalidOperationException("Dispose failure");
             }
         }
     }

@@ -52,6 +52,27 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public async Task BuildAsync_ImmediatelyFaultedCallback_CanRetry()
+        {
+            using OnityContainer container = new OnityContainer();
+            int callbackCount = 0;
+
+            container.RegisterBuildCallbackAsync(
+                (resolver, cancellationToken) =>
+                {
+                    callbackCount++;
+                    return callbackCount == 1
+                        ? Task.FromException(new InvalidOperationException("Build failure"))
+                        : Task.CompletedTask;
+                });
+
+            Assert.ThrowsAsync<InvalidOperationException>(async () => await container.BuildAsync());
+
+            await container.BuildAsync();
+            Assert.That(callbackCount, Is.EqualTo(2));
+        }
+
+        [Test]
         public void Resolve_DerivedType_CallsPrivateInjectMethodInBase()
         {
             using OnityContainer container = new OnityContainer();

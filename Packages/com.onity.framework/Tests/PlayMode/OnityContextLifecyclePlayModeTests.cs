@@ -80,6 +80,34 @@ namespace Onity.Tests.PlayMode
             }
         }
 
+        [Test]
+        public void NestedContext_InjectsChildConsumerOnlyFromChildScope()
+        {
+            GameObject parentObject = new GameObject(nameof(NestedContext_InjectsChildConsumerOnlyFromChildScope));
+
+            try
+            {
+                parentObject.SetActive(false);
+                parentObject.AddComponent<SceneContext>();
+
+                GameObject childObject = new GameObject("Child Context");
+                childObject.transform.SetParent(parentObject.transform);
+                GameObjectContext childContext = childObject.AddComponent<GameObjectContext>();
+                ChildOnlyInstaller installer = childObject.AddComponent<ChildOnlyInstaller>();
+                ChildConsumer consumer = childObject.AddComponent<ChildConsumer>();
+                SetContextInstallers(childContext, installer);
+
+                parentObject.SetActive(true);
+
+                Assert.That(consumer.InjectionCount, Is.EqualTo(1));
+                Assert.That(consumer.Service, Is.SameAs(childContext.Container.Resolve<IChildService>()));
+            }
+            finally
+            {
+                Object.Destroy(parentObject);
+            }
+        }
+
         private static void SetContextInstallers(OnityContext context, params MonoInstaller[] installers)
         {
             FieldInfo installersField = typeof(OnityContext).GetField(
@@ -99,6 +127,36 @@ namespace Onity.Tests.PlayMode
         /// </summary>
         private sealed class LifecycleContext : OnityContext
         {
+        }
+
+        private interface IChildService
+        {
+        }
+
+        private sealed class ChildService : IChildService
+        {
+        }
+
+        private sealed class ChildOnlyInstaller : MonoInstaller
+        {
+            public override void InstallBindings(OnityContainer container)
+            {
+                container.BindInstance<IChildService>(new ChildService());
+            }
+        }
+
+        private sealed class ChildConsumer : MonoBehaviour
+        {
+            public int InjectionCount { get; private set; }
+
+            public IChildService Service { get; private set; }
+
+            [Inject]
+            private void SetService(IChildService service)
+            {
+                Service = service;
+                InjectionCount++;
+            }
         }
 
         /// <summary>

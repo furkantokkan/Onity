@@ -67,6 +67,48 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public async Task Throttle_ThrowingObserver_ResumesAfterInterval()
+        {
+            using Subject<int> source = new Subject<int>();
+            ManualThrottleBufferTimeProvider timeProvider = new ManualThrottleBufferTimeProvider();
+            List<int> observed = new List<int>();
+            Action<Exception> previousHandler = OnityObservableExceptionHandler.Handler;
+            int errorCount = 0;
+            IDisposable subscription = null;
+
+            try
+            {
+                OnityObservableExceptionHandler.Handler = _ => errorCount++;
+                subscription = source.Throttle(TimeSpan.FromSeconds(1d), timeProvider).Subscribe(
+                    value =>
+                    {
+                        observed.Add(value);
+
+                        if (value == 1)
+                        {
+                            throw new InvalidOperationException("Observer failure");
+                        }
+                    });
+
+                source.OnNext(1);
+                source.OnNext(2);
+                Assert.That(observed, Is.EqualTo(new[] { 1 }));
+                Assert.That(errorCount, Is.EqualTo(1));
+
+                timeProvider.AdvanceOne();
+                await Task.Yield();
+                source.OnNext(3);
+
+                Assert.That(observed, Is.EqualTo(new[] { 1, 3 }));
+            }
+            finally
+            {
+                subscription?.Dispose();
+                OnityObservableExceptionHandler.Handler = previousHandler;
+            }
+        }
+
+        [Test]
         public void Throttle_NonPositiveInterval_Throws()
         {
             using Subject<int> source = new Subject<int>();
