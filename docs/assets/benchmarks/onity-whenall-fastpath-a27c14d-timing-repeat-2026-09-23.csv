@@ -1,0 +1,7 @@
+scenario,library,timing_operations_per_sample,allocation_operations_per_sample,mean_ns_per_op,median_ns_per_op,min_ns_per_op,max_ns_per_op,standard_deviation_ns_per_op,bytes_per_op,allocations_available
+Pending; Onity tracker on,OnityTask,2048,128,4322.705078125,4250.048828125,4105.810546875,4699.12109375,222.41216029345603,-1,false
+Pending; Onity tracker on,UniTask,2048,128,733.319091796875,727.9052734375,710.44921875,773.2421875,20.331578281717945,-1,false
+Pending; Onity tracker off,OnityTask,2048,128,2087.152099609375,2097.75390625,1950.5859375,2359.9609375,120.34533767797006,-1,false
+Pending; Onity tracker off,UniTask,2048,128,742.10205078125,720.7275390625,717.48046875,861.669921875,46.833488839401511,-1,false
+Both completed; Onity tracker on,OnityTask,2048,128,115.509033203125,114.3310546875,111.865234375,126.416015625,4.3658144776629513,-1,false
+Both completed; Onity tracker on,UniTask,2048,128,330.194091796875,315.478515625,306.54296875,442.28515625,42.503711436704911,-1,false

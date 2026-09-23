@@ -1,0 +1,69 @@
+{
+  "suite": "Two-input OnityTask WhenAll scheduling",
+  "cohort": "completed-input fast path",
+  "benchmarkBranch": "benchmark/onitytask-whenall-fastpath",
+  "benchmarkHostCommitBeforeReports": "3a50d321f6bc7a1acaa661145f721416b0958242",
+  "productRuntimeCommit": "a27c14d6db3ed45d334c3a606ad27c55a844c2b5",
+  "previousProductCommit": "d0ff06d064c74287e9f8207117b468ee1b8f5bf7",
+  "previousRuntimeEqualsBaselineCommit": "25c8e202214a1b7b5fa258feb87a0f5d91750ad4",
+  "previousOnityAsyncGitBlob": "1dcb59297c21ec72f8c6512e3a64549c5e307074",
+  "onityAsyncGitBlob": "726369708ce7e32f046b36632ec2c64e67b038cf",
+  "onityAsyncWorkingSha256": "c0c463bb5801c6d0d417e23dd6cbe94ce2cca8b43d9db0c41a780e5115921565",
+  "benchmarkRunnerGitBlob": "8a43d9d6bfab86c8f8e1c6b8d4beb482f1f840d3",
+  "benchmarkRunnerWorkingSha256": "3f1ad4d0d4ecd58998b3fa5d3b76ecd252c8aa97e4ddcf066902b4f9443cbb0b",
+  "benchmarkMenuGitBlob": "6cb9d93b70f4517675805a23a41816597170efaa",
+  "packageLockGitBlob": "2f863e6d228ea9fd67dbf0d9ab62a805993dd220",
+  "baselineRunnerGitBlob": "8a43d9d6bfab86c8f8e1c6b8d4beb482f1f840d3",
+  "runnerHashNote": "The baseline and fast-path hosts share the same Git runner blob. Their working-file SHA-256 values differ because the original edited baseline checkout has mixed line endings and this fresh checkout has CRLF line endings. The baseline report hashes below describe the CRLF files checked out in this branch; the baseline provenance also records the original capture-file hashes.",
+  "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityEditor": "2022.3.62f3",
+  "scriptingBackend": "Mono",
+  "editorBinary": "C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Unity.exe",
+  "entryPoint": "Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine",
+  "timingArguments": "-batchmode -nographics -projectPath <fastpath-worktree> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskBenchmarkOutput <primary-or-repeat-json> -logFile <timing-log>",
+  "allocationArguments": "-batchmode -nographics -profiler-enable -projectPath <fastpath-worktree> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <primary-json> -logFile <allocation-log>",
+  "conditions": {
+    "operationsPerBatch": 128,
+    "warmupBatchesPerScenarioAndLibrary": 10,
+    "timingBatchesPerSample": 16,
+    "timingOperationsPerSample": 2048,
+    "allocationOperationsPerSample": 128,
+    "samplesPerCasePerPass": 8,
+    "scenarios": [
+      "Pending; Onity tracker on",
+      "Pending; Onity tracker off",
+      "Both completed; Onity tracker on"
+    ],
+    "measuredSlice": "Two-argument WhenAll scheduling and storing its returned task",
+    "excluded": "Input creation, input completion, continuation dispatch, result consumption, and full lifecycle"
+  },
+  "profilerControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0,
+    "emptyHarnessBytesPerSample": 0
+  },
+  "reports": [
+    {
+      "path": "docs/assets/benchmarks/onity-whenall-baseline-25c8e20-2026-09-23.json",
+      "sha256": "6523db462818d9abf4f8fa4708021a96019925f75ffb5f565221e717a620248b",
+      "passes": "Previous runtime timing and calibrated Profiler allocation"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-whenall-baseline-25c8e20-timing-repeat-2026-09-23.json",
+      "sha256": "e98f2133967659fd66e604892b17ccc81ea1caec90e712df7e66db0b5aefd575",
+      "passes": "Previous runtime separate timing repeat"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-whenall-fastpath-a27c14d-2026-09-23.json",
+      "sha256": "3c60a24097d7e3f33be66ee8f01eb82a319363404f5f113da383eac3d53402d4",
+      "passes": "Fast-path timing and calibrated Profiler allocation"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-whenall-fastpath-a27c14d-timing-repeat-2026-09-23.json",
+      "sha256": "16c489f8948f16eb9039548fc0f634f392c60287bac008a790fa1a38c1c16b48",
+      "passes": "Fast-path separate timing repeat"
+    }
+  ],
+  "verification": "Focused Unity EditMode OnityAsyncTests passed 54/54. Both fast-path timing processes and the calibrated Profiler process wrote complete reports and logged completion. Each allocation case has eight identical raw samples.",
+  "limits": "Editor/Mono synchronous scheduling slice in separate Editor processes; no full lifecycle, frame-time, Player, or IL2CPP claim. The empty timing loop was measured but not subtracted. The baseline report was run in a separate checkout with the same runner Git blob."
+}

@@ -1,0 +1,239 @@
+{
+    "schemaVersion": 1,
+    "harnessVersion": 2,
+    "suite": "Two-input OnityTask WhenAll scheduling",
+    "generatedAtUtc": "2026-09-23T20:42:34.7908933Z",
+    "allocationGeneratedAtUtc": "2026-09-23T20:43:40.8712684Z",
+    "unityVersion": "2022.3.62f3",
+    "scriptingBackend": "Mono",
+    "onityAsyncSha256": "c0c463bb5801c6d0d417e23dd6cbe94ce2cca8b43d9db0c41a780e5115921565",
+    "runnerSha256": "3f1ad4d0d4ecd58998b3fa5d3b76ecd252c8aa97e4ddcf066902b4f9443cbb0b",
+    "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+    "operationsPerBatch": 128,
+    "timingBatchesPerSample": 16,
+    "samplesPerCase": 8,
+    "warmupBatches": 10,
+    "stopwatchFrequency": 10000000,
+    "scope": "Same two-argument WhenAll call per operation. Each pending case has two fresh unresolved completion-source inputs prepared outside the measured slice. The marker includes WhenAll scheduling and storing the returned value; input completion, continuation dispatch, and GetResult occur afterward. The completed control uses both libraries' completed values. Tracker-on matches Onity's default; tracker-off changes only Onity's tracker. UniTask uses its default tracker setting. Samples include harness loop cost without subtraction. These Editor/Mono slices do not measure full lifecycle, frame time, or IL2CPP.",
+    "emptyHarnessSampleNanosecondsPerOperation": [
+        36.71875,
+        1.953125,
+        1.904296875,
+        1.904296875,
+        1.904296875,
+        1.904296875,
+        1.904296875,
+        1.904296875
+    ],
+    "emptyHarnessSampleAllocatedBytes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+    ],
+    "allocationsAvailable": true,
+    "allocationCounter": "Unity Profiler GC.Alloc metadata; 65,568/0-byte controls passed.",
+    "positiveControlBytes": 65568,
+    "emptyControlBytes": 0,
+    "scenarios": [
+        {
+            "name": "Pending; Onity tracker on",
+            "pending": true,
+            "onityTrackerEnabled": true,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 4216.80908203125,
+                    "medianNanosecondsPerOperation": 4186.4501953125,
+                    "minNanosecondsPerOperation": 4020.654296875,
+                    "maxNanosecondsPerOperation": 4543.896484375,
+                    "standardDeviationNanosecondsPerOperation": 162.91776975232257,
+                    "bytesPerOperation": 1556.0,
+                    "sampleNanosecondsPerOperation": [
+                        4112.744140625,
+                        4543.896484375,
+                        4206.93359375,
+                        4264.2578125,
+                        4369.7265625,
+                        4020.654296875,
+                        4050.29296875,
+                        4165.966796875
+                    ],
+                    "sampleAllocatedBytes": [
+                        199168,
+                        199168,
+                        199168,
+                        199168,
+                        199168,
+                        199168,
+                        199168,
+                        199168
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 751.64794921875,
+                    "medianNanosecondsPerOperation": 734.033203125,
+                    "minNanosecondsPerOperation": 691.69921875,
+                    "maxNanosecondsPerOperation": 848.388671875,
+                    "standardDeviationNanosecondsPerOperation": 48.035911922028,
+                    "bytesPerOperation": 160.0,
+                    "sampleNanosecondsPerOperation": [
+                        717.08984375,
+                        732.12890625,
+                        808.349609375,
+                        735.9375,
+                        848.388671875,
+                        730.078125,
+                        691.69921875,
+                        749.51171875
+                    ],
+                    "sampleAllocatedBytes": [
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Pending; Onity tracker off",
+            "pending": true,
+            "onityTrackerEnabled": false,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 2014.41650390625,
+                    "medianNanosecondsPerOperation": 2008.2275390625,
+                    "minNanosecondsPerOperation": 1966.552734375,
+                    "maxNanosecondsPerOperation": 2066.30859375,
+                    "standardDeviationNanosecondsPerOperation": 33.08434952096885,
+                    "bytesPerOperation": 544.0,
+                    "sampleNanosecondsPerOperation": [
+                        1966.552734375,
+                        2013.28125,
+                        1977.587890625,
+                        2059.033203125,
+                        2003.173828125,
+                        2026.904296875,
+                        2002.490234375,
+                        2066.30859375
+                    ],
+                    "sampleAllocatedBytes": [
+                        69632,
+                        69632,
+                        69632,
+                        69632,
+                        69632,
+                        69632,
+                        69632,
+                        69632
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 714.935302734375,
+                    "medianNanosecondsPerOperation": 710.1318359375,
+                    "minNanosecondsPerOperation": 701.513671875,
+                    "maxNanosecondsPerOperation": 737.548828125,
+                    "standardDeviationNanosecondsPerOperation": 13.221932226556229,
+                    "bytesPerOperation": 160.0,
+                    "sampleNanosecondsPerOperation": [
+                        710.3515625,
+                        706.005859375,
+                        701.513671875,
+                        737.548828125,
+                        709.912109375,
+                        736.81640625,
+                        712.109375,
+                        705.224609375
+                    ],
+                    "sampleAllocatedBytes": [
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Both completed; Onity tracker on",
+            "pending": false,
+            "onityTrackerEnabled": true,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 116.961669921875,
+                    "medianNanosecondsPerOperation": 116.3330078125,
+                    "minNanosecondsPerOperation": 114.208984375,
+                    "maxNanosecondsPerOperation": 122.8515625,
+                    "standardDeviationNanosecondsPerOperation": 2.6937394458360428,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        119.140625,
+                        122.8515625,
+                        114.208984375,
+                        114.84375,
+                        115.966796875,
+                        116.69921875,
+                        114.6484375,
+                        117.333984375
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 316.387939453125,
+                    "medianNanosecondsPerOperation": 313.5009765625,
+                    "minNanosecondsPerOperation": 306.689453125,
+                    "maxNanosecondsPerOperation": 339.501953125,
+                    "standardDeviationNanosecondsPerOperation": 9.883291888766588,
+                    "bytesPerOperation": 128.0,
+                    "sampleNanosecondsPerOperation": [
+                        308.642578125,
+                        309.423828125,
+                        321.142578125,
+                        306.689453125,
+                        313.525390625,
+                        339.501953125,
+                        313.4765625,
+                        318.701171875
+                    ],
+                    "sampleAllocatedBytes": [
+                        16384,
+                        16384,
+                        16384,
+                        16384,
+                        16384,
+                        16384,
+                        16384,
+                        16384
+                    ]
+                }
+            ]
+        }
+    ]
+}
