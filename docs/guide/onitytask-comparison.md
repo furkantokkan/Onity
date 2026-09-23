@@ -229,6 +229,36 @@ task lifecycles or IL2CPP/player evidence. See the
 [candidate samples](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-preserve/docs/assets/benchmarks/onity-preserve-native-956e5cb-2026-09-23.json)
 and [allocation callstacks](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-preserve/docs/assets/benchmarks/onity-preserve-native-956e5cb-allocation-callstacks-2026-09-23.json).
 
+### Native sharing follow-up
+
+The owner-checked `Preserve()` source at `c2f9358` reuses the native source's
+task-bridge slot for its adapter. In the same calibrated Unity 2022 Editor/Mono
+harness, pending conversion fell to **120 B/task**; the callstack attributes all
+120 B to the retained source and no bound callback allocation remains. Ordinary
+native awaiting returned to its earlier 656 B/task level. Eight allocation
+samples per case passed the 65,568 B positive and 0 B empty controls.
+
+| Measured operation | OnityTask B/task | UniTask B/task |
+| --- | ---: | ---: |
+| Pending one-consumer `Preserve()` conversion | 120 | 40 |
+| Pending four-consumer sharing conversion (`Preserve` / `AsTask`) | 120 | 104 |
+| Complete native await lifecycle | 656 | 304 |
+| Complete one-consumer sharing lifecycle | 776 | 344 |
+| Complete four-consumer sharing lifecycle | 880 | 665.3 |
+
+The conversion rows exclude source creation, completion, and first result
+consumption. The lifecycle rows include those steps, pending callbacks, and
+late reads where applicable. UniTask's two-input `WhenAny` uses a `params`
+array inside the measured operation. Four-consumer UniTask `AsTask` callbacks
+can run on another thread, outside the main-thread allocation marker. The
+libraries also use different return types for four-consumer sharing, so these
+figures do not establish a general speed or allocation lead. The
+[conversion samples](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-preserve/docs/assets/benchmarks/onity-preserve-native-c2f9358-2026-09-23.json),
+[lifecycle samples](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-preserve/docs/assets/benchmarks/onity-native-lifecycle-c2f9358-2026-09-23.json),
+[allocation callstacks](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-preserve/docs/assets/benchmarks/onity-preserve-native-c2f9358-allocation-callstacks-2026-09-23.json),
+and their adjacent provenance files retain the measured boundaries and exact
+source identity. OnityTask still allocates more in these workflows.
+
 ## Feature coverage
 
 | Capability | OnityTask status |
@@ -239,7 +269,7 @@ and [allocation callstacks](https://github.com/furkantokkan/Onity/blob/benchmark
 | `WhenAll` | Available, including typed ordered results; currently materializes inputs as .NET Tasks. |
 | Native `WhenAny` | Available for two untyped inputs; consumes both without canceling the loser. Its source and two delegates allocate per call. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
-| Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. Pending typed conversion measured 248 B/task in Editor/Mono; see the narrow comparison above. |
+| Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. Pending typed conversion measured 120 B/task in Editor/Mono at `c2f9358`; see the follow-up above. |
 | Selectable PlayerLoop phases and immediate cancellation | Limited to the supported runner phases and next-tick cancellation. |
 | `await foreach` async enumerable | Not yet available. |
 

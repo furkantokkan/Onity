@@ -22,10 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the separate lock-object allocation from internal `Preserve()`
   sources. The measured pending native conversion fell from 264 to 248 B/task
   in the Unity 2022 Editor/Mono benchmark.
+- Stored the `Preserve()` adapter directly in the native source's task-bridge
+  slot, removing its bound callback allocation. Pending conversion fell from
+  248 to 120 B/task; ordinary native awaiting stayed at 656 B/task in the
+  calibrated lifecycle benchmark. The original task cannot consume the result
+  while the adapter owns it.
 
 ### Tested
 
-- Unity `2022.3.62f3`: EditMode `525/525` and PlayMode `23/23` passed, including
+- Unity `2022.3.62f3`: EditMode `530/530` and PlayMode `23/23` passed, including
   native sharing, fault/cancellation propagation, source reuse, and main-thread
   continuation tests.
 
