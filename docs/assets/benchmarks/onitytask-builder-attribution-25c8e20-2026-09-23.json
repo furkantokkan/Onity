@@ -1,0 +1,167 @@
+﻿{
+    "schemaVersion": 1,
+    "suite": "Warm async method scheduling allocation callstacks",
+    "generatedAtUtc": "2026-09-23T19:14:43.1573877Z",
+    "onityRuntimeCommit": "25c8e202214a1b7b5fa258feb87a0f5d91750ad4",
+    "onityAsyncGitBlob": "1dcb59297c21ec72f8c6512e3a64549c5e307074",
+    "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+    "unityVersion": "2022.3.62f3",
+    "scriptingBackend": "Mono",
+    "operations": 128,
+    "warmupBatches": 2,
+    "measurementScope": "One synchronous main-thread scheduling batch of 128 warm operations. All native and suspended awaiters are checked pending after the marker, before a frame yield. Preparation, full GC, frame waiting, continuation dispatch, completion, and result consumption are outside the Profiler marker. Callstack capture is diagnostic; the separate eight-sample benchmark supplies numerical results.",
+    "available": true,
+    "reason": "Calibrated GC.Alloc samples and complete scheduling callstacks captured.",
+    "positiveControlBytes": 65568,
+    "emptyControlBytes": 0,
+    "cases": [
+        {
+            "stage": "NativeFrameSchedule",
+            "library": "OnityTask",
+            "sampleBytes": 0,
+            "bytesPerOperation": 0.0,
+            "attributedBytes": 0,
+            "callstacks": []
+        },
+        {
+            "stage": "NativeFrameSchedule",
+            "library": "UniTask",
+            "sampleBytes": 0,
+            "bytesPerOperation": 0.0,
+            "attributedBytes": 0,
+            "callstacks": []
+        },
+        {
+            "stage": "CompletedAsync",
+            "library": "OnityTask",
+            "sampleBytes": 8192,
+            "bytesPerOperation": 64.0,
+            "attributedBytes": 8192,
+            "callstacks": [
+                {
+                    "stack": "Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.OnityCompletedAsync() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.MeasureOnityAsyncCompleted() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.RunBuilderAttributionOperation() <- Onity.TaskBenchmarks.dll!::<>c__DisplayClass44_1.<RunBuilderAttribution>b__0() <- Onity.TaskBenchmarks.dll!::<CaptureProfiledAllocation>d__52.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 8192,
+                    "allocations": 128
+                }
+            ]
+        },
+        {
+            "stage": "CompletedAsync",
+            "library": "UniTask",
+            "sampleBytes": 8192,
+            "bytesPerOperation": 64.0,
+            "attributedBytes": 8192,
+            "callstacks": [
+                {
+                    "stack": "Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.UniTaskCompletedAsync() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.MeasureUniTaskAsyncCompleted() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.RunBuilderAttributionOperation() <- Onity.TaskBenchmarks.dll!::<>c__DisplayClass44_1.<RunBuilderAttribution>b__0() <- Onity.TaskBenchmarks.dll!::<CaptureProfiledAllocation>d__52.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 8192,
+                    "allocations": 128
+                }
+            ]
+        },
+        {
+            "stage": "CompletedTypedAsync",
+            "library": "OnityTask",
+            "sampleBytes": 9216,
+            "bytesPerOperation": 72.0,
+            "attributedBytes": 9216,
+            "callstacks": [
+                {
+                    "stack": "Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.OnityCompletedResultAsync() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.MeasureOnityAsyncResult() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.RunBuilderAttributionOperation() <- Onity.TaskBenchmarks.dll!::<>c__DisplayClass44_1.<RunBuilderAttribution>b__0() <- Onity.TaskBenchmarks.dll!::<CaptureProfiledAllocation>d__52.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 9216,
+                    "allocations": 128
+                }
+            ]
+        },
+        {
+            "stage": "CompletedTypedAsync",
+            "library": "UniTask",
+            "sampleBytes": 9216,
+            "bytesPerOperation": 72.0,
+            "attributedBytes": 9216,
+            "callstacks": [
+                {
+                    "stack": "Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.UniTaskCompletedResultAsync() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.MeasureUniTaskAsyncResult() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.RunBuilderAttributionOperation() <- Onity.TaskBenchmarks.dll!::<>c__DisplayClass44_1.<RunBuilderAttribution>b__0() <- Onity.TaskBenchmarks.dll!::<CaptureProfiledAllocation>d__52.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 9216,
+                    "allocations": 128
+                }
+            ]
+        },
+        {
+            "stage": "SuspendedAsync",
+            "library": "OnityTask",
+            "sampleBytes": 38912,
+            "bytesPerOperation": 304.0,
+            "attributedBytes": 38912,
+            "callstacks": [
+                {
+                    "stack": "mscorlib.dll!System.Runtime.CompilerServices::AsyncMethodBuilderCore.GetCompletionAction() <- mscorlib.dll!System.Runtime.CompilerServices::AsyncTaskMethodBuilder`1.AwaitUnsafeOnCompleted() <- mscorlib.dll!System.Runtime.CompilerServices::AsyncTaskMethodBuilder.AwaitUnsafeOnCompleted() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder.AwaitUnsafeOnCompleted() <- Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__83.MoveNext() <- mscorlib.dll!System.Runtime.CompilerServices::AsyncTaskMethodBuilder.Start() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder.Start() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.OnityNextFrameAsync() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.ScheduleAsyncMethods() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.RunBuilderAttributionOperation() <- Onity.TaskBenchmarks.dll!::<>c__DisplayClass44_1.<RunBuilderAttribution>b__0() <- Onity.TaskBenchmarks.dll!::<CaptureProfiledAllocation>d__52.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 20480,
+                    "allocations": 256
+                },
+                {
+                    "stack": "mscorlib.dll!System.Runtime.CompilerServices::AsyncTaskMethodBuilder`1.get_Task() <- mscorlib.dll!System.Runtime.CompilerServices::AsyncTaskMethodBuilder`1.AwaitUnsafeOnCompleted() <- mscorlib.dll!System.Runtime.CompilerServices::AsyncTaskMethodBuilder.AwaitUnsafeOnCompleted() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder.AwaitUnsafeOnCompleted() <- Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__83.MoveNext() <- mscorlib.dll!System.Runtime.CompilerServices::AsyncTaskMethodBuilder.Start() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder.Start() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.OnityNextFrameAsync() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.ScheduleAsyncMethods() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.RunBuilderAttributionOperation() <- Onity.TaskBenchmarks.dll!::<>c__DisplayClass44_1.<RunBuilderAttribution>b__0() <- Onity.TaskBenchmarks.dll!::<CaptureProfiledAllocation>d__52.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 10240,
+                    "allocations": 128
+                },
+                {
+                    "stack": "Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.OnityNextFrameAsync() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.ScheduleAsyncMethods() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.RunBuilderAttributionOperation() <- Onity.TaskBenchmarks.dll!::<>c__DisplayClass44_1.<RunBuilderAttribution>b__0() <- Onity.TaskBenchmarks.dll!::<CaptureProfiledAllocation>d__52.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 8192,
+                    "allocations": 128
+                }
+            ]
+        },
+        {
+            "stage": "SuspendedAsync",
+            "library": "UniTask",
+            "sampleBytes": 8192,
+            "bytesPerOperation": 64.0,
+            "attributedBytes": 8192,
+            "callstacks": [
+                {
+                    "stack": "Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.UniTaskNextFrameAsync() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.ScheduleAsyncMethods() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.RunBuilderAttributionOperation() <- Onity.TaskBenchmarks.dll!::<>c__DisplayClass44_1.<RunBuilderAttribution>b__0() <- Onity.TaskBenchmarks.dll!::<CaptureProfiledAllocation>d__52.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 8192,
+                    "allocations": 128
+                }
+            ]
+        },
+        {
+            "stage": "SuspendedTypedAsync",
+            "library": "OnityTask",
+            "sampleBytes": 39936,
+            "bytesPerOperation": 312.0,
+            "attributedBytes": 39936,
+            "callstacks": [
+                {
+                    "stack": "mscorlib.dll!System.Runtime.CompilerServices::AsyncMethodBuilderCore.GetCompletionAction() <- mscorlib.dll!System.Runtime.CompilerServices::AsyncTaskMethodBuilder`1.AwaitUnsafeOnCompleted() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted() <- Onity.TaskBenchmarks.dll!::<OnityNextFrameResultAsync>d__85.MoveNext() <- mscorlib.dll!System.Runtime.CompilerServices::AsyncTaskMethodBuilder`1.Start() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.Start() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.OnityNextFrameResultAsync() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.ScheduleAsyncMethods() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.RunBuilderAttributionOperation() <- Onity.TaskBenchmarks.dll!::<>c__DisplayClass44_1.<RunBuilderAttribution>b__0() <- Onity.TaskBenchmarks.dll!::<CaptureProfiledAllocation>d__52.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 20480,
+                    "allocations": 256
+                },
+                {
+                    "stack": "mscorlib.dll!System.Runtime.CompilerServices::AsyncTaskMethodBuilder`1.get_Task() <- mscorlib.dll!System.Runtime.CompilerServices::AsyncTaskMethodBuilder`1.AwaitUnsafeOnCompleted() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted() <- Onity.TaskBenchmarks.dll!::<OnityNextFrameResultAsync>d__85.MoveNext() <- mscorlib.dll!System.Runtime.CompilerServices::AsyncTaskMethodBuilder`1.Start() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.Start() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.OnityNextFrameResultAsync() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.ScheduleAsyncMethods() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.RunBuilderAttributionOperation() <- Onity.TaskBenchmarks.dll!::<>c__DisplayClass44_1.<RunBuilderAttribution>b__0() <- Onity.TaskBenchmarks.dll!::<CaptureProfiledAllocation>d__52.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 10240,
+                    "allocations": 128
+                },
+                {
+                    "stack": "Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.OnityNextFrameResultAsync() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.ScheduleAsyncMethods() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.RunBuilderAttributionOperation() <- Onity.TaskBenchmarks.dll!::<>c__DisplayClass44_1.<RunBuilderAttribution>b__0() <- Onity.TaskBenchmarks.dll!::<CaptureProfiledAllocation>d__52.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 9216,
+                    "allocations": 128
+                }
+            ]
+        },
+        {
+            "stage": "SuspendedTypedAsync",
+            "library": "UniTask",
+            "sampleBytes": 9216,
+            "bytesPerOperation": 72.0,
+            "attributedBytes": 9216,
+            "callstacks": [
+                {
+                    "stack": "Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.UniTaskNextFrameResultAsync() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.ScheduleAsyncMethods() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskBenchmarkRunner.RunBuilderAttributionOperation() <- Onity.TaskBenchmarks.dll!::<>c__DisplayClass44_1.<RunBuilderAttribution>b__0() <- Onity.TaskBenchmarks.dll!::<CaptureProfiledAllocation>d__52.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 9216,
+                    "allocations": 128
+                }
+            ]
+        }
+    ]
+}

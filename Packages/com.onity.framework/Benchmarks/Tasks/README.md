@@ -394,3 +394,47 @@ change; these synchronous Editor/Mono results do not rank full task lifecycles
 or Player IL2CPP. A negative guard check used a temporary copy of the baseline
 timing JSON with the candidate allocation pass: it rejected the stale runtime
 revision and left the copy unchanged.
+
+## Warm async builder allocation callstacks
+
+The focused `-onityTaskBuilderAttribution` mode captures one Profiler `GC.Alloc`
+callstack sample for each of five matched scheduling operations and both
+libraries. Each operation runs 128 calls after two completed 128-call warmup
+batches. Native `NextFrame` scheduling and synchronously completed async methods
+are controls; the suspended cases use the same `ScheduleAsyncMethods` path as
+the expanded suite. Full GC runs before each marked batch. Frame waiting,
+resumption, and result consumption stay outside the marker. Every native and
+suspended awaiter is checked pending after the marker and before a frame yield.
+The mode requires
+`-profiler-enable`; run the pinned Editor without `-quit`:
+
+```text
+Unity.exe -batchmode -nographics -profiler-enable -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityTaskBuilderAttribution -onityTaskBenchmarkOutput <absolute-report.json> -logFile <absolute-log>
+```
+
+The [raw callstack JSON](../../../../docs/assets/benchmarks/onitytask-builder-attribution-25c8e20-2026-09-23.json)
+and [source provenance](../../../../docs/assets/benchmarks/onitytask-builder-attribution-25c8e20-2026-09-23.provenance.json)
+record the `25c8e20` runtime and pinned UniTask 2.5.11 on Unity 2022.3.62f3
+Editor/Mono. The positive and empty controls measured 65,568 B and 0 B; every
+case's resolved callstack bytes sum exactly to its marked allocation bytes.
+This is a single diagnostic sample. The earlier [eight-sample numerical
+baseline](../../../../docs/assets/benchmarks/onitytask-unity2022-mono-warm-baseline-2026-09-23.json)
+measured the same bytes per operation for these five cases.
+
+| Scheduling operation | OnityTask B/op | UniTask B/op |
+| --- | ---: | ---: |
+| Native `NextFrame` | 0 | 0 |
+| Completed untyped async method | 64 | 64 |
+| Completed typed async method | 72 | 72 |
+| Suspended untyped async method | 304 | 64 |
+| Suspended typed async method | 312 | 72 |
+
+In each suspended Onity case, the callstacks attribute 160 B/op across two
+allocations per operation to `AsyncMethodBuilderCore.GetCompletionAction()` and
+80 B/op across one allocation to `AsyncTaskMethodBuilder<T>.get_Task()`. The
+remaining 64 B/op untyped or 72 B/op typed appears at the benchmark async
+method callsite, matching its completed-method control and UniTask's suspended
+case. The measured stack names identify allocation sites, not object types.
+The 240 B/op Onity suspension increment is therefore localized to .NET builder
+calls in this Editor/Mono workload. These synchronous scheduling measurements
+do not include the remaining async lifecycle or establish an IL2CPP result.

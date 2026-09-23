@@ -1,0 +1,38 @@
+{
+  "suite": "Warm async method scheduling allocation callstacks",
+  "benchmarkBranch": "benchmark/onitytask-builder-attribution",
+  "benchmarkHostBaseCommit": "9afe9bb0d51d18d799739e14d31c97accf97d452",
+  "sourceCommit": "25c8e202214a1b7b5fa258feb87a0f5d91750ad4",
+  "onityAsyncGitBlob": "1dcb59297c21ec72f8c6512e3a64549c5e307074",
+  "completionSourceGitBlob": "43e70a577acef4e2d8441c022c4d47d6c8f462be",
+  "benchmarkRunnerGitBlob": "d15363345991a4cf8e3a050ceaa28ddb8acf51dd",
+  "benchmarkMenuGitBlob": "d83cc01986024800eaabe3e4c41d8cec2153048f",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "One main-thread scheduling marker per case after two completed warmup batches. Each marker contains 128 native, completed-async, or suspended-async calls; full GC precedes the marker. All native and suspended outer awaiters are checked pending after the marker before a frame yield. Callback completion, frame wait, and result consumption occur outside the marker.",
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "numericalBaselineHostCommit": "832310f36eaef57b68a48bbbc8f227c81e7ea720",
+  "numericalBaselineReport": "onitytask-unity2022-mono-warm-baseline-2026-09-23.json",
+  "numericalBaselineSha256": "D89F776EA27C0F355CD6E785AED4EF3F29D959EF44E95AB67DB4844E4FD3E702",
+  "numericalBaselineSamplesPerCase": 8,
+  "callstackReport": "onitytask-builder-attribution-25c8e20-2026-09-23.json",
+  "callstackReportSha256": "A46EF692AA05892999D88080C8D4CFFAAC83E4A9B59197F0D9CB2511E870EB86",
+  "reconciliation": "All ten case callstack sums equal their corresponding Profiler GC.Alloc marker byte totals. Warm native NextFrame is 0 B/op for both; completed async methods are 64 B/op untyped and 72 B/op typed for both; suspended Onity is 304/312 B/op versus UniTask 64/72 B/op, matching the prior eight-sample report.",
+  "onitySuspensionCallsites": [
+    {
+      "method": "AsyncMethodBuilderCore.GetCompletionAction()",
+      "bytesPerOperation": 160,
+      "allocationsPerOperation": 2
+    },
+    {
+      "method": "AsyncTaskMethodBuilder<T>.get_Task()",
+      "bytesPerOperation": 80,
+      "allocationsPerOperation": 1
+    }
+  ],
+  "interpretationLimit": "Method names are resolved allocation stack sites, not confirmed object types. This single diagnostic sample covers synchronous Editor/Mono scheduling only; it does not establish full async lifecycle or Player IL2CPP costs."
+}

@@ -29,6 +29,9 @@ namespace Onity.Benchmarks
         private const int k_steadyConcurrency = 128;
         private const int k_burstConcurrency = 4096;
         private const int k_completionTimeoutFrames = 240;
+        private const string k_builderRuntimeCommit = "25c8e202214a1b7b5fa258feb87a0f5d91750ad4";
+        private const string k_builderOnityAsyncBlob = "1dcb59297c21ec72f8c6512e3a64549c5e307074";
+        private const string k_pinnedUniTaskCommit = "2e993ff18f28c931602a07292df0b0804eebef99";
 #if UNITY_EDITOR
         private const int k_allocationIterations = 1024;
         private const int k_profilerReadTimeoutFrames = 60;
@@ -48,6 +51,7 @@ namespace Onity.Benchmarks
         private string m_latestJson;
         private Action<string, Exception> m_completed;
         private bool m_allocationOnly;
+        private bool m_builderAttribution;
         private bool m_allocationCounterAvailable;
 #if UNITY_EDITOR
         private bool m_lastProfiledAllocationValid;
@@ -60,6 +64,8 @@ namespace Onity.Benchmarks
         private bool m_profilerWasEnabled;
         private bool m_profilerDriverWasEnabled;
         private bool m_profileEditorWasEnabled;
+        private bool m_allocationCallstacksWereEnabled;
+        private string m_lastProfiledMarkerName;
 #endif
 
         /// <summary>
@@ -68,8 +74,9 @@ namespace Onity.Benchmarks
         /// <param name="latestJson">Output JSON path.</param>
         /// <param name="completed">Optional completion callback.</param>
         /// <param name="allocationOnly">Reads an existing timing report and adds profiled allocation samples.</param>
+        /// <param name="builderAttribution">Captures warm async method scheduling allocation callstacks.</param>
         public static void Run(string latestJson, Action<string, Exception> completed = null,
-            bool allocationOnly = false)
+            bool allocationOnly = false, bool builderAttribution = false)
         {
             if (string.IsNullOrWhiteSpace(latestJson))
             {
@@ -87,6 +94,7 @@ namespace Onity.Benchmarks
             runner.m_latestJson = Path.GetFullPath(latestJson);
             runner.m_completed = completed;
             runner.m_allocationOnly = allocationOnly;
+            runner.m_builderAttribution = builderAttribution;
             s_isRunning = true;
         }
 
@@ -97,8 +105,9 @@ namespace Onity.Benchmarks
             m_profilerWasEnabled = Profiler.enabled;
             m_profilerDriverWasEnabled = ProfilerDriver.enabled;
             m_profileEditorWasEnabled = ProfilerDriver.profileEditor;
+            m_allocationCallstacksWereEnabled = Profiler.enableAllocationCallstacks;
             m_profilerStateCaptured = true;
-            if (!m_allocationOnly)
+            if (!m_allocationOnly && !m_builderAttribution)
             {
                 Profiler.enabled = false;
                 ProfilerDriver.enabled = false;
@@ -106,9 +115,14 @@ namespace Onity.Benchmarks
 #endif
             Exception failure = null;
             TaskBenchmarkReport report = null;
+            BuilderAttributionReport attributionReport = null;
             try
             {
-                if (m_allocationOnly)
+                if (m_builderAttribution)
+                {
+                    attributionReport = CreateBuilderAttributionReport();
+                }
+                else if (m_allocationOnly)
                 {
                     report = JsonUtility.FromJson<TaskBenchmarkReport>(File.ReadAllText(m_latestJson));
                     if (report?.scenarios == null || report.scenarios.Length != 16)
@@ -129,7 +143,7 @@ namespace Onity.Benchmarks
                 failure = exception;
             }
 
-            if (failure == null && !m_allocationOnly)
+            if (failure == null && !m_allocationOnly && !m_builderAttribution)
             {
                 // This iterator yields only null, so every measured batch is inside this guard.
                 IEnumerator frameBenchmarks = RunFrameBenchmarks(report);
@@ -155,7 +169,7 @@ namespace Onity.Benchmarks
                 }
             }
 
-            if (failure == null && m_allocationOnly)
+            if (failure == null && m_allocationOnly && !m_builderAttribution)
             {
 #if UNITY_EDITOR
                 IEnumerator allocationBenchmarks = RunProfilerAllocationBenchmarks(report);
@@ -183,11 +197,49 @@ namespace Onity.Benchmarks
 #endif
             }
 
+            if (failure == null && m_builderAttribution)
+            {
+#if UNITY_EDITOR
+                IEnumerator attribution = RunBuilderAttribution(attributionReport);
+                while (true)
+                {
+                    bool hasNext;
+                    try
+                    {
+                        hasNext = attribution.MoveNext();
+                    }
+                    catch (Exception exception)
+                    {
+                        failure = exception;
+                        break;
+                    }
+
+                    if (!hasNext)
+                    {
+                        break;
+                    }
+
+                    yield return attribution.Current;
+                }
+#else
+                failure = new NotSupportedException("Builder allocation attribution requires the Unity Editor.");
+#endif
+            }
+
             if (failure == null)
             {
                 try
                 {
-                    SaveReport(report, m_latestJson);
+                    if (m_builderAttribution)
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(m_latestJson));
+                        File.WriteAllText(m_latestJson,
+                            JsonUtility.ToJson(attributionReport, true), Encoding.UTF8);
+                    }
+                    else
+                    {
+                        SaveReport(report, m_latestJson);
+                    }
                     Debug.Log($"OnityTask benchmark completed: {m_latestJson}", this);
                 }
                 catch (Exception exception)
@@ -251,6 +303,29 @@ namespace Onity.Benchmarks
             return report;
         }
 
+        private static BuilderAttributionReport CreateBuilderAttributionReport()
+        {
+            return new BuilderAttributionReport
+            {
+                schemaVersion = 1,
+                suite = "Warm async method scheduling allocation callstacks",
+                generatedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
+                onityRuntimeCommit = k_builderRuntimeCommit,
+                onityAsyncGitBlob = k_builderOnityAsyncBlob,
+                uniTaskCommit = k_pinnedUniTaskCommit,
+                unityVersion = Application.unityVersion,
+                scriptingBackend = GetScriptingBackendLabel(),
+                operations = k_steadyConcurrency,
+                warmupBatches = 2,
+                measurementScope = "One synchronous main-thread scheduling batch of 128 warm operations. "
+                    + "All native and suspended awaiters are checked pending after the marker, before a frame yield. "
+                    + "Preparation, full GC, frame waiting, continuation dispatch, completion, "
+                    + "and result consumption are outside the Profiler marker. Callstack capture "
+                    + "is diagnostic; the separate eight-sample benchmark supplies numerical results.",
+                cases = new BuilderAttributionCase[10]
+            };
+        }
+
         private void CalibrateAllocationCounter(TaskBenchmarkReport report)
         {
 #if UNITY_EDITOR
@@ -294,6 +369,295 @@ namespace Onity.Benchmarks
         }
 
 #if UNITY_EDITOR
+        private IEnumerator RunBuilderAttribution(BuilderAttributionReport report)
+        {
+            m_lastProfiledFoundFrame = -1;
+            ProfilerDriver.profileEditor = false;
+            Profiler.enableAllocationCallstacks = true;
+            ProfilerDriver.enabled = true;
+            Profiler.enabled = true;
+
+            int startup = k_profilerWarmupFrames;
+            while (ProfilerDriver.lastFrameIndex < 2 && startup-- > 0)
+            {
+                yield return null;
+            }
+
+            yield return CaptureProfiledAllocation(AllocatePositiveControl, 1);
+            report.positiveControlBytes = m_lastProfiledAllocationBytes;
+            if (!m_lastProfiledAllocationValid || report.positiveControlBytes < 65536)
+            {
+                throw new InvalidDataException("Builder attribution positive allocation control failed.");
+            }
+
+            BuilderAllocationStack[] positiveStacks = ReadBuilderAllocationCallstacks(
+                m_lastProfiledFoundFrame, m_lastProfiledMarkerName, out long positiveStackBytes);
+            if (positiveStacks.Length == 0 || positiveStackBytes != report.positiveControlBytes)
+            {
+                throw new InvalidDataException("Builder attribution positive control callstack was incomplete.");
+            }
+
+            yield return CaptureProfiledAllocation(EmptyOperation, 1);
+            report.emptyControlBytes = m_lastProfiledAllocationBytes;
+            if (!m_lastProfiledAllocationValid || report.emptyControlBytes != 0)
+            {
+                throw new InvalidDataException("Builder attribution empty allocation control failed.");
+            }
+
+            int caseIndex = 0;
+            for (int stageIndex = 0; stageIndex < 5; stageIndex++)
+            {
+                BuilderAttributionStage stage = (BuilderAttributionStage)stageIndex;
+                for (int library = 0; library < 2; library++)
+                {
+                    for (int warmup = 0; warmup < report.warmupBatches; warmup++)
+                    {
+                        RunBuilderAttributionOperation(stage, library);
+                        AssertBuilderAttributionPending(stage, library);
+                        int remaining = k_completionTimeoutFrames;
+                        while (!AreBuilderAttributionOperationsCompleted(stage, library))
+                        {
+                            if (--remaining == 0)
+                            {
+                                throw new TimeoutException(stage + " attribution warmup did not complete.");
+                            }
+
+                            yield return null;
+                        }
+
+                        ConsumeBuilderAttributionOperations(stage, library);
+                    }
+
+                    ForceFullGc();
+                    Action operation = () => RunBuilderAttributionOperation(stage, library);
+                    Action checkPending = () => AssertBuilderAttributionPending(stage, library);
+                    yield return CaptureProfiledAllocation(operation, 1, checkPending);
+                    if (!m_lastProfiledAllocationValid)
+                    {
+                        throw new InvalidDataException(stage + " allocation marker was not captured.");
+                    }
+
+                    long sampleBytes = m_lastProfiledAllocationBytes;
+                    BuilderAllocationStack[] stacks = ReadBuilderAllocationCallstacks(
+                        m_lastProfiledFoundFrame, m_lastProfiledMarkerName, out long attributedBytes);
+                    int remainingFrames = k_completionTimeoutFrames;
+                    while (!AreBuilderAttributionOperationsCompleted(stage, library))
+                    {
+                        if (--remainingFrames == 0)
+                        {
+                            throw new TimeoutException(stage + " attribution sample did not complete.");
+                        }
+
+                        yield return null;
+                    }
+
+                    ConsumeBuilderAttributionOperations(stage, library);
+                    if (attributedBytes != sampleBytes || (sampleBytes != 0 && stacks.Length == 0))
+                    {
+                        throw new InvalidDataException(stage + " callstack bytes do not match the allocation marker.");
+                    }
+
+                    report.cases[caseIndex++] = new BuilderAttributionCase
+                    {
+                        stage = stage.ToString(),
+                        library = library == 0 ? "OnityTask" : "UniTask",
+                        sampleBytes = sampleBytes,
+                        bytesPerOperation = (double)sampleBytes / k_steadyConcurrency,
+                        attributedBytes = attributedBytes,
+                        callstacks = stacks
+                    };
+                }
+            }
+
+            report.available = true;
+            report.reason = "Calibrated GC.Alloc samples and complete scheduling callstacks captured.";
+        }
+
+        private void RunBuilderAttributionOperation(BuilderAttributionStage stage, int library)
+        {
+            switch (stage)
+            {
+                case BuilderAttributionStage.NativeFrameSchedule:
+                    Schedule(library, k_steadyConcurrency);
+                    return;
+                case BuilderAttributionStage.CompletedAsync:
+                    for (int i = 0; i < k_steadyConcurrency; i++)
+                    {
+                        if (library == 0)
+                        {
+                            MeasureOnityAsyncCompleted();
+                        }
+                        else
+                        {
+                            MeasureUniTaskAsyncCompleted();
+                        }
+                    }
+                    return;
+                case BuilderAttributionStage.CompletedTypedAsync:
+                    for (int i = 0; i < k_steadyConcurrency; i++)
+                    {
+                        if (library == 0)
+                        {
+                            MeasureOnityAsyncResult();
+                        }
+                        else
+                        {
+                            MeasureUniTaskAsyncResult();
+                        }
+                    }
+                    return;
+                case BuilderAttributionStage.SuspendedAsync:
+                    ScheduleAsyncMethods(library, k_steadyConcurrency, false);
+                    return;
+                case BuilderAttributionStage.SuspendedTypedAsync:
+                    ScheduleAsyncMethods(library, k_steadyConcurrency, true);
+                    return;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(stage));
+            }
+        }
+
+        private bool AreBuilderAttributionOperationsCompleted(BuilderAttributionStage stage, int library)
+        {
+            if (stage == BuilderAttributionStage.NativeFrameSchedule)
+            {
+                return IsCompleted(library, k_steadyConcurrency);
+            }
+
+            if (stage == BuilderAttributionStage.SuspendedAsync
+                || stage == BuilderAttributionStage.SuspendedTypedAsync)
+            {
+                return AreAsyncMethodsCompleted(library, k_steadyConcurrency,
+                    stage == BuilderAttributionStage.SuspendedTypedAsync);
+            }
+
+            return true;
+        }
+
+        private void AssertBuilderAttributionPending(BuilderAttributionStage stage, int library)
+        {
+            if (stage == BuilderAttributionStage.CompletedAsync
+                || stage == BuilderAttributionStage.CompletedTypedAsync)
+            {
+                return;
+            }
+
+            bool typed = stage == BuilderAttributionStage.SuspendedTypedAsync;
+            for (int i = 0; i < k_steadyConcurrency; i++)
+            {
+                bool completed = typed
+                    ? library == 0 ? m_onityTypedAwaiters[i].IsCompleted
+                        : m_uniTaskTypedAwaiters[i].IsCompleted
+                    : library == 0 ? m_onityAwaiters[i].IsCompleted
+                        : m_uniTaskAwaiters[i].IsCompleted;
+                if (completed)
+                {
+                    throw new InvalidOperationException(stage + " completed before the frame yield.");
+                }
+            }
+        }
+
+        private void ConsumeBuilderAttributionOperations(BuilderAttributionStage stage, int library)
+        {
+            if (stage == BuilderAttributionStage.NativeFrameSchedule)
+            {
+                Consume(library, k_steadyConcurrency);
+            }
+            else if (stage == BuilderAttributionStage.SuspendedAsync
+                || stage == BuilderAttributionStage.SuspendedTypedAsync)
+            {
+                ConsumeAsyncMethods(library, k_steadyConcurrency,
+                    stage == BuilderAttributionStage.SuspendedTypedAsync);
+            }
+        }
+
+        private static BuilderAllocationStack[] ReadBuilderAllocationCallstacks(
+            int frame, string marker, out long totalBytes)
+        {
+            totalBytes = 0;
+            Dictionary<string, BuilderAllocationStack> groups =
+                new Dictionary<string, BuilderAllocationStack>();
+            List<ulong> addresses = new List<ulong>(32);
+            for (int thread = 0; ; thread++)
+            {
+                using (RawFrameDataView data = ProfilerDriver.GetRawFrameDataView(frame, thread))
+                {
+                    if (!data.valid)
+                    {
+                        break;
+                    }
+
+                    int scopeId = data.GetMarkerId(marker);
+                    int allocationId = data.GetMarkerId("GC.Alloc");
+                    if (scopeId == FrameDataView.invalidMarkerId)
+                    {
+                        continue;
+                    }
+
+                    for (int sample = 0; sample < data.sampleCount; sample++)
+                    {
+                        if (data.GetSampleMarkerId(sample) != scopeId)
+                        {
+                            continue;
+                        }
+
+                        int end = sample + data.GetSampleChildrenCountRecursive(sample);
+                        for (int child = sample + 1; child <= end; child++)
+                        {
+                            if (data.GetSampleMarkerId(child) != allocationId)
+                            {
+                                continue;
+                            }
+
+                            addresses.Clear();
+                            data.GetSampleCallstack(child, addresses);
+                            StringBuilder stack = new StringBuilder();
+                            for (int address = 0; address < addresses.Count; address++)
+                            {
+                                FrameDataView.MethodInfo method =
+                                    data.ResolveMethodInfo(addresses[address]);
+                                if (string.IsNullOrEmpty(method.methodName))
+                                {
+                                    continue;
+                                }
+
+                                if (stack.Length > 0)
+                                {
+                                    stack.Append(" <- ");
+                                }
+
+                                stack.Append(method.methodName);
+                            }
+
+                            if (stack.Length == 0)
+                            {
+                                continue;
+                            }
+
+                            long bytes = data.GetSampleMetadataAsLong(child, 0);
+                            string key = stack.ToString();
+                            if (!groups.TryGetValue(key, out BuilderAllocationStack group))
+                            {
+                                group = new BuilderAllocationStack { stack = key };
+                                groups.Add(key, group);
+                            }
+
+                            group.bytes += bytes;
+                            group.allocations++;
+                            totalBytes += bytes;
+                        }
+
+                        List<BuilderAllocationStack> sorted =
+                            new List<BuilderAllocationStack>(groups.Values);
+                        sorted.Sort((left, right) => right.bytes.CompareTo(left.bytes));
+                        return sorted.ToArray();
+                    }
+                }
+            }
+
+            return new BuilderAllocationStack[0];
+        }
+
         private IEnumerator RunProfilerAllocationBenchmarks(TaskBenchmarkReport report)
         {
             m_lastProfiledFoundFrame = -1;
@@ -529,9 +893,11 @@ namespace Onity.Benchmarks
             Profiler.enabled = m_profilerWasEnabled;
             ProfilerDriver.enabled = m_profilerDriverWasEnabled;
             ProfilerDriver.profileEditor = m_profileEditorWasEnabled;
+            Profiler.enableAllocationCallstacks = m_allocationCallstacksWereEnabled;
         }
 
-        private IEnumerator CaptureProfiledAllocation(Action operation, int iterations)
+        private IEnumerator CaptureProfiledAllocation(Action operation, int iterations,
+            Action afterOperation = null)
         {
             m_lastProfiledAllocationValid = false;
             m_lastProfiledAllocationBytes = 0;
@@ -539,6 +905,7 @@ namespace Onity.Benchmarks
             m_lastProfiledFirstFrame = firstFrame;
             int sampleId = m_profilerSampleId++;
             string markerName = k_allocationScope + "." + sampleId.ToString(CultureInfo.InvariantCulture);
+            m_lastProfiledMarkerName = markerName;
             bool failed = false;
             try
             {
@@ -565,6 +932,8 @@ namespace Onity.Benchmarks
             {
                 yield break;
             }
+
+            afterOperation?.Invoke();
 
             for (int attempt = 0; attempt < k_profilerReadTimeoutFrames; attempt++)
             {
@@ -1336,6 +1705,55 @@ namespace Onity.Benchmarks
             public double allocatedBytesPerOperation;
             public double[] sampleMilliseconds;
             public long[] sampleAllocatedBytes;
+        }
+
+        private enum BuilderAttributionStage
+        {
+            NativeFrameSchedule,
+            CompletedAsync,
+            CompletedTypedAsync,
+            SuspendedAsync,
+            SuspendedTypedAsync
+        }
+
+        [Serializable]
+        private sealed class BuilderAttributionReport
+        {
+            public int schemaVersion;
+            public string suite;
+            public string generatedAtUtc;
+            public string onityRuntimeCommit;
+            public string onityAsyncGitBlob;
+            public string uniTaskCommit;
+            public string unityVersion;
+            public string scriptingBackend;
+            public int operations;
+            public int warmupBatches;
+            public string measurementScope;
+            public bool available;
+            public string reason;
+            public long positiveControlBytes;
+            public long emptyControlBytes;
+            public BuilderAttributionCase[] cases;
+        }
+
+        [Serializable]
+        private sealed class BuilderAttributionCase
+        {
+            public string stage;
+            public string library;
+            public long sampleBytes;
+            public double bytesPerOperation;
+            public long attributedBytes;
+            public BuilderAllocationStack[] callstacks;
+        }
+
+        [Serializable]
+        private sealed class BuilderAllocationStack
+        {
+            public string stack;
+            public long bytes;
+            public int allocations;
         }
     }
 
