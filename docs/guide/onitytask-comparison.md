@@ -45,8 +45,9 @@ Allocation bytes per operation are **unavailable**. Unity 2022 Mono's
 probe reported sample values of 200/400 for that allocation; those are not
 byte counts. No zero-allocation comparison follows from these reports.
 
-The comparison host uses a pinned UniTask test dependency. The Onity runtime
-package does not depend on UniTask. The
+The [isolated comparison host](https://github.com/furkantokkan/Onity/tree/codex/onitytask-benchmarks)
+pins UniTask as a test dependency and enables the benchmark define. The Onity
+runtime package does not depend on UniTask. The
 [before-builder JSON](https://github.com/furkantokkan/Onity/releases/download/v0.3.10/onitytask-expanded-before-2026-09-23.json)
 and [after-builder JSON](https://github.com/furkantokkan/Onity/releases/download/v0.3.10/onitytask-expanded-after-builder-2026-09-23.json)
 retain every raw sample. The release also includes their CSV and Markdown
