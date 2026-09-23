@@ -61,6 +61,7 @@ Core assemblies in this package:
   - `OnityTask` / `OnityTask<T>` for allocation-aware Unity async flows
   - `OnityTask.NextFrame`, `DelayFrames`, `Delay`, `WaitUntil`, scene/web/`AsyncOperation` bridges
   - `OnityTask.WhenAll` for both untyped operations and ordered typed results
+  - `OnityTask.WhenAny` for two untyped, single-consumer operations
   - `OnityAsync.DelayAsync`, `NextFrameAsync`, `NextFixedFrameAsync`
   - `OnityAsync.WhenAll`, `OnityAsync.WhenAny`
   - `CancellationTokenSource.CancelAfterSlim(...)`
@@ -72,9 +73,10 @@ operation helpers are single-consumer. Await each value once. If several
 consumers must share an operation, call `AsTask()` once and share the returned
 `Task` instead of copying the pooled `OnityTask` value.
 
-The custom `async OnityTask` method builders and `WhenAll` currently use .NET
-`Task` internally. The pooled Unity wait operations avoid a `Task` until
-explicitly converted; do not assume all OnityTask paths are allocation-free.
+Suspended `async OnityTask` methods and `WhenAll` currently use .NET `Task`
+internally. A synchronously successful `async OnityTask<T>` stores its result
+inline. Pooled Unity waits avoid a `Task` until explicitly converted; do not
+assume all OnityTask paths are allocation-free.
 
 See the [Async with OnityTask guide](https://furkantokkan.github.io/Onity/guide/onitytask.html)
 for cancellation, scene/web operations, interop, and diagnostics.
@@ -195,10 +197,12 @@ What is already covered in Onity:
 - Task tracking window for long-running/leaking tasks.
 - Reusable timeout flow with `CancelAfterSlim` and `OnityTimeoutController`.
 
-What remains intentionally scoped:
-
-- Onity keeps API surface tighter than UniTask and focuses on Unity-first DI/reactive integration.
-- Additional async-enumerable breadth (full LINQ-like async stream API) can be added incrementally based on usage pressure.
+Current gaps include Task-backed suspended async methods and `WhenAll`, three
+runner phases rather than selectable PlayerLoop phases, next-tick cancellation,
+and no async-enumerable or public completion-source API. The
+[measured OnityTask comparison](https://furkantokkan.github.io/Onity/guide/onitytask-comparison.html)
+records the Unity 2022 timing boundaries and feature status. It does not claim
+that OnityTask is universally faster or functionally equivalent to UniTask.
 
 ## Benchmark Snapshot
 

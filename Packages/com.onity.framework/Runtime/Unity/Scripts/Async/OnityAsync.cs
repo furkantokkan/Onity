@@ -69,6 +69,30 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
+        /// Completes when either input completes and returns the winner's argument index.
+        /// Both inputs are consumed; the loser continues running and is not canceled.
+        /// </summary>
+        /// <param name="first">Input at index zero.</param>
+        /// <param name="second">Input at index one.</param>
+        /// <returns>A single-consumer task with the first completed input's index.</returns>
+        /// <exception cref="ArgumentException">
+        /// Both inputs refer to the same single-consumer native operation.
+        /// </exception>
+        public static OnityTask<int> WhenAny(OnityTask first, OnityTask second)
+        {
+            if (first.m_state is IOnityTaskSource
+                && ReferenceEquals(first.m_state, second.m_state)
+                && first.m_token == second.m_token)
+            {
+                throw new ArgumentException(
+                    "A single-consumer OnityTask cannot be passed to WhenAny twice.",
+                    nameof(second));
+            }
+
+            return new OnityTask<int>(new OnityWhenAnyTaskSource(first, second));
+        }
+
+        /// <summary>
         /// True when the wrapped task completed.
         /// </summary>
         public bool IsCompleted => m_state == null
@@ -227,7 +251,7 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
-        /// Awaits a scaled delay in seconds.
+        /// Awaits a scaled delay in seconds, starting no earlier than the next rendered frame in Play Mode.
         /// </summary>
         /// <param name="delaySeconds">Delay duration in seconds.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
@@ -238,7 +262,7 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
-        /// Awaits a delay in seconds.
+        /// Awaits a delay in seconds, starting no earlier than the next rendered frame in Play Mode.
         /// </summary>
         /// <param name="delaySeconds">Delay duration in seconds.</param>
         /// <param name="useUnscaledTime">Use unscaled time.</param>
@@ -269,7 +293,7 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
-        /// Awaits an unscaled delay in seconds.
+        /// Awaits an unscaled delay in seconds, starting no earlier than the next rendered frame in Play Mode.
         /// </summary>
         /// <param name="delaySeconds">Delay duration in seconds.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
@@ -926,7 +950,7 @@ namespace Onity.Unity.Async
         {
             if (m_state == null)
             {
-                return EqualityComparer<T>.Default.Equals(m_result, default) ? DefaultTaskCache.Value : Task.FromResult(m_result);
+                return Task.FromResult(m_result);
             }
 
             return m_state is IOnityTaskSource<T> source ? source.AsTask(m_token) : (Task<T>)m_state;
@@ -951,10 +975,6 @@ namespace Onity.Unity.Async
             AsTask().Forget(exceptionHandler);
         }
 
-        private static class DefaultTaskCache
-        {
-            internal static readonly Task<T> Value = Task.FromResult(default(T));
-        }
     }
 
     /// <summary>
@@ -979,6 +999,11 @@ namespace Onity.Unity.Async
             || (m_state is IOnityTaskSource source
                 ? source.GetStatus(m_token) != OnityTaskSourceStatus.Pending
                 : ((Task)m_state).IsCompleted);
+
+        internal bool IsCanceled => m_state != null
+            && (m_state is IOnityTaskSource source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Canceled
+                : ((Task)m_state).IsCanceled);
 
         /// <summary>
         /// Completes the await and throws if the operation failed or was canceled.
@@ -1034,7 +1059,19 @@ namespace Onity.Unity.Async
         /// <param name="continuation">Continuation callback.</param>
         public void UnsafeOnCompleted(Action continuation)
         {
-            OnCompleted(continuation);
+            if (m_state == null)
+            {
+                continuation?.Invoke();
+                return;
+            }
+
+            if (m_state is IOnityTaskSource source)
+            {
+                source.OnCompleted(continuation, m_token);
+                return;
+            }
+
+            ((Task)m_state).GetAwaiter().UnsafeOnCompleted(continuation);
         }
     }
 
@@ -1121,7 +1158,19 @@ namespace Onity.Unity.Async
         /// <param name="continuation">Continuation callback.</param>
         public void UnsafeOnCompleted(Action continuation)
         {
-            OnCompleted(continuation);
+            if (m_state == null)
+            {
+                continuation?.Invoke();
+                return;
+            }
+
+            if (m_state is IOnityTaskSource<T> source)
+            {
+                source.OnCompleted(continuation, m_token);
+                return;
+            }
+
+            ((Task<T>)m_state).GetAwaiter().UnsafeOnCompleted(continuation);
         }
     }
 
@@ -1175,6 +1224,26 @@ namespace Onity.Unity.Async
         bool TrySetCanceledFromRunner(int token);
 
         bool Tick(float deltaTime, float unscaledDeltaTime);
+    }
+
+    internal static class OnityTaskContinuation
+    {
+        public static void Invoke(Action continuation)
+        {
+            if (continuation == null)
+            {
+                return;
+            }
+
+            try
+            {
+                continuation();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+        }
     }
 
     internal abstract class OnityTaskSourceBase : IOnityTaskSource
@@ -1443,7 +1512,7 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
 
-            continuation?.Invoke();
+            OnityTaskContinuation.Invoke(continuation);
             return true;
         }
 
@@ -1686,7 +1755,7 @@ namespace Onity.Unity.Async
                 m_consumptionMode = k_nativeConsumption;
                 m_consumed = 1;
                 exception = status == (int)OnityTaskSourceStatus.Canceled
-                    ? new OperationCanceledException(m_cancellationToken)
+                    ? m_exception ?? new OperationCanceledException(m_cancellationToken)
                     : status == (int)OnityTaskSourceStatus.Faulted
                         ? m_exception
                         : null;
@@ -1758,6 +1827,11 @@ namespace Onity.Unity.Async
             return TrySetStatus(OnityTaskSourceStatus.Canceled, default, null);
         }
 
+        protected bool TrySetCanceled(OperationCanceledException exception)
+        {
+            return TrySetStatus(OnityTaskSourceStatus.Canceled, default, exception);
+        }
+
         protected abstract void ReleaseSource();
 
         private static void CancelFromToken(object state)
@@ -1802,7 +1876,7 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
 
-            continuation?.Invoke();
+            OnityTaskContinuation.Invoke(continuation);
             return true;
         }
 
@@ -1820,7 +1894,10 @@ namespace Onity.Unity.Async
             }
             else if (status == (int)OnityTaskSourceStatus.Canceled)
             {
-                taskCompletionSource.TrySetCanceled(m_cancellationToken);
+                CancellationToken cancellationToken = m_exception is OperationCanceledException exception
+                    ? exception.CancellationToken
+                    : m_cancellationToken;
+                taskCompletionSource.TrySetCanceled(cancellationToken);
             }
             else
             {
@@ -1872,6 +1949,130 @@ namespace Onity.Unity.Async
         }
     }
 
+    internal sealed class OnityWhenAnyTaskSource : OnityTaskSourceBase<int>
+    {
+        private readonly Action m_firstContinuation;
+        private readonly Action m_secondContinuation;
+
+        private OnityTaskAwaiter m_firstAwaiter;
+        private OnityTaskAwaiter m_secondAwaiter;
+        private int m_winner;
+
+        public OnityWhenAnyTaskSource(OnityTask first, OnityTask second)
+        {
+            m_firstContinuation = CompleteFirst;
+            m_secondContinuation = CompleteSecond;
+            Reset(default);
+            RegisterFirst(first);
+            RegisterSecond(second);
+        }
+
+        protected override void ReleaseSource()
+        {
+            // The losing input can complete after the result is consumed.
+        }
+
+        private void RegisterFirst(OnityTask task)
+        {
+            m_firstAwaiter = task.GetAwaiter();
+            try
+            {
+                if (m_firstAwaiter.IsCompleted)
+                {
+                    CompleteFirst();
+                }
+                else
+                {
+                    m_firstAwaiter.UnsafeOnCompleted(m_firstContinuation);
+                }
+            }
+            catch (Exception exception)
+            {
+                m_firstAwaiter = default;
+                CompleteRegistrationFailure(0, exception);
+            }
+        }
+
+        private void RegisterSecond(OnityTask task)
+        {
+            m_secondAwaiter = task.GetAwaiter();
+            try
+            {
+                if (m_secondAwaiter.IsCompleted)
+                {
+                    CompleteSecond();
+                }
+                else
+                {
+                    m_secondAwaiter.UnsafeOnCompleted(m_secondContinuation);
+                }
+            }
+            catch (Exception exception)
+            {
+                m_secondAwaiter = default;
+                CompleteRegistrationFailure(1, exception);
+            }
+        }
+
+        private void CompleteFirst()
+        {
+            OnityTaskAwaiter awaiter = m_firstAwaiter;
+            m_firstAwaiter = default;
+            CompleteInput(0, awaiter);
+        }
+
+        private void CompleteSecond()
+        {
+            OnityTaskAwaiter awaiter = m_secondAwaiter;
+            m_secondAwaiter = default;
+            CompleteInput(1, awaiter);
+        }
+
+        private void CompleteInput(int index, OnityTaskAwaiter awaiter)
+        {
+            bool isWinner = Interlocked.CompareExchange(ref m_winner, index + 1, 0) == 0;
+            bool isCanceled = false;
+            try
+            {
+                isCanceled = awaiter.IsCanceled;
+                awaiter.GetResult();
+                if (isWinner)
+                {
+                    TrySetResult(index);
+                }
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (isWinner)
+                {
+                    if (isCanceled)
+                    {
+                        TrySetCanceled(exception);
+                    }
+                    else
+                    {
+                        TrySetException(exception);
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                if (isWinner)
+                {
+                    TrySetException(exception);
+                }
+            }
+        }
+
+        private void CompleteRegistrationFailure(int index, Exception exception)
+        {
+            if (Interlocked.CompareExchange(ref m_winner, index + 1, 0) == 0)
+            {
+                TrySetException(exception);
+            }
+        }
+    }
+
     [ExecuteAlways]
     internal sealed class OnityTaskRunner : MonoBehaviour
     {
@@ -1911,7 +2112,7 @@ namespace Onity.Unity.Async
 
         private static OnityTaskRunner GetOrCreate()
         {
-            if (s_instance != null)
+            if (!ReferenceEquals(s_instance, null))
             {
                 return s_instance;
             }
@@ -2084,8 +2285,10 @@ namespace Onity.Unity.Async
 
         private static readonly Stack<OnityDelayTaskSource> s_pool = new Stack<OnityDelayTaskSource>(32);
 
+        private int m_startFrameCount;
         private float m_remainingSeconds;
         private bool m_useUnscaledTime;
+        private bool m_waitForNextRenderedFrame;
 
         public static OnityDelayTaskSource Rent(
             float delaySeconds,
@@ -2099,6 +2302,8 @@ namespace Onity.Unity.Async
             }
 
             source.Reset(cancellationToken);
+            source.m_waitForNextRenderedFrame = Application.isPlaying;
+            source.m_startFrameCount = source.m_waitForNextRenderedFrame ? Time.frameCount : 0;
             source.m_remainingSeconds = delaySeconds;
             source.m_useUnscaledTime = useUnscaledTime;
             OnityTaskRunner.Schedule(source, OnityTaskLoopPhase.Update);
@@ -2110,6 +2315,11 @@ namespace Onity.Unity.Async
             if (IsPending == false)
             {
                 return true;
+            }
+
+            if (m_waitForNextRenderedFrame && Time.frameCount == m_startFrameCount)
+            {
+                return false;
             }
 
             m_remainingSeconds -= m_useUnscaledTime ? unscaledDeltaTime : deltaTime;
@@ -2124,8 +2334,10 @@ namespace Onity.Unity.Async
 
         protected override void ReleaseSource()
         {
+            m_startFrameCount = 0;
             m_remainingSeconds = 0f;
             m_useUnscaledTime = false;
+            m_waitForNextRenderedFrame = false;
             lock (s_pool)
             {
                 if (s_pool.Count < k_maxPoolSize)
@@ -2170,23 +2382,25 @@ namespace Onity.Unity.Async
                 return true;
             }
 
+            bool value;
             try
             {
-                bool value = m_predicate();
-                bool shouldComplete = m_waitWhile ? value == false : value;
-                if (shouldComplete == false)
-                {
-                    return false;
-                }
-
-                TrySetResult();
-                return true;
+                value = m_predicate();
             }
             catch (Exception exception)
             {
                 TrySetException(exception);
                 return true;
             }
+
+            bool shouldComplete = m_waitWhile ? value == false : value;
+            if (shouldComplete == false)
+            {
+                return false;
+            }
+
+            TrySetResult();
+            return true;
         }
 
         protected override void ReleaseSource()
@@ -2243,9 +2457,9 @@ namespace Onity.Unity.Async
                 return true;
             }
 
+            TAsyncOperation operation = m_operation;
             try
             {
-                TAsyncOperation operation = m_operation;
                 m_onProgress?.Invoke(Mathf.Clamp01(operation.progress));
 
                 if (operation.isDone == false)
@@ -2254,14 +2468,15 @@ namespace Onity.Unity.Async
                 }
 
                 m_onProgress?.Invoke(1f);
-                TrySetResult(operation);
-                return true;
             }
             catch (Exception exception)
             {
                 TrySetException(exception);
                 return true;
             }
+
+            TrySetResult(operation);
+            return true;
         }
 
         protected override void ReleaseSource()
@@ -2379,6 +2594,9 @@ namespace Onity.Unity.Async
     public struct OnityTaskMethodBuilder<T>
     {
         private AsyncTaskMethodBuilder<T> m_builder;
+        private T m_result;
+        private bool m_hasResult;
+        private bool m_suspended;
 
         /// <summary>
         /// Creates a typed method builder.
@@ -2395,7 +2613,9 @@ namespace Onity.Unity.Async
         /// <summary>
         /// Gets the task controlled by this builder.
         /// </summary>
-        public OnityTask<T> Task => OnityTask<T>.FromTask(m_builder.Task);
+        public OnityTask<T> Task => m_hasResult
+            ? OnityTask<T>.FromResult(m_result)
+            : OnityTask<T>.FromTask(m_builder.Task);
 
         /// <summary>
         /// Starts the async state machine.
@@ -2430,6 +2650,7 @@ namespace Onity.Unity.Async
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
+            m_suspended = true;
             m_builder.AwaitOnCompleted(ref awaiter, ref stateMachine);
         }
 
@@ -2446,6 +2667,7 @@ namespace Onity.Unity.Async
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
+            m_suspended = true;
             m_builder.AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine);
         }
 
@@ -2455,7 +2677,14 @@ namespace Onity.Unity.Async
         /// <param name="result">Async method result.</param>
         public void SetResult(T result)
         {
-            m_builder.SetResult(result);
+            if (m_suspended)
+            {
+                m_builder.SetResult(result);
+                return;
+            }
+
+            m_result = result;
+            m_hasResult = true;
         }
 
         /// <summary>

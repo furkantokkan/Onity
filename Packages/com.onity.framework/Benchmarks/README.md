@@ -11,8 +11,10 @@ This folder contains benchmark tooling for comparing:
 Benchmark comparison assemblies reference VContainer and Zenject. To compile and
 run them in a package-only project, install those comparison packages and add
 `ONITY_BENCHMARKS` to **Project Settings > Player > Scripting Define Symbols**.
-The optional OnityTask comparison also requires UniTask when that same define is
-enabled; it is benchmark-only and not a runtime dependency of Onity.
+The OnityTask comparison is independently enabled with `ONITY_TASK_BENCHMARKS`.
+It requires only UniTask as a comparison dependency; VContainer and Zenject are
+not required. DI benchmarks no longer reference UniTask. Both comparison suites
+remain optional and outside Onity runtime dependencies.
 
 From the Unity menu:
 - `Onity/Benchmarks/Run DI Benchmarks (Editor)`

@@ -11,7 +11,7 @@ Onity is a Unity-first framework for dependency injection, async gameplay flows,
 reactive state, typed messaging, factories, and pooling. Its core is engine-free,
 and the package has no non-Unity third-party runtime dependencies.
 
-**Current release:** [`v0.3.9`](https://github.com/furkantokkan/Onity/releases/tag/v0.3.9) · **Unity:** 2022.3 LTS or newer
+**Current release:** [`v0.3.10`](https://github.com/furkantokkan/Onity/releases/tag/v0.3.10) · **Unity:** 2022.3 LTS or newer
 
 ## Install
 
@@ -25,13 +25,14 @@ https://github.com/furkantokkan/Onity.git#upm
 To pin the current release:
 
 ```text
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.3.9
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.3.10
 ```
 
 ## Start here
 
 - [Getting Started](Getting-Started.html) — hands-on walkthrough wiring DI, reactive, and events in one scene.
 - [Async with OnityTask](guide/onitytask.html) — frame waits, cancellation, scene loading, web requests, and the pooled-task safety rule.
+- [OnityTask and UniTask comparison](guide/onitytask-comparison.html) — measured Unity 2022 workloads and current feature gaps.
 
 ## What Onity provides
 
@@ -58,6 +59,7 @@ caveats.
 - [Reactive](guide/reactive.html)
 - [Events & Messaging](guide/events-messaging.html)
 - [Async with OnityTask](guide/onitytask.html)
+- [OnityTask and UniTask comparison](guide/onitytask-comparison.html)
 - [Lifecycle & Scopes](guide/lifecycle-and-scopes.html)
 - [Factories & Pooling](guide/factories-and-pooling.html)
 - [Performance & IL2CPP](guide/performance-and-il2cpp.html)

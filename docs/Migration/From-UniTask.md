@@ -22,6 +22,8 @@ for UniTask's full API. `async OnityTask` methods and `WhenAll` currently use
 .NET `Task` internally, so equivalent allocation behavior is not guaranteed.
 
 For a task-oriented introduction, read [Async with OnityTask](../guide/onitytask.html).
+For measured Unity 2022 workloads and the current feature gaps, read
+[OnityTask and UniTask comparison](../guide/onitytask-comparison.html).
 
 > **Pooled-task safety:** frame, delay, predicate, and
 > `AsyncOperation.AsOnityTask()` values are single-consumer. Await each value
@@ -55,6 +57,7 @@ using Onity.Unity.Async;
 | `await request.SendWebRequest().ToUniTask(...)` | `await OnityTask.Send(request, onProgress, ct)` |
 | `task.Forget()` | `task.Forget()` |
 | `T[] values = await UniTask.WhenAll(typedTasks)` | `T[] values = await OnityTask.WhenAll(typedTasks)` |
+| `int winner = await UniTask.WhenAny(first, second)` for two untyped inputs | `int winner = await OnityTask.WhenAny(first, second)` |
 | `await observable.FirstAsync(ct)` | `await observable.FirstOnityTask(ct)` |
 | `await asyncPublisher.PublishAsync(message, ct).AsTask()` | `await asyncPublisher.PublishOnityTask(message, ct)` |
 
@@ -94,10 +97,20 @@ OnityTask<AsyncOperation> load = OnityTask.LoadSceneAsync(
 
 AsyncOperation operation = await load;
 
-// Show "press any key" or complete a fade here.
-
-await OnityTask.ActivateScene(operation, ct);
+try
+{
+    // Wait for input or complete a fade here.
+    await WaitForFadeAsync(ct);
+}
+finally
+{
+    await OnityTask.ActivateScene(operation, CancellationToken.None);
+}
 ```
+
+After Unity starts a deferred load, the token cannot cancel the underlying
+scene operation. Always activate the returned operation, including when the
+wait for input or a fade is canceled.
 
 ## AsyncOperation Bridge
 

@@ -4,10 +4,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using Onity.DI;
+using Onity.Unity.Async;
 using Onity.Unity.Contexts;
 using Onity.Unity.Installers;
 using Onity.Unity.SceneFlow;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
 namespace Onity.Tests.PlayMode
@@ -15,6 +17,10 @@ namespace Onity.Tests.PlayMode
     [TestFixture]
     public sealed class OnitySceneFlowContextReadinessPlayModeTests
     {
+        private const string k_deferredLoadSceneName = "OnityDeferredLoadFixture";
+        private const string k_deferredLoadScenePath =
+            "Packages/com.onity.framework/Tests/Fixtures/OnityDeferredLoadFixture.unity";
+
         [UnityTest]
         public IEnumerator ReadyTask_WaitsForAsyncBuildCallback()
         {
@@ -110,6 +116,222 @@ namespace Onity.Tests.PlayMode
                 Time.timeScale = originalTimeScale;
                 Object.DestroyImmediate(initiatorObject);
             }
+        }
+
+        [UnityTest]
+        public IEnumerator CanceledLoadingGate_StillCompletesPreparedOperation()
+        {
+            MethodInfo activateMethod = typeof(OnityLoadingSceneInitiator).GetMethod(
+                "ActivatePreparedSceneAsync",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(activateMethod, Is.Not.Null);
+
+            AsyncOperation operation = Resources.UnloadUnusedAssets();
+            operation.allowSceneActivation = false;
+            try
+            {
+                using CancellationTokenSource cancellationTokenSource =
+                    new CancellationTokenSource();
+                cancellationTokenSource.Cancel();
+
+                int progressCount = 0;
+                Task canceledGate = Task.FromCanceled(cancellationTokenSource.Token);
+                Task completionTask = (Task)activateMethod.Invoke(
+                    null,
+                    new object[]
+                    {
+                        operation,
+                        canceledGate,
+                        (System.Action<float>)(_ => progressCount++)
+                    });
+
+                float timeoutAt = Time.realtimeSinceStartup + 5f;
+                while (completionTask.IsCompleted == false &&
+                       Time.realtimeSinceStartup < timeoutAt)
+                {
+                    yield return null;
+                }
+
+                Assert.That(operation.allowSceneActivation, Is.True);
+                Assert.That(operation.isDone, Is.True);
+                Assert.That(progressCount, Is.GreaterThan(0));
+                Assert.That(completionTask.IsCanceled, Is.True);
+            }
+            finally
+            {
+                operation.allowSceneActivation = true;
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator DeferredSceneLoad_CanceledAfterStart_ReturnsActivatableOperation()
+        {
+            Scene[] scenesBeforeLoad = CaptureScenes();
+            using CancellationTokenSource cancellationTokenSource =
+                new CancellationTokenSource();
+            Task<AsyncOperation> loadTask = OnitySceneLoader.LoadAsync(
+                k_deferredLoadSceneName,
+                LoadSceneMode.Additive,
+                false,
+                cancellationToken: cancellationTokenSource.Token);
+            cancellationTokenSource.Cancel();
+
+            AsyncOperation operation = null;
+            Scene loadedScene = default;
+            try
+            {
+                yield return WaitForTask(loadTask);
+                Assert.That(loadTask.IsCompletedSuccessfully, Is.True, loadTask.Exception?.ToString());
+
+                operation = loadTask.Result;
+                Assert.That(operation, Is.Not.Null);
+                Assert.That(operation.progress, Is.GreaterThanOrEqualTo(0.9f));
+                Assert.That(operation.isDone, Is.False);
+                Assert.That(operation.allowSceneActivation, Is.False);
+
+                Task activationTask = OnitySceneLoader.ActivateAsync(operation);
+                yield return WaitForTask(activationTask);
+                Assert.That(activationTask.IsCompletedSuccessfully, Is.True,
+                    activationTask.Exception?.ToString());
+
+                loadedScene = FindNewFixtureScene(scenesBeforeLoad);
+                Assert.That(loadedScene.IsValid() && loadedScene.isLoaded, Is.True);
+
+                AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(loadedScene);
+                yield return WaitForOperation(unloadOperation);
+                Assert.That(unloadOperation.isDone, Is.True);
+            }
+            finally
+            {
+                if (operation != null)
+                {
+                    operation.allowSceneActivation = true;
+                }
+
+                if (loadedScene.IsValid() && loadedScene.isLoaded)
+                {
+                    SceneManager.UnloadSceneAsync(loadedScene);
+                }
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator DeferredSceneLoad_ThrowingProgressCallback_StillReleasesQueue()
+        {
+            Scene[] scenesBeforeLoad = CaptureScenes();
+            int callbackCount = 0;
+            System.Action<float> onProgress = _ =>
+            {
+                callbackCount++;
+                throw new System.InvalidOperationException("deferred scene progress failed");
+            };
+            LogAssert.Expect(
+                LogType.Exception,
+                new System.Text.RegularExpressions.Regex(
+                    "InvalidOperationException: deferred scene progress failed"));
+
+            Task<AsyncOperation> loadTask = OnitySceneLoader.LoadAsync(
+                k_deferredLoadSceneName,
+                LoadSceneMode.Additive,
+                false,
+                onProgress);
+
+            AsyncOperation operation = null;
+            Scene loadedScene = default;
+            try
+            {
+                yield return WaitForTask(loadTask);
+                Assert.That(loadTask.IsCompletedSuccessfully, Is.True, loadTask.Exception?.ToString());
+                Assert.That(callbackCount, Is.EqualTo(1));
+
+                operation = loadTask.Result;
+                Task activationTask = OnitySceneLoader.ActivateAsync(operation);
+                yield return WaitForTask(activationTask);
+                Assert.That(activationTask.IsCompletedSuccessfully, Is.True,
+                    activationTask.Exception?.ToString());
+
+                loadedScene = FindNewFixtureScene(scenesBeforeLoad);
+                Assert.That(loadedScene.IsValid() && loadedScene.isLoaded, Is.True);
+
+                AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(loadedScene);
+                yield return WaitForOperation(unloadOperation);
+                Assert.That(unloadOperation.isDone, Is.True);
+            }
+            finally
+            {
+                if (operation != null)
+                {
+                    operation.allowSceneActivation = true;
+                }
+
+                if (loadedScene.IsValid() && loadedScene.isLoaded)
+                {
+                    SceneManager.UnloadSceneAsync(loadedScene);
+                }
+            }
+        }
+
+        private static Scene[] CaptureScenes()
+        {
+            Scene[] scenes = new Scene[SceneManager.sceneCount];
+            for (int index = 0; index < scenes.Length; index++)
+            {
+                scenes[index] = SceneManager.GetSceneAt(index);
+            }
+
+            return scenes;
+        }
+
+        private static Scene FindNewFixtureScene(Scene[] scenesBeforeLoad)
+        {
+            for (int index = 0; index < SceneManager.sceneCount; index++)
+            {
+                Scene scene = SceneManager.GetSceneAt(index);
+                if (scene.path != k_deferredLoadScenePath)
+                {
+                    continue;
+                }
+
+                bool wasLoadedBefore = false;
+                for (int priorIndex = 0; priorIndex < scenesBeforeLoad.Length; priorIndex++)
+                {
+                    if (scene == scenesBeforeLoad[priorIndex])
+                    {
+                        wasLoadedBefore = true;
+                        break;
+                    }
+                }
+
+                if (wasLoadedBefore == false)
+                {
+                    return scene;
+                }
+            }
+
+            return default;
+        }
+
+        private static IEnumerator WaitForTask(Task task)
+        {
+            float timeoutAt = Time.realtimeSinceStartup + 15f;
+            while (task.IsCompleted == false && Time.realtimeSinceStartup < timeoutAt)
+            {
+                yield return null;
+            }
+
+            Assert.That(task.IsCompleted, Is.True, "Unity task did not complete in time.");
+        }
+
+        private static IEnumerator WaitForOperation(AsyncOperation operation)
+        {
+            Assert.That(operation, Is.Not.Null);
+            float timeoutAt = Time.realtimeSinceStartup + 15f;
+            while (operation.isDone == false && Time.realtimeSinceStartup < timeoutAt)
+            {
+                yield return null;
+            }
+
+            Assert.That(operation.isDone, Is.True, "Unity async operation did not complete in time.");
         }
 
         private static void SetContextInstallers(

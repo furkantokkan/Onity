@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -7,6 +10,7 @@ using Onity.Messaging;
 using Onity.Reactive;
 using Onity.Unity.Async;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Onity.Tests.EditMode
 {
@@ -153,6 +157,59 @@ namespace Onity.Tests.EditMode
             Assert.That(task.IsCompletedSuccessfully, Is.True);
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void OnityTask_TaskBackedAwaiter_ExecutionContextMatchesNativeAwaiter(bool useSafeRegistration)
+        {
+            TaskCompletionSource<int> source =
+                new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<int> nativeSource =
+                new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            OnityTaskAwaiter awaiter = OnityTask.FromTask(source.Task).GetAwaiter();
+
+            string nativeContext = ObserveExecutionContext(
+                ((Task)nativeSource.Task).GetAwaiter(), () => nativeSource.SetResult(42), useSafeRegistration);
+            string adaptedContext = ObserveExecutionContext(
+                awaiter, () => source.SetResult(42), useSafeRegistration);
+
+            Assert.That(adaptedContext, Is.EqualTo(nativeContext),
+                "The adapter must preserve the native Task awaiter's registration semantics.");
+            Assert.DoesNotThrow(() => awaiter.GetResult());
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void OnityTask_TypedTaskBackedAwaiter_ExecutionContextMatchesNativeAwaiter(bool useSafeRegistration)
+        {
+            TaskCompletionSource<int> source =
+                new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<int> nativeSource =
+                new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            OnityTaskAwaiter<int> awaiter = OnityTask<int>.FromTask(source.Task).GetAwaiter();
+
+            string nativeContext = ObserveExecutionContext(
+                nativeSource.Task.GetAwaiter(), () => nativeSource.SetResult(42), useSafeRegistration);
+            string adaptedContext = ObserveExecutionContext(
+                awaiter, () => source.SetResult(42), useSafeRegistration);
+
+            Assert.That(adaptedContext, Is.EqualTo(nativeContext),
+                "The adapter must preserve the native Task<T> awaiter's registration semantics.");
+            Assert.That(awaiter.GetResult(), Is.EqualTo(42));
+        }
+
+        [TestCase(0)]
+        [TestCase(42)]
+        public void OnityTask_FromResultAsTask_DoesNotInvokeResultEquality(int value)
+        {
+            OnityTask<ThrowingEquatableResult> task =
+                OnityTask<ThrowingEquatableResult>.FromResult(new ThrowingEquatableResult(value));
+
+            Task<ThrowingEquatableResult> converted = task.AsTask();
+
+            Assert.That(converted.IsCompletedSuccessfully, Is.True);
+            Assert.That(converted.GetAwaiter().GetResult().Value, Is.EqualTo(value));
+        }
+
         [Test]
         public async Task OnityTaskMethodBuilder_AsyncMethodCompletesSuccessfully()
         {
@@ -230,6 +287,46 @@ namespace Onity.Tests.EditMode
             catch (OperationCanceledException)
             {
             }
+        }
+
+        [Test]
+        public void DeferredLoad_CanceledBeforeStart_DoesNotStartSceneLoad()
+        {
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            Task<AsyncOperation> task = OnitySceneLoader.LoadAsync(
+                "AnyScene",
+                activateOnLoad: false,
+                cancellationToken: cancellationTokenSource.Token);
+
+            Assert.That(task.IsCanceled, Is.True);
+        }
+
+        [Test]
+        public void DeferredLoad_ProgressCallbackFault_IsLoggedOnce()
+        {
+            MethodInfo reportMethod = typeof(OnitySceneLoader).GetMethod(
+                "ReportLoadProgress",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(reportMethod, Is.Not.Null);
+
+            int callCount = 0;
+            Action<float> onProgress = _ =>
+            {
+                callCount++;
+                throw new InvalidOperationException("deferred callback failed");
+            };
+            object[] arguments = { onProgress, 0f, false };
+            LogAssert.Expect(
+                LogType.Exception,
+                new Regex("InvalidOperationException: deferred callback failed"));
+
+            reportMethod.Invoke(null, arguments);
+            reportMethod.Invoke(null, arguments);
+
+            Assert.That(callCount, Is.EqualTo(1));
+            Assert.That(arguments[0], Is.Null);
         }
 
         [Test]
@@ -526,6 +623,61 @@ namespace Onity.Tests.EditMode
             ResourceRequest completedOperation = await request;
 
             Assert.That(completedOperation, Is.SameAs(request));
+        }
+
+        private static string ObserveExecutionContext<TAwaiter>(
+            TAwaiter awaiter, Action complete, bool useSafeRegistration)
+            where TAwaiter : ICriticalNotifyCompletion
+        {
+            AsyncLocal<string> context = new AsyncLocal<string>();
+            TaskCompletionSource<string> observed =
+                new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            SynchronizationContext previousSynchronizationContext = SynchronizationContext.Current;
+            string previousValue = context.Value;
+
+            try
+            {
+                // Exclude Unity's SynchronizationContext so only ExecutionContext capture is tested.
+                SynchronizationContext.SetSynchronizationContext(null);
+                context.Value = "registration";
+                Action continuation = () => observed.TrySetResult(context.Value);
+                if (useSafeRegistration)
+                {
+                    awaiter.OnCompleted(continuation);
+                }
+                else
+                {
+                    awaiter.UnsafeOnCompleted(continuation);
+                }
+            }
+            finally
+            {
+                context.Value = previousValue;
+                SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+            }
+
+            // The completion thread must not inherit the registration thread's ExecutionContext.
+            ThreadPool.UnsafeQueueUserWorkItem(_ => complete(), null);
+            Assert.That(observed.Task.Wait(TimeSpan.FromSeconds(5)), Is.True,
+                "The registered continuation did not run within five seconds.");
+            // Native Unity Mono and other .NET runtimes may differ; compare the adapter to
+            // its corresponding native awaiter instead of assuming a particular runtime's flow.
+            return observed.Task.GetAwaiter().GetResult();
+        }
+
+        private readonly struct ThrowingEquatableResult : IEquatable<ThrowingEquatableResult>
+        {
+            public int Value { get; }
+
+            public ThrowingEquatableResult(int value)
+            {
+                Value = value;
+            }
+
+            public bool Equals(ThrowingEquatableResult other)
+            {
+                throw new InvalidOperationException("Result equality must not run during AsTask conversion.");
+            }
         }
 
         private sealed class ManualTimeProvider : OnityTimeProvider

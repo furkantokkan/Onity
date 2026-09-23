@@ -51,11 +51,18 @@ namespace Onity.Unity.Async
         /// <param name="sceneName">Scene name from Build Settings.</param>
         /// <param name="loadSceneMode">Load mode.</param>
         /// <param name="activateOnLoad">Scene activation flag.</param>
-        /// <param name="onProgress">Optional normalized progress callback (0..1).</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="onProgress">
+        /// Optional normalized progress callback (0..1). Deferred-load callback
+        /// failures are logged so the operation can still be returned.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// Cancels before Unity starts a deferred load. Once started, a deferred load
+        /// returns its operation so the caller can activate it.
+        /// </param>
         /// <returns>
         /// Returned async operation.
-        /// When <paramref name="activateOnLoad"/> is false, returns once scene reaches activation-ready state.
+        /// When <paramref name="activateOnLoad"/> is false, returns once scene reaches
+        /// activation-ready state. The caller must activate the returned operation.
         /// </returns>
         public static Task<AsyncOperation> LoadAsync(
             string sceneName,
@@ -91,24 +98,58 @@ namespace Onity.Unity.Async
             }
 
             operation.allowSceneActivation = activateOnLoad;
-            onProgress?.Invoke(0f);
+            ReportLoadProgress(ref onProgress, 0f, activateOnLoad);
 
             while (operation.isDone == false)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                onProgress?.Invoke(NormalizeLoadProgress(operation.progress, activateOnLoad));
+                if (activateOnLoad)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                ReportLoadProgress(
+                    ref onProgress,
+                    NormalizeLoadProgress(operation.progress, activateOnLoad),
+                    activateOnLoad);
 
                 if (activateOnLoad == false && operation.progress >= 0.9f)
                 {
-                    onProgress?.Invoke(1f);
+                    ReportLoadProgress(ref onProgress, 1f, activateOnLoad);
                     return operation;
                 }
 
                 await Task.Yield();
             }
 
-            onProgress?.Invoke(1f);
+            ReportLoadProgress(ref onProgress, 1f, activateOnLoad);
             return operation;
+        }
+
+        private static void ReportLoadProgress(
+            ref Action<float> onProgress,
+            float progress,
+            bool activateOnLoad)
+        {
+            if (onProgress == null)
+            {
+                return;
+            }
+
+            if (activateOnLoad)
+            {
+                onProgress(progress);
+                return;
+            }
+
+            try
+            {
+                onProgress(progress);
+            }
+            catch (Exception exception)
+            {
+                onProgress = null;
+                Debug.LogException(exception);
+            }
         }
 
         /// <summary>

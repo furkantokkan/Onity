@@ -88,6 +88,7 @@ fixed-frame wait also completes while `Time.timeScale` is zero.
 | Wait while a condition holds | `await OnityTask.WaitWhile(predicate, ct)` |
 | Wait for several operations | `await OnityTask.WhenAll(tasks)` |
 | Collect typed results in input order | `T[] results = await OnityTask.WhenAll(typedTasks)` |
+| First of two untyped operations | `int winner = await OnityTask.WhenAny(first, second)` |
 | Completed typed result | `await OnityTask.FromResult(value)` |
 
 ## Single-consumer rule for pooled tasks
@@ -98,14 +99,19 @@ sources. Each returned `OnityTask` value is **single-consumer**:
 - Await the value once, or call `AsTask()` once.
 - Do not copy the value to several consumers.
 - Do not await it and then call `AsTask()` on the old copy.
-- `WhenAll` consumes its input task values; do not await those inputs separately.
+- `WhenAll` and `WhenAny` consume their input task values; do not await those
+  inputs separately. `WhenAny` does not cancel the loser, which is consumed
+  when it eventually completes.
 
 `NextFrame` and `DelayFrames(1)` resume no earlier than the following rendered
 frame in Play Mode. `DelayFrames(0)` completes immediately. Negative frame
-counts throw `ArgumentOutOfRangeException`.
+counts throw `ArgumentOutOfRangeException`. Positive `Delay` and `DelayUnscaled`
+waits also skip the frame in which they are scheduled in Play Mode.
 
 `WhenAll` currently materializes its inputs as .NET `Task` values. Likewise,
 methods declared `async OnityTask` use .NET's async method builder internally.
+The two-input `WhenAny` uses a native result source, but currently allocates
+that source and two continuation delegates per call.
 Use the pooled frame, delay, predicate, and `AsyncOperation` waits directly in
 hot paths; do not assume every OnityTask composition is allocation-free.
 
@@ -142,6 +148,31 @@ private static async OnityTask LoadGameplayAsync(CancellationToken cancellationT
 cancellation shape. `LoadSceneAsync` returns the underlying `AsyncOperation` when
 you need to control activation yourself.
 
+For `LoadSceneAsync(..., activateOnLoad: false)`, cancellation can prevent Unity
+from starting the load. After Unity starts it, Onity returns the prepared
+operation even if the token was canceled. The caller must eventually activate
+that operation: Unity holds it at 90% progress and blocks later async operations
+until activation is allowed. Use an uncanceled token for this cleanup:
+
+```csharp
+AsyncOperation operation = await OnityTask.LoadSceneAsync(
+    "Gameplay",
+    activateOnLoad: false,
+    cancellationToken: cancellationToken);
+
+try
+{
+    await WaitForFadeAsync(cancellationToken);
+}
+finally
+{
+    await OnityTask.ActivateScene(operation, CancellationToken.None);
+}
+```
+
+The built-in loading-scene initiator follows this ownership rule when its
+minimum display duration is canceled.
+
 ## Unity AsyncOperation bridge
 
 ```csharp
@@ -150,9 +181,9 @@ ResourceRequest completed = await request.AsOnityTask(
     cancellationToken: cancellationToken);
 ```
 
-The operation itself is not canceled by every Unity API; cancellation stops the
-await and reports `OperationCanceledException`. Consult the Unity API you wrap
-when the underlying operation has separate cancellation behavior.
+For a general `AsyncOperation.AsOnityTask()` bridge, cancellation stops the
+await and reports `OperationCanceledException`; the Unity operation may
+continue. Deferred scene loading has the ownership rule described above.
 
 ## Web requests
 
@@ -205,6 +236,7 @@ Editor allocation overhead, so leave it disabled during performance runs.
 ## See also
 
 - [Migrating from UniTask](../Migration/From-UniTask.html)
+- [OnityTask and UniTask comparison](onitytask-comparison.html)
 - [Reactive](reactive.html)
 - [Events & Messaging](events-messaging.html)
 - [Performance & IL2CPP](performance-and-il2cpp.html)
