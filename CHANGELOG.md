@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.11] - 2026-09-23
+
+### Fixed
+
+- Completed the `AsTask()` bridge before a pooled OnityTask source can be
+  released during concurrent completion and a second bridge request. This
+  preserves typed results, faults, and cancellation tokens.
+
+### Tested
+
+- Unity `2022.3.62f3`: EditMode `480/480` and PlayMode `21/21` passed,
+  including concurrent typed and untyped `AsTask()` regressions.
+
 ## [0.3.10] - 2026-09-23
 
 ### Added
@@ -436,6 +449,7 @@ allocation. The core uses no `System.Linq`.
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.11]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.11
 [0.3.10]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.10
 [0.3.9]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.9
 [0.3.8]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.8

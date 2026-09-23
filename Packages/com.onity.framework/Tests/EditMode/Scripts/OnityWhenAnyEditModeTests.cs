@@ -150,6 +150,96 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public async Task AsTask_ConcurrentCompletionAndSecondBridge_PreservesResult()
+        {
+            for (int i = 0; i < 128; i++)
+            {
+                TaskCompletionSource<bool> first = NewCompletionSource();
+                TaskCompletionSource<bool> second = NewCompletionSource();
+                OnityTask<int> race = OnityTask.WhenAny(
+                    OnityTask.FromTask(first.Task),
+                    OnityTask.FromTask(second.Task));
+                Task<int> bridge = race.AsTask();
+
+                await RaceBridgeWithCompletion(
+                    () => second.SetResult(true),
+                    () => race.AsTask(),
+                    bridge);
+
+                Assert.That(await bridge, Is.EqualTo(1));
+                first.SetResult(true);
+            }
+        }
+
+        [Test]
+        public async Task AsTask_ConcurrentFaultAndSecondBridge_PreservesException()
+        {
+            for (int i = 0; i < 64; i++)
+            {
+                TaskCompletionSource<bool> first = NewCompletionSource();
+                TaskCompletionSource<bool> second = NewCompletionSource();
+                InvalidOperationException failure = new InvalidOperationException("winner failed");
+                OnityTask<int> race = OnityTask.WhenAny(
+                    OnityTask.FromTask(first.Task),
+                    OnityTask.FromTask(second.Task));
+                Task<int> bridge = race.AsTask();
+
+                await RaceBridgeWithCompletion(
+                    () => second.SetException(failure),
+                    () => race.AsTask(),
+                    bridge);
+
+                InvalidOperationException caught = Assert.ThrowsAsync<InvalidOperationException>(
+                    async () => await bridge);
+                Assert.That(caught, Is.SameAs(failure));
+                first.SetResult(true);
+            }
+        }
+
+        [Test]
+        public async Task AsTask_ConcurrentCancellationAndSecondBridge_PreservesToken()
+        {
+            for (int i = 0; i < 64; i++)
+            {
+                using CancellationTokenSource cancellation = new CancellationTokenSource();
+                cancellation.Cancel();
+                TaskCompletionSource<bool> first = NewCompletionSource();
+                TaskCompletionSource<bool> second = NewCompletionSource();
+                OnityTask<int> race = OnityTask.WhenAny(
+                    OnityTask.FromTask(first.Task),
+                    OnityTask.FromTask(second.Task));
+                Task<int> bridge = race.AsTask();
+
+                await RaceBridgeWithCompletion(
+                    () => second.TrySetCanceled(cancellation.Token),
+                    () => race.AsTask(),
+                    bridge);
+
+                OperationCanceledException caught = Assert.CatchAsync<OperationCanceledException>(
+                    async () => await bridge);
+                Assert.That(caught.CancellationToken, Is.EqualTo(cancellation.Token));
+                first.SetResult(true);
+            }
+        }
+
+        [Test]
+        public async Task AsTask_UntypedConcurrentCompletionAndSecondBridge_Completes()
+        {
+            for (int i = 0; i < 128; i++)
+            {
+                (OnityTask task, object source, MethodInfo tick) = NewStandaloneFrameTask();
+                Task bridge = task.AsTask();
+
+                await RaceBridgeWithCompletion(
+                    () => tick.Invoke(source, new object[] { 0f, 0f }),
+                    () => task.AsTask(),
+                    bridge);
+
+                Assert.That(bridge.IsCompletedSuccessfully, Is.True);
+            }
+        }
+
+        [Test]
         public void WhenAny_ResultSource_AllowsOnlyOneNativeConsumer()
         {
             OnityTask<int> race = OnityTask.WhenAny(OnityTask.Completed, OnityTask.Completed);
@@ -162,6 +252,40 @@ namespace Onity.Tests.EditMode
         private static TaskCompletionSource<bool> NewCompletionSource()
         {
             return new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        private static async Task RaceBridgeWithCompletion(
+            Action complete,
+            Action materialize,
+            Task bridge)
+        {
+            using ManualResetEventSlim start = new ManualResetEventSlim();
+            using CancellationTokenSource timeout = new CancellationTokenSource();
+            Task deadline = Task.Delay(TimeSpan.FromSeconds(5), timeout.Token);
+            Task completing = Task.Run(() =>
+            {
+                start.Wait();
+                complete();
+            });
+            Task materializing = Task.Run(() =>
+            {
+                start.Wait();
+                try
+                {
+                    materialize();
+                }
+                catch (InvalidOperationException)
+                {
+                    // A bridge requested after the pooled source is released is invalid.
+                }
+            });
+
+            start.Set();
+            Task actors = Task.WhenAll(completing, materializing);
+            Assert.That(await Task.WhenAny(actors, deadline), Is.SameAs(actors));
+            await actors;
+            Assert.That(await Task.WhenAny(bridge, deadline), Is.SameAs(bridge));
+            timeout.Cancel();
         }
 
         private static (OnityTask task, object source, MethodInfo tick) NewStandaloneFrameTask()

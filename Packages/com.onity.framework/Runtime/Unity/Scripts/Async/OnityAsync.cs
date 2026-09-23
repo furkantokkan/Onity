@@ -1498,10 +1498,10 @@ namespace Onity.Unity.Async
                 m_cancellationRegistration.Dispose();
                 m_cancellationRegistration = default;
                 Volatile.Write(ref m_status, (int)status);
+                ApplyStatusToTask(taskCompletionSource);
                 releaseSource = TryClaimTaskReleaseUnsafe();
             }
 
-            ApplyStatusToTask(taskCompletionSource);
             if (releaseSource)
             {
                 lock (this)
@@ -1862,10 +1862,10 @@ namespace Onity.Unity.Async
                 m_cancellationRegistration.Dispose();
                 m_cancellationRegistration = default;
                 Volatile.Write(ref m_status, (int)status);
+                ApplyStatusToTask(taskCompletionSource);
                 releaseSource = TryClaimTaskReleaseUnsafe();
             }
 
-            ApplyStatusToTask(taskCompletionSource);
             if (releaseSource)
             {
                 lock (this)
