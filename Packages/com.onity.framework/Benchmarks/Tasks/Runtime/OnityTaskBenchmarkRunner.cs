@@ -3590,15 +3590,18 @@ namespace Onity.Benchmarks
         private const int k_warmupBatches = 10;
         private const int k_profilerStartupFrames = 120;
         private const int k_profilerReadFrames = 60;
-        private const int k_harnessVersion = 4;
+        private const int k_harnessVersion = 5;
         private const string k_uniTaskCommit = "2e993ff18f28c931602a07292df0b0804eebef99";
         private const string k_scopePrefix = "Onity.WhenAll.Allocation.";
+        private const string k_windowPrefix = "Onity.WhenAll.AllThreadWindow.";
         private const string k_runtimePath =
             "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs";
         private const string k_runnerPath =
             "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs";
 
         private static bool s_isRunning;
+        private static readonly WaitCallback s_workerPositiveControl =
+            RunWorkerPositiveControl;
 
         private readonly OnityTaskCompletionSource[] m_onityFirstSources =
             new OnityTaskCompletionSource[k_operations];
@@ -3614,8 +3617,35 @@ namespace Onity.Benchmarks
         private readonly UniTask[] m_uniTaskFirstTasks = new UniTask[k_operations];
         private readonly UniTask[] m_uniTaskSecondTasks = new UniTask[k_operations];
         private readonly UniTask[] m_uniTaskResults = new UniTask[k_operations];
-        private readonly InvalidOperationException m_failure =
-            new InvalidOperationException("Expected benchmark fault");
+        private readonly OnityTaskCompletionSource[] m_burstOnityFirstSources =
+            new OnityTaskCompletionSource[k_saturationOperations];
+        private readonly OnityTaskCompletionSource[] m_burstOnitySecondSources =
+            new OnityTaskCompletionSource[k_saturationOperations];
+        private readonly OnityTask[] m_burstOnityFirstTasks =
+            new OnityTask[k_saturationOperations];
+        private readonly OnityTask[] m_burstOnitySecondTasks =
+            new OnityTask[k_saturationOperations];
+        private readonly OnityTask[] m_burstOnityResults =
+            new OnityTask[k_saturationOperations];
+        private readonly UniTaskCompletionSource[] m_burstUniTaskFirstSources =
+            new UniTaskCompletionSource[k_saturationOperations];
+        private readonly UniTaskCompletionSource[] m_burstUniTaskSecondSources =
+            new UniTaskCompletionSource[k_saturationOperations];
+        private readonly UniTask[] m_burstUniTaskFirstTasks =
+            new UniTask[k_saturationOperations];
+        private readonly UniTask[] m_burstUniTaskSecondTasks =
+            new UniTask[k_saturationOperations];
+        private readonly UniTask[] m_burstUniTaskResults =
+            new UniTask[k_saturationOperations];
+        private readonly InvalidOperationException[] m_onityFailures =
+            new InvalidOperationException[k_operations];
+        private readonly InvalidOperationException[] m_uniTaskFailures =
+            new InvalidOperationException[k_operations];
+        private readonly List<OnityTrackedTaskInfo> m_trackedTasks =
+            new List<OnityTrackedTaskInfo>(1024);
+        private readonly int[] m_trackedTaskIds = new int[k_operations];
+        private readonly ManualResetEventSlim m_workerControlDone =
+            new ManualResetEventSlim(false);
         private readonly CancellationToken m_canceledToken = new CancellationToken(true);
 
         private string m_outputPath;
@@ -3628,6 +3658,10 @@ namespace Onity.Benchmarks
         private Action m_lifecycleBatch;
         private Action m_emptyBatch;
         private Action m_positiveControl;
+        private Action m_scheduleFirst;
+        private Action m_scheduleBurst;
+        private Action m_trackedLifecycleBatch;
+        private Action m_workerPositiveBatch;
         private bool m_trackerStateCaptured;
 #if UNITY_EDITOR
         private bool m_profilerStateCaptured;
@@ -3638,6 +3672,9 @@ namespace Onity.Benchmarks
         private int m_markerSequence;
         private bool m_lastAllocationValid;
         private long m_lastAllocationBytes;
+        private bool m_lastWindowValid;
+        private long m_lastWindowMainBytes;
+        private long m_lastWindowOtherThreadBytes;
 #endif
 
         private void Awake()
@@ -3646,6 +3683,12 @@ namespace Onity.Benchmarks
             m_lifecycleBatch = RunLifecycleBatch;
             m_emptyBatch = EmptyBatch;
             m_positiveControl = AllocatePositiveControl;
+            m_scheduleFirst = ScheduleFirst;
+#if UNITY_EDITOR
+            m_scheduleBurst = ScheduleBurst;
+            m_trackedLifecycleBatch = RunTrackedLifecycleBatch;
+            m_workerPositiveBatch = RunWorkerPositiveBatch;
+#endif
         }
 
         /// <summary>Queues the isolated two-input WhenAll comparison in Play Mode.</summary>
@@ -3707,7 +3750,6 @@ namespace Onity.Benchmarks
                 else
                 {
                     report = expected;
-                    MeasureColdSchedule(report);
                     RunTiming(report);
                 }
             }
@@ -3790,6 +3832,7 @@ namespace Onity.Benchmarks
         private void OnDestroy()
         {
             RestoreState();
+            m_workerControlDone.Dispose();
             s_isRunning = false;
         }
 
@@ -3800,7 +3843,7 @@ namespace Onity.Benchmarks
             {
                 schemaVersion = 1,
                 harnessVersion = k_harnessVersion,
-                suite = "Two-input OnityTask WhenAll scheduling and output lifecycle",
+                suite = "Two-input OnityTask WhenAll corrected pending lifecycle",
                 generatedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
                 unityVersion = Application.unityVersion,
 #if ENABLE_IL2CPP
@@ -3820,22 +3863,36 @@ namespace Onity.Benchmarks
                     + "are prepared outside each slice. Scheduling scenarios include WhenAll and "
                     + "storage; lifecycle scenarios include scheduling, input completion, output "
                     + "GetResult, and cleanup. Input construction is outside both slices. "
-                    + "Fault and cancel cases use precreated exception/token. Tracker-on matches "
+                    + "Fault cases use a fresh exception per operation, prepared outside the "
+                    + "slice; cancel cases use a precreated token. Tracker-on matches "
                     + "Onity default; tracker-off changes only Onity. UniTask stays at its default. "
-                    + "Samples include harness cost without subtraction. Editor/Mono only; no "
+                    + "Profiler lifecycle bytes cover only the main-thread marker; tracker "
+                    + "continuations may allocate later on worker threads. Samples include "
+                    + "harness cost without subtraction. Editor/Mono only; no "
                     + "Player, frame-time, or IL2CPP result.",
                 allocationCounter = "Unavailable: separate Profiler pass not run.",
+                coldScheduling = new[]
+                {
+                    new WhenAllExtraMetric { name = "First pending schedule; tracker off",
+                        library = "OnityTask", operations = 1 },
+                    new WhenAllExtraMetric { name = "First pending schedule; tracker off",
+                        library = "UniTask", operations = 1 }
+                },
+                burstScheduling = new[]
+                {
+                    new WhenAllExtraMetric { name = "384 outstanding pending schedule; tracker off",
+                        library = "OnityTask", operations = k_saturationOperations },
+                    new WhenAllExtraMetric { name = "384 outstanding pending schedule; tracker off",
+                        library = "UniTask", operations = k_saturationOperations }
+                },
                 scenarios = new[]
                 {
-                    NewScenario("Pending success schedule; tracker on", true, true, false, 0),
-                    NewScenario("Pending success schedule; tracker off", true, false, false, 0),
                     NewScenario("Pending success lifecycle; tracker on", true, true, true, 0),
                     NewScenario("Pending success lifecycle; tracker off", true, false, true, 0),
                     NewScenario("Pending fault lifecycle; tracker on", true, true, true, 1),
                     NewScenario("Pending fault lifecycle; tracker off", true, false, true, 1),
                     NewScenario("Pending cancel lifecycle; tracker on", true, true, true, 2),
-                    NewScenario("Pending cancel lifecycle; tracker off", true, false, true, 2),
-                    NewScenario("Both completed schedule; tracker on", false, true, false, 0)
+                    NewScenario("Pending cancel lifecycle; tracker off", true, false, true, 2)
                 }
             };
         }
@@ -4038,6 +4095,8 @@ namespace Onity.Benchmarks
                         m_onitySecondSources[i] = new OnityTaskCompletionSource();
                         m_onityFirstTasks[i] = m_onityFirstSources[i].Task;
                         m_onitySecondTasks[i] = m_onitySecondSources[i].Task;
+                        m_onityFailures[i] = m_activeScenario.outcome == 1
+                            ? new InvalidOperationException("Expected benchmark fault") : null;
                     }
                     else
                     {
@@ -4056,6 +4115,8 @@ namespace Onity.Benchmarks
                         m_uniTaskSecondSources[i] = new UniTaskCompletionSource();
                         m_uniTaskFirstTasks[i] = m_uniTaskFirstSources[i].Task;
                         m_uniTaskSecondTasks[i] = m_uniTaskSecondSources[i].Task;
+                        m_uniTaskFailures[i] = m_activeScenario.outcome == 1
+                            ? new InvalidOperationException("Expected benchmark fault") : null;
                     }
                     else
                     {
@@ -4086,27 +4147,38 @@ namespace Onity.Benchmarks
             }
         }
 
-        private void MeasureColdSchedule(WhenAllReport report)
+        private void ScheduleFirst()
         {
-            m_activeScenario = report.scenarios[1];
-            m_activeLibrary = 0;
-            PrepareBatch();
-            GC.GetAllocatedBytesForCurrentThread();
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            byte[] positive = new byte[65536];
-            GC.KeepAlive(positive);
-            report.coldPositiveControlBytes =
-                GC.GetAllocatedBytesForCurrentThread() - before;
-            before = GC.GetAllocatedBytesForCurrentThread();
-            report.coldEmptyControlBytes =
-                GC.GetAllocatedBytesForCurrentThread() - before;
-            bool valid = report.coldPositiveControlBytes == 65568
-                && report.coldEmptyControlBytes == 0;
-            ScheduleBatch();
-            long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-            report.coldScheduleBytesPerOperation = valid
-                ? (double)bytes / k_operations : -1;
-            FinishBatch();
+            if (m_activeLibrary == 0)
+            {
+                m_onityResults[0] = OnityTask.WhenAll(
+                    m_onityFirstTasks[0], m_onitySecondTasks[0]);
+            }
+            else
+            {
+                m_uniTaskResults[0] = UniTask.WhenAll(
+                    m_uniTaskFirstTasks[0], m_uniTaskSecondTasks[0]);
+            }
+        }
+
+        private void ScheduleRemaining()
+        {
+            if (m_activeLibrary == 0)
+            {
+                for (int i = 1; i < k_operations; i++)
+                {
+                    m_onityResults[i] = OnityTask.WhenAll(
+                        m_onityFirstTasks[i], m_onitySecondTasks[i]);
+                }
+            }
+            else
+            {
+                for (int i = 1; i < k_operations; i++)
+                {
+                    m_uniTaskResults[i] = UniTask.WhenAll(
+                        m_uniTaskFirstTasks[i], m_uniTaskSecondTasks[i]);
+                }
+            }
         }
 
         private void RunLifecycleBatch()
@@ -4114,6 +4186,65 @@ namespace Onity.Benchmarks
             ScheduleBatch();
             FinishBatch();
         }
+
+#if UNITY_EDITOR
+        private void RunTrackedLifecycleBatch()
+        {
+            ScheduleBatch();
+            if (m_activeLibrary == 0 && m_activeScenario.onityTrackerEnabled)
+            {
+                for (int i = 0; i < k_operations; i++)
+                {
+                    m_trackedTaskIds[i] = m_onityResults[i].AsTask().Id;
+                }
+            }
+
+            FinishBatch();
+            if (m_activeLibrary == 0 && m_activeScenario.onityTrackerEnabled)
+            {
+                WaitForTrackedBatchCompletion();
+            }
+        }
+
+        private void WaitForTrackedBatchCompletion()
+        {
+            long deadline = Stopwatch.GetTimestamp() + 10L * Stopwatch.Frequency;
+            while (true)
+            {
+                OnityTaskTracker.GetSnapshot(m_trackedTasks);
+                int completed = 0;
+                for (int i = 0; i < m_trackedTasks.Count; i++)
+                {
+                    OnityTrackedTaskInfo entry = m_trackedTasks[i];
+                    for (int task = 0; task < k_operations; task++)
+                    {
+                        if (entry.TaskId == m_trackedTaskIds[task])
+                        {
+                            if (entry.IsCompleted)
+                            {
+                                completed++;
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                if (completed == k_operations)
+                {
+                    return;
+                }
+
+                if (Stopwatch.GetTimestamp() >= deadline)
+                {
+                    throw new TimeoutException(
+                        "Tracked WhenAll batch did not settle within 10 seconds.");
+                }
+
+                Thread.Sleep(1);
+            }
+        }
+#endif
 
         private void FinishBatch()
         {
@@ -4127,7 +4258,7 @@ namespace Onity.Benchmarks
                         bool wasPending = !awaiter.IsCompleted;
                         bool firstCompleted = m_onityFirstSources[i].TrySetResult();
                         bool secondCompleted = m_activeScenario.outcome == 1
-                            ? m_onitySecondSources[i].TrySetException(m_failure)
+                            ? m_onitySecondSources[i].TrySetException(m_onityFailures[i])
                             : m_activeScenario.outcome == 2
                                 ? m_onitySecondSources[i].TrySetCanceled(m_canceledToken)
                                 : m_onitySecondSources[i].TrySetResult();
@@ -4182,6 +4313,7 @@ namespace Onity.Benchmarks
                     m_onityFirstTasks[i] = default;
                     m_onitySecondTasks[i] = default;
                     m_onityResults[i] = default;
+                    m_onityFailures[i] = null;
                 }
             }
             else
@@ -4194,7 +4326,7 @@ namespace Onity.Benchmarks
                         bool wasPending = !awaiter.IsCompleted;
                         bool firstCompleted = m_uniTaskFirstSources[i].TrySetResult();
                         bool secondCompleted = m_activeScenario.outcome == 1
-                            ? m_uniTaskSecondSources[i].TrySetException(m_failure)
+                            ? m_uniTaskSecondSources[i].TrySetException(m_uniTaskFailures[i])
                             : m_activeScenario.outcome == 2
                                 ? m_uniTaskSecondSources[i].TrySetCanceled(m_canceledToken)
                                 : m_uniTaskSecondSources[i].TrySetResult();
@@ -4249,6 +4381,7 @@ namespace Onity.Benchmarks
                     m_uniTaskFirstTasks[i] = default;
                     m_uniTaskSecondTasks[i] = default;
                     m_uniTaskResults[i] = default;
+                    m_uniTaskFailures[i] = null;
                 }
             }
         }
@@ -4323,9 +4456,33 @@ namespace Onity.Benchmarks
             GC.KeepAlive(bytes);
         }
 
+        private static void RunWorkerPositiveControl(object state)
+        {
+            OnityWhenAllBenchmarkRunner runner = (OnityWhenAllBenchmarkRunner)state;
+            try
+            {
+                AllocatePositiveControl();
+            }
+            finally
+            {
+                runner.m_workerControlDone.Set();
+            }
+        }
+
 #if UNITY_EDITOR
+        private void RunWorkerPositiveBatch()
+        {
+            m_workerControlDone.Reset();
+            ThreadPool.QueueUserWorkItem(s_workerPositiveControl, this);
+            if (!m_workerControlDone.Wait(TimeSpan.FromSeconds(10)))
+            {
+                throw new TimeoutException("Worker positive control did not finish.");
+            }
+        }
+
         private IEnumerator RunAllocations(WhenAllReport report)
         {
+            report.allThreadAllocationError = null;
             Profiler.enabled = true;
             ProfilerDriver.enabled = true;
             ProfilerDriver.profileEditor = false;
@@ -4348,6 +4505,23 @@ namespace Onity.Benchmarks
             {
                 throw new InvalidDataException(
                     "Profiler empty control was not zero bytes.");
+            }
+
+            m_activeScenario = report.scenarios[1];
+            for (int library = 0; library < 2; library++)
+            {
+                m_activeLibrary = library;
+                PrepareBatch();
+                yield return CaptureAllocation(m_scheduleFirst);
+                if (!m_lastAllocationValid)
+                {
+                    throw new InvalidDataException("First-call scheduling marker was missing.");
+                }
+
+                report.coldScheduling[library].sampleAllocatedBytes =
+                    new[] { m_lastAllocationBytes };
+                ScheduleRemaining();
+                FinishBatch();
             }
 
             for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
@@ -4422,11 +4596,233 @@ namespace Onity.Benchmarks
                 }
             }
 
+            for (int sample = 0; sample < k_samples; sample++)
+            {
+                for (int turn = 0; turn < 2; turn++)
+                {
+                    m_activeLibrary = (sample + turn) & 1;
+                    PrepareBurst();
+                    yield return CaptureAllocation(m_scheduleBurst);
+                    if (!m_lastAllocationValid)
+                    {
+                        throw new InvalidDataException(
+                            "Outstanding-burst scheduling marker was missing.");
+                    }
+
+                    WhenAllExtraMetric metric = report.burstScheduling[m_activeLibrary];
+                    if (metric.sampleAllocatedBytes == null)
+                    {
+                        metric.sampleAllocatedBytes = new long[k_samples];
+                    }
+
+                    metric.sampleAllocatedBytes[sample] = m_lastAllocationBytes;
+                    FinishBurst();
+                }
+            }
+
+            RunWorkerPositiveBatch();
+            yield return CaptureAllThreadWindow(m_positiveControl);
+            report.allThreadMainPositiveBytes = m_lastWindowMainBytes;
+            report.allThreadOtherPositiveBytes = m_lastWindowOtherThreadBytes;
+            if (!m_lastWindowValid || m_lastWindowMainBytes != 65568 ||
+                m_lastWindowOtherThreadBytes != 0)
+            {
+                report.allThreadAllocationError =
+                    "Main all-thread window positive control failed.";
+            }
+
+            if (report.allThreadAllocationError == null)
+            {
+                yield return CaptureAllThreadWindow(m_emptyBatch);
+                report.allThreadMainEmptyBytes = m_lastWindowMainBytes;
+                report.allThreadOtherEmptyBytes = m_lastWindowOtherThreadBytes;
+                if (!m_lastWindowValid || m_lastWindowMainBytes != 0 ||
+                    m_lastWindowOtherThreadBytes != 0)
+                {
+                    report.allThreadAllocationError =
+                        "All-thread window empty control failed.";
+                }
+            }
+
+            if (report.allThreadAllocationError == null)
+            {
+                yield return CaptureAllThreadWindow(m_workerPositiveBatch);
+                report.allThreadWorkerPositiveMainBytes = m_lastWindowMainBytes;
+                report.allThreadWorkerPositiveOtherBytes = m_lastWindowOtherThreadBytes;
+                if (!m_lastWindowValid || m_lastWindowOtherThreadBytes != 65568)
+                {
+                    report.allThreadAllocationError =
+                        "ThreadPool positive control was not 65,568 worker bytes.";
+                }
+            }
+
+            if (report.allThreadAllocationError == null)
+            {
+                for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+                {
+                    m_activeScenario = report.scenarios[scenario];
+                    if (!m_activeScenario.fullLifecycle ||
+                        !m_activeScenario.onityTrackerEnabled)
+                    {
+                        continue;
+                    }
+
+                    for (int sample = 0; sample < k_samples; sample++)
+                    {
+                        for (int turn = 0; turn < 2; turn++)
+                        {
+                            m_activeLibrary = (sample + turn) & 1;
+                            PrepareBatch();
+                            yield return CaptureAllThreadWindow(m_trackedLifecycleBatch);
+                            if (!m_lastWindowValid)
+                            {
+                                report.allThreadAllocationError =
+                                    "Tracked lifecycle all-thread marker was missing.";
+                                break;
+                            }
+
+                            WhenAllMetric metric =
+                                m_activeScenario.results[m_activeLibrary];
+                            if (metric.allThreadSampleAllocatedBytes == null)
+                            {
+                                metric.allThreadSampleAllocatedBytes = new long[k_samples];
+                                metric.otherThreadSampleAllocatedBytes = new long[k_samples];
+                            }
+
+                            metric.allThreadSampleAllocatedBytes[sample] =
+                                m_lastWindowMainBytes + m_lastWindowOtherThreadBytes;
+                            metric.otherThreadSampleAllocatedBytes[sample] =
+                                m_lastWindowOtherThreadBytes;
+                        }
+
+                        if (report.allThreadAllocationError != null)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (report.allThreadAllocationError != null)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            report.allThreadAllocationsAvailable = report.allThreadAllocationError == null;
+            if (!report.allThreadAllocationsAvailable)
+            {
+                ClearAllThreadSamples(report);
+            }
+
             report.allocationsAvailable = true;
             report.allocationCounter =
                 "Unity Profiler GC.Alloc metadata; 65,568/0-byte controls passed.";
             report.allocationGeneratedAtUtc =
                 DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        private void PrepareBurst()
+        {
+            OnityTaskTracker.IsEnabled = false;
+            for (int i = 0; i < k_saturationOperations; i++)
+            {
+                if (m_activeLibrary == 0)
+                {
+                    m_burstOnityFirstSources[i] = new OnityTaskCompletionSource();
+                    m_burstOnitySecondSources[i] = new OnityTaskCompletionSource();
+                    m_burstOnityFirstTasks[i] = m_burstOnityFirstSources[i].Task;
+                    m_burstOnitySecondTasks[i] = m_burstOnitySecondSources[i].Task;
+                }
+                else
+                {
+                    m_burstUniTaskFirstSources[i] = new UniTaskCompletionSource();
+                    m_burstUniTaskSecondSources[i] = new UniTaskCompletionSource();
+                    m_burstUniTaskFirstTasks[i] = m_burstUniTaskFirstSources[i].Task;
+                    m_burstUniTaskSecondTasks[i] = m_burstUniTaskSecondSources[i].Task;
+                }
+            }
+        }
+
+        private void ScheduleBurst()
+        {
+            for (int i = 0; i < k_saturationOperations; i++)
+            {
+                if (m_activeLibrary == 0)
+                {
+                    m_burstOnityResults[i] = OnityTask.WhenAll(
+                        m_burstOnityFirstTasks[i], m_burstOnitySecondTasks[i]);
+                }
+                else
+                {
+                    m_burstUniTaskResults[i] = UniTask.WhenAll(
+                        m_burstUniTaskFirstTasks[i], m_burstUniTaskSecondTasks[i]);
+                }
+            }
+        }
+
+        private void FinishBurst()
+        {
+            for (int i = 0; i < k_saturationOperations; i++)
+            {
+                if (m_activeLibrary == 0)
+                {
+                    if (m_burstOnityResults[i].IsCompleted)
+                    {
+                        throw new InvalidOperationException(
+                            "Onity outstanding-burst output completed before its inputs.");
+                    }
+
+                    m_burstOnityFirstSources[i].TrySetResult();
+                    m_burstOnitySecondSources[i].TrySetResult();
+                }
+                else
+                {
+                    if (m_burstUniTaskResults[i].GetAwaiter().IsCompleted)
+                    {
+                        throw new InvalidOperationException(
+                            "UniTask outstanding-burst output completed before its inputs.");
+                    }
+
+                    m_burstUniTaskFirstSources[i].TrySetResult();
+                    m_burstUniTaskSecondSources[i].TrySetResult();
+                }
+            }
+
+            long deadline = Stopwatch.GetTimestamp() + 10L * Stopwatch.Frequency;
+            for (int i = 0; i < k_saturationOperations; i++)
+            {
+                while (m_activeLibrary == 0
+                    ? !m_burstOnityResults[i].IsCompleted
+                    : !m_burstUniTaskResults[i].GetAwaiter().IsCompleted)
+                {
+                    if (Stopwatch.GetTimestamp() >= deadline)
+                    {
+                        throw new TimeoutException(
+                            "Outstanding-burst output did not complete within 10 seconds.");
+                    }
+
+                    Thread.Sleep(1);
+                }
+
+                if (m_activeLibrary == 0)
+                {
+                    m_burstOnityResults[i].GetAwaiter().GetResult();
+                    m_burstOnityFirstSources[i] = null;
+                    m_burstOnitySecondSources[i] = null;
+                    m_burstOnityFirstTasks[i] = default;
+                    m_burstOnitySecondTasks[i] = default;
+                    m_burstOnityResults[i] = default;
+                }
+                else
+                {
+                    m_burstUniTaskResults[i].GetAwaiter().GetResult();
+                    m_burstUniTaskFirstSources[i] = null;
+                    m_burstUniTaskSecondSources[i] = null;
+                    m_burstUniTaskFirstTasks[i] = default;
+                    m_burstUniTaskSecondTasks[i] = default;
+                    m_burstUniTaskResults[i] = default;
+                }
+            }
         }
 
         private void RunWorkerAllocations(WhenAllReport report)
@@ -4640,16 +5036,164 @@ namespace Onity.Benchmarks
 
             return false;
         }
+        private IEnumerator CaptureAllThreadWindow(Action operation)
+        {
+            m_lastWindowValid = false;
+            m_lastWindowMainBytes = 0;
+            m_lastWindowOtherThreadBytes = 0;
+            string marker = k_windowPrefix
+                + (m_markerSequence++).ToString(CultureInfo.InvariantCulture);
+            Profiler.BeginSample(marker);
+            try
+            {
+                operation();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
+
+            for (int wait = 0; wait < k_profilerReadFrames; wait++)
+            {
+                yield return null;
+                if (TryReadAllThreadWindow(
+                    Math.Max(m_lastCapturedFrame, ProfilerDriver.firstFrameIndex),
+                    ProfilerDriver.lastFrameIndex, marker,
+                    out long mainBytes, out long otherBytes, out int foundFrame))
+                {
+                    m_lastWindowMainBytes = mainBytes;
+                    m_lastWindowOtherThreadBytes = otherBytes;
+                    m_lastCapturedFrame = foundFrame;
+                    m_lastWindowValid = true;
+                    yield break;
+                }
+            }
+        }
+
+        private static bool TryReadAllThreadWindow(int firstFrame, int lastFrame,
+            string marker, out long mainBytes, out long otherBytes, out int foundFrame)
+        {
+            mainBytes = 0;
+            otherBytes = 0;
+            foundFrame = -1;
+            ulong startTime = 0;
+            ulong endTime = 0;
+            int mainThread = -1;
+            for (int frame = firstFrame; frame <= lastFrame; frame++)
+            {
+                for (int thread = 0; ; thread++)
+                {
+                    using (RawFrameDataView data = ProfilerDriver.GetRawFrameDataView(frame, thread))
+                    {
+                        if (!data.valid)
+                        {
+                            break;
+                        }
+
+                        int markerId = data.GetMarkerId(marker);
+                        if (markerId == FrameDataView.invalidMarkerId)
+                        {
+                            continue;
+                        }
+
+                        for (int sample = 0; sample < data.sampleCount; sample++)
+                        {
+                            if (data.GetSampleMarkerId(sample) != markerId)
+                            {
+                                continue;
+                            }
+
+                            startTime = data.GetSampleStartTimeNs(sample);
+                            endTime = startTime + data.GetSampleTimeNs(sample);
+                            foundFrame = frame;
+                            mainThread = thread;
+                            break;
+                        }
+                    }
+
+                    if (foundFrame >= 0)
+                    {
+                        break;
+                    }
+                }
+
+                if (foundFrame >= 0)
+                {
+                    break;
+                }
+            }
+
+            if (foundFrame < 0 || endTime <= startTime)
+            {
+                return false;
+            }
+
+            int firstWindowFrame = Math.Max(ProfilerDriver.firstFrameIndex, foundFrame - 1);
+            int lastWindowFrame = Math.Min(ProfilerDriver.lastFrameIndex, foundFrame + 1);
+            for (int frame = firstWindowFrame; frame <= lastWindowFrame; frame++)
+            {
+                for (int thread = 0; ; thread++)
+                {
+                    using (RawFrameDataView data = ProfilerDriver.GetRawFrameDataView(frame, thread))
+                    {
+                        if (!data.valid)
+                        {
+                            break;
+                        }
+
+                        int allocationId = data.GetMarkerId("GC.Alloc");
+                        if (allocationId == FrameDataView.invalidMarkerId)
+                        {
+                            continue;
+                        }
+
+                        for (int sample = 0; sample < data.sampleCount; sample++)
+                        {
+                            if (data.GetSampleMarkerId(sample) != allocationId)
+                            {
+                                continue;
+                            }
+
+                            ulong time = data.GetSampleStartTimeNs(sample);
+                            if (time < startTime || time > endTime)
+                            {
+                                continue;
+                            }
+
+                            long bytes = data.GetSampleMetadataAsLong(sample, 0);
+                            if (frame == foundFrame && thread == mainThread)
+                            {
+                                mainBytes += bytes;
+                            }
+                            else
+                            {
+                                otherBytes += bytes;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
 #endif
 
         private static void ClearAllocations(WhenAllReport report)
         {
             report.allocationsAvailable = false;
+            report.allThreadAllocationsAvailable = false;
+            report.allThreadAllocationError = "Unavailable: separate Profiler pass not run.";
             report.workerAllocationsAvailable = false;
             report.workerPositiveControlBytes = 0;
             report.workerEmptyControlBytes = 0;
             report.workerAllocationError = null;
             report.saturationSampleAllocatedBytes = null;
+            for (int extra = 0; extra < 2; extra++)
+            {
+                report.coldScheduling[extra].sampleAllocatedBytes = null;
+                report.burstScheduling[extra].sampleAllocatedBytes = null;
+            }
             report.allocationCounter = "Unavailable: separate Profiler pass not run.";
             report.allocationGeneratedAtUtc = null;
             report.positiveControlBytes = 0;
@@ -4663,6 +5207,20 @@ namespace Onity.Benchmarks
                     report.scenarios[scenario].results[library].sampleAllocatedBytes = null;
                     report.scenarios[scenario].results[library].workerBytesPerOperation = -1;
                     report.scenarios[scenario].results[library].workerSampleAllocatedBytes = null;
+                    report.scenarios[scenario].results[library].allThreadSampleAllocatedBytes = null;
+                    report.scenarios[scenario].results[library].otherThreadSampleAllocatedBytes = null;
+                }
+            }
+        }
+
+        private static void ClearAllThreadSamples(WhenAllReport report)
+        {
+            for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+            {
+                for (int library = 0; library < 2; library++)
+                {
+                    report.scenarios[scenario].results[library].allThreadSampleAllocatedBytes = null;
+                    report.scenarios[scenario].results[library].otherThreadSampleAllocatedBytes = null;
                 }
             }
         }
@@ -4717,7 +5275,7 @@ namespace Onity.Benchmarks
             builder.AppendLine("- OnityAsync SHA-256: " + report.onityAsyncSha256);
             builder.AppendLine("- Runner SHA-256: " + report.runnerSha256);
             builder.AppendLine("- Samples: " + report.samplesPerCase + "; operations/sample: "
-                + (k_operations * k_timingBatches) + " timing for success/completed, "
+                + (k_operations * k_timingBatches) + " timing for success, "
                 + (k_operations * 2) + " timing for fault/cancel, " + k_operations
                 + " allocation; warmup batches: " + report.warmupBatches);
             builder.AppendLine("- Allocation counter: " + report.allocationCounter);
@@ -4730,11 +5288,31 @@ namespace Onity.Benchmarks
                 builder.AppendLine("- Worker allocation unavailable: "
                     + report.workerAllocationError);
             }
-            builder.AppendLine("- Cold Onity pending schedule with tracker off: "
-                + (report.coldScheduleBytesPerOperation < 0
-                    ? "unavailable" : Number(report.coldScheduleBytesPerOperation) + " B/op")
-                + ", one process sample; controls " + report.coldPositiveControlBytes
-                + "/" + report.coldEmptyControlBytes + " B.");
+            builder.AppendLine("- All-thread window controls: main positive "
+                + report.allThreadMainPositiveBytes + "/"
+                + report.allThreadOtherPositiveBytes + " B (main/other), empty "
+                + report.allThreadMainEmptyBytes + "/"
+                + report.allThreadOtherEmptyBytes + " B, ThreadPool positive "
+                + report.allThreadWorkerPositiveMainBytes + "/"
+                + report.allThreadWorkerPositiveOtherBytes + " B.");
+            if (!report.allThreadAllocationsAvailable)
+            {
+                builder.AppendLine("- All-thread lifecycle allocation unavailable: "
+                    + report.allThreadAllocationError);
+            }
+            for (int extra = 0; extra < 2; extra++)
+            {
+                WhenAllExtraMetric cold = report.coldScheduling[extra];
+                builder.AppendLine("- " + cold.name + ", " + cold.library
+                    + ": " + (cold.sampleAllocatedBytes == null
+                        ? "unavailable" : cold.sampleAllocatedBytes[0] + " raw B")
+                    + "; first call in a warmed Editor process, one sample per process.");
+                WhenAllExtraMetric burst = report.burstScheduling[extra];
+                builder.AppendLine("- " + burst.name + ", " + burst.library
+                    + ": " + (burst.sampleAllocatedBytes == null
+                        ? "unavailable" : string.Join(",", burst.sampleAllocatedBytes))
+                    + " raw B for " + burst.operations + " simultaneous outputs per sample.");
+            }
             if (report.saturationSampleAllocatedBytes != null)
             {
                 builder.AppendLine("- Worker saturation: 384 pending Onity outputs, tracker off; "
@@ -4742,9 +5320,34 @@ namespace Onity.Benchmarks
                     + string.Join(",", report.saturationSampleAllocatedBytes) + ".");
             }
             builder.AppendLine();
+            if (report.allThreadAllocationsAvailable)
+            {
+                builder.AppendLine("All-thread lifecycle samples include a tracked-batch "
+                    + "completion barrier. Raw totals include benchmark barrier overhead; "
+                    + "they are reported separately from the main-thread marker slices.");
+                for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+                {
+                    for (int library = 0; library < 2; library++)
+                    {
+                        WhenAllMetric metric = report.scenarios[scenario].results[library];
+                        if (metric.allThreadSampleAllocatedBytes == null)
+                        {
+                            continue;
+                        }
+
+                        builder.AppendLine("- " + report.scenarios[scenario].name
+                            + ", " + metric.library + ": all-thread raw B "
+                            + string.Join(",", metric.allThreadSampleAllocatedBytes)
+                            + "; other-thread raw B "
+                            + string.Join(",", metric.otherThreadSampleAllocatedBytes) + ".");
+                    }
+                }
+            }
+
+            builder.AppendLine();
             builder.AppendLine(report.scope);
             builder.AppendLine();
-            builder.AppendLine("| Scenario | Library | Mean ns/op | Median ns/op | Range ns/op | SD ns/op | Main B/op | Worker B/op |");
+            builder.AppendLine("| Scenario | Library | Mean ns/op | Median ns/op | Range ns/op | SD ns/op | Main-marker B/op | Worker B/op |");
             builder.AppendLine("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |");
             for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
             {
@@ -4817,14 +5420,30 @@ namespace Onity.Benchmarks
             public long positiveControlBytes;
             public long emptyControlBytes;
             public bool workerAllocationsAvailable;
+            public bool allThreadAllocationsAvailable;
+            public string allThreadAllocationError;
+            public long allThreadMainPositiveBytes;
+            public long allThreadOtherPositiveBytes;
+            public long allThreadMainEmptyBytes;
+            public long allThreadOtherEmptyBytes;
+            public long allThreadWorkerPositiveMainBytes;
+            public long allThreadWorkerPositiveOtherBytes;
             public long workerPositiveControlBytes;
             public long workerEmptyControlBytes;
             public string workerAllocationError;
-            public double coldScheduleBytesPerOperation;
-            public long coldPositiveControlBytes;
-            public long coldEmptyControlBytes;
             public long[] saturationSampleAllocatedBytes;
+            public WhenAllExtraMetric[] coldScheduling;
+            public WhenAllExtraMetric[] burstScheduling;
             public WhenAllScenario[] scenarios;
+        }
+
+        [Serializable]
+        private sealed class WhenAllExtraMetric
+        {
+            public string name;
+            public string library;
+            public int operations;
+            public long[] sampleAllocatedBytes;
         }
 
         [Serializable]
@@ -4853,6 +5472,8 @@ namespace Onity.Benchmarks
             public long[] sampleAllocatedBytes;
             public double workerBytesPerOperation;
             public long[] workerSampleAllocatedBytes;
+            public long[] allThreadSampleAllocatedBytes;
+            public long[] otherThreadSampleAllocatedBytes;
         }
     }
 }
