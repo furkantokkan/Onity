@@ -1,0 +1,7 @@
+stage,typed,consumers,library,timing_operations_per_sample,allocation_operations_per_sample,mean_ns_per_op,bytes_per_op,allocations_available
+PreserveFullLifecycle,true,1,OnityTask.Preserve,4096,256,2755.4168701171875,904,true
+PreserveFullLifecycle,true,1,UniTask.Preserve,4096,256,2075.433349609375,344,true
+PreserveFullLifecycle,true,4,OnityTask.Preserve,4096,256,3899.969482421875,1008,true
+PreserveFullLifecycle,true,4,UniTask.AsTask,4096,256,20086.270141601563,665.125,true
+NativeAwaitLifecycle,true,1,OnityTask native await,4096,256,2204.9591064453125,656,true
+NativeAwaitLifecycle,true,1,UniTask native await,4096,256,1931.689453125,304,true

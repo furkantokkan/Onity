@@ -666,6 +666,7 @@ namespace Onity.Benchmarks
             metric.sampleAllocatedBytes = samples;
             metric.allocatedBytesPerOperation = (double)total / (samples.Length * (long)operations);
         }
+#endif
 
         private static void ClearAllocationResults(TaskBenchmarkReport report)
         {
@@ -687,7 +688,6 @@ namespace Onity.Benchmarks
                 }
             }
         }
-#endif
 
         private void RunSynchronousBenchmarks(TaskBenchmarkReport report)
         {
@@ -1399,6 +1399,7 @@ namespace Onity.Benchmarks
         private bool m_attributionOnly;
         private bool m_statusProbe;
         private bool m_preserveBenchmark;
+        private bool m_lifecycleBenchmark;
         private bool m_preserveSourceVerified;
         private CompletionScenario m_activeScenario;
         private int m_activeLibrary;
@@ -1418,7 +1419,7 @@ namespace Onity.Benchmarks
         /// <summary>Starts the isolated completion-source comparison in Play Mode.</summary>
         public static void Run(string outputPath, Action<string, Exception> completed,
             bool allocationOnly, bool attributionOnly = false, bool statusProbe = false,
-            bool preserveBenchmark = false)
+            bool preserveBenchmark = false, bool lifecycleBenchmark = false)
         {
             if (s_isRunning)
             {
@@ -1434,7 +1435,8 @@ namespace Onity.Benchmarks
             runner.m_allocationOnly = allocationOnly;
             runner.m_attributionOnly = attributionOnly;
             runner.m_statusProbe = statusProbe;
-            runner.m_preserveBenchmark = preserveBenchmark;
+            runner.m_preserveBenchmark = preserveBenchmark || lifecycleBenchmark;
+            runner.m_lifecycleBenchmark = lifecycleBenchmark;
             s_isRunning = true;
         }
 
@@ -1479,23 +1481,27 @@ namespace Onity.Benchmarks
                     report = JsonUtility.FromJson<CompletionReport>(File.ReadAllText(m_outputPath));
                     if (report == null || report.schemaVersion != 1 ||
                         report.scenarios == null ||
-                        report.scenarios.Length != (m_statusProbe || m_preserveBenchmark ? 4 : 16) ||
+                        report.scenarios.Length != (m_lifecycleBenchmark ? 3 :
+                            m_statusProbe || m_preserveBenchmark ? 4 : 16) ||
                         (m_statusProbe && report.suite != "Completion-source IsCompleted probe") ||
-                        (m_preserveBenchmark && report.suite != "OnityTask Preserve vs UniTask sharing"))
+                        (m_lifecycleBenchmark && report.suite != "Native OnityTask sharing lifecycle") ||
+                        (m_preserveBenchmark && !m_lifecycleBenchmark &&
+                            report.suite != "OnityTask Preserve vs UniTask sharing"))
                     {
                         throw new InvalidDataException("A complete completion-source timing report is required.");
                     }
 
                     if (m_preserveBenchmark)
                     {
-                        ValidatePreserveAllocationInput(report);
+                        ValidatePreserveAllocationInput(report, m_lifecycleBenchmark);
                     }
 
                     ClearAllocations(report);
                 }
                 else
                 {
-                    report = m_preserveBenchmark ? CreatePreserveReport() :
+                    report = m_lifecycleBenchmark ? CreateLifecycleReport() :
+                        m_preserveBenchmark ? CreatePreserveReport() :
                         m_statusProbe ? CreateStatusReport() : CreateReport();
                     RunTiming(report);
                 }
@@ -1736,9 +1742,60 @@ namespace Onity.Benchmarks
             return report;
         }
 
-        private static void ValidatePreserveAllocationInput(CompletionReport report)
+        private static CompletionReport CreateLifecycleReport()
         {
-            CompletionReport expected = CreatePreserveReport();
+            CompletionReport report = CreateReport();
+            report.suite = "Native OnityTask sharing lifecycle";
+            report.onityRuntimeCommit = k_preserveRuntimeCommit;
+            report.scope = "One pending native WhenAny<int> task per operation, built from two fresh "
+                + "completion-source inputs. Full sharing cases include input and native source construction, "
+                + "Preserve or AsTask conversion, pending callback registration, winner completion and "
+                + "callback dispatch, one GetResult per observer, two late result reads, and loser completion. "
+                + "The unshared native await case includes the same input and native source construction, "
+                + "one pending callback, winner completion and dispatch, one GetResult, and loser completion; "
+                + "it does not convert or read the result again. One observer compares Preserve with Preserve; "
+                + "four observers compare OnityTask.Preserve with UniTask.AsTask (.NET Task). "
+                + "Array storage, runner setup, and cleanup are outside the measured operation. "
+                + "Samples retain harness overhead; no baseline subtraction or overall winner is inferred.";
+            report.scenarios = new CompletionScenario[3];
+            for (int index = 0; index < report.scenarios.Length; index++)
+            {
+                bool nativeAwait = index == 2;
+                int consumers = index == 1 ? 4 : 1;
+                CompletionStage stage = nativeAwait
+                    ? CompletionStage.NativeAwaitLifecycle
+                    : CompletionStage.PreserveFullLifecycle;
+                report.scenarios[index] = new CompletionScenario
+                {
+                    typed = true,
+                    stage = stage,
+                    stageName = stage.ToString(),
+                    consumers = consumers,
+                    results = new[]
+                    {
+                        new CompletionMetric
+                        {
+                            library = nativeAwait ? "OnityTask native await" : "OnityTask.Preserve",
+                            bytesPerOperation = -1
+                        },
+                        new CompletionMetric
+                        {
+                            library = nativeAwait ? "UniTask native await" :
+                                consumers == 1 ? "UniTask.Preserve" : "UniTask.AsTask",
+                            bytesPerOperation = -1
+                        }
+                    }
+                };
+            }
+
+            return report;
+        }
+
+        private static void ValidatePreserveAllocationInput(
+            CompletionReport report, bool lifecycleBenchmark)
+        {
+            CompletionReport expected = lifecycleBenchmark
+                ? CreateLifecycleReport() : CreatePreserveReport();
             if (report.onityRuntimeCommit != expected.onityRuntimeCommit ||
                 report.uniTaskCommit != expected.uniTaskCommit ||
                 report.unityVersion != expected.unityVersion ||
@@ -2004,6 +2061,16 @@ namespace Onity.Benchmarks
         private void PreparePreserveBatch()
         {
             System.Threading.Volatile.Write(ref s_preserveCallbacks, 0);
+            if (m_lifecycleBenchmark)
+            {
+                if (!m_preserveSourceVerified)
+                {
+                    VerifyNativePreserveSource();
+                }
+
+                return;
+            }
+
             for (int i = 0; i < k_operations; i++)
             {
                 if (m_activeLibrary == 0)
@@ -2058,8 +2125,79 @@ namespace Onity.Benchmarks
             }
         }
 
+        private void VerifyNativePreserveSource()
+        {
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            OnityTask<int> task = OnityTask.WhenAny(first.Task, second.Task);
+            System.Reflection.FieldInfo stateField = typeof(OnityTask<int>).GetField(
+                "m_state",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic);
+            object state = stateField?.GetValue(task);
+            if (state == null || state.GetType().Name != "OnityWhenAnyTaskSource")
+            {
+                throw new InvalidOperationException(
+                    "Lifecycle benchmark requires a native OnityWhenAnyTaskSource.");
+            }
+
+            first.TrySetResult();
+            if (task.GetAwaiter().GetResult() != 0 || !second.TrySetResult())
+            {
+                throw new InvalidOperationException("Native source verification failed.");
+            }
+
+            m_preserveSourceVerified = true;
+        }
+
+        private void CreatePreserveSources()
+        {
+            for (int i = 0; i < k_operations; i++)
+            {
+                if (m_activeLibrary == 0)
+                {
+                    m_onityPreserveInputs[i] = new OnityTaskCompletionSource();
+                    m_onitySecondPreserveInputs[i] = new OnityTaskCompletionSource();
+                    m_onityTypedNativeTasks[i] = OnityTask.WhenAny(
+                        m_onityPreserveInputs[i].Task,
+                        m_onitySecondPreserveInputs[i].Task);
+                }
+                else
+                {
+                    m_uniTaskPreserveInputs[i] = new UniTaskCompletionSource();
+                    m_uniTaskSecondPreserveInputs[i] = new UniTaskCompletionSource();
+                    m_uniTaskTypedNativeTasks[i] = UniTask.WhenAny(new[]
+                    {
+                        m_uniTaskPreserveInputs[i].Task,
+                        m_uniTaskSecondPreserveInputs[i].Task
+                    });
+                }
+            }
+        }
+
         private void MeasurePreserveBatch()
         {
+            if (m_lifecycleBenchmark)
+            {
+                CreatePreserveSources();
+                if (m_activeScenario.stage == CompletionStage.NativeAwaitLifecycle)
+                {
+                    RegisterNativeCallbacks();
+                    CompletePreserveInputs();
+                    ConsumeNativeOnce();
+                }
+                else
+                {
+                    ConvertPreserveBatch();
+                    RegisterPreserveCallbacks();
+                    CompletePreserveInputs();
+                    ConsumePreserveAll();
+                    ReadPreserveLateResults();
+                }
+
+                return;
+            }
+
             if (m_activeScenario.stage == CompletionStage.PreserveConversion)
             {
                 ConvertPreserveBatch();
@@ -2111,6 +2249,21 @@ namespace Onity.Benchmarks
             }
         }
 
+        private void RegisterNativeCallbacks()
+        {
+            for (int i = 0; i < k_operations; i++)
+            {
+                if (m_activeLibrary == 0)
+                {
+                    m_onityTypedNativeTasks[i].GetAwaiter().OnCompleted(s_preserveCallback);
+                }
+                else
+                {
+                    m_uniTaskTypedNativeTasks[i].GetAwaiter().OnCompleted(s_preserveCallback);
+                }
+            }
+        }
+
         private void CompletePreserveInputs()
         {
             for (int i = 0; i < k_operations; i++)
@@ -2154,6 +2307,55 @@ namespace Onity.Benchmarks
                 if (result != 0)
                 {
                     throw new InvalidOperationException("WhenAny returned the wrong winner.");
+                }
+
+                bool loserCompleted = m_activeLibrary == 0
+                    ? m_onitySecondPreserveInputs[i].TrySetResult()
+                    : m_uniTaskSecondPreserveInputs[i].TrySetResult();
+                if (!loserCompleted)
+                {
+                    throw new InvalidOperationException("The losing input failed to complete.");
+                }
+            }
+        }
+
+        private void ConsumePreserveAll()
+        {
+            for (int i = 0; i < k_operations; i++)
+            {
+                for (int consumer = 0; consumer < m_activeScenario.consumers; consumer++)
+                {
+                    int result = m_activeLibrary == 0
+                        ? m_onityTypedPreservedTasks[i].GetAwaiter().GetResult()
+                        : m_activeScenario.consumers == 1
+                            ? m_uniTaskTypedPreservedTasks[i].GetAwaiter().GetResult()
+                            : m_uniTaskTypedFanoutTasks[i].GetAwaiter().GetResult();
+                    if (result != 0)
+                    {
+                        throw new InvalidOperationException("Shared task returned the wrong winner.");
+                    }
+                }
+
+                bool loserCompleted = m_activeLibrary == 0
+                    ? m_onitySecondPreserveInputs[i].TrySetResult()
+                    : m_uniTaskSecondPreserveInputs[i].TrySetResult();
+                if (!loserCompleted)
+                {
+                    throw new InvalidOperationException("The losing input failed to complete.");
+                }
+            }
+        }
+
+        private void ConsumeNativeOnce()
+        {
+            for (int i = 0; i < k_operations; i++)
+            {
+                int result = m_activeLibrary == 0
+                    ? m_onityTypedNativeTasks[i].GetAwaiter().GetResult()
+                    : m_uniTaskTypedNativeTasks[i].GetAwaiter().GetResult();
+                if (result != 0)
+                {
+                    throw new InvalidOperationException("Native task returned the wrong winner.");
                 }
 
                 bool loserCompleted = m_activeLibrary == 0
@@ -2857,7 +3059,9 @@ namespace Onity.Benchmarks
             PendingStatus,
             TerminalStatus,
             PreserveConversion,
-            PreserveTwoLateReads
+            PreserveTwoLateReads,
+            PreserveFullLifecycle,
+            NativeAwaitLifecycle
         }
 
         [Serializable]

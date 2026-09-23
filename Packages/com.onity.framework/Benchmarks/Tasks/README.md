@@ -258,3 +258,47 @@ same-process comparisons of the named slices. Cross-process timing changes
 cannot be assigned to the 16 B gate removal. The result does not demonstrate
 overall OnityTask superiority, a complete lifecycle advantage, or Player IL2CPP
 behavior.
+
+## Native sharing lifecycle comparison
+
+The separate `-onityNativeLifecycleBenchmark` mode measures three complete
+Editor/Mono operations on fresh pending typed `WhenAny` sources, using the same
+Unity `2022.3.62f3` host and pinned UniTask commit as the narrow Preserve mode:
+
+- One pending observer: Onity `Preserve` versus UniTask `Preserve`.
+- Four pending observers: Onity `Preserve` versus UniTask `AsTask`.
+- One ordinary native observer without sharing conversion or repeated reads.
+
+The timed and allocation-measured operation includes both input sources and
+native `WhenAny` construction, conversion where applicable, pending callback
+registration, winner completion and callback dispatch, callback wait, one result
+read per observer, two additional late reads for sharing, and loser completion.
+Preallocated benchmark arrays, the one-time native source type check, and array
+cleanup are outside the operation. UniTask 2.5.11 uses a `params` array for its
+two-input `WhenAny`, while Onity has a two-argument overload. The natural API
+calls therefore include an extra array allocation on the UniTask side. The
+four-observer UniTask path also uses .NET `Task<int>` with
+`ConfigureAwait(false)` callbacks; callback scheduling and wait time are inside
+the full-lifecycle result. These API and dispatch differences limit direct
+attribution to sharing implementation alone.
+
+Each case retains eight raw timing samples of 4,096 operations and eight
+allocation samples of 256 operations. The allocation pass uses the same
+Profiler `GC.Alloc` 64 KiB/empty calibration controls as the narrow mode. Run
+the timing and allocation passes separately without `-quit`:
+
+```text
+Unity.exe -batchmode -nographics -projectPath <host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityNativeLifecycleBenchmark -onityTaskBenchmarkOutput <absolute-report.json> -logFile <absolute-timing.log>
+Unity.exe -batchmode -nographics -profiler-enable -projectPath <host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityNativeLifecycleBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <same-absolute-report.json> -logFile <absolute-allocations.log>
+```
+
+The [baseline JSON](../../../../docs/assets/benchmarks/onity-native-lifecycle-956e5cb-2026-09-23.json),
+[CSV](../../../../docs/assets/benchmarks/onity-native-lifecycle-956e5cb-2026-09-23.csv),
+[Markdown](../../../../docs/assets/benchmarks/onity-native-lifecycle-956e5cb-2026-09-23.md),
+and [provenance](../../../../docs/assets/benchmarks/onity-native-lifecycle-956e5cb-2026-09-23.provenance.json)
+record the `956e5cb` runtime with 65,568 B/0 B allocation controls. Onity's
+ordinary native path measured 656 B/task versus 304 B/task for UniTask, and
+its one-observer sharing path measured 904 B/task versus 344 B/task for UniTask
+`Preserve`. Four-observer sharing measured 1,008 B/task for Onity and about
+665 B/task for UniTask `AsTask`. The complete raw samples and timing means are
+in the reports; none establishes universal library superiority.

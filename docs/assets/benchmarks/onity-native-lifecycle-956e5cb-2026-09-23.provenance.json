@@ -1,0 +1,30 @@
+{
+  "suite": "Native OnityTask sharing lifecycle",
+  "benchmarkBranch": "benchmark/onitytask-preserve",
+  "benchmarkHostBaseCommit": "9305bd7",
+  "candidateSourceCommit": "956e5cb356cdce0b324bfdad5242ac3c2b537a97",
+  "candidateSourcePath": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCompletionSource.cs",
+  "candidateSourceGitBlob": "d67d8582918a32858dce85336bc9c73aa361bf5f",
+  "unchangedOnityAsyncGitBlob": "1de7f38332b01b7d68016c78ab1fb4b580b5a3a8",
+  "benchmarkRunnerPath": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs",
+  "benchmarkRunnerGitBlob": "414677f9c154ad12b8847033c268ee4feb7fcae7",
+  "benchmarkMenuGitBlob": "f95ed8b8ed2ddfbc7bc871a6c15e253b286b5dc4",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "Each measured operation builds two fresh completion-source inputs and a pending typed native WhenAny source. Sharing scenarios convert to Preserve or AsTask, register pending callbacks, complete the winner and wait for all callbacks, consume once per observer and read two late results, then complete the losing input. The ordinary native-await scenario skips conversion and repeated reads. Only preallocated benchmark arrays, source-kind verification, and cleanup are outside the measured operation.",
+  "sourceKindCheck": "The runner reflected OnityTask<int> state before timing and required OnityWhenAnyTaskSource.",
+  "apiShapeDifference": "Onity uses its two-argument WhenAny overload; pinned UniTask 2.5.11 accepts a params array, so its natural two-input call allocates an array. Four-consumer UniTask uses AsTask and ConfigureAwait(false), including .NET Task callback scheduling and wait time in the measured operation. These are named API comparisons rather than identical-internal-work comparisons.",
+  "samplesPerCase": 8,
+  "timingOperationsPerSample": 4096,
+  "allocationOperationsPerSample": 256,
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "timingAndAllocationReport": "onity-native-lifecycle-956e5cb-2026-09-23.json",
+  "reportSha256": "B4113E6FEADA1D588CBAF0701929EB71D9EF8DAB8A315DB0639A82BBFC944770",
+  "csvSha256": "485A63E86B7E6F830F7C4E3ADBCE46425B0E03FFFDBC7A21347E5632C208656F",
+  "markdownSha256": "731744FB41E1F8AB616A3B0ACD8454AB8AC336222A6E350541123596A66CBDD7",
+  "scope": "Unity Editor/Mono full synchronous lifecycle under concurrent machine activity. It does not establish device, IL2CPP, all UniTask APIs, or overall library superiority. Baseline-to-candidate changes require a same-harness rerun and caution about separate-process timing variance."
+}
