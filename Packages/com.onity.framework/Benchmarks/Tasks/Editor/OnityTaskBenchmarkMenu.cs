@@ -18,7 +18,9 @@ namespace Onity.Editor.Benchmarks
         private const string k_outputSessionKey = "Onity.Benchmarks.OnityTaskOutput";
         private const string k_commandLineSessionKey = "Onity.Benchmarks.OnityTaskCommandLine";
         private const string k_commandLineStartTicksSessionKey = "Onity.Benchmarks.OnityTaskCommandLineStartTicks";
+        private const string k_allocationOnlySessionKey = "Onity.Benchmarks.OnityTaskAllocationOnly";
         private const string k_outputArgument = "-onityTaskBenchmarkOutput";
+        private const string k_allocationOnlyArgument = "-onityTaskAllocationsOnly";
         private const double k_commandLineTimeoutSeconds = 900d;
 
         static OnityTaskBenchmarkMenu()
@@ -76,20 +78,29 @@ namespace Onity.Editor.Benchmarks
 
             string latestJson = GetLatestJsonPath();
             bool commandLineRun = SessionState.GetBool(k_commandLineSessionKey, false);
+            bool allocationOnly = SessionState.GetBool(k_allocationOnlySessionKey, false);
             OnityTaskBenchmarkRunner.Run(
                 latestJson,
-                commandLineRun ? HandleCommandLineCompleted : null);
+                commandLineRun ? HandleCommandLineCompleted : null,
+                allocationOnly);
 
             Debug.Log("Queued OnityTask benchmark for the next Play Mode frame.");
         }
 
         /// <summary>
         /// Command-line entry point for running the OnityTask benchmark in Play Mode.
+        /// Pass -onityTaskAllocationsOnly with -profiler-enable to add allocation
+        /// samples to an existing timing report in a separate invocation.
         /// Do not pass -quit; the runner exits Unity after writing the report.
         /// </summary>
         public static void RunFromCommandLine()
         {
             string latestJson = GetArgumentValue(k_outputArgument);
+            bool allocationOnly = HasArgument(k_allocationOnlyArgument);
+            if (allocationOnly && !HasArgument("-profiler-enable"))
+            {
+                throw new ArgumentException("Allocation pass requires Unity's -profiler-enable startup flag.");
+            }
             if (string.IsNullOrEmpty(latestJson))
             {
                 string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
@@ -97,11 +108,17 @@ namespace Onity.Editor.Benchmarks
             }
 
             latestJson = Path.GetFullPath(latestJson);
+            if (allocationOnly && !File.Exists(latestJson))
+            {
+                throw new FileNotFoundException("Allocation pass requires an existing timing report.", latestJson);
+            }
+
             Directory.CreateDirectory(Path.GetDirectoryName(latestJson));
 
             SessionState.SetBool(k_pendingSessionKey, true);
             SessionState.SetString(k_outputSessionKey, latestJson);
             SessionState.SetBool(k_commandLineSessionKey, true);
+            SessionState.SetBool(k_allocationOnlySessionKey, allocationOnly);
             SessionState.SetString(k_commandLineStartTicksSessionKey, DateTime.UtcNow.Ticks.ToString());
             EditorApplication.update -= HandleCommandLineTimeout;
             EditorApplication.update += HandleCommandLineTimeout;
@@ -129,6 +146,20 @@ namespace Onity.Editor.Benchmarks
             }
 
             return null;
+        }
+
+        private static bool HasArgument(string argumentName)
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (string.Equals(args[i], argumentName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string GetLatestJsonPath()
@@ -194,6 +225,7 @@ namespace Onity.Editor.Benchmarks
         private static void ClearCommandLineSession()
         {
             SessionState.EraseBool(k_commandLineSessionKey);
+            SessionState.EraseBool(k_allocationOnlySessionKey);
             SessionState.EraseString(k_outputSessionKey);
             SessionState.EraseString(k_commandLineStartTicksSessionKey);
             EditorApplication.update -= HandleCommandLineTimeout;

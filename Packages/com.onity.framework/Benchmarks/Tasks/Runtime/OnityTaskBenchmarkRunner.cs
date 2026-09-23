@@ -6,6 +6,11 @@ using System.Text;
 using Cysharp.Threading.Tasks;
 using Onity.Unity.Async;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor.Profiling;
+using UnityEditorInternal;
+using UnityEngine.Profiling;
+#endif
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace Onity.Benchmarks
@@ -23,6 +28,12 @@ namespace Onity.Benchmarks
         private const int k_steadyConcurrency = 128;
         private const int k_burstConcurrency = 4096;
         private const int k_completionTimeoutFrames = 240;
+#if UNITY_EDITOR
+        private const int k_allocationIterations = 1024;
+        private const int k_profilerReadTimeoutFrames = 60;
+        private const int k_profilerWarmupFrames = 120;
+        private const string k_allocationScope = "OnityTask.Benchmark.AllocationScope";
+#endif
 
         private static bool s_isRunning;
         private static int s_lastInt;
@@ -35,14 +46,29 @@ namespace Onity.Benchmarks
             new UniTask<int>.Awaiter[k_burstConcurrency];
         private string m_latestJson;
         private Action<string, Exception> m_completed;
+        private bool m_allocationOnly;
         private bool m_allocationCounterAvailable;
+#if UNITY_EDITOR
+        private bool m_lastProfiledAllocationValid;
+        private long m_lastProfiledAllocationBytes;
+        private int m_lastProfiledFirstFrame;
+        private int m_lastProfiledLastFrame;
+        private int m_lastProfiledFoundFrame;
+        private int m_profilerSampleId;
+        private bool m_profilerStateCaptured;
+        private bool m_profilerWasEnabled;
+        private bool m_profilerDriverWasEnabled;
+        private bool m_profileEditorWasEnabled;
+#endif
 
         /// <summary>
         /// Queues a benchmark run. The optional callback receives a report path or failure.
         /// </summary>
         /// <param name="latestJson">Output JSON path.</param>
         /// <param name="completed">Optional completion callback.</param>
-        public static void Run(string latestJson, Action<string, Exception> completed = null)
+        /// <param name="allocationOnly">Reads an existing timing report and adds profiled allocation samples.</param>
+        public static void Run(string latestJson, Action<string, Exception> completed = null,
+            bool allocationOnly = false)
         {
             if (string.IsNullOrWhiteSpace(latestJson))
             {
@@ -59,25 +85,50 @@ namespace Onity.Benchmarks
             OnityTaskBenchmarkRunner runner = runnerObject.AddComponent<OnityTaskBenchmarkRunner>();
             runner.m_latestJson = Path.GetFullPath(latestJson);
             runner.m_completed = completed;
+            runner.m_allocationOnly = allocationOnly;
             s_isRunning = true;
         }
 
         private IEnumerator Start()
         {
             yield return null;
+#if UNITY_EDITOR
+            m_profilerWasEnabled = Profiler.enabled;
+            m_profilerDriverWasEnabled = ProfilerDriver.enabled;
+            m_profileEditorWasEnabled = ProfilerDriver.profileEditor;
+            m_profilerStateCaptured = true;
+            if (!m_allocationOnly)
+            {
+                Profiler.enabled = false;
+                ProfilerDriver.enabled = false;
+            }
+#endif
             Exception failure = null;
             TaskBenchmarkReport report = null;
             try
             {
-                report = CreateReport();
-                RunSynchronousBenchmarks(report);
+                if (m_allocationOnly)
+                {
+                    report = JsonUtility.FromJson<TaskBenchmarkReport>(File.ReadAllText(m_latestJson));
+                    if (report?.scenarios == null || report.scenarios.Length != 16)
+                    {
+                        throw new InvalidDataException("Allocation pass requires a complete 16-scenario timing report.");
+                    }
+
+                    ClearAllocationResults(report);
+                }
+                else
+                {
+                    report = CreateReport();
+                    RunSynchronousBenchmarks(report);
+                }
             }
             catch (Exception exception)
             {
                 failure = exception;
             }
 
-            if (failure == null)
+            if (failure == null && !m_allocationOnly)
             {
                 // This iterator yields only null, so every measured batch is inside this guard.
                 IEnumerator frameBenchmarks = RunFrameBenchmarks(report);
@@ -101,6 +152,34 @@ namespace Onity.Benchmarks
 
                     yield return null;
                 }
+            }
+
+            if (failure == null && m_allocationOnly)
+            {
+#if UNITY_EDITOR
+                IEnumerator allocationBenchmarks = RunProfilerAllocationBenchmarks(report);
+                while (true)
+                {
+                    bool hasNext;
+                    try
+                    {
+                        hasNext = allocationBenchmarks.MoveNext();
+                    }
+                    catch (Exception exception)
+                    {
+                        report.allocationCounter = "Unavailable: Profiler allocation pass failed ("
+                            + exception.GetType().Name + ").";
+                        break;
+                    }
+
+                    if (!hasNext)
+                    {
+                        break;
+                    }
+
+                    yield return allocationBenchmarks.Current;
+                }
+#endif
             }
 
             if (failure == null)
@@ -127,6 +206,9 @@ namespace Onity.Benchmarks
             }
             finally
             {
+#if UNITY_EDITOR
+                RestoreProfilerState();
+#endif
                 s_isRunning = false;
                 Destroy(gameObject);
             }
@@ -134,6 +216,9 @@ namespace Onity.Benchmarks
 
         private void OnDestroy()
         {
+#if UNITY_EDITOR
+            RestoreProfilerState();
+#endif
             s_isRunning = false;
         }
 
@@ -141,7 +226,7 @@ namespace Onity.Benchmarks
         {
             TaskBenchmarkReport report = new TaskBenchmarkReport
             {
-                schemaVersion = 2,
+                schemaVersion = 3,
                 generatedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
                 unityVersion = Application.unityVersion,
                 platform = Application.platform.ToString(),
@@ -156,7 +241,8 @@ namespace Onity.Benchmarks
                 measurementScope = "Main-thread synchronous slices only. Scheduling and GetResult are separate. "
                     + "Async-method cases include builder work within those slices. PlayerLoop execution, "
                     + "suspended-frame time, continuation dispatch and builder completion during resumption are excluded. "
-                    + "Raw times include harness overhead; no baseline subtraction or overall winner is inferred.",
+                    + "Raw times include harness overhead; no baseline subtraction or overall winner is inferred. "
+                    + "Editor allocation samples use a separate Profiler pass over the same synchronous slices.",
                 scenarios = new TaskBenchmarkScenarioReport[16]
             };
 
@@ -166,7 +252,9 @@ namespace Onity.Benchmarks
 
         private void CalibrateAllocationCounter(TaskBenchmarkReport report)
         {
-#if ENABLE_IL2CPP
+#if UNITY_EDITOR
+            report.allocationCounter = "Unavailable: Unity Profiler allocation pass has not passed calibration.";
+#elif ENABLE_IL2CPP
             report.allocationCounter = "Unavailable: Unity 2022 IL2CPP managed allocation counter is disabled "
                 + "because the existing DI harness observed crashes. Use a profiler capture for allocations.";
 #else
@@ -197,12 +285,408 @@ namespace Onity.Benchmarks
 
         private long ReadAllocatedBytes()
         {
-#if ENABLE_IL2CPP
+#if UNITY_EDITOR || ENABLE_IL2CPP
             return 0;
 #else
             return m_allocationCounterAvailable ? GC.GetAllocatedBytesForCurrentThread() : 0;
 #endif
         }
+
+#if UNITY_EDITOR
+        private IEnumerator RunProfilerAllocationBenchmarks(TaskBenchmarkReport report)
+        {
+            m_lastProfiledFoundFrame = -1;
+            ProfilerDriver.profileEditor = false;
+            ProfilerDriver.enabled = true;
+            Profiler.enabled = true;
+            try
+            {
+                // In batch mode the Profiler history can lag Play Mode startup.
+                int warmup = k_profilerWarmupFrames;
+                while (ProfilerDriver.lastFrameIndex < 2 && warmup-- > 0)
+                {
+                    yield return null;
+                }
+
+                yield return CaptureProfiledAllocation(AllocatePositiveControl, 1);
+                report.allocationCalibrationBytes = m_lastProfiledAllocationBytes;
+                if (!m_lastProfiledAllocationValid || report.allocationCalibrationBytes < 65536)
+                {
+                    report.allocationCounter = "Unavailable: Profiler GC.Alloc positive control failed "
+                        + "(captured=" + m_lastProfiledAllocationValid + ", bytes="
+                        + report.allocationCalibrationBytes + ", frames=" + m_lastProfiledFirstFrame
+                        + ".." + m_lastProfiledLastFrame + ").";
+                    yield break;
+                }
+
+                yield return CaptureProfiledAllocation(EmptyOperation, 1);
+                report.emptyAllocationDeltaBytes = m_lastProfiledAllocationBytes;
+                if (!m_lastProfiledAllocationValid || report.emptyAllocationDeltaBytes != 0)
+                {
+                    report.allocationCounter = "Unavailable: Profiler GC.Alloc empty control failed.";
+                    yield break;
+                }
+
+                Debug.Log("OnityTask allocation profiler controls passed: "
+                    + report.allocationCalibrationBytes + " bytes positive; zero empty.", this);
+
+                long[,,] samples = new long[report.scenarios.Length, 2, k_samplesPerCase];
+                long[] baseline = new long[k_samplesPerCase];
+                for (int sample = 0; sample < k_samplesPerCase; sample++)
+                {
+                    yield return CaptureProfiledAllocation(EmptyOperation, k_allocationIterations);
+                    if (!m_lastProfiledAllocationValid)
+                    {
+                        report.allocationCounter = "Unavailable: empty delegate sample was not captured.";
+                        yield break;
+                    }
+
+                    baseline[sample] = m_lastProfiledAllocationBytes;
+                }
+
+                int[] synchronousScenarios = { 0, 1, 6, 7 };
+                Action[,] synchronousOperations =
+                {
+                    { MeasureOnityCompleted, MeasureUniTaskCompleted },
+                    { MeasureOnityResult, MeasureUniTaskResult },
+                    { MeasureOnityAsyncCompleted, MeasureUniTaskAsyncCompleted },
+                    { MeasureOnityAsyncResult, MeasureUniTaskAsyncResult }
+                };
+
+                for (int kind = 0; kind < synchronousScenarios.Length; kind++)
+                {
+                    for (int library = 0; library < 2; library++)
+                    {
+                        for (int warmupCall = 0; warmupCall < k_warmupIterations; warmupCall++)
+                        {
+                            synchronousOperations[kind, library]();
+                        }
+                    }
+
+                    Debug.Log("OnityTask allocation profiler synchronous scenario " + synchronousScenarios[kind], this);
+                    for (int sample = 0; sample < k_samplesPerCase; sample++)
+                    {
+                        ForceFullGc();
+                        for (int turn = 0; turn < 2; turn++)
+                        {
+                            int library = (sample + turn) & 1;
+                            yield return CaptureProfiledAllocation(
+                                synchronousOperations[kind, library], k_allocationIterations);
+                            if (!m_lastProfiledAllocationValid)
+                            {
+                                report.allocationCounter = "Unavailable: synchronous operation sample was not captured.";
+                                yield break;
+                            }
+
+                            samples[synchronousScenarios[kind], library, sample] = m_lastProfiledAllocationBytes;
+                        }
+                    }
+                }
+
+                for (int kind = 0; kind < 3; kind++)
+                {
+                    bool asyncMethod = kind != 0;
+                    bool typed = kind == 2;
+                    for (int cohort = 0; cohort < 2; cohort++)
+                    {
+                        int concurrency = cohort == 0 ? k_steadyConcurrency : k_burstConcurrency;
+                        int schedulingScenario = kind == 0 ? 2 + cohort * 2 : 8 + (kind - 1) * 4 + cohort * 2;
+                        for (int warmupBatch = 0; warmupBatch < 2; warmupBatch++)
+                        {
+                            for (int library = 0; library < 2; library++)
+                            {
+                                if (asyncMethod)
+                                {
+                                    ScheduleAsyncMethods(library, concurrency, typed);
+                                }
+                                else
+                                {
+                                    Schedule(library, concurrency);
+                                }
+
+                                int remaining = k_completionTimeoutFrames;
+                                while (asyncMethod
+                                    ? !AreAsyncMethodsCompleted(library, concurrency, typed)
+                                    : !IsCompleted(library, concurrency))
+                                {
+                                    if (--remaining == 0)
+                                    {
+                                        report.allocationCounter = "Unavailable: profiled warmup timed out.";
+                                        yield break;
+                                    }
+
+                                    yield return null;
+                                }
+
+                                if (asyncMethod)
+                                {
+                                    ConsumeAsyncMethods(library, concurrency, typed);
+                                }
+                                else
+                                {
+                                    Consume(library, concurrency);
+                                }
+                            }
+                        }
+
+                        Debug.Log("OnityTask allocation profiler frame scenario " + schedulingScenario, this);
+                        for (int sample = 0; sample < k_samplesPerCase; sample++)
+                        {
+                            ForceFullGc();
+                            for (int turn = 0; turn < 2; turn++)
+                            {
+                                int library = (sample + turn) & 1;
+                                Action schedule = asyncMethod
+                                    ? (Action)(() => ScheduleAsyncMethods(library, concurrency, typed))
+                                    : () => Schedule(library, concurrency);
+                                Action consume = asyncMethod
+                                    ? (Action)(() => ConsumeAsyncMethods(library, concurrency, typed))
+                                    : () => Consume(library, concurrency);
+
+                                yield return CaptureProfiledAllocation(schedule, 1);
+                                if (!m_lastProfiledAllocationValid)
+                                {
+                                    report.allocationCounter = "Unavailable: frame scheduling sample was not captured "
+                                        + "(scenario=" + schedulingScenario + ", sample=" + sample
+                                        + ", library=" + library + ", frames=" + m_lastProfiledFirstFrame
+                                        + ".." + m_lastProfiledLastFrame + ", available="
+                                        + ProfilerDriver.firstFrameIndex + ".." + ProfilerDriver.lastFrameIndex + ").";
+                                    yield break;
+                                }
+
+                                samples[schedulingScenario, library, sample] = m_lastProfiledAllocationBytes;
+                                int remaining = k_completionTimeoutFrames;
+                                while (asyncMethod
+                                    ? !AreAsyncMethodsCompleted(library, concurrency, typed)
+                                    : !IsCompleted(library, concurrency))
+                                {
+                                    if (--remaining == 0)
+                                    {
+                                        report.allocationCounter = "Unavailable: profiled frame operation timed out.";
+                                        yield break;
+                                    }
+
+                                    yield return null;
+                                }
+
+                                yield return CaptureProfiledAllocation(consume, 1);
+                                if (!m_lastProfiledAllocationValid)
+                                {
+                                    report.allocationCounter = "Unavailable: frame consumption sample was not captured "
+                                        + "(scenario=" + (schedulingScenario + 1) + ", sample=" + sample
+                                        + ", library=" + library + ", frames=" + m_lastProfiledFirstFrame
+                                        + ".." + m_lastProfiledLastFrame + ", available="
+                                        + ProfilerDriver.firstFrameIndex + ".." + ProfilerDriver.lastFrameIndex + ").";
+                                    yield break;
+                                }
+
+                                samples[schedulingScenario + 1, library, sample] = m_lastProfiledAllocationBytes;
+                            }
+                        }
+                    }
+                }
+
+                SetProfiledAllocation(report.synchronousHarnessBaseline, baseline, k_allocationIterations);
+                for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+                {
+                    for (int library = 0; library < 2; library++)
+                    {
+                        long[] scenarioSamples = new long[k_samplesPerCase];
+                        for (int sample = 0; sample < k_samplesPerCase; sample++)
+                        {
+                            scenarioSamples[sample] = samples[scenario, library, sample];
+                        }
+
+                        int operations = scenario == 0 || scenario == 1 || scenario == 6 || scenario == 7
+                            ? k_allocationIterations : report.scenarios[scenario].concurrency;
+                        SetProfiledAllocation(report.scenarios[scenario].results[library], scenarioSamples, operations);
+                    }
+                }
+
+                m_allocationCounterAvailable = true;
+                report.allocationsAvailable = true;
+                report.allocationCounter = "Unity Profiler GC.Alloc sample metadata; separate marked operation pass; "
+                    + "64 KiB positive and empty controls passed.";
+                report.allocationIterationsPerSample = k_allocationIterations;
+                report.allocationGeneratedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+            }
+            finally
+            {
+                Profiler.enabled = m_profilerWasEnabled;
+                ProfilerDriver.enabled = m_profilerDriverWasEnabled;
+            }
+        }
+
+        private void RestoreProfilerState()
+        {
+            if (!m_profilerStateCaptured)
+            {
+                return;
+            }
+
+            m_profilerStateCaptured = false;
+            Profiler.enabled = m_profilerWasEnabled;
+            ProfilerDriver.enabled = m_profilerDriverWasEnabled;
+            ProfilerDriver.profileEditor = m_profileEditorWasEnabled;
+        }
+
+        private IEnumerator CaptureProfiledAllocation(Action operation, int iterations)
+        {
+            m_lastProfiledAllocationValid = false;
+            m_lastProfiledAllocationBytes = 0;
+            int firstFrame = ProfilerDriver.lastFrameIndex;
+            m_lastProfiledFirstFrame = firstFrame;
+            int sampleId = m_profilerSampleId++;
+            string markerName = k_allocationScope + "." + sampleId.ToString(CultureInfo.InvariantCulture);
+            bool failed = false;
+            try
+            {
+                Profiler.BeginSample(markerName);
+                try
+                {
+                    for (int i = 0; i < iterations; i++)
+                    {
+                        operation();
+                    }
+                }
+                finally
+                {
+                    Profiler.EndSample();
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+                failed = true;
+            }
+
+            if (failed)
+            {
+                yield break;
+            }
+
+            for (int attempt = 0; attempt < k_profilerReadTimeoutFrames; attempt++)
+            {
+                yield return null;
+                m_lastProfiledLastFrame = ProfilerDriver.lastFrameIndex;
+                bool captured = false;
+                int foundFrame = -1;
+                try
+                {
+                    captured = TryReadProfiledAllocation(
+                        Math.Max(m_lastProfiledFoundFrame, ProfilerDriver.firstFrameIndex),
+                        ProfilerDriver.lastFrameIndex, markerName,
+                        out m_lastProfiledAllocationBytes, out foundFrame);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception, this);
+                    failed = true;
+                }
+
+                if (failed)
+                {
+                    yield break;
+                }
+
+                if (captured)
+                {
+                    m_lastProfiledFoundFrame = foundFrame;
+                    m_lastProfiledAllocationValid = true;
+                    yield break;
+                }
+            }
+        }
+
+        private static bool TryReadProfiledAllocation(int firstFrame, int lastFrame,
+            string markerName, out long bytes, out int foundFrame)
+        {
+            bytes = 0;
+            foundFrame = -1;
+            for (int frame = firstFrame;
+                frame <= lastFrame; frame++)
+            {
+                for (int thread = 0; ; thread++)
+                {
+                    using (RawFrameDataView frameData = ProfilerDriver.GetRawFrameDataView(frame, thread))
+                    {
+                        if (!frameData.valid)
+                        {
+                            break;
+                        }
+
+                        int scopeId = frameData.GetMarkerId(markerName);
+                        int allocationId = frameData.GetMarkerId("GC.Alloc");
+                        if (scopeId == FrameDataView.invalidMarkerId)
+                        {
+                            continue;
+                        }
+
+                        for (int sample = 0; sample < frameData.sampleCount; sample++)
+                        {
+                            if (frameData.GetSampleMarkerId(sample) != scopeId)
+                            {
+                                continue;
+                            }
+
+                            int end = sample + frameData.GetSampleChildrenCountRecursive(sample);
+                            for (int child = sample + 1; child <= end; child++)
+                            {
+                                if (frameData.GetSampleMarkerId(child) == allocationId)
+                                {
+                                    bytes += frameData.GetSampleMetadataAsLong(child, 0);
+                                }
+                            }
+
+                            foundFrame = frame;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static void AllocatePositiveControl()
+        {
+            byte[] bytes = new byte[65536];
+            GC.KeepAlive(bytes);
+        }
+
+        private static void SetProfiledAllocation(TaskBenchmarkMetricReport metric, long[] samples, int operations)
+        {
+            long total = 0;
+            for (int i = 0; i < samples.Length; i++)
+            {
+                total += samples[i];
+            }
+
+            metric.sampleAllocatedBytes = samples;
+            metric.allocatedBytesPerOperation = (double)total / (samples.Length * (long)operations);
+        }
+
+        private static void ClearAllocationResults(TaskBenchmarkReport report)
+        {
+            report.schemaVersion = 3;
+            report.allocationsAvailable = false;
+            report.allocationCounter = "Unavailable: Unity Profiler allocation pass has not passed calibration.";
+            report.allocationCalibrationBytes = 0;
+            report.emptyAllocationDeltaBytes = 0;
+            report.allocationIterationsPerSample = 0;
+            report.allocationGeneratedAtUtc = null;
+            report.synchronousHarnessBaseline.allocatedBytesPerOperation = -1;
+            report.synchronousHarnessBaseline.sampleAllocatedBytes = null;
+            foreach (TaskBenchmarkScenarioReport scenario in report.scenarios)
+            {
+                foreach (TaskBenchmarkMetricReport metric in scenario.results)
+                {
+                    metric.allocatedBytesPerOperation = -1;
+                    metric.sampleAllocatedBytes = null;
+                }
+            }
+        }
+#endif
 
         private void RunSynchronousBenchmarks(TaskBenchmarkReport report)
         {
@@ -727,7 +1211,7 @@ namespace Onity.Benchmarks
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine("scenario,workload,concurrency,library,operations_per_sample,mean_ms,median_ms,"
-                + "min_ms,max_ms,stddev_ms,ns_per_op,bytes_per_op,allocations_available");
+                + "min_ms,max_ms,stddev_ms,ns_per_op,bytes_per_op,allocations_available,allocation_operations_per_sample");
             foreach (TaskBenchmarkScenarioReport scenario in report.scenarios)
             {
                 foreach (TaskBenchmarkMetricReport metric in scenario.results)
@@ -743,7 +1227,11 @@ namespace Onity.Benchmarks
                     builder.Append(Number(metric.standardDeviationMilliseconds)).Append(',');
                     builder.Append(Number(metric.nanosecondsPerOperation)).Append(',');
                     builder.Append(Number(metric.allocatedBytesPerOperation)).Append(',');
-                    builder.AppendLine(report.allocationsAvailable ? "true" : "false");
+                    builder.Append(report.allocationsAvailable ? "true" : "false").Append(',');
+                    builder.AppendLine(report.allocationsAvailable
+                        ? (scenario.concurrency == 1
+                            ? report.allocationIterationsPerSample : scenario.concurrency).ToString()
+                        : "-1");
                 }
             }
 
@@ -758,6 +1246,11 @@ namespace Onity.Benchmarks
             builder.AppendLine($"- Unity: {report.unityVersion}; {report.platform}; {report.scriptingBackend}");
             builder.AppendLine($"- Samples: {report.samplesPerCase}; frame batches/sample: {report.frameBatchesPerSample}");
             builder.AppendLine($"- Allocation counter: {report.allocationCounter}");
+            if (report.allocationIterationsPerSample > 0)
+            {
+                builder.AppendLine($"- Separate allocation pass: {report.allocationIterationsPerSample} "
+                    + "synchronous iterations/sample; one cohort per frame-operation sample.");
+            }
             builder.AppendLine($"- Timer resolution: {Number(report.timerResolutionNanoseconds)} ns");
             builder.AppendLine($"- Empty synchronous delegate loop: {Number(report.synchronousHarnessBaseline.nanosecondsPerOperation)} ns/op");
             builder.AppendLine().AppendLine(report.measurementScope).AppendLine();
@@ -813,6 +1306,8 @@ namespace Onity.Benchmarks
             public string allocationCounter;
             public long allocationCalibrationBytes;
             public long emptyAllocationDeltaBytes;
+            public int allocationIterationsPerSample;
+            public string allocationGeneratedAtUtc;
             public TaskBenchmarkMetricReport synchronousHarnessBaseline;
             public TaskBenchmarkScenarioReport[] scenarios;
         }
