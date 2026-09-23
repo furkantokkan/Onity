@@ -1,0 +1,55 @@
+{
+  "suite": "Two-input OnityTask WhenAll scheduling",
+  "cohort": "baseline",
+  "benchmarkBranch": "benchmark/onitytask-whenall-baseline",
+  "benchmarkHostCommitBeforeReports": "f52fec38fdd9b6d89bb863d897187d1dac0e49f9",
+  "productRuntimeCommit": "25c8e202214a1b7b5fa258feb87a0f5d91750ad4",
+  "onityAsyncGitBlob": "1dcb59297c21ec72f8c6512e3a64549c5e307074",
+  "onityAsyncWorkingSha256": "6b7f0c5b79474e2b6be242365af3f18a7a9c241297be352ab99b5267807a6865",
+  "benchmarkRunnerGitBlob": "8a43d9d6bfab86c8f8e1c6b8d4beb482f1f840d3",
+  "benchmarkRunnerWorkingSha256": "9548bd0584cebf8b9b399b7d2663f99a7c10f6289953ad9d546534bd83444611",
+  "runnerHashNote": "Both hosts share the same Git runner blob. Working-file SHA-256 differs because this edited baseline checkout has mixed line endings and the fresh candidate checkout has CRLF line endings.",
+  "benchmarkMenuGitBlob": "6cb9d93b70f4517675805a23a41816597170efaa",
+  "packageLockGitBlob": "2f863e6d228ea9fd67dbf0d9ab62a805993dd220",
+  "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityEditor": "2022.3.62f3",
+  "scriptingBackend": "Mono",
+  "editorBinary": "C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Unity.exe",
+  "entryPoint": "Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine",
+  "timingArguments": "-batchmode -nographics -projectPath <baseline-worktree> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskBenchmarkOutput <primary-or-repeat-json> -logFile <timing-log>",
+  "allocationArguments": "-batchmode -nographics -profiler-enable -projectPath <baseline-worktree> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <primary-json> -logFile <allocation-log>",
+  "conditions": {
+    "operationsPerBatch": 128,
+    "warmupBatchesPerScenarioAndLibrary": 10,
+    "timingBatchesPerSample": 16,
+    "timingOperationsPerSample": 2048,
+    "allocationOperationsPerSample": 128,
+    "samplesPerCasePerPass": 8,
+    "scenarios": [
+      "Pending; Onity tracker on",
+      "Pending; Onity tracker off",
+      "Both completed; Onity tracker on"
+    ],
+    "measuredSlice": "Two-argument WhenAll scheduling and storing its returned task",
+    "excluded": "Input creation, input completion, continuation dispatch, result consumption, and full lifecycle"
+  },
+  "profilerControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0,
+    "emptyHarnessBytesPerSample": 0
+  },
+  "reports": [
+    {
+      "path": "docs/assets/benchmarks/onity-whenall-baseline-25c8e20-2026-09-23.json",
+      "sha256": "d6e7b8f9d3a632bb083f8c9051aa911cf0b3780fae7ce8a80b200412066b8eda",
+      "passes": "Timing and calibrated Profiler allocation"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-whenall-baseline-25c8e20-timing-repeat-2026-09-23.json",
+      "sha256": "fdff6974bfa9b02c68ff911fe409ea165625a838a613fea932bf5d36b3c124da",
+      "passes": "Separate timing repeat only"
+    }
+  ],
+  "verification": "Focused Unity EditMode OnityAsyncTests passed 51/51; benchmark editor assembly built with 0 errors and 18 existing reference-version warnings. Both benchmark timing processes and the Profiler process wrote complete reports and logged completion.",
+  "limits": "Editor/Mono synchronous scheduling slice; separate Editor processes, no full lifecycle or IL2CPP claim. The empty timing loop was measured but not subtracted."
+}
