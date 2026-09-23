@@ -237,7 +237,12 @@ A later isolated [value-continuation candidate](https://github.com/furkantokkan/
 at `8292166` passed 29 focused builder tests. Its warm typed scheduling path
 still allocated **752 B/op**, versus **72 B/op** for UniTask in that run and
 **312 B/op** for current Onity in a separate baseline run. This candidate was
-also rejected. Neither result covers continuation dispatch, the full async
+also rejected. Its [callstack report](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-value-attribution/docs/assets/benchmarks/onitytask-builder-value-attribution-8292166-2026-09-23.json)
+attributed 552 B/op to `UnitySynchronizationContext..ctor`, 72 B/op to
+`ExecutionContext.Capture`, 48 B/op to
+`UnitySynchronizationContext.CreateCopy`, and 80 B/op to the async method call.
+The first three measured sites are under the candidate's native continuation
+creation. Neither result covers continuation dispatch, the full async
 lifecycle, or IL2CPP/player behavior.
 
 ## Native task sharing
