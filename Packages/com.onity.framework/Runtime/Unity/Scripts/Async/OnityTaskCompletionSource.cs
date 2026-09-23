@@ -139,7 +139,7 @@ namespace Onity.Unity.Async
 
         private readonly SynchronizationContext m_reportingContext = SynchronizationContext.Current;
         private readonly int m_reportingThreadId = Thread.CurrentThread.ManagedThreadId;
-        private readonly object m_gate = new object();
+        private readonly object m_gate;
 
         private Action m_firstContinuation;
         private Action m_secondContinuation;
@@ -156,6 +156,12 @@ namespace Onity.Unity.Async
         /// </summary>
         public OnityTaskCompletionSource()
         {
+            m_gate = new object();
+        }
+
+        internal OnityTaskCompletionSource(bool lockOnSelf)
+        {
+            m_gate = lockOnSelf ? this : new object();
         }
 
         /// <summary>
@@ -485,6 +491,7 @@ namespace Onity.Unity.Async
         private readonly int m_token;
 
         public OnityPreservedTaskSource(IOnityTaskSource source, int token)
+            : base(true)
         {
             m_source = source;
             m_token = token;
@@ -530,6 +537,7 @@ namespace Onity.Unity.Async
         private readonly int m_token;
 
         public OnityPreservedTaskSource(IOnityTaskSource<T> source, int token)
+            : base(true)
         {
             m_source = source;
             m_token = token;

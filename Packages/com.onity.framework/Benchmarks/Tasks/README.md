@@ -234,3 +234,27 @@ retain the raw samples. Allocation results were unchanged: Onity `Preserve`
 264 B/task, UniTask `Preserve` 40 B/task, UniTask `AsTask` 104 B/task, and
 late reads 0 B/task. Timing fell substantially for both libraries between
 processes, so the separate-run means do not isolate the fast-path effect.
+
+The retained-source gate candidate from commit `956e5cb` uses its own object
+as the internal lock. Its [JSON](../../../../docs/assets/benchmarks/onity-preserve-native-956e5cb-2026-09-23.json),
+[CSV](../../../../docs/assets/benchmarks/onity-preserve-native-956e5cb-2026-09-23.csv),
+[Markdown](../../../../docs/assets/benchmarks/onity-preserve-native-956e5cb-2026-09-23.md),
+and [provenance](../../../../docs/assets/benchmarks/onity-preserve-native-956e5cb-2026-09-23.provenance.json)
+retain eight samples per case. The 64 KiB/empty allocation controls passed
+(65,568 B/0 B). Pending conversion allocated 248 B/task for Onity, down from
+264 B/task in both earlier reports; UniTask allocated 40 B for `Preserve` and
+104 B for four-consumer `AsTask`. Late reads allocated 0 B/task on both sides.
+The separate [callstack capture](../../../../docs/assets/benchmarks/onity-preserve-native-956e5cb-allocation-callstacks-2026-09-23.json)
+and [provenance](../../../../docs/assets/benchmarks/onity-preserve-native-956e5cb-allocation-callstacks-2026-09-23.provenance.json)
+fully attribute Onity's 248 B/task to the retained-source and callback sites;
+the earlier 16 B gate allocation site is absent. The object labels are inferred
+from the pinned source; the byte counts and stack sites are measured.
+
+In this candidate process, one-consumer conversion averaged 363 ns/task for
+Onity and 94 ns/task for UniTask `Preserve`; two late reads averaged 139 ns and
+91 ns. Four-consumer conversion averaged 382 ns/task for Onity and 388 ns/task
+for UniTask `AsTask`; two late reads averaged 144 ns and 82 ns. These are
+same-process comparisons of the named slices. Cross-process timing changes
+cannot be assigned to the 16 B gate removal. The result does not demonstrate
+overall OnityTask superiority, a complete lifecycle advantage, or Player IL2CPP
+behavior.

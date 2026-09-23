@@ -1,0 +1,32 @@
+{
+  "suite": "OnityTask Preserve vs UniTask sharing",
+  "benchmarkBranch": "benchmark/onitytask-preserve",
+  "benchmarkHostBaseCommit": "83308ebb20cfbc4100d43b9c18521356292158c9",
+  "candidateSourceCommit": "956e5cb356cdce0b324bfdad5242ac3c2b537a97",
+  "candidateSourcePath": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCompletionSource.cs",
+  "candidateSourceGitBlob": "d67d8582918a32858dce85336bc9c73aa361bf5f",
+  "unchangedOnityAsyncGitBlob": "1de7f38332b01b7d68016c78ab1fb4b580b5a3a8",
+  "benchmarkRunnerPath": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs",
+  "benchmarkRunnerGitBlob": "a2564ce21aff063d38562b0822b20bc6a0eb355b",
+  "benchmarkRunnerChangeFromPrior": "The embedded runtime commit, stale-report guard, and separate attribution mode changed; the four timed and allocation-measured Preserve operations and parameters stayed identical.",
+  "benchmarkMenuGitBlob": "ee3277d20019331b0dd02159ab4c4a2fb2ea813d",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "Pending typed WhenAny native sources; conversion and two late reads are separate synchronous slices. Source construction, pending callback registration, completion and first consumption are outside slices.",
+  "sourceKindCheck": "The runner reflected the OnityTask<int> state and required OnityWhenAnyTaskSource.",
+  "samplesPerCase": 8,
+  "timingOperationsPerSample": 4096,
+  "allocationOperationsPerSample": 256,
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "priorCandidateReport": "onity-preserve-native-0f17822-2026-09-23.json",
+  "priorCandidateReportSha256": "542BB70A6B1B9AA9799C9B5354AFA2F8F6DE3401A104018DC5854ABE6D817BC7",
+  "timingAndAllocationReport": "onity-preserve-native-956e5cb-2026-09-23.json",
+  "reportSha256": "D8F15F0B76DE4CFB828B8AB2E46A9DE815BBC164D3888D5B30E90F0538EEC3F5",
+  "csvSha256": "3DF070D399096CA6507528A79AC2E2924B35679168AC98229B184E31BB8F578A",
+  "markdownSha256": "8DB37B72CAC26410087432C5348B8F1C02C0554F19E197132580DC5A4079DA89",
+  "scope": "Unity Editor/Mono synchronous slices under concurrent machine activity. The four-consumer UniTask comparator is AsTask and returns Task<int>. The gate change structurally removed 16 B/task in the calibrated allocation slice. Cross-process timing differences do not isolate this change. This report does not establish complete lifecycle, device, IL2CPP or overall performance."
+}

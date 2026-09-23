@@ -1,0 +1,9 @@
+stage,typed,consumers,library,timing_operations_per_sample,allocation_operations_per_sample,mean_ns_per_op,bytes_per_op,allocations_available
+PreserveConversion,true,1,OnityTask.Preserve,4096,256,362.9364013671875,248,true
+PreserveConversion,true,1,UniTask.Preserve,4096,256,93.5028076171875,40,true
+PreserveTwoLateReads,true,1,OnityTask.Preserve,4096,256,139.056396484375,0,true
+PreserveTwoLateReads,true,1,UniTask.Preserve,4096,256,90.56396484375,0,true
+PreserveConversion,true,4,OnityTask.Preserve,4096,256,381.597900390625,248,true
+PreserveConversion,true,4,UniTask.AsTask,4096,256,387.6129150390625,104,true
+PreserveTwoLateReads,true,4,OnityTask.Preserve,4096,256,143.9544677734375,0,true
+PreserveTwoLateReads,true,4,UniTask.AsTask,4096,256,82.0281982421875,0,true

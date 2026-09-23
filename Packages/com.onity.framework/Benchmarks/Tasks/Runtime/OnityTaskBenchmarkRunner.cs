@@ -1354,7 +1354,7 @@ namespace Onity.Benchmarks
         private const string k_scopePrefix = "Onity.CompletionSource.Allocation.";
         private const string k_pinnedUniTaskCommit = "2e993ff18f28c931602a07292df0b0804eebef99";
         private const string k_onityRuntimeCommit = "a7c7c9c07867a0f2a20a0b817ca0482e75b77795";
-        private const string k_preserveRuntimeCommit = "0f1782236c43fb89a4ba630f3c7e5a020f0be30e";
+        private const string k_preserveRuntimeCommit = "956e5cb356cdce0b324bfdad5242ac3c2b537a97";
 
         private static bool s_isRunning;
         private static int s_callbacks;
