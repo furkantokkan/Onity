@@ -496,6 +496,22 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void PendingStatusWithoutTaskBridge_DoesNotWaitForSourceGate()
+        {
+            OnityTaskCompletionSource<int> typedSource = new OnityTaskCompletionSource<int>();
+            OnityTaskCompletionSource untypedSource = new OnityTaskCompletionSource();
+
+            AssertPendingStatusDoesNotWaitForGate(
+                typedSource,
+                () => typedSource.Task.IsCompleted,
+                continuation => typedSource.Task.GetAwaiter().OnCompleted(continuation));
+            AssertPendingStatusDoesNotWaitForGate<bool>(
+                untypedSource,
+                () => untypedSource.Task.IsCompleted,
+                continuation => untypedSource.Task.GetAwaiter().OnCompleted(continuation));
+        }
+
+        [Test]
         public void CompletedTaskBridge_NeverExposesPendingSourceStatus()
         {
             OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
@@ -767,6 +783,46 @@ namespace Onity.Tests.EditMode
             {
                 SynchronizationContext.SetSynchronizationContext(previous);
             }
+        }
+
+        private static void AssertPendingStatusDoesNotWaitForGate<T>(
+            OnityTaskCompletionSource<T> source,
+            Func<bool> isCompleted,
+            Action<Action> registerContinuation)
+        {
+            FieldInfo gateField = typeof(OnityTaskCompletionSource<T>).GetField(
+                "m_gate", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(gateField, Is.Not.Null);
+            object gate = gateField.GetValue(source);
+            using ManualResetEventSlim locked = new ManualResetEventSlim(false);
+            using ManualResetEventSlim release = new ManualResetEventSlim(false);
+            Task holder = Task.Run(() =>
+            {
+                lock (gate)
+                {
+                    locked.Set();
+                    release.Wait();
+                }
+            });
+
+            try
+            {
+                Assert.That(locked.Wait(5000), Is.True);
+                Task<bool> statusRead = Task.Run(isCompleted);
+                Assert.That(statusRead.Wait(5000), Is.True);
+                Assert.That(statusRead.Result, Is.False);
+            }
+            finally
+            {
+                release.Set();
+                Assert.That(holder.Wait(5000), Is.True);
+            }
+
+            Assert.That(source.TrySetResult(default), Is.True);
+            int calls = 0;
+            registerContinuation(() => Interlocked.Increment(ref calls));
+            Assert.That(calls, Is.EqualTo(1));
+            Assert.That(isCompleted(), Is.True);
         }
 
         private static void InvokeFaultFinalizer(OnityTaskCompletionSource<int> source)
