@@ -1619,8 +1619,14 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
 
-            OnityTaskContinuation.Invoke(continuation);
-            OnityTaskContinuation.Invoke(statefulContinuation, continuationState);
+            if (statefulContinuation == null)
+            {
+                OnityTaskContinuation.Invoke(continuation);
+            }
+            else
+            {
+                OnityTaskContinuation.Invoke(statefulContinuation, continuationState);
+            }
             return true;
         }
 
@@ -2031,8 +2037,14 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
 
-            OnityTaskContinuation.Invoke(continuation);
-            OnityTaskContinuation.Invoke(statefulContinuation, continuationState);
+            if (statefulContinuation == null)
+            {
+                OnityTaskContinuation.Invoke(continuation);
+            }
+            else
+            {
+                OnityTaskContinuation.Invoke(statefulContinuation, continuationState);
+            }
             return true;
         }
 
