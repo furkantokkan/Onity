@@ -1,0 +1,28 @@
+{
+  "suite": "OnityTask pooled typed builder experiment",
+  "branch": "experiment/onitytask-value-measure",
+  "sourceCommit": "8292166d73ea5525ed2cd5ead38ba0126e08b1e2",
+  "onityAsyncGitBlob": "85f4e32ff23c9c7c0debae2b139e9ff9e6ad12ae",
+  "benchmarkRunnerGitBlob": "8192b388046f0fed9b6df0eda899f3c3fa72d2db",
+  "benchmarkMenuGitBlob": "21f246a600bca42c0a387fd5458ae6dd29ae1ca4",
+  "manifestGitBlob": "b4f180c450b59597db2a96a70ff552ca35909799",
+  "packagesLockGitBlob": "2f863e6d228ea9fd67dbf0d9ab62a805993dd220",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "focusedBuilderTests": "29 passed, 0 failed, 0 skipped in EditMode",
+  "measurement": "Eight timing samples for each scenario and a separate calibrated Unity Profiler allocation pass. The warm frame cohort schedules 128 operations after two completed warmup batches. Scheduling excludes frame waiting, continuation dispatch, and result consumption.",
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "report": "onitytask-builder-value-8292166-2026-09-23.json",
+  "reportSha256": "B9C26B113C4595F3FD2D3044D18D667188EEE7058C243E02F866760BDA490167",
+  "comparisonBaseline": {
+    "branch": "benchmark/onitytask-builder-attribution",
+    "sourceCommit": "25c8e202214a1b7b5fa258feb87a0f5d91750ad4",
+    "report": "onitytask-unity2022-mono-warm-baseline-2026-09-23.json",
+    "reportSha256": "D89F776EA27C0F355CD6E785AED4EF3F29D959EF44E95AB67DB4844E4FD3E702"
+  },
+  "interpretationLimit": "The experimental typed suspended scheduling path allocated 752 B/op versus 312 B/op in the separate current-product baseline and 72 B/op for UniTask in this host. Times are from separate Editor runs and are not causal proof. The experiment is rejected; no product runtime was changed."
+}
