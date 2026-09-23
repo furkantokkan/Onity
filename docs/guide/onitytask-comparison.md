@@ -222,6 +222,24 @@ and [CSV](../assets/benchmarks/onitytask-unity2022-mono-pooled-candidate-2026-09
 preserve the full evidence. Work continues on reducing native-await scheduling
 cost before this change can be considered for release.
 
+### Builder allocation attribution and later candidate
+
+A [calibrated callstack report](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-builder-attribution/docs/assets/benchmarks/onitytask-builder-attribution-25c8e20-2026-09-23.json)
+for the current source (`25c8e20`) repeated the warm 128-operation scheduling
+result: suspended Onity async methods allocated 304 B/op untyped and 312 B/op
+typed, versus 64 and 72 B/op for UniTask. The extra 240 B/op appeared at
+`AsyncMethodBuilderCore.GetCompletionAction()` (160 B/op) and
+`AsyncTaskMethodBuilder<T>.get_Task()` (80 B/op). These are measured allocation
+sites, not confirmed object types. All ten callstack totals matched the
+Profiler markers; the 65,568 B positive and 0 B empty controls passed.
+
+A later isolated [value-continuation candidate](https://github.com/furkantokkan/Onity/tree/experiment/onitytask-value-measure/docs/assets/benchmarks)
+at `8292166` passed 29 focused builder tests. Its warm typed scheduling path
+still allocated **752 B/op**, versus **72 B/op** for UniTask in that run and
+**312 B/op** for current Onity in a separate baseline run. This candidate was
+also rejected. Neither result covers continuation dispatch, the full async
+lifecycle, or IL2CPP/player behavior.
+
 ## Native task sharing
 
 The isolated [Preserve benchmark host](https://github.com/furkantokkan/Onity/tree/benchmark/onitytask-preserve)
