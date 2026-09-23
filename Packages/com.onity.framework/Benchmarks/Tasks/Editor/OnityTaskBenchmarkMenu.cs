@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Onity.Editor.Benchmarks
 {
     /// <summary>
-    /// Editor menu and command-line entry points for the OnityTask benchmark.
+    /// Editor entry points for the independently enabled OnityTask benchmark.
     /// </summary>
     [InitializeOnLoad]
     public static class OnityTaskBenchmarkMenu
