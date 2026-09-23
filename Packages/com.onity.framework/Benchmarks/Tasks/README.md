@@ -17,7 +17,7 @@ Run `Onity/Benchmarks/Run OnityTask Benchmarks (Play Mode)`. The existing CLI
 entry point remains
 `Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine` and accepts
 `-onityTaskBenchmarkOutput <absolute-json-path>`. Do not pass `-quit`; the menu
-controller exits after writing the report or hitting its five-minute timeout.
+controller exits after writing the report or hitting its 15-minute timeout.
 Verify the exact Editor version and host with the Unity CLI first. The installed
 `unity run` 1.0.0-beta.3 adds `-quit` automatically, which closes the Editor
 before a Play Mode benchmark can start. Invoke the pinned Unity 2022 Editor
@@ -56,9 +56,10 @@ Unity.exe -batchmode -nographics -projectPath <benchmark-host> -executeMethod On
   32 batches/sample. `scheduling` includes calling the async method, its builder's
   initial suspension/continuation registration, and storing its returned awaiter.
   `GetResult` includes consuming the completed outer method result and clearing
-  the awaiter; typed results are stored in the same observable static sink for
-  both libraries. Every outer operation is checked for completion before
-  consumption, with the same 240-frame timeout as the primitive cases.
+  the awaiter; each typed result is checked against `42`, and the sum is stored
+  in the same observable static sink for both libraries. Every outer operation
+  is checked for completion before consumption, with the same 240-frame timeout
+  as the primitive cases.
 - Async-method frame timings and allocation deltas cover **only** the scheduling
   and consumption slices. Suspended-frame time, PlayerLoop work, resuming the
   method, and builder completion during that resumption remain outside them.
