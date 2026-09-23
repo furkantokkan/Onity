@@ -6,8 +6,8 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 9fc0d4010bbf28b4594072e72b8655ab
+    path: Packages/com.onity.framework/Tests/Fixtures/OnityDeferredLoadFixture.unity
+    guid: f96b3b3e133c8ef46aed1181331c44e6
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: faf8c8d95ce66c74abf9a6dd03e63076, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 1e0a974f8a18dbb41866e11977c70494, type: 3}
