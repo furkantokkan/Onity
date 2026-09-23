@@ -316,7 +316,7 @@ namespace Onity.Unity.Async
                 ValidateToken(token);
                 if (m_taskBridge == null)
                 {
-                    m_taskBridge = CreateTaskBridge();
+                    Volatile.Write(ref m_taskBridge, CreateTaskBridge());
                     OnityTaskSourceStatus status = (OnityTaskSourceStatus)m_status;
                     if (status != OnityTaskSourceStatus.Pending)
                     {
