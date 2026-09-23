@@ -14,11 +14,18 @@ namespace Onity.Editor.Benchmarks
     {
         private const string k_resultsDirectory = "Packages/com.onity.framework/Benchmarks/Results";
         private const string k_latestJsonFileName = "onity-task-benchmark-latest.json";
+        private const string k_completionSourceJsonFileName = "onity-completion-source-benchmark-latest.json";
         private const string k_pendingSessionKey = "Onity.Benchmarks.PendingOnityTaskRun";
         private const string k_outputSessionKey = "Onity.Benchmarks.OnityTaskOutput";
         private const string k_commandLineSessionKey = "Onity.Benchmarks.OnityTaskCommandLine";
         private const string k_commandLineStartTicksSessionKey = "Onity.Benchmarks.OnityTaskCommandLineStartTicks";
+        private const string k_allocationOnlySessionKey = "Onity.Benchmarks.OnityTaskAllocationOnly";
+        private const string k_completionSourceSessionKey = "Onity.Benchmarks.OnityCompletionSource";
+        private const string k_attributionSessionKey = "Onity.Benchmarks.OnityCompletionSourceAttribution";
         private const string k_outputArgument = "-onityTaskBenchmarkOutput";
+        private const string k_allocationOnlyArgument = "-onityTaskAllocationsOnly";
+        private const string k_completionSourceArgument = "-onityCompletionSourceBenchmark";
+        private const string k_attributionArgument = "-onityCompletionSourceAttribution";
         private const double k_commandLineTimeoutSeconds = 900d;
 
         static OnityTaskBenchmarkMenu()
@@ -51,6 +58,13 @@ namespace Onity.Editor.Benchmarks
             return !EditorApplication.isCompiling;
         }
 
+        [MenuItem("Onity/Benchmarks/Run Completion Source Benchmarks (Play Mode)")]
+        private static void RunCompletionSourcesFromMenu()
+        {
+            SessionState.SetBool(k_completionSourceSessionKey, true);
+            RunFromMenu();
+        }
+
         private static void HandlePlayModeStateChanged(PlayModeStateChange state)
         {
             if (state != PlayModeStateChange.EnteredPlayMode)
@@ -74,34 +88,77 @@ namespace Onity.Editor.Benchmarks
                 return;
             }
 
-            string latestJson = GetLatestJsonPath();
             bool commandLineRun = SessionState.GetBool(k_commandLineSessionKey, false);
-            OnityTaskBenchmarkRunner.Run(
-                latestJson,
-                commandLineRun ? HandleCommandLineCompleted : null);
+            bool allocationOnly = SessionState.GetBool(k_allocationOnlySessionKey, false);
+            bool completionSource = SessionState.GetBool(k_completionSourceSessionKey, false);
+            bool attribution = SessionState.GetBool(k_attributionSessionKey, false);
+            string latestJson = GetLatestJsonPath(completionSource);
+            if (!commandLineRun)
+            {
+                SessionState.EraseBool(k_completionSourceSessionKey);
+                SessionState.EraseBool(k_attributionSessionKey);
+            }
+
+            if (completionSource)
+            {
+                OnityCompletionSourceBenchmarkRunner.Run(
+                    latestJson,
+                    commandLineRun ? HandleCommandLineCompleted : null,
+                    allocationOnly,
+                    attribution);
+            }
+            else
+            {
+                OnityTaskBenchmarkRunner.Run(
+                    latestJson,
+                    commandLineRun ? HandleCommandLineCompleted : null,
+                    allocationOnly);
+            }
 
             Debug.Log("Queued OnityTask benchmark for the next Play Mode frame.");
         }
 
         /// <summary>
         /// Command-line entry point for running the OnityTask benchmark in Play Mode.
+        /// Pass -onityTaskAllocationsOnly with -profiler-enable to add allocation
+        /// samples to an existing timing report in a separate invocation.
         /// Do not pass -quit; the runner exits Unity after writing the report.
         /// </summary>
         public static void RunFromCommandLine()
         {
             string latestJson = GetArgumentValue(k_outputArgument);
+            bool allocationOnly = HasArgument(k_allocationOnlyArgument);
+            bool completionSource = HasArgument(k_completionSourceArgument);
+            bool attribution = HasArgument(k_attributionArgument);
+            if ((allocationOnly || attribution) && !HasArgument("-profiler-enable"))
+            {
+                throw new ArgumentException("Allocation pass requires Unity's -profiler-enable startup flag.");
+            }
+            if (attribution && !completionSource)
+            {
+                throw new ArgumentException("Completion-source attribution requires -onityCompletionSourceBenchmark.");
+            }
             if (string.IsNullOrEmpty(latestJson))
             {
                 string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-                latestJson = Path.Combine(projectRoot, k_resultsDirectory, k_latestJsonFileName);
+                latestJson = Path.Combine(projectRoot, k_resultsDirectory,
+                    completionSource ? k_completionSourceJsonFileName : k_latestJsonFileName);
             }
 
             latestJson = Path.GetFullPath(latestJson);
+            if (allocationOnly && !File.Exists(latestJson))
+            {
+                throw new FileNotFoundException("Allocation pass requires an existing timing report.", latestJson);
+            }
+
             Directory.CreateDirectory(Path.GetDirectoryName(latestJson));
 
             SessionState.SetBool(k_pendingSessionKey, true);
             SessionState.SetString(k_outputSessionKey, latestJson);
             SessionState.SetBool(k_commandLineSessionKey, true);
+            SessionState.SetBool(k_allocationOnlySessionKey, allocationOnly);
+            SessionState.SetBool(k_completionSourceSessionKey, completionSource);
+            SessionState.SetBool(k_attributionSessionKey, attribution);
             SessionState.SetString(k_commandLineStartTicksSessionKey, DateTime.UtcNow.Ticks.ToString());
             EditorApplication.update -= HandleCommandLineTimeout;
             EditorApplication.update += HandleCommandLineTimeout;
@@ -131,7 +188,21 @@ namespace Onity.Editor.Benchmarks
             return null;
         }
 
-        private static string GetLatestJsonPath()
+        private static bool HasArgument(string argumentName)
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (string.Equals(args[i], argumentName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string GetLatestJsonPath(bool completionSource)
         {
             string latestJson = SessionState.GetString(k_outputSessionKey, string.Empty);
             if (!string.IsNullOrEmpty(latestJson))
@@ -140,7 +211,8 @@ namespace Onity.Editor.Benchmarks
             }
 
             string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            return Path.Combine(projectRoot, k_resultsDirectory, k_latestJsonFileName);
+            return Path.Combine(projectRoot, k_resultsDirectory,
+                completionSource ? k_completionSourceJsonFileName : k_latestJsonFileName);
         }
 
         private static void HandleCommandLineCompleted(string latestJson, Exception exception)
@@ -194,6 +266,8 @@ namespace Onity.Editor.Benchmarks
         private static void ClearCommandLineSession()
         {
             SessionState.EraseBool(k_commandLineSessionKey);
+            SessionState.EraseBool(k_allocationOnlySessionKey);
+            SessionState.EraseBool(k_completionSourceSessionKey);
             SessionState.EraseString(k_outputSessionKey);
             SessionState.EraseString(k_commandLineStartTicksSessionKey);
             EditorApplication.update -= HandleCommandLineTimeout;

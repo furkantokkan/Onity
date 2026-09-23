@@ -6,19 +6,18 @@
 - Install official UniTask `2.5.11`, tag commit
   `2e993ff18f28c931602a07292df0b0804eebef99`, using this pinned UPM URL:
   `https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99`.
-- Enable `ONITY_TASK_BENCHMARKS`. Leave `ONITY_BENCHMARKS` disabled unless the
-  separate DI comparison dependencies are installed.
+- This dedicated comparison host compiles both benchmark assemblies directly.
+  Leave `ONITY_BENCHMARKS` disabled unless the separate DI comparison dependencies
+  are installed.
 - New runtime/editor assemblies are `Onity.TaskBenchmarks` and
   `Onity.TaskBenchmarks.Editor`. No VContainer or Zenject assembly is referenced.
 - Keep a clean benchmark scene and close profiling/diagnostic windows that add
   unrelated work. Record package lock revisions with published results.
 
-Run `Onity/Benchmarks/Run OnityTask Benchmarks (Play Mode)`. The CLI
-entry point is
+Run `Onity/Benchmarks/Run OnityTask Benchmarks (Play Mode)`. The existing CLI
+entry point remains
 `Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine` and accepts
-`-onityTaskBenchmarkOutput <absolute-json-path>`. Run timing first, then add
-allocation samples to the same JSON in a **separate Unity process** with
-`-profiler-enable -onityTaskAllocationsOnly`. Do not pass `-quit`; the menu
+`-onityTaskBenchmarkOutput <absolute-json-path>`. Do not pass `-quit`; the menu
 controller exits after writing the report or hitting its 15-minute timeout.
 Verify the exact Editor version and host with the Unity CLI first. The installed
 `unity run` 1.0.0-beta.3 adds `-quit` automatically, which closes the Editor
@@ -27,7 +26,6 @@ directly for this entry point, without `-quit`:
 
 ```text
 Unity.exe -batchmode -nographics -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityTaskBenchmarkOutput <absolute-json-path> -logFile <absolute-log-path>
-Unity.exe -batchmode -nographics -profiler-enable -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityTaskBenchmarkOutput <same-absolute-json-path> -onityTaskAllocationsOnly -logFile <separate-absolute-log-path>
 ```
 
 ## Measurement contract
@@ -68,20 +66,15 @@ Unity.exe -batchmode -nographics -profiler-enable -projectPath <benchmark-host> 
   method, and builder completion during that resumption remain outside them.
   These measurements are not full-lifecycle async-method costs. Builder pooling
   can differ from the primitive frame-source pool and is not assumed identical.
-- The Editor-only allocation pass measures the same synchronous slices with a
-  dedicated Unity Profiler marker and `GC.Alloc` sample byte metadata. It runs
-  after the same synchronous and completed frame-cohort warmups, using eight
-  samples per scenario. The four synchronous cases use 1,024 operations per
-  profiled sample; frame scheduling and consumption each use one cohort per
-  sample. Profiling is off during the separate timing pass, so timing values
-  do not include profiler overhead. Coroutine suspension, report construction,
-  sample arrays and explicit full collections stay outside the marked slices.
-  Burst source allocations remain included.
-- The profiler must read at least 65,536 bytes for a known 64 KiB allocation
-  and zero bytes for an empty control before publishing bytes/op. If either
-  control or any of the 32 metrics fails, **all** allocation values remain `-1`
-  and the report says unavailable. Unity 2022 IL2CPP allocation claims require
-  separate player evidence.
+- Allocation deltas surround those same synchronous slices. Coroutine suspension,
+  report construction, sample-array allocation and explicit full collections are
+  outside them. Collections occur once before each measured sample, not inside a
+  measured slice. Burst source allocations remain included.
+- Editor allocation measurement uses a separate process started with
+  `-profiler-enable -onityTaskAllocationsOnly`. Unity Profiler `GC.Alloc` sample
+  metadata must detect a known 64 KiB allocation and report zero for an empty
+  marker before bytes/op is enabled. Failed calibration leaves bytes/op at `-1`.
+  IL2CPP player allocation claims require separate evidence.
 - Timer frequency/resolution, allocation controls, all timing/allocation samples,
   mean, median, range and standard deviation are retained in JSON. CSV and Markdown
   summarize the measurements. The report schema is version 3; the original
@@ -96,20 +89,67 @@ responsive host because a heavily throttled Editor may still hit that limit.
 
 Results compare these specific primitives, async-method slices and workloads.
 An Editor result is not an IL2CPP player result. Timing noise and pool retention
-differences must be considered before making a comparison claim. No new benchmark
-results are bundled inside the package; the [calibrated baseline and candidate
-reports](https://furkantokkan.github.io/Onity/guide/onitytask-comparison.html)
-are published with the comparison guide.
+differences must be considered before making a comparison claim. The separate
+completion-source baseline and attribution artifacts are linked below.
 
 ## Change note
 
 - Split comparison assemblies and preserved the moved scripts' `.meta` GUIDs.
 - Replaced the unlabelled 10,000-operation burst with matched, explicitly labelled
-  steady-state and burst cohorts; added a separate calibrated profiler allocation pass.
+  steady-state and burst cohorts; added calibrated allocation measurements.
 - Added completion checks, bounded frame waits, alternating execution order,
   raw samples and failure propagation from frame measurements.
 - Added matched typed/untyped async-method cases for synchronous completion and
-  one-frame suspension; existing primitive case names and indices are retained.
-- Validated the two-process harness in Unity 2022.3.62f3 Editor/Mono with a
-  65,568-byte positive and zero-byte empty control. Player/IL2CPP results remain
-  unmeasured.
+  one-frame suspension; existing primitive cases are retained.
+- Unity compilation and execution must be performed in the dedicated host after
+  installing the pinned comparison package. Static review is not runtime proof.
+
+## Completion-source comparison host
+
+The isolated `benchmark/completion-source` worktree pins UniTask `2.5.11` at
+`2e993ff18f28c931602a07292df0b0804eebef99`. The benchmarked Onity runtime
+is commit `a7c7c9c07867a0f2a20a0b817ca0482e75b77795`. This host enables the
+two comparison asmdefs directly; those host-only package and asmdef edits are
+not part of the shipped Onity package.
+
+Use `Onity/Benchmarks/Run Completion Source Benchmarks (Play Mode)` or the pinned
+Unity 2022.3.62f3 Editor with an absolute output path. Do not pass `-quit`:
+
+```text
+Unity.exe -batchmode -nographics -projectPath <host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityCompletionSourceBenchmark -onityTaskBenchmarkOutput <report.json> -logFile <timing.log>
+Unity.exe -batchmode -nographics -profiler-enable -projectPath <host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityCompletionSourceBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <report.json> -logFile <allocations.log>
+```
+
+The suite compares fresh typed and untyped `OnityTaskCompletionSource` and
+`UniTaskCompletionSource` instances. It measures construction, pending
+registration, completion with callback dispatch, late registration, and pending
+`AsTask` conversion. Registration, completion, and late registration each use
+one and four consumers; construction and `AsTask` use one. Each timing sample
+aggregates 16 batches of 256 sources (4,096 operations), while each allocation
+sample uses one 256-source batch. There are two warmup batches and eight samples
+per pass, with library order alternated. The empty timing path is also warmed
+before measurement. `AsTask` measures conversion of a pending source; source
+completion, bridge completion and result consumption occur after the measured
+slice. A static callback and post-sample completion/result checks verify
+the expected callback count and result. Preparation, cleanup, and full GC run
+outside each measured slice. The empty-loop baseline is reported without
+subtraction. Timing and allocation are separate passes; allocation requires
+the calibrated 64 KiB/empty controls. The JSON retains all samples and the
+completion-source report schema is version 1. Results are Editor/Mono
+synchronous-slice evidence, not end-to-end or IL2CPP player results.
+
+For a separate, short allocation attribution probe, pass
+`-profiler-enable -onityCompletionSourceBenchmark -onityCompletionSourceAttribution`
+with a new output JSON path. The probe captures typed construction and pending
+`AsTask` conversion once per library after two warmup batches. It requires the
+64 KiB/empty controls and full GC.Alloc callstack coverage before setting
+`available` to true. Its single samples diagnose allocation sites; the eight
+sample comparison report above remains the measurement source.
+
+The measured baseline is saved as [JSON](../../../../docs/assets/benchmarks/onity-completion-source-a7c7c9c-warmed-2026-09-23.json),
+[CSV](../../../../docs/assets/benchmarks/onity-completion-source-a7c7c9c-warmed-2026-09-23.csv),
+and [Markdown](../../../../docs/assets/benchmarks/onity-completion-source-a7c7c9c-warmed-2026-09-23.md).
+The separate [callstack attribution JSON](../../../../docs/assets/benchmarks/onity-completion-source-a7c7c9c-attribution-2026-09-23.json)
+contains one diagnostic sample for typed construction and pending `AsTask` per
+library. The baseline supports stage-specific comparisons; it does not establish
+overall superiority for either implementation.

@@ -1,0 +1,973 @@
+{
+    "schemaVersion": 1,
+    "suite": "OnityTaskCompletionSource vs UniTaskCompletionSource",
+    "generatedAtUtc": "2026-09-23T15:16:14.3732919Z",
+    "allocationGeneratedAtUtc": "2026-09-23T15:18:39.5341806Z",
+    "unityVersion": "2022.3.62f3",
+    "scriptingBackend": "Editor Mono",
+    "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+    "onityRuntimeCommit": "a7c7c9c07867a0f2a20a0b817ca0482e75b77795",
+    "operationsPerSample": 256,
+    "timingBatchesPerSample": 16,
+    "timingOperationsPerSample": 4096,
+    "allocationOperationsPerSample": 256,
+    "samplesPerCase": 8,
+    "warmupBatches": 2,
+    "scope": "Synchronous main-thread slices only. Construction, pending registration, completion with callback dispatch, late registration, and pending AsTask conversion are isolated. Source preparation and cleanup are outside each slice. Samples retain harness overhead; no baseline subtraction or overall winner is inferred.",
+    "emptyHarnessNanosecondsPerOperation": 4.9224853515625,
+    "emptyHarnessSampleNanosecondsPerOperation": [
+        5.2490234375,
+        4.8828125,
+        4.8828125,
+        4.8583984375,
+        4.8583984375,
+        4.8828125,
+        4.8828125,
+        4.8828125
+    ],
+    "emptyHarnessAllocatedBytes": 0,
+    "emptyHarnessSampleAllocatedBytes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+    ],
+    "allocationsAvailable": true,
+    "allocationCounter": "Unity Profiler GC.Alloc metadata; 64 KiB and empty controls passed.",
+    "positiveControlBytes": 65568,
+    "emptyControlBytes": 0,
+    "scenarios": [
+        {
+            "stage": 0,
+            "stageName": "Construction",
+            "typed": false,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 482.4462890625,
+                    "bytesPerOperation": 120.0,
+                    "sampleNanosecondsPerOperation": [
+                        569.6044921875,
+                        517.1142578125,
+                        574.9755859375,
+                        804.248046875,
+                        330.17578125,
+                        382.421875,
+                        341.1376953125,
+                        339.892578125
+                    ],
+                    "sampleAllocatedBytes": [
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 215.8660888671875,
+                    "bytesPerOperation": 72.0,
+                    "sampleNanosecondsPerOperation": [
+                        228.857421875,
+                        258.7890625,
+                        242.0166015625,
+                        329.638671875,
+                        160.7177734375,
+                        168.3837890625,
+                        149.560546875,
+                        188.96484375
+                    ],
+                    "sampleAllocatedBytes": [
+                        18432,
+                        18432,
+                        18432,
+                        18432,
+                        18432,
+                        18432,
+                        18432,
+                        18432
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 1,
+            "stageName": "PendingRegistration",
+            "typed": false,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 178.857421875,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        171.9970703125,
+                        184.86328125,
+                        174.2431640625,
+                        171.728515625,
+                        175.09765625,
+                        174.2919921875,
+                        166.650390625,
+                        211.9873046875
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 448.3795166015625,
+                    "bytesPerOperation": 16.0,
+                    "sampleNanosecondsPerOperation": [
+                        320.263671875,
+                        450.830078125,
+                        515.2587890625,
+                        632.4951171875,
+                        359.5947265625,
+                        341.6015625,
+                        310.7666015625,
+                        656.2255859375
+                    ],
+                    "sampleAllocatedBytes": [
+                        4096,
+                        4096,
+                        4096,
+                        4096,
+                        4096,
+                        4096,
+                        4096,
+                        4096
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 1,
+            "stageName": "PendingRegistration",
+            "typed": false,
+            "consumers": 4,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 1311.822509765625,
+                    "bytesPerOperation": 104.0,
+                    "sampleNanosecondsPerOperation": [
+                        1629.7607421875,
+                        1167.0654296875,
+                        1447.1923828125,
+                        1260.3515625,
+                        1295.1904296875,
+                        1516.796875,
+                        1238.818359375,
+                        939.404296875
+                    ],
+                    "sampleAllocatedBytes": [
+                        26624,
+                        26624,
+                        26624,
+                        26624,
+                        26624,
+                        26624,
+                        26624,
+                        26624
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 1552.1484375,
+                    "bytesPerOperation": 152.0,
+                    "sampleNanosecondsPerOperation": [
+                        1758.3251953125,
+                        1498.486328125,
+                        1615.478515625,
+                        1657.2265625,
+                        1448.779296875,
+                        1872.0947265625,
+                        1393.7255859375,
+                        1173.0712890625
+                    ],
+                    "sampleAllocatedBytes": [
+                        38912,
+                        38912,
+                        38912,
+                        38912,
+                        38912,
+                        38912,
+                        38912,
+                        38912
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 2,
+            "stageName": "CompletionDispatch",
+            "typed": false,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 110.076904296875,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        93.0908203125,
+                        160.595703125,
+                        110.888671875,
+                        101.611328125,
+                        119.53125,
+                        101.318359375,
+                        96.5576171875,
+                        97.021484375
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 97.2503662109375,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        84.3994140625,
+                        141.357421875,
+                        93.45703125,
+                        82.177734375,
+                        108.2763671875,
+                        100.341796875,
+                        81.640625,
+                        86.3525390625
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 2,
+            "stageName": "CompletionDispatch",
+            "typed": false,
+            "consumers": 4,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 176.129150390625,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        154.5166015625,
+                        214.4287109375,
+                        147.2900390625,
+                        159.0087890625,
+                        160.3515625,
+                        188.427734375,
+                        173.1689453125,
+                        211.8408203125
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 402.2705078125,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        353.80859375,
+                        509.2041015625,
+                        361.4501953125,
+                        388.671875,
+                        376.85546875,
+                        417.9931640625,
+                        354.8095703125,
+                        455.37109375
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 3,
+            "stageName": "LateRegistration",
+            "typed": false,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 154.7943115234375,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        153.125,
+                        178.3935546875,
+                        178.2470703125,
+                        148.9013671875,
+                        143.65234375,
+                        142.529296875,
+                        145.0927734375,
+                        148.4130859375
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 144.83642578125,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        149.462890625,
+                        145.654296875,
+                        173.4130859375,
+                        136.767578125,
+                        135.9619140625,
+                        132.91015625,
+                        132.12890625,
+                        152.392578125
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 3,
+            "stageName": "LateRegistration",
+            "typed": false,
+            "consumers": 4,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 544.8394775390625,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        522.998046875,
+                        556.640625,
+                        537.6220703125,
+                        557.51953125,
+                        545.4345703125,
+                        556.640625,
+                        541.064453125,
+                        540.7958984375
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 506.8756103515625,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        487.548828125,
+                        521.0205078125,
+                        510.9375,
+                        512.353515625,
+                        503.369140625,
+                        518.6279296875,
+                        503.22265625,
+                        497.9248046875
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 4,
+            "stageName": "AsTask",
+            "typed": false,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 1011.6485595703124,
+                    "bytesPerOperation": 848.0,
+                    "sampleNanosecondsPerOperation": [
+                        1002.490234375,
+                        1097.802734375,
+                        992.0654296875,
+                        1036.865234375,
+                        988.5498046875,
+                        992.3583984375,
+                        954.6142578125,
+                        1028.4423828125
+                    ],
+                    "sampleAllocatedBytes": [
+                        217088,
+                        217088,
+                        217088,
+                        217088,
+                        217088,
+                        217088,
+                        217088,
+                        217088
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 447.576904296875,
+                    "bytesPerOperation": 120.0,
+                    "sampleNanosecondsPerOperation": [
+                        446.8505859375,
+                        467.3828125,
+                        434.7412109375,
+                        458.3740234375,
+                        437.1826171875,
+                        453.466796875,
+                        425.244140625,
+                        457.373046875
+                    ],
+                    "sampleAllocatedBytes": [
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 0,
+            "stageName": "Construction",
+            "typed": true,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 209.6221923828125,
+                    "bytesPerOperation": 120.0,
+                    "sampleNanosecondsPerOperation": [
+                        216.3330078125,
+                        216.1865234375,
+                        207.7880859375,
+                        204.9072265625,
+                        210.595703125,
+                        197.8515625,
+                        211.083984375,
+                        212.2314453125
+                    ],
+                    "sampleAllocatedBytes": [
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 81.1553955078125,
+                    "bytesPerOperation": 80.0,
+                    "sampleNanosecondsPerOperation": [
+                        81.8359375,
+                        84.765625,
+                        78.076171875,
+                        79.736328125,
+                        79.052734375,
+                        78.2470703125,
+                        80.712890625,
+                        86.81640625
+                    ],
+                    "sampleAllocatedBytes": [
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 1,
+            "stageName": "PendingRegistration",
+            "typed": true,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 138.1591796875,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        148.4375,
+                        139.2333984375,
+                        135.5712890625,
+                        137.6220703125,
+                        132.3486328125,
+                        134.8388671875,
+                        134.765625,
+                        142.4560546875
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 220.2667236328125,
+                    "bytesPerOperation": 16.0,
+                    "sampleNanosecondsPerOperation": [
+                        238.5498046875,
+                        216.845703125,
+                        211.2548828125,
+                        218.75,
+                        207.7880859375,
+                        213.76953125,
+                        234.375,
+                        220.80078125
+                    ],
+                    "sampleAllocatedBytes": [
+                        4096,
+                        4096,
+                        4096,
+                        4096,
+                        4096,
+                        4096,
+                        4096,
+                        4096
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 1,
+            "stageName": "PendingRegistration",
+            "typed": true,
+            "consumers": 4,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 785.552978515625,
+                    "bytesPerOperation": 104.0,
+                    "sampleNanosecondsPerOperation": [
+                        798.6328125,
+                        834.7900390625,
+                        876.7333984375,
+                        761.8408203125,
+                        742.333984375,
+                        763.5009765625,
+                        761.7919921875,
+                        744.7998046875
+                    ],
+                    "sampleAllocatedBytes": [
+                        26624,
+                        26624,
+                        26624,
+                        26624,
+                        26624,
+                        26624,
+                        26624,
+                        26624
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 993.743896484375,
+                    "bytesPerOperation": 152.0,
+                    "sampleNanosecondsPerOperation": [
+                        955.46875,
+                        1160.3271484375,
+                        1078.7353515625,
+                        968.1640625,
+                        923.6572265625,
+                        975.87890625,
+                        944.873046875,
+                        942.8466796875
+                    ],
+                    "sampleAllocatedBytes": [
+                        38912,
+                        38912,
+                        38912,
+                        38912,
+                        38912,
+                        38912,
+                        38912,
+                        38912
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 2,
+            "stageName": "CompletionDispatch",
+            "typed": true,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 87.841796875,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        84.2041015625,
+                        84.3017578125,
+                        86.42578125,
+                        89.9169921875,
+                        94.287109375,
+                        93.6279296875,
+                        84.521484375,
+                        85.44921875
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 77.679443359375,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        76.4404296875,
+                        75.4638671875,
+                        76.904296875,
+                        78.8330078125,
+                        82.2021484375,
+                        79.4189453125,
+                        76.6357421875,
+                        75.537109375
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 2,
+            "stageName": "CompletionDispatch",
+            "typed": true,
+            "consumers": 4,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 148.4100341796875,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        143.0908203125,
+                        153.1982421875,
+                        142.6513671875,
+                        147.1923828125,
+                        158.4716796875,
+                        146.0205078125,
+                        147.7783203125,
+                        148.876953125
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 358.3953857421875,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        348.9013671875,
+                        352.783203125,
+                        345.654296875,
+                        363.9892578125,
+                        378.173828125,
+                        353.125,
+                        372.3388671875,
+                        352.197265625
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 3,
+            "stageName": "LateRegistration",
+            "typed": true,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 160.7025146484375,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        142.5537109375,
+                        148.095703125,
+                        146.2646484375,
+                        148.974609375,
+                        204.9560546875,
+                        203.759765625,
+                        145.751953125,
+                        145.263671875
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 147.0245361328125,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        135.3759765625,
+                        144.62890625,
+                        136.3037109375,
+                        134.9365234375,
+                        174.0234375,
+                        179.345703125,
+                        135.986328125,
+                        135.595703125
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 3,
+            "stageName": "LateRegistration",
+            "typed": true,
+            "consumers": 4,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 602.984619140625,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        544.287109375,
+                        551.1474609375,
+                        546.9482421875,
+                        561.767578125,
+                        627.9296875,
+                        551.7822265625,
+                        896.1669921875,
+                        543.84765625
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 558.3465576171875,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        516.796875,
+                        500.5126953125,
+                        501.1474609375,
+                        521.0205078125,
+                        571.435546875,
+                        508.8134765625,
+                        832.0556640625,
+                        514.990234375
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 4,
+            "stageName": "AsTask",
+            "typed": true,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 1102.69775390625,
+                    "bytesPerOperation": 848.0,
+                    "sampleNanosecondsPerOperation": [
+                        1057.6416015625,
+                        981.73828125,
+                        1057.080078125,
+                        1479.5166015625,
+                        1026.6845703125,
+                        1210.595703125,
+                        1041.796875,
+                        966.5283203125
+                    ],
+                    "sampleAllocatedBytes": [
+                        217088,
+                        217088,
+                        217088,
+                        217088,
+                        217088,
+                        217088,
+                        217088,
+                        217088
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 497.039794921875,
+                    "bytesPerOperation": 120.0,
+                    "sampleNanosecondsPerOperation": [
+                        478.7353515625,
+                        440.2099609375,
+                        464.16015625,
+                        688.8671875,
+                        448.14453125,
+                        552.685546875,
+                        459.326171875,
+                        444.189453125
+                    ],
+                    "sampleAllocatedBytes": [
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720,
+                        30720
+                    ]
+                }
+            ]
+        }
+    ]
+}
