@@ -94,10 +94,20 @@ OnityTask<AsyncOperation> load = OnityTask.LoadSceneAsync(
 
 AsyncOperation operation = await load;
 
-// Show "press any key" or complete a fade here.
-
-await OnityTask.ActivateScene(operation, ct);
+try
+{
+    // Wait for input or complete a fade here.
+    await WaitForFadeAsync(ct);
+}
+finally
+{
+    await OnityTask.ActivateScene(operation, CancellationToken.None);
+}
 ```
+
+After Unity starts a deferred load, the token cannot cancel the underlying
+scene operation. Always activate the returned operation, including when the
+wait for input or a fade is canceled.
 
 ## AsyncOperation Bridge
 

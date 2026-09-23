@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kept typed `AsTask()` conversion from invoking user-defined result equality.
 - Forwarded task-backed `UnsafeOnCompleted` registrations to the underlying
   unsafe awaiter in both typed and untyped tasks.
+- Kept deferred scene loads reachable after cancellation or a progress callback
+  failure, and activated prepared loads during loading-scene cancellation so
+  Unity's async operation queue cannot remain stalled.
 - Kept exceptions from native await continuations from stopping the task runner
   or faulting a newly rented pooled wait; unhandled callback errors reach the
   Unity log.

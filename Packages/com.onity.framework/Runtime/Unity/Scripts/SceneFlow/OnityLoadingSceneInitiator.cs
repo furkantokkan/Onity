@@ -58,11 +58,28 @@ namespace Onity.Unity.SceneFlow
                 m_view != null ? m_view.SetProgress : null,
                 cancellationToken);
 
-            await minimumVisibleDurationTask;
-            await OnitySceneLoader.ActivateAsync(
+            await ActivatePreparedSceneAsync(
                 operation,
-                m_view != null ? m_view.SetProgress : null,
-                cancellationToken);
+                minimumVisibleDurationTask,
+                m_view != null ? m_view.SetProgress : null);
+        }
+
+        private static async Task ActivatePreparedSceneAsync(
+            AsyncOperation operation,
+            Task minimumVisibleDurationTask,
+            Action<float> onProgress)
+        {
+            try
+            {
+                await minimumVisibleDurationTask;
+            }
+            finally
+            {
+                await OnitySceneLoader.ActivateAsync(
+                    operation,
+                    onProgress,
+                    CancellationToken.None);
+            }
         }
 
         private async Task WaitForMinimumVisibleDurationAsync(

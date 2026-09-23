@@ -112,6 +112,51 @@ namespace Onity.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator CanceledLoadingGate_StillCompletesPreparedOperation()
+        {
+            MethodInfo activateMethod = typeof(OnityLoadingSceneInitiator).GetMethod(
+                "ActivatePreparedSceneAsync",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(activateMethod, Is.Not.Null);
+
+            AsyncOperation operation = Resources.UnloadUnusedAssets();
+            operation.allowSceneActivation = false;
+            try
+            {
+                using CancellationTokenSource cancellationTokenSource =
+                    new CancellationTokenSource();
+                cancellationTokenSource.Cancel();
+
+                int progressCount = 0;
+                Task canceledGate = Task.FromCanceled(cancellationTokenSource.Token);
+                Task completionTask = (Task)activateMethod.Invoke(
+                    null,
+                    new object[]
+                    {
+                        operation,
+                        canceledGate,
+                        (System.Action<float>)(_ => progressCount++)
+                    });
+
+                float timeoutAt = Time.realtimeSinceStartup + 5f;
+                while (completionTask.IsCompleted == false &&
+                       Time.realtimeSinceStartup < timeoutAt)
+                {
+                    yield return null;
+                }
+
+                Assert.That(operation.allowSceneActivation, Is.True);
+                Assert.That(operation.isDone, Is.True);
+                Assert.That(progressCount, Is.GreaterThan(0));
+                Assert.That(completionTask.IsCanceled, Is.True);
+            }
+            finally
+            {
+                operation.allowSceneActivation = true;
+            }
+        }
+
         private static void SetContextInstallers(
             OnityContext context,
             params MonoInstaller[] installers)

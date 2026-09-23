@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -8,6 +10,7 @@ using Onity.Messaging;
 using Onity.Reactive;
 using Onity.Unity.Async;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Onity.Tests.EditMode
 {
@@ -284,6 +287,46 @@ namespace Onity.Tests.EditMode
             catch (OperationCanceledException)
             {
             }
+        }
+
+        [Test]
+        public void DeferredLoad_CanceledBeforeStart_DoesNotStartSceneLoad()
+        {
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            Task<AsyncOperation> task = OnitySceneLoader.LoadAsync(
+                "AnyScene",
+                activateOnLoad: false,
+                cancellationToken: cancellationTokenSource.Token);
+
+            Assert.That(task.IsCanceled, Is.True);
+        }
+
+        [Test]
+        public void DeferredLoad_ProgressCallbackFault_IsLoggedOnce()
+        {
+            MethodInfo reportMethod = typeof(OnitySceneLoader).GetMethod(
+                "ReportLoadProgress",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(reportMethod, Is.Not.Null);
+
+            int callCount = 0;
+            Action<float> onProgress = _ =>
+            {
+                callCount++;
+                throw new InvalidOperationException("deferred callback failed");
+            };
+            object[] arguments = { onProgress, 0f, false };
+            LogAssert.Expect(
+                LogType.Exception,
+                new Regex("InvalidOperationException: deferred callback failed"));
+
+            reportMethod.Invoke(null, arguments);
+            reportMethod.Invoke(null, arguments);
+
+            Assert.That(callCount, Is.EqualTo(1));
+            Assert.That(arguments[0], Is.Null);
         }
 
         [Test]

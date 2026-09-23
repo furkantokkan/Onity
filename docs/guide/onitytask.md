@@ -143,6 +143,31 @@ private static async OnityTask LoadGameplayAsync(CancellationToken cancellationT
 cancellation shape. `LoadSceneAsync` returns the underlying `AsyncOperation` when
 you need to control activation yourself.
 
+For `LoadSceneAsync(..., activateOnLoad: false)`, cancellation can prevent Unity
+from starting the load. After Unity starts it, Onity returns the prepared
+operation even if the token was canceled. The caller must eventually activate
+that operation: Unity holds it at 90% progress and blocks later async operations
+until activation is allowed. Use an uncanceled token for this cleanup:
+
+```csharp
+AsyncOperation operation = await OnityTask.LoadSceneAsync(
+    "Gameplay",
+    activateOnLoad: false,
+    cancellationToken: cancellationToken);
+
+try
+{
+    await WaitForFadeAsync(cancellationToken);
+}
+finally
+{
+    await OnityTask.ActivateScene(operation, CancellationToken.None);
+}
+```
+
+The built-in loading-scene initiator follows this ownership rule when its
+minimum display duration is canceled.
+
 ## Unity AsyncOperation bridge
 
 ```csharp
@@ -151,9 +176,9 @@ ResourceRequest completed = await request.AsOnityTask(
     cancellationToken: cancellationToken);
 ```
 
-The operation itself is not canceled by every Unity API; cancellation stops the
-await and reports `OperationCanceledException`. Consult the Unity API you wrap
-when the underlying operation has separate cancellation behavior.
+For a general `AsyncOperation.AsOnityTask()` bridge, cancellation stops the
+await and reports `OperationCanceledException`; the Unity operation may
+continue. Deferred scene loading has the ownership rule described above.
 
 ## Web requests
 
