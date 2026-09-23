@@ -14,7 +14,7 @@ namespace Onity.Reactive
         private SubscriptionEntry[] m_entries;
         private int m_count;
         private int m_nextId;
-        private bool m_isNotifying;
+        private int m_notificationDepth;
         private bool m_hasPendingRemovals;
         private bool m_isDisposed;
 
@@ -26,7 +26,7 @@ namespace Onity.Reactive
             m_entries = new SubscriptionEntry[k_defaultCapacity];
             m_count = 0;
             m_nextId = 1;
-            m_isNotifying = false;
+            m_notificationDepth = 0;
             m_hasPendingRemovals = false;
             m_isDisposed = false;
         }
@@ -82,7 +82,7 @@ namespace Onity.Reactive
         {
             ThrowIfDisposed();
 
-            m_isNotifying = true;
+            m_notificationDepth++;
 
             try
             {
@@ -107,9 +107,9 @@ namespace Onity.Reactive
             }
             finally
             {
-                m_isNotifying = false;
+                m_notificationDepth--;
 
-                if (m_hasPendingRemovals)
+                if (m_notificationDepth == 0 && m_hasPendingRemovals)
                 {
                     Compact();
                 }
@@ -161,7 +161,7 @@ namespace Onity.Reactive
                 return;
             }
 
-            if (m_isNotifying)
+            if (m_notificationDepth > 0)
             {
                 m_entries[index].Observer = null;
                 m_hasPendingRemovals = true;

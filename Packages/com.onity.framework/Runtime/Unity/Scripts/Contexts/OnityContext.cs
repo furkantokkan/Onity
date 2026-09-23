@@ -157,6 +157,13 @@ namespace Onity.Unity.Contexts
                     continue;
                 }
 
+                OnityContext nearestContext = behaviour.GetComponentInParent<OnityContext>(true);
+
+                if (nearestContext != null && nearestContext != this)
+                {
+                    continue;
+                }
+
                 m_container.Inject(behaviour);
             }
         }

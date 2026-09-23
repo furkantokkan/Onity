@@ -70,7 +70,7 @@ https://github.com/furkantokkan/Onity.git#upm
 
 The `upm` branch is the package at its repository root (auto-mirrored by CI on
 every change). To pin a release instead, use the explicit form
-`https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.6`.
+`https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.3.8`.
 Git must be installed on your machine.
 
 ### B. Embedded package

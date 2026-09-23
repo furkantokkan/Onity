@@ -67,6 +67,36 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void Subject_NestedOnNext_SelfRemoval_DeliversOuterValueToRemainingObservers()
+        {
+            using Subject<int> subject = new Subject<int>();
+            List<int> secondValues = new List<int>();
+            List<int> thirdValues = new List<int>();
+            IDisposable first = null;
+
+            first = subject.Subscribe(
+                value =>
+                {
+                    if (value == 1)
+                    {
+                        subject.OnNext(2);
+                    }
+                    else
+                    {
+                        first.Dispose();
+                    }
+                });
+
+            subject.Subscribe(secondValues.Add);
+            subject.Subscribe(thirdValues.Add);
+
+            subject.OnNext(1);
+
+            Assert.That(secondValues, Is.EqualTo(new[] { 2, 1 }));
+            Assert.That(thirdValues, Is.EqualTo(new[] { 2, 1 }));
+        }
+
+        [Test]
         public void CompositeDisposable_Dispose_DisposesAllItems()
         {
             using CompositeDisposable disposables = new CompositeDisposable();

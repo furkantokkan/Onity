@@ -67,7 +67,11 @@ syntactic and high-confidence:
 
 ## Building
 
-Build the analyzer DLL with the .NET SDK. Run from the repository root:
+Build the analyzer DLL with the .NET SDK. The project pins Roslyn `4.3.1` to
+match the compiler bundled with Unity
+2022.3. Rebuild the shipped DLL whenever the analyzer source or this compiler
+version changes, while keeping its Unity `.meta` file and `RoslynAnalyzer`
+label. Run from the repository root:
 
 ```sh
 dotnet build "tools/Onity.Analyzers/Onity.Analyzers.csproj" -c Release
@@ -102,7 +106,7 @@ Steps:
    for example:
 
    ```
-   Assets/Onity-Packages/Onity/Analyzers/Onity.Analyzers.dll
+   Packages/com.onity.framework/Analyzers/Onity.Analyzers.dll
    ```
 
    Copy **only** `Onity.Analyzers.dll`. Do **not** copy the
@@ -133,7 +137,7 @@ default.
 
 ```
 Onity.Analyzers/
-  Onity.Analyzers.csproj                        netstandard2.0, references Microsoft.CodeAnalysis.CSharp(.Workspaces) 4.x
+  Onity.Analyzers.csproj                        netstandard2.0, references Microsoft.CodeAnalysis.CSharp(.Workspaces) 4.3.1
   OnityDiagnostics.cs                           diagnostic ids + descriptors (ONITY001..ONITY006)
   OnityResolveInUpdateAnalyzer.cs               ONITY001 DiagnosticAnalyzer
   OnityResolveInUpdateCodeFixProvider.cs        ONITY001 code fix (guidance-comment stub)

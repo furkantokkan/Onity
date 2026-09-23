@@ -1,12 +1,12 @@
 ---
 title: "Architecture"
 nav_order: 8
-description: "Current Onity v0.3.6 module boundaries, dependency direction, composition roots, DI activation paths, and Unity integration."
+description: "Current Onity v0.3.8 module boundaries, dependency direction, composition roots, DI activation paths, and Unity integration."
 ---
 
 # Architecture
 
-This page describes the architecture shipped in Onity `v0.3.6`. The package
+This page describes the architecture shipped in Onity `v0.3.8`. The package
 source lives under `Packages/com.onity.framework`; the `upm` branch mirrors that
 folder to the repository root for installation.
 
@@ -122,16 +122,17 @@ runtime dependencies shipped to gameplay code.
 
 ## Verification snapshot
 
-The `v0.3.6` release was verified on Unity `2022.3.62f3` with:
+The `v0.3.8` release candidate was verified on Unity `2022.3.62f3` with:
 
-- 434 passing EditMode tests;
-- 10 passing PlayMode tests;
-- engine-free core, analyzer, and source-generator builds;
-- Editor/Mono and Windows IL2CPP DI benchmarks;
-- a focused 1000-sample IL2CPP singleton resolve gate.
+- 445 passing EditMode tests and 13 passing PlayMode tests;
+- 26 passing analyzer and source-generator tests;
+- engine-free core, analyzer, and source-generator Release builds;
+- metadata coverage for all 228 package files.
 
-Exact counts are release evidence, not a permanent promise; use the current CI
-and Unity Test Runner results for later versions.
+The Editor/Mono, Windows IL2CPP, and focused 1000-sample singleton DI benchmark
+results published with `v0.3.6` remain historical measurements; they were not
+rerun for `v0.3.8`. Exact counts are release evidence, not a permanent promise;
+use the current CI and Unity Test Runner results for later versions.
 
 ## Intentional limits
 

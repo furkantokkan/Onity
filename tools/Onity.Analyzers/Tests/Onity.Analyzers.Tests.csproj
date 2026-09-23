@@ -31,6 +31,14 @@
   <ItemGroup>
     <!-- The analyzers under test. -->
     <ProjectReference Include="..\Onity.Analyzers.csproj" />
+    <ProjectReference Include="..\..\Onity.SourceGen\Onity.SourceGen.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- This reference lacks ModuleInitializerAttribute, as Unity 2022's API does. -->
+    <None Include="$(NuGetPackageRoot)netstandard.library/2.0.3/build/netstandard2.0/ref/netstandard.dll"
+          Link="ReferenceAssemblies/netstandard.dll"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,12 +48,12 @@
       environment, so the suite supplies its own minimal NUnit IVerifier
       (NUnitVerifier) to drive CSharpAnalyzerTest.
 
-      Microsoft.CodeAnalysis.CSharp is pinned to the same 4.8.0 the analyzer is
+      Microsoft.CodeAnalysis.CSharp is pinned to the same 4.3.1 the analyzer is
       built against so the harness loads matching compiler types.
     -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="1.1.2" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.3.1" />
 
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="NUnit" Version="3.14.0" />

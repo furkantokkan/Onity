@@ -85,6 +85,37 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void NestedPublish_SelfRemoval_DeliversOuterMessageToRemainingSubscribers()
+        {
+            using MessageChannel<int> channel = new MessageChannel<int>();
+            List<int> secondValues = new List<int>();
+            List<int> thirdValues = new List<int>();
+            IDisposable first = null;
+
+            first = channel.Subscribe(
+                value =>
+                {
+                    if (value == 1)
+                    {
+                        channel.Publish(2);
+                    }
+                    else
+                    {
+                        first.Dispose();
+                    }
+                });
+
+            channel.Subscribe(secondValues.Add);
+            channel.Subscribe(thirdValues.Add);
+
+            channel.Publish(1);
+
+            Assert.That(secondValues, Is.EqualTo(new[] { 2, 1 }));
+            Assert.That(thirdValues, Is.EqualTo(new[] { 2, 1 }));
+            Assert.That(channel.SubscriberCount, Is.EqualTo(2));
+        }
+
+        [Test]
         public void MessageBroker_ReturnsSharedChannelPerMessageType()
         {
             using MessageBroker broker = new MessageBroker();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Onity.Core;
@@ -428,7 +429,7 @@ namespace Onity.DI
 
                 // The same instance can be bound twice (e.g. two BindInstance calls),
                 // producing two providers; collect each entry point only once.
-                seen ??= new HashSet<object>();
+                seen ??= new HashSet<object>(ReferenceIdentityComparer.Instance);
 
                 if (seen.Add(instance) == false)
                 {
@@ -505,7 +506,12 @@ namespace Onity.DI
 
             if (m_cachedBuildTask != null)
             {
-                return m_cachedBuildTask;
+                if (m_cachedBuildTask.IsCanceled == false && m_cachedBuildTask.IsFaulted == false)
+                {
+                    return m_cachedBuildTask;
+                }
+
+                m_cachedBuildTask = null;
             }
 
             if (m_asyncBuildCallbacks.Count == 0)
@@ -848,9 +854,19 @@ namespace Onity.DI
 
             m_isDisposed = true;
 
+            List<Exception> disposalErrors = null;
+
             for (int i = m_ownedProviders.Count - 1; i >= 0; i--)
             {
-                m_ownedProviders[i].Dispose();
+                try
+                {
+                    m_ownedProviders[i].Dispose();
+                }
+                catch (Exception exception)
+                {
+                    disposalErrors ??= new List<Exception>(1);
+                    disposalErrors.Add(exception);
+                }
             }
 
             m_ownedProviders.Clear();
@@ -871,6 +887,18 @@ namespace Onity.DI
             m_lateTickables = null;
             m_multiProviderMap = null;
             m_openGenericMap = null;
+
+            if (disposalErrors == null)
+            {
+                return;
+            }
+
+            if (disposalErrors.Count == 1)
+            {
+                ExceptionDispatchInfo.Capture(disposalErrors[0]).Throw();
+            }
+
+            throw new AggregateException(disposalErrors);
         }
 
         internal void Register(Type contractType, Type implementationType, Lifetime lifetime)
@@ -1008,27 +1036,33 @@ namespace Onity.DI
 
         private async Task ExecuteBuildCallbacksWithRetryAsync(CancellationToken cancellationToken)
         {
-            try
+            for (int i = 0; i < m_asyncBuildCallbacks.Count; i++)
             {
-                for (int i = 0; i < m_asyncBuildCallbacks.Count; i++)
+                cancellationToken.ThrowIfCancellationRequested();
+
+                Task task = m_asyncBuildCallbacks[i](this, cancellationToken);
+
+                if (task == null)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    Task task = m_asyncBuildCallbacks[i](this, cancellationToken);
-
-                    if (task == null)
-                    {
-                        continue;
-                    }
-
-                    await task.ConfigureAwait(false);
+                    continue;
                 }
+
+                await task.ConfigureAwait(false);
             }
-            catch
+        }
+
+        private sealed class ReferenceIdentityComparer : IEqualityComparer<object>
+        {
+            public static readonly ReferenceIdentityComparer Instance = new ReferenceIdentityComparer();
+
+            bool IEqualityComparer<object>.Equals(object left, object right)
             {
-                // Allow callers to retry BuildAsync after cancellation/failure.
-                m_cachedBuildTask = null;
-                throw;
+                return ReferenceEquals(left, right);
+            }
+
+            public int GetHashCode(object value)
+            {
+                return value == null ? 0 : RuntimeHelpers.GetHashCode(value);
             }
         }
 

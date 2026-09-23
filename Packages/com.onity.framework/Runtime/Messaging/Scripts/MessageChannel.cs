@@ -14,7 +14,7 @@ namespace Onity.Messaging
         private SubscriptionEntry[] m_entries;
         private int m_count;
         private int m_nextId;
-        private bool m_isPublishing;
+        private int m_publishDepth;
         private bool m_hasPendingRemovals;
         private bool m_isDisposed;
 
@@ -26,7 +26,7 @@ namespace Onity.Messaging
             m_entries = new SubscriptionEntry[k_defaultCapacity];
             m_count = 0;
             m_nextId = 1;
-            m_isPublishing = false;
+            m_publishDepth = 0;
             m_hasPendingRemovals = false;
             m_isDisposed = false;
         }
@@ -59,7 +59,7 @@ namespace Onity.Messaging
         {
             ThrowIfDisposed();
 
-            m_isPublishing = true;
+            m_publishDepth++;
 
             try
             {
@@ -77,9 +77,9 @@ namespace Onity.Messaging
             }
             finally
             {
-                m_isPublishing = false;
+                m_publishDepth--;
 
-                if (m_hasPendingRemovals)
+                if (m_publishDepth == 0 && m_hasPendingRemovals)
                 {
                     Compact();
                 }
@@ -131,7 +131,7 @@ namespace Onity.Messaging
                 return;
             }
 
-            if (m_isPublishing)
+            if (m_publishDepth > 0)
             {
                 m_entries[index].Handler = null;
                 m_hasPendingRemovals = true;
