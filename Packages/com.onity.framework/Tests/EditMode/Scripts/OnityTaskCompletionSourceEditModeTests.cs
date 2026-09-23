@@ -503,6 +503,7 @@ namespace Onity.Tests.EditMode
             using ManualResetEventSlim queued = new ManualResetEventSlim(false);
             using ManualResetEventSlim release = new ManualResetEventSlim(false);
             using ManualResetEventSlim reading = new ManualResetEventSlim(false);
+            using ManualResetEventSlim readingResult = new ManualResetEventSlim(false);
             BlockingQueueTaskScheduler scheduler =
                 new BlockingQueueTaskScheduler(queued, release);
             Task continuation = bridge.ContinueWith(
@@ -520,12 +521,21 @@ namespace Onity.Tests.EditMode
                     reading.Set();
                     return source.Task.IsCompleted;
                 });
+                Task<int> resultRead = Task.Run(() =>
+                {
+                    readingResult.Set();
+                    return source.Task.GetAwaiter().GetResult();
+                });
                 Assert.That(reading.Wait(5000), Is.True);
+                Assert.That(readingResult.Wait(5000), Is.True);
                 Assert.That(statusRead.Wait(100), Is.False);
+                Assert.That(resultRead.Wait(100), Is.False);
 
                 release.Set();
                 Assert.That(statusRead.Wait(5000), Is.True);
                 Assert.That(statusRead.Result, Is.True);
+                Assert.That(resultRead.Wait(5000), Is.True);
+                Assert.That(resultRead.Result, Is.EqualTo(82));
                 Assert.That(completion.Wait(5000), Is.True);
                 Assert.That(completion.Result, Is.True);
                 Assert.That(continuation.Wait(5000), Is.True);

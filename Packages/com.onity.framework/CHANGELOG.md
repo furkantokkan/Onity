@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   claimed once; completed, Task-backed, and completion-source tasks are returned
   without a new retained source.
 
+### Improved
+
+- Read completed multi-consumer results without taking the completion-source
+  lock, while preserving the bridge/status publication order for concurrent
+  completion.
+
 ### Tested
 
 - Unity `2022.3.62f3`: EditMode `524/524` and PlayMode `23/23` passed, including
