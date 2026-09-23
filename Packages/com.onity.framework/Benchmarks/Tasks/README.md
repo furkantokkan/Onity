@@ -276,11 +276,15 @@ read per observer, two additional late reads for sharing, and loser completion.
 Preallocated benchmark arrays, the one-time native source type check, and array
 cleanup are outside the operation. UniTask 2.5.11 uses a `params` array for its
 two-input `WhenAny`, while Onity has a two-argument overload. The natural API
-calls therefore include an extra array allocation on the UniTask side. The
+calls therefore include an extra array allocation on the UniTask side, inside
+the measured operation. The
 four-observer UniTask path also uses .NET `Task<int>` with
 `ConfigureAwait(false)` callbacks; callback scheduling and wait time are inside
-the full-lifecycle result. These API and dispatch differences limit direct
-attribution to sharing implementation alone.
+the timed operation. Profiler `GC.Alloc` measures the marked main-thread work;
+`AsTask` callbacks can run on another thread, so their allocations may be
+outside the marker. The four-observer timing includes the wait for those
+callbacks, and is not a general library speed ratio. These API and dispatch
+differences limit direct attribution to sharing implementation alone.
 
 Each case retains eight raw timing samples of 4,096 operations and eight
 allocation samples of 256 operations. The allocation pass uses the same
@@ -302,3 +306,28 @@ its one-observer sharing path measured 904 B/task versus 344 B/task for UniTask
 `Preserve`. Four-observer sharing measured 1,008 B/task for Onity and about
 665 B/task for UniTask `AsTask`. The complete raw samples and timing means are
 in the reports; none establishes universal library superiority.
+
+The experimental stateful callback candidate at `6a15305` has separate
+[lifecycle JSON](../../../../docs/assets/benchmarks/onity-native-lifecycle-6a15305-2026-09-23.json),
+[CSV](../../../../docs/assets/benchmarks/onity-native-lifecycle-6a15305-2026-09-23.csv),
+[Markdown](../../../../docs/assets/benchmarks/onity-native-lifecycle-6a15305-2026-09-23.md),
+and [provenance](../../../../docs/assets/benchmarks/onity-native-lifecycle-6a15305-2026-09-23.provenance.json).
+The 64 KiB/empty allocation controls passed (65,568 B/0 B). Compared with the
+`956e5cb` baseline using the same operations, Onity one-observer sharing fell
+from 904 to 792 B/task and four-observer sharing fell from 1,008 to 896 B/task.
+Ordinary native awaiting rose from 656 to 672 B/task. These Profiler values
+cover the main-thread marker; the four-observer UniTask AsTask path may do
+unmeasured work on another thread. Timing samples are from separate Editor
+processes and do not isolate the candidate's effect.
+
+The candidate's narrow conversion [JSON](../../../../docs/assets/benchmarks/onity-preserve-native-6a15305-2026-09-23.json),
+[CSV](../../../../docs/assets/benchmarks/onity-preserve-native-6a15305-2026-09-23.csv),
+[Markdown](../../../../docs/assets/benchmarks/onity-preserve-native-6a15305-2026-09-23.md),
+and [provenance](../../../../docs/assets/benchmarks/onity-preserve-native-6a15305-2026-09-23.provenance.json)
+show Onity pending Preserve conversion falling from 248 to 120 B/task;
+UniTask Preserve and AsTask remained 40 and 104 B/task. All two-late-read
+allocation samples were zero. A separate calibrated [callstack report](../../../../docs/assets/benchmarks/onity-preserve-native-6a15305-allocation-callstacks-2026-09-23.json)
+and [provenance](../../../../docs/assets/benchmarks/onity-preserve-native-6a15305-allocation-callstacks-2026-09-23.provenance.json)
+attribute all 120 B/task of Onity conversion to one allocation site. The
+bound callback allocation site recorded for `956e5cb` is absent. The 16 B/task
+ordinary native-await regression remains a release concern for this candidate.

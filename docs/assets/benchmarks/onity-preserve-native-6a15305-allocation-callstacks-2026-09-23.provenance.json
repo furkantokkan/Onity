@@ -1,0 +1,22 @@
+{
+  "suite": "Native OnityTask Preserve conversion allocation callstacks",
+  "benchmarkBranch": "benchmark/onitytask-preserve",
+  "benchmarkHostBaseCommit": "dd2e771",
+  "candidateSourceCommit": "6a15305edfc0cf8e5cd1bba8afac4dc00fb5a8bc",
+  "candidateOnityAsyncGitBlob": "40dfab9ca4ea44b8a058e6154b19d0c0c3480fa7",
+  "candidateCompletionSourceGitBlob": "834c132d568d74ab40e5421d56570ec0539100c6",
+  "benchmarkRunnerGitBlob": "d2dcf35cb87b16b19ece97d92ca8be5a8a0940a5",
+  "benchmarkMenuGitBlob": "f95ed8b8ed2ddfbc7bc871a6c15e253b286b5dc4",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "One diagnostic GC.Alloc callstack sample of 256 pending native Preserve conversions for each library and consumer case. Source construction, callback delivery, and result consumption are outside the marker. Attribution is diagnostic; the separate eight-sample comparison is the measurement source.",
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "attribution": "Every case's callstack bytes sum to its measured sample bytes. Onity conversion has one 30,720 B callstack (120 B/task); the prior bound callback allocation callstack is absent. Source-level object interpretation is inferred, while Profiler stack bytes are measured.",
+  "attributionReport": "onity-preserve-native-6a15305-allocation-callstacks-2026-09-23.json",
+  "reportSha256": "1021F40DF98525CF6CBDBDC8CC7C2AA7D40AD933E502D2E72616D9D03A78E1B5",
+  "scope": "Unity Editor/Mono allocation attribution for conversion only; not complete lifecycle, Player IL2CPP, or an overall library comparison."
+}

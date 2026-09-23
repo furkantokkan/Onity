@@ -1,0 +1,219 @@
+{
+    "schemaVersion": 1,
+    "suite": "Native OnityTask sharing lifecycle",
+    "generatedAtUtc": "2026-09-23T18:03:19.9430175Z",
+    "allocationGeneratedAtUtc": "2026-09-23T18:04:15.0144658Z",
+    "unityVersion": "2022.3.62f3",
+    "scriptingBackend": "Editor Mono",
+    "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+    "onityRuntimeCommit": "6a15305edfc0cf8e5cd1bba8afac4dc00fb5a8bc",
+    "operationsPerSample": 256,
+    "timingBatchesPerSample": 16,
+    "timingOperationsPerSample": 4096,
+    "allocationOperationsPerSample": 256,
+    "samplesPerCase": 8,
+    "warmupBatches": 2,
+    "scope": "One pending native WhenAny<int> task per operation, built from two fresh completion-source inputs. Full sharing cases include input and native source construction, Preserve or AsTask conversion, pending callback registration, winner completion and callback dispatch, one GetResult per observer, two late result reads, and loser completion. The unshared native await case includes the same input and native source construction, one pending callback, winner completion and dispatch, one GetResult, and loser completion; it does not convert or read the result again. One observer compares Preserve with Preserve; four observers compare OnityTask.Preserve with UniTask.AsTask (.NET Task). Preallocated runner arrays, source verification, and cleanup are outside the measured operation; UniTask's two-input WhenAny params array is inside. Callback wait is inside. Profiler allocation samples cover the marked main-thread work; .NET Task callbacks may run on another thread outside that allocation marker. Samples retain harness overhead; no baseline subtraction or overall winner is inferred.",
+    "emptyHarnessNanosecondsPerOperation": 7.025146484375,
+    "emptyHarnessSampleNanosecondsPerOperation": [
+        6.6162109375,
+        6.2744140625,
+        6.25,
+        6.2744140625,
+        6.25,
+        6.25,
+        6.6162109375,
+        11.669921875
+    ],
+    "emptyHarnessAllocatedBytes": 0,
+    "emptyHarnessSampleAllocatedBytes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+    ],
+    "allocationsAvailable": true,
+    "allocationCounter": "Unity Profiler GC.Alloc metadata; 64 KiB and empty controls passed.",
+    "positiveControlBytes": 65568,
+    "emptyControlBytes": 0,
+    "scenarios": [
+        {
+            "stage": 9,
+            "stageName": "PreserveFullLifecycle",
+            "typed": true,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask.Preserve",
+                    "meanNanosecondsPerOperation": 2726.5106201171875,
+                    "bytesPerOperation": 792.0,
+                    "sampleNanosecondsPerOperation": [
+                        2912.2802734375,
+                        2452.6123046875,
+                        2910.693359375,
+                        2733.8623046875,
+                        2622.0458984375,
+                        2724.755859375,
+                        2816.6259765625,
+                        2639.208984375
+                    ],
+                    "sampleAllocatedBytes": [
+                        202752,
+                        202752,
+                        202752,
+                        202752,
+                        202752,
+                        202752,
+                        202752,
+                        202752
+                    ]
+                },
+                {
+                    "library": "UniTask.Preserve",
+                    "meanNanosecondsPerOperation": 2075.933837890625,
+                    "bytesPerOperation": 344.0,
+                    "sampleNanosecondsPerOperation": [
+                        1966.455078125,
+                        1846.3134765625,
+                        2203.271484375,
+                        2276.513671875,
+                        1962.5732421875,
+                        2038.18359375,
+                        2235.5224609375,
+                        2078.6376953125
+                    ],
+                    "sampleAllocatedBytes": [
+                        88064,
+                        88064,
+                        88064,
+                        88064,
+                        88064,
+                        88064,
+                        88064,
+                        88064
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 9,
+            "stageName": "PreserveFullLifecycle",
+            "typed": true,
+            "consumers": 4,
+            "results": [
+                {
+                    "library": "OnityTask.Preserve",
+                    "meanNanosecondsPerOperation": 3954.72412109375,
+                    "bytesPerOperation": 896.0,
+                    "sampleNanosecondsPerOperation": [
+                        4855.126953125,
+                        4233.8623046875,
+                        3545.703125,
+                        3704.6142578125,
+                        3631.4453125,
+                        3869.1650390625,
+                        4279.2236328125,
+                        3518.65234375
+                    ],
+                    "sampleAllocatedBytes": [
+                        229376,
+                        229376,
+                        229376,
+                        229376,
+                        229376,
+                        229376,
+                        229376,
+                        229376
+                    ]
+                },
+                {
+                    "library": "UniTask.AsTask",
+                    "meanNanosecondsPerOperation": 21780.5419921875,
+                    "bytesPerOperation": 665.125,
+                    "sampleNanosecondsPerOperation": [
+                        22180.17578125,
+                        22572.4853515625,
+                        20564.7216796875,
+                        21130.8349609375,
+                        22122.607421875,
+                        20866.8701171875,
+                        22862.2314453125,
+                        21944.4091796875
+                    ],
+                    "sampleAllocatedBytes": [
+                        170272,
+                        170272,
+                        170272,
+                        170272,
+                        170272,
+                        170272,
+                        170272,
+                        170272
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 10,
+            "stageName": "NativeAwaitLifecycle",
+            "typed": true,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask native await",
+                    "meanNanosecondsPerOperation": 2415.3472900390625,
+                    "bytesPerOperation": 672.0,
+                    "sampleNanosecondsPerOperation": [
+                        2047.6318359375,
+                        3292.919921875,
+                        1959.5703125,
+                        2059.08203125,
+                        3259.9853515625,
+                        2007.177734375,
+                        1969.8974609375,
+                        2726.513671875
+                    ],
+                    "sampleAllocatedBytes": [
+                        172032,
+                        172032,
+                        172032,
+                        172032,
+                        172032,
+                        172032,
+                        172032,
+                        172032
+                    ]
+                },
+                {
+                    "library": "UniTask native await",
+                    "meanNanosecondsPerOperation": 2141.7388916015625,
+                    "bytesPerOperation": 304.0,
+                    "sampleNanosecondsPerOperation": [
+                        1755.0537109375,
+                        2790.771484375,
+                        1695.6298828125,
+                        1856.15234375,
+                        2874.0478515625,
+                        1910.302734375,
+                        1768.359375,
+                        2483.59375
+                    ],
+                    "sampleAllocatedBytes": [
+                        77824,
+                        77824,
+                        77824,
+                        77824,
+                        77824,
+                        77824,
+                        77824,
+                        77824
+                    ]
+                }
+            ]
+        }
+    ]
+}

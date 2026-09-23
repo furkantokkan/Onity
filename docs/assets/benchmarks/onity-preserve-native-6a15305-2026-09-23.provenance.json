@@ -1,0 +1,31 @@
+{
+  "suite": "OnityTask Preserve vs UniTask sharing",
+  "benchmarkBranch": "benchmark/onitytask-preserve",
+  "benchmarkHostBaseCommit": "dd2e771",
+  "candidateSourceCommit": "6a15305edfc0cf8e5cd1bba8afac4dc00fb5a8bc",
+  "candidateSourceGitBlobs": {
+    "OnityAsync.cs": "40dfab9ca4ea44b8a058e6154b19d0c0c3480fa7",
+    "OnityTaskCompletionSource.cs": "834c132d568d74ab40e5421d56570ec0539100c6"
+  },
+  "benchmarkRunnerGitBlob": "d2dcf35cb87b16b19ece97d92ca8be5a8a0940a5",
+  "benchmarkMenuGitBlob": "f95ed8b8ed2ddfbc7bc871a6c15e253b286b5dc4",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "Pending native WhenAny<int> sources; conversion and two late result reads are separate synchronous slices. Source construction, pending callback registration, completion, and first consumption are outside each slice.",
+  "sourceKindCheck": "The runner reflected the OnityTask<int> state and required OnityWhenAnyTaskSource.",
+  "samplesPerCase": 8,
+  "timingOperationsPerSample": 4096,
+  "allocationOperationsPerSample": 256,
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "priorCandidateReport": "onity-preserve-native-956e5cb-2026-09-23.json",
+  "priorCandidateReportSha256": "D8F15F0B76DE4CFB828B8AB2E46A9DE815BBC164D3888D5B30E90F0538EEC3F5",
+  "timingAndAllocationReport": "onity-preserve-native-6a15305-2026-09-23.json",
+  "reportSha256": "0945ED7CAA4114C3D19011C4CBCB8EE47B61E94AD8665B8B681CF7429659876C",
+  "csvSha256": "12913BD3E22F573DD1C05FFA563EC071C85339EC0FFC5F69827563E1D0859B41",
+  "markdownSha256": "0EDD74DA0617D6F5E83E9FB79B623A4A3C470838EE16233DF1D2C8BBE451CA74",
+  "scope": "Calibrated conversion allocation fell from 248 to 120 B/task; the removed bound callback delegate accounts for the 128 B difference in the pinned source. UniTask Preserve and AsTask allocated 40 and 104 B/task in this slice. Late reads allocated zero. Timing is a separate-process comparison and cannot isolate the source change."
+}

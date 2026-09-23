@@ -1354,7 +1354,7 @@ namespace Onity.Benchmarks
         private const string k_scopePrefix = "Onity.CompletionSource.Allocation.";
         private const string k_pinnedUniTaskCommit = "2e993ff18f28c931602a07292df0b0804eebef99";
         private const string k_onityRuntimeCommit = "a7c7c9c07867a0f2a20a0b817ca0482e75b77795";
-        private const string k_preserveRuntimeCommit = "956e5cb356cdce0b324bfdad5242ac3c2b537a97";
+        private const string k_preserveRuntimeCommit = "6a15305edfc0cf8e5cd1bba8afac4dc00fb5a8bc";
 
         private static bool s_isRunning;
         private static int s_callbacks;
@@ -1755,8 +1755,11 @@ namespace Onity.Benchmarks
                 + "one pending callback, winner completion and dispatch, one GetResult, and loser completion; "
                 + "it does not convert or read the result again. One observer compares Preserve with Preserve; "
                 + "four observers compare OnityTask.Preserve with UniTask.AsTask (.NET Task). "
-                + "Array storage, runner setup, and cleanup are outside the measured operation. "
-                + "Samples retain harness overhead; no baseline subtraction or overall winner is inferred.";
+                + "Preallocated runner arrays, source verification, and cleanup are outside the measured "
+                + "operation; UniTask's two-input WhenAny params array is inside. Callback wait is inside. "
+                + "Profiler allocation samples cover the marked main-thread work; .NET Task callbacks may "
+                + "run on another thread outside that allocation marker. Samples retain harness overhead; "
+                + "no baseline subtraction or overall winner is inferred.";
             report.scenarios = new CompletionScenario[3];
             for (int index = 0; index < report.scenarios.Length; index++)
             {

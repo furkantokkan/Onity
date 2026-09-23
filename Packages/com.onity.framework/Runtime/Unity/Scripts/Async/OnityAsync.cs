@@ -1253,6 +1253,11 @@ namespace Onity.Unity.Async
         T GetResult(int token);
     }
 
+    internal interface IOnityStatefulTaskSource
+    {
+        void OnCompleted(Action<object> continuation, object state, int token);
+    }
+
     internal interface IOnityTaskTickSource
     {
         int Version { get; }
@@ -1282,9 +1287,26 @@ namespace Onity.Unity.Async
                 Debug.LogException(exception);
             }
         }
+
+        public static void Invoke(Action<object> continuation, object state)
+        {
+            if (continuation == null)
+            {
+                return;
+            }
+
+            try
+            {
+                continuation(state);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+        }
     }
 
-    internal abstract class OnityTaskSourceBase : IOnityTaskSource
+    internal abstract class OnityTaskSourceBase : IOnityTaskSource, IOnityStatefulTaskSource
     {
         private const int k_noConsumption = 0;
         private const int k_nativeConsumption = 1;
@@ -1293,6 +1315,8 @@ namespace Onity.Unity.Async
         private static readonly Action<object> s_cancelCallback = CancelFromToken;
 
         private Action m_continuation;
+        private Action<object> m_statefulContinuation;
+        private object m_continuationState;
         private TaskCompletionSource<bool> m_taskCompletionSource;
         private CancellationTokenRegistration m_cancellationRegistration;
         private CancellationToken m_cancellationToken;
@@ -1417,6 +1441,43 @@ namespace Onity.Unity.Async
             }
         }
 
+        public void OnCompleted(Action<object> continuation, object state, int token)
+        {
+            if (continuation == null)
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
+
+            bool invokeNow;
+            lock (this)
+            {
+                ValidateToken(token);
+
+                if (m_consumed != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (m_consumptionMode != k_noConsumption)
+                {
+                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
+                }
+
+                m_consumptionMode = k_nativeConsumption;
+                invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
+                if (!invokeNow)
+                {
+                    m_statefulContinuation = continuation;
+                    m_continuationState = state;
+                }
+            }
+
+            if (invokeNow)
+            {
+                continuation(state);
+            }
+        }
+
         public void GetResult(int token)
         {
             Exception exception;
@@ -1467,6 +1528,8 @@ namespace Onity.Unity.Async
             lock (this)
             {
                 m_continuation = null;
+                m_statefulContinuation = null;
+                m_continuationState = null;
                 m_taskCompletionSource = null;
                 m_cancellationToken = cancellationToken;
                 m_exception = null;
@@ -1519,6 +1582,8 @@ namespace Onity.Unity.Async
         private bool TrySetStatus(OnityTaskSourceStatus status, Exception exception)
         {
             Action continuation;
+            Action<object> statefulContinuation;
+            object continuationState;
             TaskCompletionSource<bool> taskCompletionSource;
             bool releaseSource;
 
@@ -1531,8 +1596,12 @@ namespace Onity.Unity.Async
 
                 m_exception = exception;
                 continuation = m_continuation;
+                statefulContinuation = m_statefulContinuation;
+                continuationState = m_continuationState;
                 taskCompletionSource = m_taskCompletionSource;
                 m_continuation = null;
+                m_statefulContinuation = null;
+                m_continuationState = null;
                 m_cancellationRegistration.Dispose();
                 m_cancellationRegistration = default;
                 Volatile.Write(ref m_status, (int)status);
@@ -1550,7 +1619,14 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
 
-            OnityTaskContinuation.Invoke(continuation);
+            if (statefulContinuation == null)
+            {
+                OnityTaskContinuation.Invoke(continuation);
+            }
+            else
+            {
+                OnityTaskContinuation.Invoke(statefulContinuation, continuationState);
+            }
             return true;
         }
 
@@ -1630,7 +1706,7 @@ namespace Onity.Unity.Async
         }
     }
 
-    internal abstract class OnityTaskSourceBase<T> : IOnityTaskSource<T>
+    internal abstract class OnityTaskSourceBase<T> : IOnityTaskSource<T>, IOnityStatefulTaskSource
     {
         private const int k_noConsumption = 0;
         private const int k_nativeConsumption = 1;
@@ -1639,6 +1715,8 @@ namespace Onity.Unity.Async
         private static readonly Action<object> s_cancelCallback = CancelFromToken;
 
         private Action m_continuation;
+        private Action<object> m_statefulContinuation;
+        private object m_continuationState;
         private TaskCompletionSource<T> m_taskCompletionSource;
         private CancellationTokenRegistration m_cancellationRegistration;
         private CancellationToken m_cancellationToken;
@@ -1764,6 +1842,43 @@ namespace Onity.Unity.Async
             }
         }
 
+        public void OnCompleted(Action<object> continuation, object state, int token)
+        {
+            if (continuation == null)
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
+
+            bool invokeNow;
+            lock (this)
+            {
+                ValidateToken(token);
+
+                if (m_consumed != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (m_consumptionMode != k_noConsumption)
+                {
+                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
+                }
+
+                m_consumptionMode = k_nativeConsumption;
+                invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
+                if (!invokeNow)
+                {
+                    m_statefulContinuation = continuation;
+                    m_continuationState = state;
+                }
+            }
+
+            if (invokeNow)
+            {
+                continuation(state);
+            }
+        }
+
         public T GetResult(int token)
         {
             Exception exception;
@@ -1823,6 +1938,8 @@ namespace Onity.Unity.Async
             lock (this)
             {
                 m_continuation = null;
+                m_statefulContinuation = null;
+                m_continuationState = null;
                 m_taskCompletionSource = null;
                 m_cancellationToken = cancellationToken;
                 m_exception = null;
@@ -1882,6 +1999,8 @@ namespace Onity.Unity.Async
         private bool TrySetStatus(OnityTaskSourceStatus status, T result, Exception exception)
         {
             Action continuation;
+            Action<object> statefulContinuation;
+            object continuationState;
             TaskCompletionSource<T> taskCompletionSource;
             bool releaseSource;
 
@@ -1895,8 +2014,12 @@ namespace Onity.Unity.Async
                 m_result = result;
                 m_exception = exception;
                 continuation = m_continuation;
+                statefulContinuation = m_statefulContinuation;
+                continuationState = m_continuationState;
                 taskCompletionSource = m_taskCompletionSource;
                 m_continuation = null;
+                m_statefulContinuation = null;
+                m_continuationState = null;
                 m_cancellationRegistration.Dispose();
                 m_cancellationRegistration = default;
                 Volatile.Write(ref m_status, (int)status);
@@ -1914,7 +2037,14 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
 
-            OnityTaskContinuation.Invoke(continuation);
+            if (statefulContinuation == null)
+            {
+                OnityTaskContinuation.Invoke(continuation);
+            }
+            else
+            {
+                OnityTaskContinuation.Invoke(statefulContinuation, continuationState);
+            }
             return true;
         }
 

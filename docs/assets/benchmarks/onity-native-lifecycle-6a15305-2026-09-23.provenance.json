@@ -1,0 +1,38 @@
+{
+  "suite": "Native OnityTask sharing lifecycle",
+  "benchmarkBranch": "benchmark/onitytask-preserve",
+  "benchmarkHostBaseCommit": "dd2e771",
+  "candidateSourceCommit": "6a15305edfc0cf8e5cd1bba8afac4dc00fb5a8bc",
+  "candidateSourcePaths": [
+    "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs",
+    "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCompletionSource.cs"
+  ],
+  "candidateSourceGitBlobs": [
+    "40dfab9ca4ea44b8a058e6154b19d0c0c3480fa7",
+    "834c132d568d74ab40e5421d56570ec0539100c6"
+  ],
+  "benchmarkRunnerPath": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs",
+  "benchmarkRunnerGitBlob": "d2dcf35cb87b16b19ece97d92ca8be5a8a0940a5",
+  "benchmarkRunnerChangeFromBaseline": "Only the embedded Onity runtime commit and lifecycle scope wording changed; measured operations, sample sizes, order, and calibration did not change.",
+  "benchmarkMenuGitBlob": "f95ed8b8ed2ddfbc7bc871a6c15e253b286b5dc4",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "Fresh two-input pending typed WhenAny native source construction through winner and loser completion; sharing conversion, pending observers, callback dispatch and wait, one result read per observer, and two late reads are within the measured batch. The ordinary native await regression has one callback and one result, without conversion or late reads. Preallocated runner storage, source-kind verification, and cleanup are outside the batch.",
+  "apiShapeDifference": "Pinned UniTask uses a two-element params array for WhenAny, measured inside the operation; Onity uses a two-argument overload. Four-consumer UniTask AsTask uses .NET Task and ConfigureAwait(false) callbacks, so its measured time includes scheduling and waiting semantics unlike Onity's synchronous callbacks.",
+  "allocationCoverage": "Unity Profiler GC.Alloc samples cover work under a main-thread marker. Four-consumer AsTask callbacks can run on another thread, so allocations from that work may be outside the marker and reported bytes are not total cross-thread lifetime allocations.",
+  "samplesPerCase": 8,
+  "timingOperationsPerSample": 4096,
+  "allocationOperationsPerSample": 256,
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "baselineReport": "onity-native-lifecycle-956e5cb-2026-09-23.json",
+  "baselineReportSha256": "B4113E6FEADA1D588CBAF0701929EB71D9EF8DAB8A315DB0639A82BBFC944770",
+  "timingAndAllocationReport": "onity-native-lifecycle-6a15305-2026-09-23.json",
+  "reportSha256": "49B47C37031F930863DB11A60B1EBEBAD73E1E44CD4986212C0FB6481C53E9DF",
+  "csvSha256": "ABB057B66D8B765F9E9AFCD177D5BDCA6FFE2273B4ACC19EB81B191A9935C3A4",
+  "markdownSha256": "61F3DF7A64E2378B79D44771519819A0D2C5F986FA1BF8A4E874798204B96532",
+  "scope": "The source change structurally removes one bound callback delegate from Preserve conversion but adds two references to pooled native sources. Candidate full-lifecycle main-thread allocations were 112 B lower for sharing and 16 B higher for ordinary native awaiting. These measured bytes do not establish overall performance; separate-process timing is sensitive to concurrent machine load, and Editor/Mono evidence does not prove Player IL2CPP behavior."
+}
