@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   operation with multiple pending or late consumers. The original task is
   claimed once; completed, Task-backed, and completion-source tasks are returned
   without a new retained source.
+- Added a two-input untyped `OnityTask.WhenAll(first, second)` overload. Two
+  already successful inputs are consumed immediately; other states retain the
+  existing `Task.WhenAll` behavior.
 
 ### Improved
 
@@ -31,13 +34,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no .NET task bridge exists. A published bridge still uses the gate to keep
   terminal status ordered after bridge completion; all measured status reads
   remained at 0 B/op.
+- Removed Task bridges from the already successful two-input `WhenAll` path.
+  Calibrated Unity 2022 Editor/Mono scheduling allocation fell from 276 to
+  0 B/op; the pinned UniTask comparison used 128 B/op. Pending calls saved
+  64 B/op by avoiding the `params` input array. Already-completed calls do not
+  add a tracker entry.
 
 ### Tested
 
-- Unity `2022.3.62f3`: EditMode `531/531` and PlayMode `23/23` passed, including
+- Unity `2022.3.62f3`: EditMode `534/534` and PlayMode `23/23` passed, including
   native sharing, fault/cancellation propagation, source reuse, and main-thread
   continuation tests. The final bridge-publication adjustment passed `36/36`
-  focused completion-source EditMode tests.
+  focused completion-source EditMode tests; the two-input `WhenAll` subset
+  passed `7/7`.
 
 ## [0.3.12] - 2026-09-23
 

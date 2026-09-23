@@ -305,6 +305,43 @@ figures do not establish a general speed or allocation lead. The
 and their adjacent provenance files retain the measured boundaries and exact
 source identity. OnityTask still allocates more in these workflows.
 
+### Two-input `WhenAll` experiment
+
+An isolated native-input composition candidate (`a75793f`) passed 546 EditMode
+and 23 PlayMode tests, including Unity-context resumption and fault ordering.
+It was rejected for the product branch because calibrated Unity 2022 Editor/Mono
+scheduling allocations increased in all three measured cases. With Onity's
+tracker disabled, pending two-input calls rose from 608 to 1,248 B/op; UniTask
+used 160 B/op in the same harness. With the tracker enabled, completed-input
+calls rose from 276 to 1,268 B/op, versus UniTask's 128 B/op. Each allocation
+case had eight identical samples and passed 65,568/0 B controls. Timing varied
+between Editor processes, so this experiment does not establish a speed gain.
+The [comparison and raw-evidence links](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-whenall-candidate/docs/assets/benchmarks/onity-whenall-comparison-2026-09-23.md)
+record the exact source and measurement boundaries.
+
+### Completed two-input `WhenAll` fast path
+
+The narrower product change at `a27c14d` returns an already completed task
+when both inputs have succeeded. It leaves pending, faulted, and canceled
+inputs on the existing `Task.WhenAll` path. The same calibrated Unity 2022
+Editor/Mono scheduling harness produced these results:
+
+| Case | Previous Onity B/op | `a27c14d` B/op | UniTask B/op | Previous to current Onity ns/op | UniTask ns/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Pending, tracker on | 1,620 | 1,556 | 160 | 4,179.5 to 4,322.7 | 733.3 |
+| Pending, tracker off | 608 | 544 | 160 | 2,030.4 to 2,087.2 | 742.1 |
+| Both completed, tracker on | 276 | 0 | 128 | 1,469.1 to 115.5 | 330.2 |
+
+All eight allocation samples per case were identical and the 65,568/0 B
+controls passed. A second candidate timing process measured 117.0 ns/op for
+the completed Onity case versus 316.4 ns/op for UniTask; the repeat above
+measured 115.5 versus 330.2 ns/op. The small pending timing differences are
+not a proven speed change across Editor processes. The completed case is a
+scheduling-path result; the marker excludes input creation and full lifetime.
+The [raw comparison](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-whenall-fastpath/docs/assets/benchmarks/onity-whenall-fastpath-comparison-2026-09-23.md)
+and [provenance](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-whenall-fastpath/docs/assets/benchmarks/onity-whenall-fastpath-a27c14d-2026-09-23.provenance.json)
+record the exact product source, benchmark runner, and UniTask commit.
+
 ## Feature coverage
 
 | Capability | OnityTask status |
@@ -312,7 +349,7 @@ source identity. OnityTask still allocates more in these workflows.
 | Frame, fixed-frame, and late-frame waits; scaled and unscaled delays; predicate waits | Available with cancellation and single-consumer pooled sources. |
 | Scene, `AsyncOperation`, and web-request bridges | Available. Deferred scene loads require the caller to activate a started operation, even after cancellation. |
 | `async OnityTask<T>` with synchronous success | Stores the result inline. Suspended and exceptional methods still use .NET `Task` internals. |
-| `WhenAll` | Available, including typed ordered results; currently materializes inputs as .NET Tasks. |
+| `WhenAll` | Available, including typed ordered results. Already successful two-input untyped calls complete without Task bridges; pending/faulted/canceled inputs and other shapes use Task bridging. |
 | Native `WhenAny` | Available for two untyped inputs; consumes both without canceling the loser. Its source and two delegates allocate per call. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
 | Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. Pending typed conversion measured 120 B/task in Editor/Mono at `c2f9358`; see the follow-up above. |

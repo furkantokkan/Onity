@@ -110,10 +110,15 @@ frame in Play Mode. `DelayFrames(0)` completes immediately. Negative frame
 counts throw `ArgumentOutOfRangeException`. Positive `Delay` and `DelayUnscaled`
 waits also skip the frame in which they are scheduled in Play Mode.
 
-`WhenAll` currently materializes its inputs as .NET `Task` values. Likewise,
-methods declared `async OnityTask` use .NET's async method builder internally.
-The two-input `WhenAny` uses a native result source, but currently allocates
-that source and two continuation delegates per call.
+Two successful, already completed inputs to the untyped
+`WhenAll(first, second)` are consumed immediately and return the completed
+task without .NET task bridges or a tracker entry. Pending, faulted, and
+canceled inputs still use
+the .NET `Task.WhenAll` path. Typed calls and untyped calls with other input
+counts also materialize their inputs as .NET `Task` values. Methods declared
+`async OnityTask` use .NET's async method builder internally. The two-input
+`WhenAny` uses a native result source, but currently allocates that source and
+two continuation delegates per call.
 Use the pooled frame, delay, predicate, and `AsyncOperation` waits directly in
 hot paths; do not assume every OnityTask composition is allocation-free.
 
