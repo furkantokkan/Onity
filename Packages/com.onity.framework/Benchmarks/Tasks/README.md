@@ -460,7 +460,8 @@ are completed and the result is consumed and checked after the marker. This
 excludes completion callbacks, continuation dispatch, consumption, and the
 full task lifecycle.
 
-There are two warmup batches per library and scenario, eight raw timing samples
+There are ten warmup batches per library and scenario (enough to fill Onity's
+1,024-entry default tracker), eight raw timing samples
 of 16 batches × 128 operations, and eight raw allocation samples of 128
 operations. Library order alternates by sample. Full GC is outside each
 measured sample. Raw values, mean, median, minimum, maximum, standard

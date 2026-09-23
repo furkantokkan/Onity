@@ -3585,10 +3585,10 @@ namespace Onity.Benchmarks
         private const int k_operations = 128;
         private const int k_samples = 8;
         private const int k_timingBatches = 16;
-        private const int k_warmupBatches = 2;
+        private const int k_warmupBatches = 10;
         private const int k_profilerStartupFrames = 120;
         private const int k_profilerReadFrames = 60;
-        private const int k_harnessVersion = 1;
+        private const int k_harnessVersion = 2;
         private const string k_uniTaskCommit = "2e993ff18f28c931602a07292df0b0804eebef99";
         private const string k_scopePrefix = "Onity.WhenAll.Allocation.";
         private const string k_runtimePath =
