@@ -136,9 +136,9 @@ namespace Onity.Tests.EditMode
             {
                 TaskCompletionSource<bool> first = NewCompletionSource();
                 TaskCompletionSource<bool> second = NewCompletionSource();
-                OnityTask<int> race = OnityTask.WhenAny(
+                OnityTask<int> race = await Task.Run(() => OnityTask.WhenAny(
                     OnityTask.FromTask(first.Task),
-                    OnityTask.FromTask(second.Task));
+                    OnityTask.FromTask(second.Task)));
                 Task<int> resultTask = race.AsTask();
 
                 await Task.WhenAll(
