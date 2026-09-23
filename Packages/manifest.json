@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
     "com.unity.inputsystem": "1.19.0",
     "com.unity.entities": "1.4.8",
     "com.unity.burst": "1.8.29",
