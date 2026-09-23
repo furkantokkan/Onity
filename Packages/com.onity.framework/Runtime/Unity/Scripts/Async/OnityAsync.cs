@@ -2413,6 +2413,9 @@ namespace Onity.Unity.Async
     public struct OnityTaskMethodBuilder<T>
     {
         private AsyncTaskMethodBuilder<T> m_builder;
+        private T m_result;
+        private bool m_hasResult;
+        private bool m_suspended;
 
         /// <summary>
         /// Creates a typed method builder.
@@ -2429,7 +2432,9 @@ namespace Onity.Unity.Async
         /// <summary>
         /// Gets the task controlled by this builder.
         /// </summary>
-        public OnityTask<T> Task => OnityTask<T>.FromTask(m_builder.Task);
+        public OnityTask<T> Task => m_hasResult
+            ? OnityTask<T>.FromResult(m_result)
+            : OnityTask<T>.FromTask(m_builder.Task);
 
         /// <summary>
         /// Starts the async state machine.
@@ -2464,6 +2469,7 @@ namespace Onity.Unity.Async
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
+            m_suspended = true;
             m_builder.AwaitOnCompleted(ref awaiter, ref stateMachine);
         }
 
@@ -2480,6 +2486,7 @@ namespace Onity.Unity.Async
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
+            m_suspended = true;
             m_builder.AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine);
         }
 
@@ -2489,7 +2496,14 @@ namespace Onity.Unity.Async
         /// <param name="result">Async method result.</param>
         public void SetResult(T result)
         {
-            m_builder.SetResult(result);
+            if (m_suspended)
+            {
+                m_builder.SetResult(result);
+                return;
+            }
+
+            m_result = result;
+            m_hasResult = true;
         }
 
         /// <summary>
