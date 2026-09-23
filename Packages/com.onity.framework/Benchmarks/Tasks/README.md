@@ -88,8 +88,8 @@ responsive host because a heavily throttled Editor may still hit that limit.
 
 Results compare these specific primitives, async-method slices and workloads.
 An Editor result is not an IL2CPP player result. Timing noise and pool retention
-differences must be considered before making a comparison claim. No new benchmark
-results are bundled with this harness change.
+differences must be considered before making a comparison claim. The eight-sample
+result and the short diagnostic report below are separate artifacts.
 
 ## Experimental builder allocation attribution
 
