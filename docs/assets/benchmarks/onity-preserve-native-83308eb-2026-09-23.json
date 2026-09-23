@@ -1,0 +1,277 @@
+{
+    "schemaVersion": 1,
+    "suite": "OnityTask Preserve vs UniTask sharing",
+    "generatedAtUtc": "2026-09-23T17:03:11.7921237Z",
+    "allocationGeneratedAtUtc": "2026-09-23T17:05:30.0861754Z",
+    "unityVersion": "2022.3.62f3",
+    "scriptingBackend": "Editor Mono",
+    "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+    "onityRuntimeCommit": "83308ebb20cfbc4100d43b9c18521356292158c9",
+    "operationsPerSample": 256,
+    "timingBatchesPerSample": 16,
+    "timingOperationsPerSample": 4096,
+    "allocationOperationsPerSample": 256,
+    "samplesPerCase": 8,
+    "warmupBatches": 2,
+    "scope": "Pending native WhenAny<int> sources with two unresolved completion-source inputs. Only conversion or two late result reads are measured; input creation, pending callback registration, source completion, and first consumption are outside each slice. One-consumer cases compare Preserve with Preserve. Four-consumer cases compare OnityTask.Preserve with UniTask.AsTask, which returns a .NET Task. The pending callbacks and repeated results are checked after each batch. Samples retain harness overhead; no baseline subtraction or overall winner is inferred.",
+    "emptyHarnessNanosecondsPerOperation": 11.419677734375,
+    "emptyHarnessSampleNanosecondsPerOperation": [
+        12.5732421875,
+        11.9384765625,
+        11.767578125,
+        11.5966796875,
+        11.8408203125,
+        10.9619140625,
+        10.4248046875,
+        10.25390625
+    ],
+    "emptyHarnessAllocatedBytes": 0,
+    "emptyHarnessSampleAllocatedBytes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+    ],
+    "allocationsAvailable": true,
+    "allocationCounter": "Unity Profiler GC.Alloc metadata; 64 KiB and empty controls passed.",
+    "positiveControlBytes": 65568,
+    "emptyControlBytes": 0,
+    "scenarios": [
+        {
+            "stage": 7,
+            "stageName": "PreserveConversion",
+            "typed": true,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask.Preserve",
+                    "meanNanosecondsPerOperation": 1402.6214599609375,
+                    "bytesPerOperation": 264.0,
+                    "sampleNanosecondsPerOperation": [
+                        1109.423828125,
+                        1451.4892578125,
+                        1246.58203125,
+                        1066.064453125,
+                        1894.6044921875,
+                        1815.576171875,
+                        1148.4619140625,
+                        1488.76953125
+                    ],
+                    "sampleAllocatedBytes": [
+                        67584,
+                        67584,
+                        67584,
+                        67584,
+                        67584,
+                        67584,
+                        67584,
+                        67584
+                    ]
+                },
+                {
+                    "library": "UniTask.Preserve",
+                    "meanNanosecondsPerOperation": 443.7286376953125,
+                    "bytesPerOperation": 40.0,
+                    "sampleNanosecondsPerOperation": [
+                        325.87890625,
+                        406.25,
+                        439.599609375,
+                        357.6171875,
+                        428.22265625,
+                        595.751953125,
+                        671.0693359375,
+                        325.439453125
+                    ],
+                    "sampleAllocatedBytes": [
+                        10240,
+                        10240,
+                        10240,
+                        10240,
+                        10240,
+                        10240,
+                        10240,
+                        10240
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 8,
+            "stageName": "PreserveTwoLateReads",
+            "typed": true,
+            "consumers": 1,
+            "results": [
+                {
+                    "library": "OnityTask.Preserve",
+                    "meanNanosecondsPerOperation": 257.55615234375,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        252.5390625,
+                        214.8193359375,
+                        278.0029296875,
+                        330.56640625,
+                        227.001953125,
+                        278.076171875,
+                        212.7685546875,
+                        266.6748046875
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask.Preserve",
+                    "meanNanosecondsPerOperation": 129.150390625,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        128.8818359375,
+                        97.021484375,
+                        127.83203125,
+                        175.0732421875,
+                        106.8115234375,
+                        130.3466796875,
+                        110.888671875,
+                        156.34765625
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 7,
+            "stageName": "PreserveConversion",
+            "typed": true,
+            "consumers": 4,
+            "results": [
+                {
+                    "library": "OnityTask.Preserve",
+                    "meanNanosecondsPerOperation": 1654.9652099609375,
+                    "bytesPerOperation": 264.0,
+                    "sampleNanosecondsPerOperation": [
+                        1685.44921875,
+                        1548.2177734375,
+                        1414.8681640625,
+                        1379.98046875,
+                        1339.8193359375,
+                        1517.87109375,
+                        2149.6826171875,
+                        2203.8330078125
+                    ],
+                    "sampleAllocatedBytes": [
+                        67584,
+                        67584,
+                        67584,
+                        67584,
+                        67584,
+                        67584,
+                        67584,
+                        67584
+                    ]
+                },
+                {
+                    "library": "UniTask.AsTask",
+                    "meanNanosecondsPerOperation": 1257.452392578125,
+                    "bytesPerOperation": 104.0,
+                    "sampleNanosecondsPerOperation": [
+                        1227.294921875,
+                        1363.4521484375,
+                        1229.931640625,
+                        1108.49609375,
+                        859.7900390625,
+                        1206.640625,
+                        1652.6611328125,
+                        1411.3525390625
+                    ],
+                    "sampleAllocatedBytes": [
+                        26624,
+                        26624,
+                        26624,
+                        26624,
+                        26624,
+                        26624,
+                        26624,
+                        26624
+                    ]
+                }
+            ]
+        },
+        {
+            "stage": 8,
+            "stageName": "PreserveTwoLateReads",
+            "typed": true,
+            "consumers": 4,
+            "results": [
+                {
+                    "library": "OnityTask.Preserve",
+                    "meanNanosecondsPerOperation": 246.2890625,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        269.873046875,
+                        279.00390625,
+                        216.2109375,
+                        215.8447265625,
+                        298.9990234375,
+                        243.115234375,
+                        221.3134765625,
+                        225.9521484375
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "library": "UniTask.AsTask",
+                    "meanNanosecondsPerOperation": 126.300048828125,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        123.5595703125,
+                        153.4912109375,
+                        113.3544921875,
+                        114.35546875,
+                        154.7607421875,
+                        126.0986328125,
+                        111.328125,
+                        113.4521484375
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ]
+        }
+    ]
+}

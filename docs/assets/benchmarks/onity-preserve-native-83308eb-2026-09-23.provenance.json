@@ -1,0 +1,30 @@
+{
+  "suite": "OnityTask Preserve vs UniTask sharing",
+  "benchmarkBranch": "benchmark/onitytask-preserve",
+  "benchmarkHostCommit": "83308ebb20cfbc4100d43b9c18521356292158c9",
+  "onityRuntimeCommit": "83308ebb20cfbc4100d43b9c18521356292158c9",
+  "onityAsyncPath": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs",
+  "onityAsyncGitBlob": "1de7f38332b01b7d68016c78ab1fb4b580b5a3a8",
+  "onityCompletionSourcePath": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCompletionSource.cs",
+  "onityCompletionSourceGitBlob": "e7c55d233f1b82a2bdcec35c407eb8518c302e7e",
+  "benchmarkRunnerPath": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs",
+  "benchmarkRunnerGitBlob": "91ed0c50ee11237fd50b72346f0bbb30dbb5662a",
+  "benchmarkMenuGitBlob": "188f383af81143d7194cafd1fd8281e6864eefde",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "Pending typed WhenAny native sources; conversion and two late reads are separate synchronous slices. Source construction, four pending callback registrations, completion and first consumption are outside slices.",
+  "sourceKindCheck": "The runner reflected the OnityTask<int> state and required OnityWhenAnyTaskSource.",
+  "samplesPerCase": 8,
+  "timingOperationsPerSample": 4096,
+  "allocationOperationsPerSample": 256,
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "timingAndAllocationReport": "onity-preserve-native-83308eb-2026-09-23.json",
+  "reportSha256": "BEAC6B1A67EA41735429037B84F1A25FA263C40240CFA099667F283582857CEA",
+  "csvSha256": "1F7D9DBE4A1D37958B91158A4A63A41D544A1B4A3F03F625DE1A0144CB9F9E63",
+  "markdownSha256": "1DA7C049408729237C8AABA0C1BDA6AF5855512A7A3D6B64F92818A16AEF0DC4",
+  "scope": "Unity Editor/Mono synchronous slices under concurrent machine activity. The four-consumer UniTask comparator is AsTask and returns Task<int>. This report does not establish complete lifecycle, device, IL2CPP or overall performance."
+}

@@ -1,0 +1,32 @@
+{
+  "suite": "OnityTask Preserve vs UniTask sharing",
+  "benchmarkBranch": "benchmark/onitytask-preserve",
+  "benchmarkHostBaseCommit": "83308ebb20cfbc4100d43b9c18521356292158c9",
+  "candidateSourceCommit": "0f1782236c43fb89a4ba630f3c7e5a020f0be30e",
+  "candidateSourcePath": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCompletionSource.cs",
+  "candidateSourceGitBlob": "447192a970a5a3ccfa74dcd036a3e3af40d8b4d7",
+  "unchangedOnityAsyncGitBlob": "1de7f38332b01b7d68016c78ab1fb4b580b5a3a8",
+  "benchmarkRunnerPath": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs",
+  "benchmarkRunnerGitBlob": "4d80e9526cbf48b72cdb580c24af5c2716ad4752",
+  "benchmarkRunnerChangeFromBaseline": "Only the embedded Onity runtime commit metadata changed; measurement operations and parameters stayed identical.",
+  "benchmarkMenuGitBlob": "188f383af81143d7194cafd1fd8281e6864eefde",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "Pending typed WhenAny native sources; conversion and two late reads are separate synchronous slices. Source construction, pending callback registration, completion and first consumption are outside slices.",
+  "sourceKindCheck": "The runner reflected the OnityTask<int> state and required OnityWhenAnyTaskSource.",
+  "samplesPerCase": 8,
+  "timingOperationsPerSample": 4096,
+  "allocationOperationsPerSample": 256,
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "baselineReport": "onity-preserve-native-83308eb-2026-09-23.json",
+  "baselineReportSha256": "BEAC6B1A67EA41735429037B84F1A25FA263C40240CFA099667F283582857CEA",
+  "timingAndAllocationReport": "onity-preserve-native-0f17822-2026-09-23.json",
+  "reportSha256": "542BB70A6B1B9AA9799C9B5354AFA2F8F6DE3401A104018DC5854ABE6D817BC7",
+  "csvSha256": "77326325AF3AA1BA1F8C632EB0B9EE97DB0907CB7C46AB3AC0297E729AE291F3",
+  "markdownSha256": "90EE296CCDE08CB346DD574704188B79B607112D82766A92D9BA24B4DFEB9758",
+  "scope": "Unity Editor/Mono synchronous slices under concurrent machine activity. The four-consumer UniTask comparator is AsTask and returns Task<int>. Both libraries became faster in the candidate process, so cross-run mean differences do not isolate the source change. This report does not establish complete lifecycle, device, IL2CPP or overall performance."
+}

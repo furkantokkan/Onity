@@ -275,19 +275,9 @@ namespace Onity.Unity.Async
 
         private T GetResult(int token)
         {
-            OnityTaskSourceStatus status;
-            T result;
-            ExceptionDispatchInfo exception;
-            CancellationToken cancellationToken;
-
-            lock (m_gate)
-            {
-                ValidateToken(token);
-                status = (OnityTaskSourceStatus)m_status;
-                result = m_result;
-                exception = m_exception;
-                cancellationToken = m_cancellationToken;
-            }
+            // Completion publishes every outcome field before the terminal status.
+            // GetStatus acquires that publication and waits for an in-flight bridge.
+            OnityTaskSourceStatus status = GetStatus(token);
 
             if (status == OnityTaskSourceStatus.Pending)
             {
@@ -296,16 +286,16 @@ namespace Onity.Unity.Async
 
             if (status == OnityTaskSourceStatus.Canceled)
             {
-                throw new OperationCanceledException(cancellationToken);
+                throw new OperationCanceledException(m_cancellationToken);
             }
 
             if (status == OnityTaskSourceStatus.Faulted)
             {
                 m_unobservedFault?.Observe();
-                exception.Throw();
+                m_exception.Throw();
             }
 
-            return result;
+            return m_result;
         }
 
         private Task<T> GetTaskBridge(int token)
