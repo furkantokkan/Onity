@@ -235,6 +235,66 @@ namespace Onity.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator NextFrame_ScheduledBeforeRunnerUpdate_CompletesOnFollowingFrame()
+        {
+            OnityTask warmupTask = OnityTask.NextFrame();
+            yield return WaitForCompletion(warmupTask);
+            warmupTask.GetAwaiter().GetResult();
+
+            GameObject probeObject = new GameObject("NextFrameUpdateProbe");
+            probeObject.SetActive(false);
+            NextFrameUpdateProbe probe = probeObject.AddComponent<NextFrameUpdateProbe>();
+            probeObject.SetActive(true);
+
+            try
+            {
+                yield return WaitForFlag(() => probe.CompletedFrame >= 0);
+
+                Assert.That(probe.ObservedStartFrame, Is.True);
+                Assert.That(probe.CompletedFrame, Is.EqualTo(probe.StartedFrame + 1),
+                    "NextFrame completed in the Update that scheduled it.");
+
+                probe.ConsumeTask();
+            }
+            finally
+            {
+                UnityEngine.Object.Destroy(probeObject);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator DelayFrames_ScheduledBeforeRunnerUpdate_CompletesAfterRequestedFrames()
+        {
+            OnityTask warmupTask = OnityTask.NextFrame();
+            yield return WaitForCompletion(warmupTask);
+            warmupTask.GetAwaiter().GetResult();
+
+            for (int frameCount = 1; frameCount <= 2; frameCount++)
+            {
+                GameObject probeObject = new GameObject("DelayFramesUpdateProbe");
+                probeObject.SetActive(false);
+                NextFrameUpdateProbe probe = probeObject.AddComponent<NextFrameUpdateProbe>();
+                probe.FrameCount = frameCount;
+                probeObject.SetActive(true);
+
+                try
+                {
+                    yield return WaitForFlag(() => probe.CompletedFrame >= 0);
+
+                    Assert.That(probe.ObservedStartFrame, Is.True);
+                    Assert.That(probe.CompletedFrame, Is.EqualTo(probe.StartedFrame + frameCount),
+                        "DelayFrames completed after the wrong number of rendered frames.");
+
+                    probe.ConsumeTask();
+                }
+                finally
+                {
+                    UnityEngine.Object.Destroy(probeObject);
+                }
+            }
+        }
+
         private static IEnumerator WaitForCompletion(OnityTask task)
         {
             int remainingFrames = k_timeoutFrames;
@@ -273,6 +333,56 @@ namespace Onity.Tests.PlayMode
         {
             await OnityTask.WaitUntil(firstPredicate);
             await OnityTask.WaitUntil(secondPredicate).AsTask();
+        }
+
+        [DefaultExecutionOrder(-32000)]
+        private sealed class NextFrameUpdateProbe : MonoBehaviour
+        {
+            private OnityTask m_task;
+
+            public int FrameCount { get; set; } = -1;
+
+            public int StartedFrame { get; private set; } = -1;
+
+            public int CompletedFrame { get; private set; } = -1;
+
+            public bool ObservedStartFrame { get; private set; }
+
+            public void ConsumeTask()
+            {
+                m_task.GetAwaiter().GetResult();
+            }
+
+            private void Update()
+            {
+                if (StartedFrame >= 0)
+                {
+                    return;
+                }
+
+                StartedFrame = Time.frameCount;
+                m_task = FrameCount < 0
+                    ? OnityTask.NextFrame()
+                    : OnityTask.DelayFrames(FrameCount);
+            }
+
+            private void LateUpdate()
+            {
+                if (StartedFrame < 0 || CompletedFrame >= 0)
+                {
+                    return;
+                }
+
+                if (Time.frameCount == StartedFrame)
+                {
+                    ObservedStartFrame = true;
+                }
+
+                if (m_task.IsCompleted)
+                {
+                    CompletedFrame = Time.frameCount;
+                }
+            }
         }
     }
 }

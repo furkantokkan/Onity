@@ -165,7 +165,7 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
-        /// Awaits one rendered frame.
+        /// Awaits the following rendered frame, never the frame that schedules it.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Completion task.</returns>
@@ -174,6 +174,32 @@ namespace Onity.Unity.Async
             return cancellationToken.IsCancellationRequested
                 ? FromCanceled(cancellationToken)
                 : new OnityTask(OnityFrameTaskSource.Rent(OnityTaskLoopPhase.Update, cancellationToken));
+        }
+
+        /// <summary>
+        /// Awaits the requested number of rendered frames.
+        /// </summary>
+        /// <param name="frameCount">Number of future frames to await. Zero completes immediately.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask DelayFrames(int frameCount, CancellationToken cancellationToken = default)
+        {
+            if (frameCount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(frameCount));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return FromCanceled(cancellationToken);
+            }
+
+            return frameCount == 0
+                ? Completed
+                : new OnityTask(OnityFrameTaskSource.Rent(
+                    OnityTaskLoopPhase.Update,
+                    cancellationToken,
+                    frameCount));
         }
 
         /// <summary>
@@ -367,6 +393,30 @@ namespace Onity.Unity.Async
             }
 
             return FromTask(OnityAsync.WhenAll(taskArray));
+        }
+
+        /// <summary>
+        /// Awaits all typed Onity tasks and returns results in input order.
+        /// Each input task is consumed once.
+        /// </summary>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="tasks">Task list.</param>
+        /// <returns>Ordered task results.</returns>
+        public static OnityTask<T[]> WhenAll<T>(params OnityTask<T>[] tasks)
+        {
+            if (tasks == null)
+            {
+                throw new ArgumentNullException(nameof(tasks));
+            }
+
+            Task<T>[] taskArray = new Task<T>[tasks.Length];
+
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                taskArray[i] = tasks[i].AsTask();
+            }
+
+            return OnityTask<T[]>.FromTask(OnityAsync.WhenAll(taskArray));
         }
 
         /// <summary>
@@ -1969,9 +2019,14 @@ namespace Onity.Unity.Async
 
         private static readonly Stack<OnityFrameTaskSource> s_pool = new Stack<OnityFrameTaskSource>(32);
 
+        private int m_startFrameCount;
+        private int m_remainingFrames;
+        private bool m_waitForNextRenderedFrame;
+
         public static OnityFrameTaskSource Rent(
             OnityTaskLoopPhase phase,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            int frameCount = 1)
         {
             OnityFrameTaskSource source;
             lock (s_pool)
@@ -1980,6 +2035,9 @@ namespace Onity.Unity.Async
             }
 
             source.Reset(cancellationToken);
+            source.m_remainingFrames = frameCount;
+            source.m_waitForNextRenderedFrame = Application.isPlaying && phase == OnityTaskLoopPhase.Update;
+            source.m_startFrameCount = source.m_waitForNextRenderedFrame ? Time.frameCount : 0;
             OnityTaskRunner.Schedule(source, phase);
             return source;
         }
@@ -1991,12 +2049,25 @@ namespace Onity.Unity.Async
                 return true;
             }
 
+            if (m_waitForNextRenderedFrame && Time.frameCount == m_startFrameCount)
+            {
+                return false;
+            }
+
+            m_remainingFrames--;
+            if (m_remainingFrames > 0)
+            {
+                return false;
+            }
+
             TrySetResult();
             return true;
         }
 
         protected override void ReleaseSource()
         {
+            m_remainingFrames = 0;
+            m_waitForNextRenderedFrame = false;
             lock (s_pool)
             {
                 if (s_pool.Count < k_maxPoolSize)

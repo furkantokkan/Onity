@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-09-23
+
+### Added
+
+- Added `OnityTask.DelayFrames` and ordered typed `OnityTask.WhenAll<T>` results
+  for common Unity async flows.
+
+### Fixed
+
+- Made `OnityTask.NextFrame` wait until a later rendered frame even when called
+  from an `Update` callback before the Onity task runner.
+
+### Tested
+
+- Unity `2022.3.62f3`: EditMode `452/452` and PlayMode `15/15` passed.
+- Roslyn analyzer and source-generator tests: `26/26` passed; engine-free core,
+  analyzer, and source-generator Release builds passed; package metadata covered
+  all `228/228` files.
+- An independent code review found no actionable correctness or regression issues.
+- No OnityTask versus UniTask allocation or throughput benchmark was run for
+  this release; typed `WhenAll<T>` uses .NET Task interop and allocates.
+
 ## [0.3.8] - 2026-09-23
 
 ### Fixed
@@ -366,6 +388,7 @@ allocation. The core uses no `System.Linq`.
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.9]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.9
 [0.3.8]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.8
 [0.3.7]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.7
 [0.3.6]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.6

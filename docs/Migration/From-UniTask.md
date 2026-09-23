@@ -17,6 +17,10 @@ waits, delays, predicates, and `AsyncOperation.AsOnityTask()` use PlayerLoop
 sources directly; `Task` remains available through `AsTask()` and legacy interop
 helpers.
 
+OnityTask covers the common Unity flows below; it is not a drop-in replacement
+for UniTask's full API. `async OnityTask` methods and `WhenAll` currently use
+.NET `Task` internally, so equivalent allocation behavior is not guaranteed.
+
 For a task-oriented introduction, read [Async with OnityTask](../guide/onitytask.html).
 
 > **Pooled-task safety:** frame, delay, predicate, and
@@ -42,6 +46,7 @@ using Onity.Unity.Async;
 | `UniTask.CompletedTask` | `OnityTask.CompletedTask` |
 | `UniTask.FromResult(value)` | `OnityTask.FromResult(value)` |
 | `await UniTask.NextFrame(ct)` | `await OnityTask.NextFrame(ct)` |
+| `await UniTask.DelayFrame(count, cancellationToken: ct)` | `await OnityTask.DelayFrames(count, ct)` |
 | `await UniTask.WaitForFixedUpdate(ct)` | `await OnityTask.NextFixedFrame(ct)` |
 | `await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: ct)` | `await OnityTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: ct)` |
 | `await UniTask.WaitUntil(predicate, cancellationToken: ct)` | `await OnityTask.WaitUntil(predicate, ct)` |
@@ -49,6 +54,7 @@ using Onity.Unity.Async;
 | `await asyncOperation.ToUniTask(...)` | `await asyncOperation.AsOnityTask(onProgress, ct)` |
 | `await request.SendWebRequest().ToUniTask(...)` | `await OnityTask.Send(request, onProgress, ct)` |
 | `task.Forget()` | `task.Forget()` |
+| `T[] values = await UniTask.WhenAll(typedTasks)` | `T[] values = await OnityTask.WhenAll(typedTasks)` |
 | `await observable.FirstAsync(ct)` | `await observable.FirstOnityTask(ct)` |
 | `await asyncPublisher.PublishAsync(message, ct).AsTask()` | `await asyncPublisher.PublishOnityTask(message, ct)` |
 
