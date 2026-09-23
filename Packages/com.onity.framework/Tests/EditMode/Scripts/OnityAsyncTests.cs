@@ -444,6 +444,155 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void OnityTask_WhenAllTyped_CompletedInputs_DoNotCreateTrackerEntry()
+        {
+            bool previousTrackingEnabled = OnityTaskTracker.IsEnabled;
+            bool previousStackTraceEnabled = OnityTaskTracker.EnableStackTrace;
+
+            try
+            {
+                OnityTaskTracker.IsEnabled = true;
+                OnityTaskTracker.EnableStackTrace = false;
+                OnityTaskTracker.ClearAll();
+
+                OnityTask<int[]> combined = OnityTask.WhenAll(
+                    OnityTask<int>.FromResult(10),
+                    OnityTask<int>.FromResult(20),
+                    OnityTask<int>.FromResult(30));
+
+                Assert.That(combined.IsCompletedSuccessfully, Is.True);
+                Assert.That(combined.GetAwaiter().GetResult(), Is.EqualTo(new[] { 10, 20, 30 }));
+                List<OnityTrackedTaskInfo> rows = new List<OnityTrackedTaskInfo>();
+                OnityTaskTracker.GetSnapshot(rows);
+                Assert.That(rows, Is.Empty);
+            }
+            finally
+            {
+                OnityTaskTracker.ClearAll();
+                OnityTaskTracker.IsEnabled = previousTrackingEnabled;
+                OnityTaskTracker.EnableStackTrace = previousStackTraceEnabled;
+            }
+        }
+
+        [Test]
+        public void OnityTask_WhenAllTyped_NoInputs_ReturnsEmptyResults()
+        {
+            OnityTask<int[]> combined = OnityTask.WhenAll<int>();
+
+            Assert.That(combined.IsCompletedSuccessfully, Is.True);
+            Assert.That(combined.GetAwaiter().GetResult(), Is.Empty);
+        }
+
+        [Test]
+        public void OnityTask_WhenAllTyped_NullInputs_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(
+                () => OnityTask.WhenAll<int>((OnityTask<int>[])null));
+        }
+
+        [Test]
+        public void OnityTask_WhenAllTyped_OneCompletedInput_ReturnsItsResult()
+        {
+            OnityTask<int[]> combined = OnityTask.WhenAll(OnityTask<int>.FromResult(42));
+
+            Assert.That(combined.IsCompletedSuccessfully, Is.True);
+            Assert.That(combined.GetAwaiter().GetResult(), Is.EqualTo(new[] { 42 }));
+        }
+
+        [Test]
+        public void OnityTask_WhenAllTyped_CompletedNativeInput_IsConsumedOnce()
+        {
+            OnityTask<int> native = OnityTask.WhenAny(OnityTask.Completed, OnityTask.Completed);
+
+            OnityTask<int[]> combined = OnityTask.WhenAll(native);
+
+            Assert.That(combined.GetAwaiter().GetResult(), Is.EqualTo(new[] { 0 }));
+            Assert.Throws<InvalidOperationException>(() => native.GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public void OnityTask_WhenAllTyped_CompletedNativeDuplicate_KeepsFailureBehavior()
+        {
+            OnityTask<int> native = OnityTask.WhenAny(OnityTask.Completed, OnityTask.Completed);
+
+            Assert.Throws<InvalidOperationException>(() => OnityTask.WhenAll(native, native));
+        }
+
+        [Test]
+        public async Task OnityTask_WhenAllTyped_PendingNativeDuplicate_SharesBridge()
+        {
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            OnityTask<int> native = OnityTask.WhenAny(first.Task, second.Task);
+            OnityTask<int[]> combined = OnityTask.WhenAll(native, native);
+
+            first.TrySetResult();
+            second.TrySetResult();
+            int[] results = await combined;
+
+            Assert.That(results, Is.EqualTo(new[] { 0, 0 }));
+        }
+
+        [Test]
+        public void OnityTask_WhenAllTyped_CompletedShareableDuplicate_ReturnsBothResults()
+        {
+            OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
+            source.TrySetResult(17);
+
+            OnityTask<int[]> combined = OnityTask.WhenAll(source.Task, source.Task);
+
+            Assert.That(combined.GetAwaiter().GetResult(), Is.EqualTo(new[] { 17, 17 }));
+        }
+
+        [Test]
+        public void OnityTask_WhenAllTyped_CompletedTaskBackedDuplicate_ReturnsBothResults()
+        {
+            Task<int> task = Task.FromResult(29);
+            OnityTask<int> input = OnityTask<int>.FromTask(task);
+
+            OnityTask<int[]> combined = OnityTask.WhenAll(input, input);
+
+            Assert.That(combined.GetAwaiter().GetResult(), Is.EqualTo(new[] { 29, 29 }));
+        }
+
+        [Test]
+        public void OnityTask_WhenAllTyped_ManyCompletedInputs_PreserveOrder()
+        {
+            OnityTask<int>[] inputs = new OnityTask<int>[64];
+            for (int i = 0; i < inputs.Length; i++)
+            {
+                inputs[i] = OnityTask<int>.FromResult(i);
+            }
+
+            int[] results = OnityTask.WhenAll(inputs).GetAwaiter().GetResult();
+
+            Assert.That(results.Length, Is.EqualTo(inputs.Length));
+            for (int i = 0; i < results.Length; i++)
+            {
+                Assert.That(results[i], Is.EqualTo(i));
+            }
+        }
+
+        [Test]
+        public void OnityTask_WhenAllTyped_ManyInputsWithNativeSource_PreserveOrder()
+        {
+            OnityTask<int>[] inputs = new OnityTask<int>[17];
+            inputs[0] = OnityTask.WhenAny(OnityTask.Completed, OnityTask.Completed);
+            for (int i = 1; i < inputs.Length; i++)
+            {
+                inputs[i] = OnityTask<int>.FromResult(i);
+            }
+
+            int[] results = OnityTask.WhenAll(inputs).GetAwaiter().GetResult();
+
+            Assert.That(results.Length, Is.EqualTo(inputs.Length));
+            for (int i = 0; i < results.Length; i++)
+            {
+                Assert.That(results[i], Is.EqualTo(i));
+            }
+        }
+
+        [Test]
         public void OnityTask_WhenAllTyped_FaultedInputPropagatesException()
         {
             OnityTask<int[]> whenAllTask = OnityTask.WhenAll(

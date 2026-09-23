@@ -471,6 +471,7 @@ namespace Onity.Unity.Async
 
         /// <summary>
         /// Awaits all typed Onity tasks and returns results in input order.
+        /// Eligible already successful inputs are consumed without .NET task bridges.
         /// Each input task is consumed once.
         /// </summary>
         /// <typeparam name="T">Result type.</typeparam>
@@ -481,6 +482,54 @@ namespace Onity.Unity.Async
             if (tasks == null)
             {
                 throw new ArgumentNullException(nameof(tasks));
+            }
+
+            const int k_maxNativeDuplicateScanLength = 16;
+            bool allCompletedSuccessfully = true;
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                if (tasks[i].IsCompletedSuccessfully == false)
+                {
+                    allCompletedSuccessfully = false;
+                    break;
+                }
+            }
+
+            if (allCompletedSuccessfully)
+            {
+                for (int i = 0; i < tasks.Length && allCompletedSuccessfully; i++)
+                {
+                    if (tasks[i].HasSingleConsumerSource == false)
+                    {
+                        continue;
+                    }
+
+                    if (tasks.Length > k_maxNativeDuplicateScanLength)
+                    {
+                        allCompletedSuccessfully = false;
+                        break;
+                    }
+
+                    for (int j = i + 1; j < tasks.Length; j++)
+                    {
+                        if (tasks[i].SharesSingleConsumerSourceWith(tasks[j]))
+                        {
+                            allCompletedSuccessfully = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (allCompletedSuccessfully)
+            {
+                T[] results = tasks.Length == 0 ? Array.Empty<T>() : new T[tasks.Length];
+                for (int i = 0; i < tasks.Length; i++)
+                {
+                    results[i] = tasks[i].GetAwaiter().GetResult();
+                }
+
+                return OnityTask<T[]>.FromResult(results);
             }
 
             Task<T>[] taskArray = new Task<T>[tasks.Length];
@@ -1024,6 +1073,17 @@ namespace Onity.Unity.Async
                 new OnityPreservedTaskSource<T>(source, m_token);
             return preserved.Task;
         }
+
+        internal bool SharesSingleConsumerSourceWith(OnityTask<T> other)
+        {
+            return HasSingleConsumerSource
+                && ReferenceEquals(m_state, other.m_state)
+                && m_token == other.m_token;
+        }
+
+        internal bool HasSingleConsumerSource =>
+            m_state is IOnityTaskSource<T>
+            && !(m_state is IOnityMultiConsumerTaskSource);
 
         /// <summary>
         /// Returns the task awaiter.
