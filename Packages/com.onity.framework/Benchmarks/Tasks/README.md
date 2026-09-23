@@ -91,6 +91,36 @@ An Editor result is not an IL2CPP player result. Timing noise and pool retention
 differences must be considered before making a comparison claim. No new benchmark
 results are bundled with this harness change.
 
+## Experimental builder allocation attribution
+
+The `benchmark/onitytask-value-attribution` branch adds a diagnostic mode for
+the pooled typed builder candidate at source commit `8292166`. In a separate
+Unity 2022.3.62f3 Editor process, run:
+
+```text
+Unity.exe -batchmode -nographics -profiler-enable -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityTaskBuilderAttribution -onityTaskBenchmarkOutput <absolute-json-path> -logFile <absolute-log-path>
+```
+
+This mode measures one warm scheduling batch of 128 operations per case after
+two completed warmup batches. It captures Profiler `GC.Alloc` callstacks for
+native `NextFrame`, completed async methods, and suspended async methods, typed
+and untyped where applicable, for OnityTask and pinned UniTask. It checks that
+native and suspended awaiters are pending before a frame yield. A 64 KiB
+positive control and an empty control must pass, and every case's callstack
+bytes must equal its marker bytes. Waiting, resumption, and result consumption
+occur outside each marker. Treat the callstack names as measured allocation
+sites; they do not establish allocated object types or player/IL2CPP behavior.
+
+The calibrated report at
+`docs/assets/benchmarks/onitytask-builder-value-attribution-8292166-2026-09-23.json`
+records 752 B/op for the candidate typed suspended method versus 72 B/op for
+UniTask in the same marker. The candidate's 752 B/op consists of 552 B/op at
+`UnitySynchronizationContext..ctor`, 72 B/op at `ExecutionContext.Capture`,
+48 B/op at `UnitySynchronizationContext.CreateCopy`, and 80 B/op at the async
+method call site. The first three sites are under the candidate's
+`CreateNativeContinuation` path. This is one diagnostic allocation sample;
+the separate eight-sample report carries the numerical benchmark result.
+
 ## Change note
 
 - Split comparison assemblies and preserved the moved scripts' `.meta` GUIDs.

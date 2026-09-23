@@ -1,0 +1,47 @@
+{
+  "suite": "Warm async method scheduling allocation callstacks for pooled typed builder candidate",
+  "benchmarkBranch": "benchmark/onitytask-value-attribution",
+  "benchmarkHostBaseCommit": "6448cca64519d6afe1d39a5ba8cd80461b182f5c",
+  "sourceCommit": "8292166d73ea5525ed2cd5ead38ba0126e08b1e2",
+  "onityAsyncGitBlob": "85f4e32ff23c9c7c0debae2b139e9ff9e6ad12ae",
+  "benchmarkRunnerGitBlob": "6eb18876e6afeaadcf445be7db2a5d9683f41cb3",
+  "benchmarkMenuGitBlob": "adf617ae959dd3ffeca144f33ede09e42c96ea94",
+  "manifestGitBlob": "b4f180c450b59597db2a96a70ff552ca35909799",
+  "packagesLockGitBlob": "2f863e6d228ea9fd67dbf0d9ab62a805993dd220",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "One synchronous main-thread scheduling marker per case after two completed warmup batches; 128 operations in each marker. Native and suspended awaiters are verified pending before the frame yield. Full GC precedes each marker. Waiting, continuation dispatch, completion, and result consumption are outside the marker.",
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "callstackReconciliation": "All ten case callstack sums equal their Profiler GC.Alloc marker byte totals.",
+  "numericalCandidateReport": "onitytask-builder-value-8292166-2026-09-23.json",
+  "numericalCandidateReportSha256": "B9C26B113C4595F3FD2D3044D18D667188EEE7058C243E02F866760BDA490167",
+  "callstackReport": "onitytask-builder-value-attribution-8292166-2026-09-23.json",
+  "callstackReportSha256": "B6C07D03642510A35648C328715D1068A7E39CADC2D78FA54BF56D413DCCCDFD",
+  "onityTypedSuspensionCallsites": [
+    {
+      "method": "UnitySynchronizationContext..ctor",
+      "bytesPerOperation": 552,
+      "allocationsPerOperation": 2
+    },
+    {
+      "method": "ExecutionContext.Capture",
+      "bytesPerOperation": 72,
+      "allocationsPerOperation": 1
+    },
+    {
+      "method": "UnitySynchronizationContext.CreateCopy",
+      "bytesPerOperation": 48,
+      "allocationsPerOperation": 1
+    },
+    {
+      "method": "OnityNextFrameResultAsync",
+      "bytesPerOperation": 80,
+      "allocationsPerOperation": 1
+    }
+  ],
+  "interpretationLimit": "Stack names identify measured allocation sites, not object types. One Editor/Mono diagnostic sample does not establish full async lifecycle or Player IL2CPP costs. The candidate typed path remains above UniTask's 72 B/op in this scope."
+}
