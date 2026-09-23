@@ -19,7 +19,7 @@ namespace Onity.Editor.Benchmarks
         private const string k_commandLineSessionKey = "Onity.Benchmarks.OnityTaskCommandLine";
         private const string k_commandLineStartTicksSessionKey = "Onity.Benchmarks.OnityTaskCommandLineStartTicks";
         private const string k_outputArgument = "-onityTaskBenchmarkOutput";
-        private const double k_commandLineTimeoutSeconds = 300d;
+        private const double k_commandLineTimeoutSeconds = 900d;
 
         static OnityTaskBenchmarkMenu()
         {

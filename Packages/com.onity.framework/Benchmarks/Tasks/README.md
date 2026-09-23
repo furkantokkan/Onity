@@ -18,12 +18,24 @@ entry point remains
 `Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine` and accepts
 `-onityTaskBenchmarkOutput <absolute-json-path>`. Do not pass `-quit`; the menu
 controller exits after writing the report or hitting its five-minute timeout.
-Use the verified Unity CLI control plane to target the dedicated host.
+Verify the exact Editor version and host with the Unity CLI first. The installed
+`unity run` 1.0.0-beta.3 adds `-quit` automatically, which closes the Editor
+before a Play Mode benchmark can start. Invoke the pinned Unity 2022 Editor
+directly for this entry point, without `-quit`:
+
+```text
+Unity.exe -batchmode -nographics -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityTaskBenchmarkOutput <absolute-json-path> -logFile <absolute-log-path>
+```
 
 ## Measurement contract
 
 - Two synchronous primitives: completed `GetResult`, and `FromResult<int>` plus
   `GetResult`. Each uses 4,096 warmup calls and eight samples of 1,000,000 calls.
+- Two synchronous async-method cases call actual `async OnityTask`/`async UniTask`
+  methods and consume their result. Each method awaits its library's completed
+  task without suspending; the typed method returns `42`. These include the method
+  builder path, unlike the direct primitives. They use the same warmup, sample
+  count and synchronous iteration count as the primitive cases.
 - The empty delegate loop is measured separately using the same invocation
   pattern. Raw times retain harness overhead; the baseline is not subtracted.
 - Frame operations have two distinct cohorts: 128 concurrent operations below
@@ -31,13 +43,27 @@ Use the verified Unity CLI control plane to target the dedicated host.
   that cap. A burst result must not be described as pooled steady state.
 - Each library completes and consumes two warmup batches at the exact cohort
   size. Each measured sample sums 32 batches; there are eight samples per cohort.
-  Library order alternates per sample and batch. Both awaiter arrays are allocated
+  Library order alternates per sample and batch. All awaiter arrays are allocated
   before measurement, and all operations must complete before consumption.
 - `NextFrame scheduling` times creation and storage of native awaiters.
   `NextFrame GetResult` times result consumption and clearing awaiter references.
   Scheduling and consumption measure synchronous main-thread slices separately.
   Frame waiting, runner ticking, continuation dispatch, async builders and the
   complete async lifecycle are **outside** these timings.
+- `Async method NextFrame` and `Async method NextFrame<int>` each await exactly
+  one native `NextFrame`; the typed method then returns `42`. Both use the same
+  128/4,096 concurrency cohorts, two completed warmup batches, eight samples and
+  32 batches/sample. `scheduling` includes calling the async method, its builder's
+  initial suspension/continuation registration, and storing its returned awaiter.
+  `GetResult` includes consuming the completed outer method result and clearing
+  the awaiter; typed results are stored in the same observable static sink for
+  both libraries. Every outer operation is checked for completion before
+  consumption, with the same 240-frame timeout as the primitive cases.
+- Async-method frame timings and allocation deltas cover **only** the scheduling
+  and consumption slices. Suspended-frame time, PlayerLoop work, resuming the
+  method, and builder completion during that resumption remain outside them.
+  These measurements are not full-lifecycle async-method costs. Builder pooling
+  can differ from the primitive frame-source pool and is not assumed identical.
 - Allocation deltas surround those same synchronous slices. Coroutine suspension,
   report construction, sample-array allocation and explicit full collections are
   outside them. Collections occur once before each measured sample, not inside a
@@ -49,9 +75,17 @@ Use the verified Unity CLI control plane to target the dedicated host.
   harness documented crashes; IL2CPP allocation claims require separate evidence.
 - Timer frequency/resolution, allocation controls, all timing/allocation samples,
   mean, median, range and standard deviation are retained in JSON. CSV and Markdown
-  summarize the measurements. The report schema is version 2.
+  summarize the measurements. The report schema remains version 2; the original
+  six primitive scenarios retain their names, indices and metric fields. Two
+  synchronous async-method cases and eight frame-method cases are appended, for
+  16 scenarios total. Consumers should identify cases by name and concurrency.
 
-Results compare these specific primitives and workloads, not entire libraries.
+The expanded suite requires at least 3,096 rendered frames for its frame cases
+(six workload/cohort pairs, each with four warmup and 512 measured frame waits).
+The command-line runner has a 15-minute timeout. Run the benchmark in a dedicated,
+responsive host because a heavily throttled Editor may still hit that limit.
+
+Results compare these specific primitives, async-method slices and workloads.
 An Editor result is not an IL2CPP player result. Timing noise and pool retention
 differences must be considered before making a comparison claim. No new benchmark
 results are bundled with this harness change.
@@ -63,5 +97,8 @@ results are bundled with this harness change.
   steady-state and burst cohorts; added calibrated allocation measurements.
 - Added completion checks, bounded frame waits, alternating execution order,
   raw samples and failure propagation from frame measurements.
+- Added matched typed/untyped async-method cases for synchronous completion and
+  one-frame suspension; existing primitive cases and the version 2 metric schema
+  are retained. New results still require compilation and execution in Unity.
 - Unity compilation and execution must be performed in the dedicated host after
   installing the pinned comparison package. Static review is not runtime proof.
