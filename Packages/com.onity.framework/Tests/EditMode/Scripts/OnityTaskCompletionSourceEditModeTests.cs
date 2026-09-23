@@ -300,6 +300,185 @@ namespace Onity.Tests.EditMode
             Assert.That(lateBridge.GetAwaiter().GetResult(), Is.EqualTo(55));
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void AsTask_PreservesCallerContextAndRestoresFlow(bool completed)
+        {
+            SynchronizationContext previous = SynchronizationContext.Current;
+            QueuedSynchronizationContext context = new QueuedSynchronizationContext();
+            AsyncLocal<string> local = new AsyncLocal<string>();
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                local.Value = "caller";
+                OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
+                if (completed)
+                {
+                    source.TrySetResult(9);
+                }
+
+                Assert.That(ExecutionContext.IsFlowSuppressed(), Is.False);
+                Task<int> bridge = source.Task.AsTask();
+                Assert.That(ExecutionContext.IsFlowSuppressed(), Is.False);
+                Assert.That(SynchronizationContext.Current, Is.SameAs(context));
+                Assert.That(local.Value, Is.EqualTo("caller"));
+                Assert.That(source.Task.AsTask(), Is.SameAs(bridge));
+                source.TrySetResult(9);
+                Assert.That(bridge.GetAwaiter().GetResult(), Is.EqualTo(9));
+            }
+            finally
+            {
+                local.Value = null;
+                SynchronizationContext.SetSynchronizationContext(previous);
+            }
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void AsTask_PreservesAlreadySuppressedFlow(bool completed)
+        {
+            OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
+            if (completed)
+            {
+                source.TrySetResult(10);
+            }
+
+            using (ExecutionContext.SuppressFlow())
+            {
+                Task<int> bridge = source.Task.AsTask();
+                Assert.That(ExecutionContext.IsFlowSuppressed(), Is.True);
+                Assert.That(source.Task.AsTask(), Is.SameAs(bridge));
+                source.TrySetResult(10);
+                Assert.That(bridge.GetAwaiter().GetResult(), Is.EqualTo(10));
+            }
+
+            Assert.That(ExecutionContext.IsFlowSuppressed(), Is.False);
+        }
+
+        [Test]
+        public void TaskContinuation_UsesRegistrationContext()
+        {
+            SynchronizationContext previous = SynchronizationContext.Current;
+            QueuedSynchronizationContext context = new QueuedSynchronizationContext();
+            AsyncLocal<string> local = new AsyncLocal<string>();
+            try
+            {
+                local.Value = "creation";
+                OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
+                Task<int> bridge = source.Task.AsTask();
+                SynchronizationContext.SetSynchronizationContext(context);
+                local.Value = "registration";
+                Task<(string Value, SynchronizationContext Context)> observer =
+                    ObserveBridgeContextAsync(bridge, local);
+                local.Value = "caller-after-registration";
+
+                Task completion = Task.Run(() =>
+                {
+                    local.Value = "completion";
+                    source.TrySetResult(12);
+                });
+
+                Assert.That(completion.Wait(5000), Is.True);
+                Assert.That(SpinWait.SpinUntil(() => context.Count > 0, 5000), Is.True);
+                Assert.That(observer.IsCompleted, Is.False);
+                context.Drain();
+                Assert.That(observer.IsCompleted, Is.True);
+                Assert.That(observer.Result.Value, Is.EqualTo("registration"));
+                Assert.That(observer.Result.Context, Is.SameAs(context));
+                Assert.That(local.Value, Is.EqualTo("caller-after-registration"));
+            }
+            finally
+            {
+                local.Value = null;
+                SynchronizationContext.SetSynchronizationContext(previous);
+            }
+        }
+
+        [Test]
+        public void TaskContinuation_DoesNotRunInlineUnderSourceLock()
+        {
+            OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
+            FieldInfo gateField = typeof(OnityTaskCompletionSource<int>).GetField(
+                "m_gate", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(gateField, Is.Not.Null);
+            object gate = gateField.GetValue(source);
+            Task<bool> observer = source.Task.AsTask().ContinueWith(
+                _ => Monitor.IsEntered(gate), CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+            Assert.That(source.TrySetResult(13), Is.True);
+            Assert.That(observer.Wait(5000), Is.True);
+            Assert.That(observer.Result, Is.False);
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        public void ConcurrentAsTaskCalls_KeepOneBridgeAndTerminalOutcome(int outcome)
+        {
+            using CancellationTokenSource cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            for (int iteration = 0; iteration < 32; iteration++)
+            {
+                OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
+                InvalidOperationException failure = new InvalidOperationException("bridge race");
+                using ManualResetEventSlim start = new ManualResetEventSlim(false);
+                Task<int>[] bridges = new Task<int>[4];
+                Task[] workers = new Task[5];
+                for (int index = 0; index < bridges.Length; index++)
+                {
+                    int slot = index;
+                    workers[index] = Task.Run(() =>
+                    {
+                        start.Wait();
+                        bridges[slot] = source.Task.AsTask();
+                    });
+                }
+
+                workers[4] = Task.Run(() =>
+                {
+                    start.Wait();
+                    if (outcome == 0)
+                    {
+                        source.TrySetResult(21);
+                    }
+                    else if (outcome == 1)
+                    {
+                        source.TrySetException(failure);
+                    }
+                    else
+                    {
+                        source.TrySetCanceled(cancellation.Token);
+                    }
+                });
+
+                start.Set();
+                Assert.That(Task.WaitAll(workers, 5000), Is.True);
+                Task<int> bridge = source.Task.AsTask();
+                for (int index = 0; index < bridges.Length; index++)
+                {
+                    Assert.That(bridges[index], Is.SameAs(bridge));
+                }
+
+                Assert.That(bridge.IsCompleted, Is.True);
+                if (outcome == 0)
+                {
+                    Assert.That(bridge.GetAwaiter().GetResult(), Is.EqualTo(21));
+                }
+                else if (outcome == 1)
+                {
+                    Assert.That(Assert.Throws<InvalidOperationException>(
+                        () => bridge.GetAwaiter().GetResult()), Is.SameAs(failure));
+                }
+                else
+                {
+                    Assert.That(Assert.Catch<OperationCanceledException>(
+                        () => bridge.GetAwaiter().GetResult()).CancellationToken,
+                        Is.EqualTo(cancellation.Token));
+                }
+            }
+        }
+
         [Test]
         public void PublishedCompletion_HasCompletedTaskBridge()
         {
@@ -599,6 +778,13 @@ namespace Onity.Tests.EditMode
                     callback.Callback(callback.State);
                 }
             }
+        }
+
+        private static async Task<(string Value, SynchronizationContext Context)>
+            ObserveBridgeContextAsync(Task<int> task, AsyncLocal<string> local)
+        {
+            await task;
+            return (local.Value, SynchronizationContext.Current);
         }
 
         private static async Task<int> ObserveAsync(OnityTask<int> task)

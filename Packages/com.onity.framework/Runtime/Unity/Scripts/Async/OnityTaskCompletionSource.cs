@@ -296,8 +296,7 @@ namespace Onity.Unity.Async
                 ValidateToken(token);
                 if (m_taskBridge == null)
                 {
-                    m_taskBridge = new TaskCompletionSource<T>(
-                        TaskCreationOptions.RunContinuationsAsynchronously);
+                    m_taskBridge = CreateTaskBridge();
                     OnityTaskSourceStatus status = (OnityTaskSourceStatus)m_status;
                     if (status != OnityTaskSourceStatus.Pending)
                     {
@@ -308,6 +307,29 @@ namespace Onity.Unity.Async
                 }
 
                 return m_taskBridge.Task;
+            }
+        }
+
+        private static TaskCompletionSource<T> CreateTaskBridge()
+        {
+            if (ExecutionContext.IsFlowSuppressed())
+            {
+                return new TaskCompletionSource<T>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+
+            // A promise has no delegate to run in its creation context. Mono's
+            // options constructor still captures it; consumers capture their own
+            // context when they register continuations after this scope ends.
+            AsyncFlowControl flowControl = ExecutionContext.SuppressFlow();
+            try
+            {
+                return new TaskCompletionSource<T>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+            finally
+            {
+                flowControl.Undo();
             }
         }
 

@@ -1,0 +1,25 @@
+{
+  "benchmarkHostCommit": "e08ca13e90014c7c1c64dbed3e33a062a257b361",
+  "benchmarkBranch": "benchmark/completion-source-bridge",
+  "candidateChangeCommit": "38fe3e49d6d9ff9feeef6110639981755644d533",
+  "candidateAppliedWith": "git cherry-pick --no-commit",
+  "candidateRuntimePath": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCompletionSource.cs",
+  "candidateRuntimeGitBlob": "138b8006cf114bbe603021aaf07424c5a94dfe4a",
+  "candidateTestPath": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskCompletionSourceEditModeTests.cs",
+  "candidateTestGitBlob": "eb99ca8f8bfeb486339fd41847d2c899685bfdf2",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "baselineRuntimeCommit": "a7c7c9c07867a0f2a20a0b817ca0482e75b77795",
+  "reportMetadataNote": "The unchanged benchmark harness embeds the baseline Onity runtime commit in each report. The exact candidate identity is the tested change commit and runtime blob above.",
+  "baselineReportSha256": "5B89019D14886E0BEAAADD02CF778BD78BDA6402987F1321A6B486464A10E0D6",
+  "candidateTimingAndAllocationReport": "onity-completion-source-bridge-38fe3e4-2026-09-23.json",
+  "candidateTimingAndAllocationReportSha256": "BBCEFD584C415F51F1D0D51F7A1FD6A71CFDB5C56CDFF6A4C05451B1302E0444",
+  "candidateTimingRerunReport": "onity-completion-source-bridge-38fe3e4-rerun-2026-09-23.json",
+  "candidateTimingRerunReportSha256": "C006BC204EFB7162F4A4DC8B80DDB51067E4617E6C814E7D5E5524E0A4F32D83",
+  "unityVersion": "2022.3.62f3",
+  "editorScriptingBackend": "Mono",
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "scope": "Synchronous completion-source stages only; 16 scenarios, eight timing samples per run, and eight allocation samples in the first candidate report. No overall superiority claim."
+}
