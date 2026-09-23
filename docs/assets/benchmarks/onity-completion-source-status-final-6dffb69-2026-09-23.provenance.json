@@ -1,0 +1,17 @@
+{
+  "benchmarkBranch": "benchmark/completion-source-bridge",
+  "candidateChangeCommit": "6dffb697b5613bedcccb9a336e2b00f6de46c364",
+  "candidateCherryPickCommit": "e998f70dd55440f1e947819cf6ac5485a96fce24",
+  "candidateRuntimeGitBlob": "91017f4e0ed4fc3fd300094de8d0e8ee8c8706ab",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "reportMetadataNote": "The benchmark harness embeds the original baseline runtime commit a7c7c9c07867a0f2a20a0b817ca0482e75b77795. This sidecar identifies the final candidate actually measured.",
+  "statusProbeReport": "onity-completion-source-status-final-6dffb69-2026-09-23.json",
+  "statusProbeReportSha256": "F494A6FBAAFD46944CE9396807C45A6EFFD21EDE139A8B410AFE50CFBE791C5E",
+  "unityVersion": "2022.3.62f3",
+  "editorScriptingBackend": "Mono",
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "scope": "Separate pending and completed-success IsCompleted reads for typed and untyped sources; four scenarios, eight timing and eight allocation samples per library. Source setup and completion are outside the measured slice. Raw timing ranges are broad; do not infer an overall winner or a precise speed ratio from one run."
+}

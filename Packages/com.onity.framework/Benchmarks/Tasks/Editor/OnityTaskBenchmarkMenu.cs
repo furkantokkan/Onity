@@ -22,10 +22,12 @@ namespace Onity.Editor.Benchmarks
         private const string k_allocationOnlySessionKey = "Onity.Benchmarks.OnityTaskAllocationOnly";
         private const string k_completionSourceSessionKey = "Onity.Benchmarks.OnityCompletionSource";
         private const string k_attributionSessionKey = "Onity.Benchmarks.OnityCompletionSourceAttribution";
+        private const string k_statusProbeSessionKey = "Onity.Benchmarks.OnityCompletionSourceStatusProbe";
         private const string k_outputArgument = "-onityTaskBenchmarkOutput";
         private const string k_allocationOnlyArgument = "-onityTaskAllocationsOnly";
         private const string k_completionSourceArgument = "-onityCompletionSourceBenchmark";
         private const string k_attributionArgument = "-onityCompletionSourceAttribution";
+        private const string k_statusProbeArgument = "-onityCompletionSourceStatusProbe";
         private const double k_commandLineTimeoutSeconds = 900d;
 
         static OnityTaskBenchmarkMenu()
@@ -92,11 +94,13 @@ namespace Onity.Editor.Benchmarks
             bool allocationOnly = SessionState.GetBool(k_allocationOnlySessionKey, false);
             bool completionSource = SessionState.GetBool(k_completionSourceSessionKey, false);
             bool attribution = SessionState.GetBool(k_attributionSessionKey, false);
+            bool statusProbe = SessionState.GetBool(k_statusProbeSessionKey, false);
             string latestJson = GetLatestJsonPath(completionSource);
             if (!commandLineRun)
             {
                 SessionState.EraseBool(k_completionSourceSessionKey);
                 SessionState.EraseBool(k_attributionSessionKey);
+                SessionState.EraseBool(k_statusProbeSessionKey);
             }
 
             if (completionSource)
@@ -105,7 +109,8 @@ namespace Onity.Editor.Benchmarks
                     latestJson,
                     commandLineRun ? HandleCommandLineCompleted : null,
                     allocationOnly,
-                    attribution);
+                    attribution,
+                    statusProbe);
             }
             else
             {
@@ -130,6 +135,7 @@ namespace Onity.Editor.Benchmarks
             bool allocationOnly = HasArgument(k_allocationOnlyArgument);
             bool completionSource = HasArgument(k_completionSourceArgument);
             bool attribution = HasArgument(k_attributionArgument);
+            bool statusProbe = HasArgument(k_statusProbeArgument);
             if ((allocationOnly || attribution) && !HasArgument("-profiler-enable"))
             {
                 throw new ArgumentException("Allocation pass requires Unity's -profiler-enable startup flag.");
@@ -137,6 +143,14 @@ namespace Onity.Editor.Benchmarks
             if (attribution && !completionSource)
             {
                 throw new ArgumentException("Completion-source attribution requires -onityCompletionSourceBenchmark.");
+            }
+            if (statusProbe && !completionSource)
+            {
+                throw new ArgumentException("Completion-source status probe requires -onityCompletionSourceBenchmark.");
+            }
+            if (statusProbe && attribution)
+            {
+                throw new ArgumentException("Status probe and attribution cannot run together.");
             }
             if (string.IsNullOrEmpty(latestJson))
             {
@@ -159,6 +173,7 @@ namespace Onity.Editor.Benchmarks
             SessionState.SetBool(k_allocationOnlySessionKey, allocationOnly);
             SessionState.SetBool(k_completionSourceSessionKey, completionSource);
             SessionState.SetBool(k_attributionSessionKey, attribution);
+            SessionState.SetBool(k_statusProbeSessionKey, statusProbe);
             SessionState.SetString(k_commandLineStartTicksSessionKey, DateTime.UtcNow.Ticks.ToString());
             EditorApplication.update -= HandleCommandLineTimeout;
             EditorApplication.update += HandleCommandLineTimeout;

@@ -1,0 +1,23 @@
+{
+  "benchmarkHostCommit": "e08ca13e90014c7c1c64dbed3e33a062a257b361",
+  "benchmarkBranch": "benchmark/completion-source-bridge",
+  "candidateChangeCommit": "6dffb697b5613bedcccb9a336e2b00f6de46c364",
+  "candidateCherryPickCommit": "e998f70dd55440f1e947819cf6ac5485a96fce24",
+  "candidateRuntimePath": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCompletionSource.cs",
+  "candidateRuntimeGitBlob": "91017f4e0ed4fc3fd300094de8d0e8ee8c8706ab",
+  "candidateTestPath": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskCompletionSourceEditModeTests.cs",
+  "candidateTestGitBlob": "7298caa22b1a7aa0dc25a434ab1dd1680ff92497",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "baselineRuntimeCommit": "a7c7c9c07867a0f2a20a0b817ca0482e75b77795",
+  "reportMetadataNote": "The unchanged benchmark harness embeds the baseline Onity runtime commit in the report. The exact measured final candidate is the feature change commit, local cherry-pick, and matching runtime blob above.",
+  "candidateTimingAndAllocationReport": "onity-completion-source-bridge-final-6dffb69-2026-09-23.json",
+  "candidateTimingAndAllocationReportSha256": "D74E8F33154F98CF5666F633DEA17379F5415C113A8A6196C1A5A882376740FA",
+  "unityVersion": "2022.3.62f3",
+  "editorScriptingBackend": "Mono",
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "raceRegression": "CompletedTaskBridge_NeverExposesPendingSourceStatus failed 1/1 with pre-fix source blob 138b8006cf114bbe603021aaf07424c5a94dfe4a and passed 1/1 after restoring final source blob 91017f4e0ed4fc3fd300094de8d0e8ee8c8706ab.",
+  "scope": "Synchronous completion-source stages only; 16 scenarios, eight timing samples and eight allocation samples. Timing values include harness overhead and were subject to system-load variance. No overall superiority claim."
+}

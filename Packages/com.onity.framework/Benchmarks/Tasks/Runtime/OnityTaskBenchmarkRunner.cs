@@ -1357,6 +1357,7 @@ namespace Onity.Benchmarks
 
         private static bool s_isRunning;
         private static int s_callbacks;
+        private static int s_completedStatusReads;
         private static readonly Action s_callback = CountCallback;
 
         private readonly OnityTaskCompletionSource[] m_onityUntyped =
@@ -1374,6 +1375,7 @@ namespace Onity.Benchmarks
         private Action<string, Exception> m_completed;
         private bool m_allocationOnly;
         private bool m_attributionOnly;
+        private bool m_statusProbe;
         private CompletionScenario m_activeScenario;
         private int m_activeLibrary;
 #if UNITY_EDITOR
@@ -1391,7 +1393,7 @@ namespace Onity.Benchmarks
 
         /// <summary>Starts the isolated completion-source comparison in Play Mode.</summary>
         public static void Run(string outputPath, Action<string, Exception> completed,
-            bool allocationOnly, bool attributionOnly = false)
+            bool allocationOnly, bool attributionOnly = false, bool statusProbe = false)
         {
             if (s_isRunning)
             {
@@ -1406,6 +1408,7 @@ namespace Onity.Benchmarks
             runner.m_completed = completed;
             runner.m_allocationOnly = allocationOnly;
             runner.m_attributionOnly = attributionOnly;
+            runner.m_statusProbe = statusProbe;
             s_isRunning = true;
         }
 
@@ -1445,7 +1448,9 @@ namespace Onity.Benchmarks
                 {
                     report = JsonUtility.FromJson<CompletionReport>(File.ReadAllText(m_outputPath));
                     if (report == null || report.schemaVersion != 1 ||
-                        report.scenarios == null || report.scenarios.Length != 16)
+                        report.scenarios == null ||
+                        report.scenarios.Length != (m_statusProbe ? 4 : 16) ||
+                        (m_statusProbe && report.suite != "Completion-source IsCompleted probe"))
                     {
                         throw new InvalidDataException("A complete completion-source timing report is required.");
                     }
@@ -1454,7 +1459,7 @@ namespace Onity.Benchmarks
                 }
                 else
                 {
-                    report = CreateReport();
+                    report = m_statusProbe ? CreateStatusReport() : CreateReport();
                     RunTiming(report);
                 }
             }
@@ -1615,9 +1620,43 @@ namespace Onity.Benchmarks
             return report;
         }
 
+        private static CompletionReport CreateStatusReport()
+        {
+            CompletionReport report = CreateReport();
+            report.suite = "Completion-source IsCompleted probe";
+            report.scope = "Pending and completed-success GetAwaiter().IsCompleted reads on fresh "
+                + "typed and untyped sources. Setup and completion stay outside each measured slice. "
+                + "Samples retain harness overhead; no baseline subtraction or overall winner is inferred.";
+            report.scenarios = new CompletionScenario[4];
+            int index = 0;
+            for (int typed = 0; typed < 2; typed++)
+            {
+                for (int terminal = 0; terminal < 2; terminal++)
+                {
+                    CompletionStage stage = terminal == 0
+                        ? CompletionStage.PendingStatus : CompletionStage.TerminalStatus;
+                    report.scenarios[index++] = new CompletionScenario
+                    {
+                        typed = typed != 0,
+                        stage = stage,
+                        stageName = stage.ToString(),
+                        consumers = 1,
+                        results = new[]
+                        {
+                            new CompletionMetric { library = "OnityTask", bytesPerOperation = -1 },
+                            new CompletionMetric { library = "UniTask", bytesPerOperation = -1 }
+                        }
+                    };
+                }
+            }
+
+            return report;
+        }
+
         private void PrepareBatch()
         {
             s_callbacks = 0;
+            s_completedStatusReads = -1;
             if (m_activeScenario.stage == CompletionStage.Construction)
             {
                 return;
@@ -1630,7 +1669,8 @@ namespace Onity.Benchmarks
                 {
                     RegisterConsumers(i);
                 }
-                else if (m_activeScenario.stage == CompletionStage.LateRegistration)
+                else if (m_activeScenario.stage == CompletionStage.LateRegistration ||
+                    m_activeScenario.stage == CompletionStage.TerminalStatus)
                 {
                     CompleteSource(i);
                 }
@@ -1639,6 +1679,29 @@ namespace Onity.Benchmarks
 
         private void MeasureActiveBatch()
         {
+            if (m_activeScenario.stage == CompletionStage.PendingStatus ||
+                m_activeScenario.stage == CompletionStage.TerminalStatus)
+            {
+                int completed = 0;
+                for (int i = 0; i < k_operations; i++)
+                {
+                    bool isCompleted = m_activeScenario.typed
+                        ? m_activeLibrary == 0
+                            ? m_onityTyped[i].Task.GetAwaiter().IsCompleted
+                            : m_uniTaskTyped[i].Task.GetAwaiter().IsCompleted
+                        : m_activeLibrary == 0
+                            ? m_onityUntyped[i].Task.GetAwaiter().IsCompleted
+                            : m_uniTaskUntyped[i].Task.GetAwaiter().IsCompleted;
+                    if (isCompleted)
+                    {
+                        completed++;
+                    }
+                }
+
+                s_completedStatusReads = completed;
+                return;
+            }
+
             for (int i = 0; i < k_operations; i++)
             {
                 switch (m_activeScenario.stage)
@@ -1669,13 +1732,20 @@ namespace Onity.Benchmarks
         private void FinishBatch()
         {
             CompletionStage stage = m_activeScenario.stage;
+            if ((stage == CompletionStage.PendingStatus || stage == CompletionStage.TerminalStatus) &&
+                s_completedStatusReads != (stage == CompletionStage.TerminalStatus ? k_operations : 0))
+            {
+                throw new InvalidOperationException("IsCompleted did not match the prepared source state.");
+            }
+
             int expectedCallbacks = (stage == CompletionStage.PendingRegistration ||
                 stage == CompletionStage.CompletionDispatch ||
                 stage == CompletionStage.LateRegistration)
                 ? k_operations * m_activeScenario.consumers : 0;
 
             if (stage == CompletionStage.Construction ||
-                stage == CompletionStage.PendingRegistration || stage == CompletionStage.AsTask)
+                stage == CompletionStage.PendingRegistration || stage == CompletionStage.AsTask ||
+                stage == CompletionStage.PendingStatus)
             {
                 for (int i = 0; i < k_operations; i++)
                 {
@@ -2410,7 +2480,9 @@ namespace Onity.Benchmarks
             PendingRegistration,
             CompletionDispatch,
             LateRegistration,
-            AsTask
+            AsTask,
+            PendingStatus,
+            TerminalStatus
         }
 
         [Serializable]
