@@ -1253,9 +1253,14 @@ namespace Onity.Unity.Async
         T GetResult(int token);
     }
 
-    internal interface IOnityStatefulTaskSource
+    internal interface IOnityPreservedTaskContinuation
     {
-        void OnCompleted(Action<object> continuation, object state, int token);
+        void Complete();
+    }
+
+    internal interface IOnityPreservedTaskSource
+    {
+        void OnCompleted(IOnityPreservedTaskContinuation continuation, int token);
     }
 
     internal interface IOnityTaskTickSource
@@ -1288,7 +1293,7 @@ namespace Onity.Unity.Async
             }
         }
 
-        public static void Invoke(Action<object> continuation, object state)
+        public static void Invoke(IOnityPreservedTaskContinuation continuation)
         {
             if (continuation == null)
             {
@@ -1297,7 +1302,7 @@ namespace Onity.Unity.Async
 
             try
             {
-                continuation(state);
+                continuation.Complete();
             }
             catch (Exception exception)
             {
@@ -1306,18 +1311,17 @@ namespace Onity.Unity.Async
         }
     }
 
-    internal abstract class OnityTaskSourceBase : IOnityTaskSource, IOnityStatefulTaskSource
+    internal abstract class OnityTaskSourceBase : IOnityTaskSource, IOnityPreservedTaskSource
     {
         private const int k_noConsumption = 0;
         private const int k_nativeConsumption = 1;
         private const int k_taskConsumption = 2;
+        private const int k_preservedConsumption = 3;
 
         private static readonly Action<object> s_cancelCallback = CancelFromToken;
 
         private Action m_continuation;
-        private Action<object> m_statefulContinuation;
-        private object m_continuationState;
-        private TaskCompletionSource<bool> m_taskCompletionSource;
+        private object m_completionState;
         private CancellationTokenRegistration m_cancellationRegistration;
         private CancellationToken m_cancellationToken;
         private Exception m_exception;
@@ -1371,7 +1375,8 @@ namespace Onity.Unity.Async
                     throw new InvalidOperationException("OnityTask has already been materialized and released.");
                 }
 
-                if (m_consumptionMode == k_nativeConsumption)
+                if (m_consumptionMode == k_nativeConsumption ||
+                    m_consumptionMode == k_preservedConsumption)
                 {
                     throw new InvalidOperationException(
                         "OnityTask is already being consumed by its native awaiter.");
@@ -1380,14 +1385,17 @@ namespace Onity.Unity.Async
                 m_consumptionMode = k_taskConsumption;
                 Volatile.Write(ref m_taskMaterialized, 1);
 
-                if (m_taskCompletionSource == null)
+                TaskCompletionSource<bool> taskCompletionSource =
+                    m_completionState as TaskCompletionSource<bool>;
+                if (taskCompletionSource == null)
                 {
-                    m_taskCompletionSource =
+                    taskCompletionSource =
                         new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    ApplyStatusToTask(m_taskCompletionSource);
+                    m_completionState = taskCompletionSource;
+                    ApplyStatusToTask(taskCompletionSource);
                 }
 
-                task = m_taskCompletionSource.Task;
+                task = taskCompletionSource.Task;
                 releaseSource = m_status != (int)OnityTaskSourceStatus.Pending
                     && TryClaimTaskReleaseUnsafe();
 
@@ -1441,7 +1449,7 @@ namespace Onity.Unity.Async
             }
         }
 
-        public void OnCompleted(Action<object> continuation, object state, int token)
+        public void OnCompleted(IOnityPreservedTaskContinuation continuation, int token)
         {
             if (continuation == null)
             {
@@ -1463,22 +1471,32 @@ namespace Onity.Unity.Async
                     throw new InvalidOperationException("OnityTask supports only one native awaiter.");
                 }
 
-                m_consumptionMode = k_nativeConsumption;
+                m_consumptionMode = k_preservedConsumption;
                 invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
-                if (!invokeNow)
-                {
-                    m_statefulContinuation = continuation;
-                    m_continuationState = state;
-                }
+                m_completionState = continuation;
             }
 
             if (invokeNow)
             {
-                continuation(state);
+                continuation.Complete();
             }
         }
 
         public void GetResult(int token)
+        {
+            GetResultCore(token, null);
+        }
+
+        internal void GetPreservedResult(
+            int token,
+            IOnityPreservedTaskContinuation continuation)
+        {
+            GetResultCore(token, continuation);
+        }
+
+        private void GetResultCore(
+            int token,
+            IOnityPreservedTaskContinuation continuation)
         {
             Exception exception;
 
@@ -1491,7 +1509,15 @@ namespace Onity.Unity.Async
                     throw new InvalidOperationException("OnityTask has already been consumed.");
                 }
 
-                if (m_consumptionMode == k_taskConsumption)
+                if (m_consumptionMode == k_preservedConsumption)
+                {
+                    if (!ReferenceEquals(m_completionState, continuation))
+                    {
+                        throw new InvalidOperationException(
+                            "OnityTask is already being consumed through Preserve().");
+                    }
+                }
+                else if (continuation != null || m_consumptionMode == k_taskConsumption)
                 {
                     throw new InvalidOperationException(
                         "OnityTask is already being consumed through AsTask().");
@@ -1528,9 +1554,7 @@ namespace Onity.Unity.Async
             lock (this)
             {
                 m_continuation = null;
-                m_statefulContinuation = null;
-                m_continuationState = null;
-                m_taskCompletionSource = null;
+                m_completionState = null;
                 m_cancellationToken = cancellationToken;
                 m_exception = null;
                 int nextVersion = unchecked(m_version + 1);
@@ -1582,8 +1606,7 @@ namespace Onity.Unity.Async
         private bool TrySetStatus(OnityTaskSourceStatus status, Exception exception)
         {
             Action continuation;
-            Action<object> statefulContinuation;
-            object continuationState;
+            IOnityPreservedTaskContinuation preservedContinuation;
             TaskCompletionSource<bool> taskCompletionSource;
             bool releaseSource;
 
@@ -1596,12 +1619,12 @@ namespace Onity.Unity.Async
 
                 m_exception = exception;
                 continuation = m_continuation;
-                statefulContinuation = m_statefulContinuation;
-                continuationState = m_continuationState;
-                taskCompletionSource = m_taskCompletionSource;
+                object completionState = m_completionState;
+                preservedContinuation = m_consumptionMode == k_preservedConsumption
+                    ? (IOnityPreservedTaskContinuation)completionState : null;
+                taskCompletionSource = m_consumptionMode == k_taskConsumption
+                    ? (TaskCompletionSource<bool>)completionState : null;
                 m_continuation = null;
-                m_statefulContinuation = null;
-                m_continuationState = null;
                 m_cancellationRegistration.Dispose();
                 m_cancellationRegistration = default;
                 Volatile.Write(ref m_status, (int)status);
@@ -1619,13 +1642,13 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
 
-            if (statefulContinuation == null)
+            if (preservedContinuation == null)
             {
                 OnityTaskContinuation.Invoke(continuation);
             }
             else
             {
-                OnityTaskContinuation.Invoke(statefulContinuation, continuationState);
+                OnityTaskContinuation.Invoke(preservedContinuation);
             }
             return true;
         }
@@ -1699,25 +1722,24 @@ namespace Onity.Unity.Async
 
         private void ClearCompletionReferencesUnsafe()
         {
-            m_taskCompletionSource = null;
+            m_completionState = null;
             m_cancellationRegistration = default;
             m_cancellationToken = default;
             m_exception = null;
         }
     }
 
-    internal abstract class OnityTaskSourceBase<T> : IOnityTaskSource<T>, IOnityStatefulTaskSource
+    internal abstract class OnityTaskSourceBase<T> : IOnityTaskSource<T>, IOnityPreservedTaskSource
     {
         private const int k_noConsumption = 0;
         private const int k_nativeConsumption = 1;
         private const int k_taskConsumption = 2;
+        private const int k_preservedConsumption = 3;
 
         private static readonly Action<object> s_cancelCallback = CancelFromToken;
 
         private Action m_continuation;
-        private Action<object> m_statefulContinuation;
-        private object m_continuationState;
-        private TaskCompletionSource<T> m_taskCompletionSource;
+        private object m_completionState;
         private CancellationTokenRegistration m_cancellationRegistration;
         private CancellationToken m_cancellationToken;
         private Exception m_exception;
@@ -1772,7 +1794,8 @@ namespace Onity.Unity.Async
                     throw new InvalidOperationException("OnityTask has already been materialized and released.");
                 }
 
-                if (m_consumptionMode == k_nativeConsumption)
+                if (m_consumptionMode == k_nativeConsumption ||
+                    m_consumptionMode == k_preservedConsumption)
                 {
                     throw new InvalidOperationException(
                         "OnityTask is already being consumed by its native awaiter.");
@@ -1781,14 +1804,17 @@ namespace Onity.Unity.Async
                 m_consumptionMode = k_taskConsumption;
                 Volatile.Write(ref m_taskMaterialized, 1);
 
-                if (m_taskCompletionSource == null)
+                TaskCompletionSource<T> taskCompletionSource =
+                    m_completionState as TaskCompletionSource<T>;
+                if (taskCompletionSource == null)
                 {
-                    m_taskCompletionSource =
+                    taskCompletionSource =
                         new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    ApplyStatusToTask(m_taskCompletionSource);
+                    m_completionState = taskCompletionSource;
+                    ApplyStatusToTask(taskCompletionSource);
                 }
 
-                task = m_taskCompletionSource.Task;
+                task = taskCompletionSource.Task;
                 releaseSource = m_status != (int)OnityTaskSourceStatus.Pending
                     && TryClaimTaskReleaseUnsafe();
 
@@ -1842,7 +1868,7 @@ namespace Onity.Unity.Async
             }
         }
 
-        public void OnCompleted(Action<object> continuation, object state, int token)
+        public void OnCompleted(IOnityPreservedTaskContinuation continuation, int token)
         {
             if (continuation == null)
             {
@@ -1864,22 +1890,32 @@ namespace Onity.Unity.Async
                     throw new InvalidOperationException("OnityTask supports only one native awaiter.");
                 }
 
-                m_consumptionMode = k_nativeConsumption;
+                m_consumptionMode = k_preservedConsumption;
                 invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
-                if (!invokeNow)
-                {
-                    m_statefulContinuation = continuation;
-                    m_continuationState = state;
-                }
+                m_completionState = continuation;
             }
 
             if (invokeNow)
             {
-                continuation(state);
+                continuation.Complete();
             }
         }
 
         public T GetResult(int token)
+        {
+            return GetResultCore(token, null);
+        }
+
+        internal T GetPreservedResult(
+            int token,
+            IOnityPreservedTaskContinuation continuation)
+        {
+            return GetResultCore(token, continuation);
+        }
+
+        private T GetResultCore(
+            int token,
+            IOnityPreservedTaskContinuation continuation)
         {
             Exception exception;
             T result;
@@ -1893,7 +1929,15 @@ namespace Onity.Unity.Async
                     throw new InvalidOperationException("OnityTask has already been consumed.");
                 }
 
-                if (m_consumptionMode == k_taskConsumption)
+                if (m_consumptionMode == k_preservedConsumption)
+                {
+                    if (!ReferenceEquals(m_completionState, continuation))
+                    {
+                        throw new InvalidOperationException(
+                            "OnityTask is already being consumed through Preserve().");
+                    }
+                }
+                else if (continuation != null || m_consumptionMode == k_taskConsumption)
                 {
                     throw new InvalidOperationException(
                         "OnityTask is already being consumed through AsTask().");
@@ -1938,9 +1982,7 @@ namespace Onity.Unity.Async
             lock (this)
             {
                 m_continuation = null;
-                m_statefulContinuation = null;
-                m_continuationState = null;
-                m_taskCompletionSource = null;
+                m_completionState = null;
                 m_cancellationToken = cancellationToken;
                 m_exception = null;
                 m_result = default;
@@ -1999,8 +2041,7 @@ namespace Onity.Unity.Async
         private bool TrySetStatus(OnityTaskSourceStatus status, T result, Exception exception)
         {
             Action continuation;
-            Action<object> statefulContinuation;
-            object continuationState;
+            IOnityPreservedTaskContinuation preservedContinuation;
             TaskCompletionSource<T> taskCompletionSource;
             bool releaseSource;
 
@@ -2014,12 +2055,12 @@ namespace Onity.Unity.Async
                 m_result = result;
                 m_exception = exception;
                 continuation = m_continuation;
-                statefulContinuation = m_statefulContinuation;
-                continuationState = m_continuationState;
-                taskCompletionSource = m_taskCompletionSource;
+                object completionState = m_completionState;
+                preservedContinuation = m_consumptionMode == k_preservedConsumption
+                    ? (IOnityPreservedTaskContinuation)completionState : null;
+                taskCompletionSource = m_consumptionMode == k_taskConsumption
+                    ? (TaskCompletionSource<T>)completionState : null;
                 m_continuation = null;
-                m_statefulContinuation = null;
-                m_continuationState = null;
                 m_cancellationRegistration.Dispose();
                 m_cancellationRegistration = default;
                 Volatile.Write(ref m_status, (int)status);
@@ -2037,13 +2078,13 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
 
-            if (statefulContinuation == null)
+            if (preservedContinuation == null)
             {
                 OnityTaskContinuation.Invoke(continuation);
             }
             else
             {
-                OnityTaskContinuation.Invoke(statefulContinuation, continuationState);
+                OnityTaskContinuation.Invoke(preservedContinuation);
             }
             return true;
         }
@@ -2109,7 +2150,7 @@ namespace Onity.Unity.Async
 
         private void ClearCompletionReferencesUnsafe()
         {
-            m_taskCompletionSource = null;
+            m_completionState = null;
             m_cancellationRegistration = default;
             m_cancellationToken = default;
             m_exception = null;

@@ -485,10 +485,9 @@ namespace Onity.Unity.Async
         }
     }
 
-    internal sealed class OnityPreservedTaskSource : OnityTaskCompletionSource<bool>
+    internal sealed class OnityPreservedTaskSource : OnityTaskCompletionSource<bool>,
+        IOnityPreservedTaskContinuation
     {
-        private static readonly Action<object> s_complete = CompleteFromSource;
-
         private IOnityTaskSource m_source;
         private readonly int m_token;
 
@@ -497,14 +496,14 @@ namespace Onity.Unity.Async
         {
             m_source = source;
             m_token = token;
-            ((IOnityStatefulTaskSource)source).OnCompleted(s_complete, this, token);
+            ((IOnityPreservedTaskSource)source).OnCompleted(this, token);
         }
 
         public new OnityTask Task => new OnityTask((IOnityTaskSource)this);
 
-        private static void CompleteFromSource(object state)
+        void IOnityPreservedTaskContinuation.Complete()
         {
-            ((OnityPreservedTaskSource)state).Complete();
+            Complete();
         }
 
         private void Complete()
@@ -517,7 +516,7 @@ namespace Onity.Unity.Async
             try
             {
                 status = source.GetStatus(token);
-                source.GetResult(token);
+                ((OnityTaskSourceBase)source).GetPreservedResult(token, this);
                 TrySetResult(true);
             }
             catch (OperationCanceledException exception)
@@ -538,10 +537,9 @@ namespace Onity.Unity.Async
         }
     }
 
-    internal sealed class OnityPreservedTaskSource<T> : OnityTaskCompletionSource<T>
+    internal sealed class OnityPreservedTaskSource<T> : OnityTaskCompletionSource<T>,
+        IOnityPreservedTaskContinuation
     {
-        private static readonly Action<object> s_complete = CompleteFromSource;
-
         private IOnityTaskSource<T> m_source;
         private readonly int m_token;
 
@@ -550,12 +548,12 @@ namespace Onity.Unity.Async
         {
             m_source = source;
             m_token = token;
-            ((IOnityStatefulTaskSource)source).OnCompleted(s_complete, this, token);
+            ((IOnityPreservedTaskSource)source).OnCompleted(this, token);
         }
 
-        private static void CompleteFromSource(object state)
+        void IOnityPreservedTaskContinuation.Complete()
         {
-            ((OnityPreservedTaskSource<T>)state).Complete();
+            Complete();
         }
 
         private void Complete()
@@ -568,7 +566,7 @@ namespace Onity.Unity.Async
             try
             {
                 status = source.GetStatus(token);
-                T result = source.GetResult(token);
+                T result = ((OnityTaskSourceBase<T>)source).GetPreservedResult(token, this);
                 TrySetResult(result);
             }
             catch (OperationCanceledException exception)

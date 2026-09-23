@@ -1,0 +1,29 @@
+{
+  "suite": "OnityTask Preserve vs UniTask sharing",
+  "benchmarkBranch": "benchmark/onitytask-preserve",
+  "benchmarkHostBaseCommit": "53f1af6",
+  "candidateSourceCommit": "c2f9358994b8198c12ab48e1569014787f65325e",
+  "candidateOnityAsyncGitBlob": "1dcb59297c21ec72f8c6512e3a64549c5e307074",
+  "candidateCompletionSourceGitBlob": "81fcc9cc5b68df365966e256c7e272b8a4dac427",
+  "benchmarkRunnerGitBlob": "3278c40dceac1bd9871fe64b8dba98daf31948d3",
+  "benchmarkMenuGitBlob": "f95ed8b8ed2ddfbc7bc871a6c15e253b286b5dc4",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "Pending native WhenAny<int> sources; conversion and two late result reads are separate synchronous slices. Source construction, pending callback registration, completion, and first consumption are outside each slice.",
+  "sourceKindCheck": "The runner reflected the OnityTask<int> state and required OnityWhenAnyTaskSource.",
+  "samplesPerCase": 8,
+  "timingOperationsPerSample": 4096,
+  "allocationOperationsPerSample": 256,
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "priorCandidateReport": "onity-preserve-native-6a15305-2026-09-23.json",
+  "priorCandidateReportSha256": "0945ED7CAA4114C3D19011C4CBCB8EE47B61E94AD8665B8B681CF7429659876C",
+  "timingAndAllocationReport": "onity-preserve-native-c2f9358-2026-09-23.json",
+  "reportSha256": "A3A68A1319DCF5DC3D9DF4F16B94DFB9D72B4BC99A04FB5AC2C8432262D7C510",
+  "csvSha256": "3B84AFCADF4D20B578E8570ABDC9DF80994412E3EBA5D8B88BF95B7B59C68BD7",
+  "markdownSha256": "05716FE33EA808455069992F1EC6A013134040D00475C34921C5360407A1C9A2",
+  "scope": "The union-state source preserved the prior 120 B/task conversion allocation, while restoring ordinary native-await pooled-source size. UniTask Preserve and AsTask allocated 40 and 104 B/task; late reads allocated zero. Timing is a separate-process comparison and cannot isolate the source change."
+}

@@ -1,0 +1,31 @@
+{
+  "suite": "Native OnityTask sharing lifecycle",
+  "benchmarkBranch": "benchmark/onitytask-preserve",
+  "benchmarkHostBaseCommit": "53f1af6",
+  "candidateSourceCommit": "c2f9358994b8198c12ab48e1569014787f65325e",
+  "candidateOnityAsyncGitBlob": "1dcb59297c21ec72f8c6512e3a64549c5e307074",
+  "candidateCompletionSourceGitBlob": "81fcc9cc5b68df365966e256c7e272b8a4dac427",
+  "benchmarkRunnerGitBlob": "3278c40dceac1bd9871fe64b8dba98daf31948d3",
+  "benchmarkRunnerChangeFromPrior": "Only the embedded runtime commit changed. Operations, scope, sample counts, order, and calibration are identical to the 6a15305 run.",
+  "benchmarkMenuGitBlob": "f95ed8b8ed2ddfbc7bc871a6c15e253b286b5dc4",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "Fresh two-input pending typed WhenAny native source construction through winner and loser completion; sharing conversion, pending observers, callback dispatch and wait, one result read per observer, and two late reads are within the measured batch. The ordinary native await regression has one callback and one result, without conversion or late reads. Preallocated runner storage, source-kind verification, and cleanup are outside the batch.",
+  "apiShapeDifference": "Pinned UniTask uses a two-element params array for WhenAny, measured inside the operation; Onity uses a two-argument overload. Four-consumer UniTask AsTask uses .NET Task and ConfigureAwait(false) callbacks, so its measured time includes scheduling and waiting semantics unlike Onity's synchronous callbacks.",
+  "allocationCoverage": "Unity Profiler GC.Alloc samples cover work under a main-thread marker. Four-consumer AsTask callbacks can run on another thread, so allocations from that work may be outside the marker and reported bytes are not total cross-thread lifetime allocations.",
+  "samplesPerCase": 8,
+  "timingOperationsPerSample": 4096,
+  "allocationOperationsPerSample": 256,
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "priorCandidateReport": "onity-native-lifecycle-6a15305-2026-09-23.json",
+  "priorCandidateReportSha256": "49B47C37031F930863DB11A60B1EBEBAD73E1E44CD4986212C0FB6481C53E9DF",
+  "timingAndAllocationReport": "onity-native-lifecycle-c2f9358-2026-09-23.json",
+  "reportSha256": "E7B136668EE1568CB43F8343DD61024D732D70225DDFF4FF06FAB7E2C4DAAA45",
+  "csvSha256": "2D97E716C98B57C8B57062230B77B4356AF9776F69455063F7C084166FCCCEA1",
+  "markdownSha256": "0F6F6A70EDA735915E8AAB71E891BB86A98BF41385BDD445E517C4602BBF45DC",
+  "scope": "The union-state candidate removed the prior two pooled-source reference fields. Calibrated main-thread allocations returned ordinary native awaiting from 672 to 656 B/task and further reduced one/four-observer sharing from 792/896 to 776/880 B/task. Separate-process timing cannot isolate the source change; Editor/Mono results do not establish Player IL2CPP or overall library superiority."
+}

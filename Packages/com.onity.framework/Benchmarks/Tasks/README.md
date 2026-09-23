@@ -331,3 +331,28 @@ and [provenance](../../../../docs/assets/benchmarks/onity-preserve-native-6a1530
 attribute all 120 B/task of Onity conversion to one allocation site. The
 bound callback allocation site recorded for `956e5cb` is absent. The 16 B/task
 ordinary native-await regression remains a release concern for this candidate.
+
+The union-state follow-up at `c2f9358` reuses the native source's existing
+reference field for a Preserve continuation or an `AsTask` bridge. Its
+[lifecycle JSON](../../../../docs/assets/benchmarks/onity-native-lifecycle-c2f9358-2026-09-23.json),
+[CSV](../../../../docs/assets/benchmarks/onity-native-lifecycle-c2f9358-2026-09-23.csv),
+[Markdown](../../../../docs/assets/benchmarks/onity-native-lifecycle-c2f9358-2026-09-23.md),
+and [provenance](../../../../docs/assets/benchmarks/onity-native-lifecycle-c2f9358-2026-09-23.provenance.json)
+retain the same eight timing and allocation samples per case. The allocation
+controls passed (65,568 B/0 B). Ordinary native awaiting returned to 656
+B/task, matching `956e5cb` and improving on `6a15305` by 16 B/task. One- and
+four-observer sharing fell from 792 to 776 B/task and 896 to 880 B/task,
+respectively, compared with `6a15305`. These bytes cover main-thread Profiler
+work; four-observer UniTask `AsTask` callbacks may allocate on another thread.
+The timing samples come from separate Editor processes and do not establish
+a causal speed change.
+
+The matching narrow [conversion JSON](../../../../docs/assets/benchmarks/onity-preserve-native-c2f9358-2026-09-23.json),
+[CSV](../../../../docs/assets/benchmarks/onity-preserve-native-c2f9358-2026-09-23.csv),
+[Markdown](../../../../docs/assets/benchmarks/onity-preserve-native-c2f9358-2026-09-23.md),
+and [provenance](../../../../docs/assets/benchmarks/onity-preserve-native-c2f9358-2026-09-23.provenance.json)
+show 120 B/task for Onity `Preserve`, 40 B/task for UniTask `Preserve`, and
+104 B/task for UniTask `AsTask`; all late-read allocation samples are zero.
+The calibrated [callstack report](../../../../docs/assets/benchmarks/onity-preserve-native-c2f9358-allocation-callstacks-2026-09-23.json)
+and [provenance](../../../../docs/assets/benchmarks/onity-preserve-native-c2f9358-allocation-callstacks-2026-09-23.provenance.json)
+attribute Onity's full 30,720 B conversion sample to one stack (120 B/task).
