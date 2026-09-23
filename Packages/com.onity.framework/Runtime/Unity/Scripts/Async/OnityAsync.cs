@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -428,6 +429,11 @@ namespace Onity.Unity.Async
                 throw new ArgumentNullException(nameof(tasks));
             }
 
+            if (tasks.Length == 2)
+            {
+                return WhenAll(tasks[0], tasks[1]);
+            }
+
             Task[] taskArray = new Task[tasks.Length];
 
             for (int i = 0; i < tasks.Length; i++)
@@ -436,6 +442,41 @@ namespace Onity.Unity.Async
             }
 
             return FromTask(OnityAsync.WhenAll(taskArray));
+        }
+
+        /// <summary>
+        /// Completes after both inputs complete. Each input is consumed once, and
+        /// faults take precedence over cancellation. Native inputs are observed
+        /// without creating a .NET Task bridge for each input.
+        /// </summary>
+        /// <param name="first">First input task.</param>
+        /// <param name="second">Second input task.</param>
+        /// <returns>A task that completes after both inputs.</returns>
+        public static OnityTask WhenAll(OnityTask first, OnityTask second)
+        {
+            if (first.m_state is IOnityTaskSource
+                && !(first.m_state is IOnityMultiConsumerTaskSource)
+                && ReferenceEquals(first.m_state, second.m_state)
+                && first.m_token == second.m_token)
+            {
+                // A single-consumer source can only register one native awaiter.
+                // Its existing Task bridge safely represents both array entries.
+                return FromTask(OnityAsync.WhenAll(first.AsTask(), second.AsTask()));
+            }
+
+            OnityWhenAllTaskSource source = new OnityWhenAllTaskSource(
+                first,
+                second,
+                first.m_state as Task,
+                second.m_state as Task);
+            OnityTask result = source.Task;
+            if (OnityTaskTracker.IsEnabled)
+            {
+                // The tracker accepts only Task, so materialize the output only.
+                OnityTaskTracker.Track(result.AsTask(), "OnityAsync.WhenAll");
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -2278,6 +2319,374 @@ namespace Onity.Unity.Async
             if (Interlocked.CompareExchange(ref m_winner, index + 1, 0) == 0)
             {
                 TrySetException(exception);
+            }
+        }
+    }
+
+    internal sealed class OnityWhenAllTaskSource : IOnityTaskSource, IOnityMultiConsumerTaskSource
+    {
+        private const int k_version = 1;
+
+        private readonly object m_gate = new object();
+        private readonly Action m_firstInputContinuation;
+        private readonly Action m_secondInputContinuation;
+        private readonly Task m_firstTask;
+        private readonly Task m_secondTask;
+
+        private OnityTaskAwaiter m_firstAwaiter;
+        private OnityTaskAwaiter m_secondAwaiter;
+        private Action m_firstContinuation;
+        private Action m_secondContinuation;
+        private List<Action> m_otherContinuations;
+        private TaskCompletionSource<bool> m_taskBridge;
+        private Exception m_firstFault;
+        private Exception m_secondFault;
+        private ExceptionDispatchInfo m_failure;
+        private OperationCanceledException m_firstCancellation;
+        private OperationCanceledException m_secondCancellation;
+        private int m_firstObserved;
+        private int m_secondObserved;
+        private int m_remaining = 2;
+        private int m_status;
+
+        public OnityWhenAllTaskSource(OnityTask first, OnityTask second, Task firstTask, Task secondTask)
+        {
+            m_firstTask = firstTask;
+            m_secondTask = secondTask;
+            m_firstInputContinuation = CompleteFirst;
+            m_secondInputContinuation = CompleteSecond;
+            RegisterFirst(first);
+            RegisterSecond(second);
+        }
+
+        public OnityTask Task => new OnityTask(this);
+
+        public int Version => k_version;
+
+        public OnityTaskSourceStatus GetStatus(int token)
+        {
+            ValidateToken(token);
+            return (OnityTaskSourceStatus)Volatile.Read(ref m_status);
+        }
+
+        public Task AsTask(int token)
+        {
+            lock (m_gate)
+            {
+                ValidateToken(token);
+                if (m_taskBridge == null)
+                {
+                    m_taskBridge = CreateTaskBridge();
+                    CompleteTaskBridgeUnsafe();
+                }
+
+                return m_taskBridge.Task;
+            }
+        }
+
+        public void OnCompleted(Action continuation, int token)
+        {
+            if (continuation == null)
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
+
+            bool invokeNow;
+            lock (m_gate)
+            {
+                ValidateToken(token);
+                invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
+                if (!invokeNow)
+                {
+                    if (m_firstContinuation == null)
+                    {
+                        m_firstContinuation = continuation;
+                    }
+                    else if (m_secondContinuation == null)
+                    {
+                        m_secondContinuation = continuation;
+                    }
+                    else
+                    {
+                        if (m_otherContinuations == null)
+                        {
+                            m_otherContinuations = new List<Action>();
+                        }
+
+                        m_otherContinuations.Add(continuation);
+                    }
+                }
+            }
+
+            if (invokeNow)
+            {
+                OnityTaskContinuation.Invoke(continuation);
+            }
+        }
+
+        public void GetResult(int token)
+        {
+            OnityTaskSourceStatus status = GetStatus(token);
+            if (status == OnityTaskSourceStatus.Pending)
+            {
+                throw new InvalidOperationException("OnityTask is not completed.");
+            }
+
+            if (status == OnityTaskSourceStatus.Faulted)
+            {
+                m_failure.Throw();
+            }
+
+            if (status == OnityTaskSourceStatus.Canceled)
+            {
+                OperationCanceledException cancellation =
+                    m_firstCancellation ?? m_secondCancellation;
+                ExceptionDispatchInfo.Capture(cancellation).Throw();
+            }
+        }
+
+        private void RegisterFirst(OnityTask task)
+        {
+            m_firstAwaiter = task.GetAwaiter();
+            try
+            {
+                if (m_firstAwaiter.IsCompleted)
+                {
+                    CompleteFirst();
+                }
+                else
+                {
+                    m_firstAwaiter.UnsafeOnCompleted(m_firstInputContinuation);
+                }
+            }
+            catch (Exception exception)
+            {
+                CompleteRegistrationFailure(0, exception);
+            }
+        }
+
+        private void RegisterSecond(OnityTask task)
+        {
+            m_secondAwaiter = task.GetAwaiter();
+            try
+            {
+                if (m_secondAwaiter.IsCompleted)
+                {
+                    CompleteSecond();
+                }
+                else
+                {
+                    m_secondAwaiter.UnsafeOnCompleted(m_secondInputContinuation);
+                }
+            }
+            catch (Exception exception)
+            {
+                CompleteRegistrationFailure(1, exception);
+            }
+        }
+
+        private void CompleteFirst()
+        {
+            if (Interlocked.Exchange(ref m_firstObserved, 1) != 0)
+            {
+                return;
+            }
+
+            OnityTaskAwaiter awaiter = m_firstAwaiter;
+            m_firstAwaiter = default;
+            CompleteInput(0, awaiter, null);
+        }
+
+        private void CompleteSecond()
+        {
+            if (Interlocked.Exchange(ref m_secondObserved, 1) != 0)
+            {
+                return;
+            }
+
+            OnityTaskAwaiter awaiter = m_secondAwaiter;
+            m_secondAwaiter = default;
+            CompleteInput(1, awaiter, null);
+        }
+
+        private void CompleteRegistrationFailure(int index, Exception exception)
+        {
+            int wasObserved = index == 0
+                ? Interlocked.Exchange(ref m_firstObserved, 1)
+                : Interlocked.Exchange(ref m_secondObserved, 1);
+            if (wasObserved == 0)
+            {
+                CompleteInput(index, default, exception);
+            }
+        }
+
+        private void CompleteInput(int index, OnityTaskAwaiter awaiter, Exception registrationFailure)
+        {
+            Exception fault = registrationFailure;
+            OperationCanceledException cancellation = null;
+            if (fault == null)
+            {
+                bool isCanceled = false;
+                try
+                {
+                    isCanceled = awaiter.IsCanceled;
+                    awaiter.GetResult();
+                }
+                catch (OperationCanceledException exception)
+                {
+                    if (isCanceled)
+                    {
+                        cancellation = exception;
+                    }
+                    else
+                    {
+                        fault = exception;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    fault = exception;
+                }
+            }
+
+            Action firstContinuation;
+            Action secondContinuation;
+            List<Action> otherContinuations;
+            lock (m_gate)
+            {
+                if (index == 0)
+                {
+                    m_firstFault = fault;
+                    m_firstCancellation = cancellation;
+                }
+                else
+                {
+                    m_secondFault = fault;
+                    m_secondCancellation = cancellation;
+                }
+
+                if (--m_remaining != 0)
+                {
+                    return;
+                }
+
+                OnityTaskSourceStatus status = GetFinalStatusUnsafe();
+                if (status == OnityTaskSourceStatus.Faulted)
+                {
+                    m_failure = ExceptionDispatchInfo.Capture(m_firstFault ?? m_secondFault);
+                }
+
+                CompleteTaskBridgeUnsafe(status);
+                Volatile.Write(ref m_status, (int)status);
+                firstContinuation = m_firstContinuation;
+                secondContinuation = m_secondContinuation;
+                otherContinuations = m_otherContinuations;
+                m_firstContinuation = null;
+                m_secondContinuation = null;
+                m_otherContinuations = null;
+            }
+
+            OnityTaskContinuation.Invoke(firstContinuation);
+            OnityTaskContinuation.Invoke(secondContinuation);
+            if (otherContinuations != null)
+            {
+                for (int i = 0; i < otherContinuations.Count; i++)
+                {
+                    OnityTaskContinuation.Invoke(otherContinuations[i]);
+                }
+            }
+        }
+
+        private OnityTaskSourceStatus GetFinalStatusUnsafe()
+        {
+            if (m_firstFault != null || m_secondFault != null)
+            {
+                return OnityTaskSourceStatus.Faulted;
+            }
+
+            return m_firstCancellation != null || m_secondCancellation != null
+                ? OnityTaskSourceStatus.Canceled
+                : OnityTaskSourceStatus.Succeeded;
+        }
+
+        private void CompleteTaskBridgeUnsafe()
+        {
+            CompleteTaskBridgeUnsafe((OnityTaskSourceStatus)m_status);
+        }
+
+        private void CompleteTaskBridgeUnsafe(OnityTaskSourceStatus status)
+        {
+            if (m_taskBridge == null || status == OnityTaskSourceStatus.Pending)
+            {
+                return;
+            }
+
+            if (status == OnityTaskSourceStatus.Succeeded)
+            {
+                m_taskBridge.TrySetResult(true);
+            }
+            else if (status == OnityTaskSourceStatus.Canceled)
+            {
+                OperationCanceledException cancellation =
+                    m_firstCancellation ?? m_secondCancellation;
+                m_taskBridge.TrySetCanceled(cancellation.CancellationToken);
+            }
+            else
+            {
+                List<Exception> faults = new List<Exception>(2);
+                AddFaults(faults, m_firstFault, m_firstTask);
+                AddFaults(faults, m_secondFault, m_secondTask);
+                m_taskBridge.TrySetException(faults);
+            }
+        }
+
+        private static void AddFaults(List<Exception> faults, Exception fault, Task task)
+        {
+            if (fault == null)
+            {
+                return;
+            }
+
+            AggregateException taskFaults = task != null && task.IsFaulted ? task.Exception : null;
+            if (taskFaults != null)
+            {
+                for (int i = 0; i < taskFaults.InnerExceptions.Count; i++)
+                {
+                    faults.Add(taskFaults.InnerExceptions[i]);
+                }
+            }
+            else
+            {
+                faults.Add(fault);
+            }
+        }
+
+        private static TaskCompletionSource<bool> CreateTaskBridge()
+        {
+            if (ExecutionContext.IsFlowSuppressed())
+            {
+                return new TaskCompletionSource<bool>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+
+            // The promise has no callback to run in its creation context.
+            AsyncFlowControl flowControl = ExecutionContext.SuppressFlow();
+            try
+            {
+                return new TaskCompletionSource<bool>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+            finally
+            {
+                flowControl.Undo();
+            }
+        }
+
+        private static void ValidateToken(int token)
+        {
+            if (token != k_version)
+            {
+                throw new InvalidOperationException("The OnityTask source token is invalid.");
             }
         }
     }
