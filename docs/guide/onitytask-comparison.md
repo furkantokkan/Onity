@@ -199,6 +199,36 @@ and [CSV](../assets/benchmarks/onitytask-unity2022-mono-pooled-candidate-2026-09
 preserve the full evidence. Work continues on reducing native-await scheduling
 cost before this change can be considered for release.
 
+## Native task sharing
+
+The isolated [Preserve benchmark host](https://github.com/furkantokkan/Onity/tree/benchmark/onitytask-preserve)
+measured commit `956e5cb` against pinned UniTask 2.5.11 in Unity
+`2022.3.62f3` Editor/Mono. Each timing result is an eight-sample mean; the
+allocation pass used eight samples with 65,568 B positive and 0 B empty
+controls. Pending typed `WhenAny` sources had two unresolved inputs. The
+measured slices exclude source creation, pending observer registration,
+completion, and first consumption.
+
+| Slice | Pending consumers | Onity ns/task | UniTask ns/task | Onity B/task | UniTask B/task |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `Preserve()` conversion | 1 | 363 | 94 | 248 | 40 |
+| Two late result reads | 1 | 139 | 91 | 0 | 0 |
+| Sharing conversion | 4 | 382 | 388 | 248 | 104 |
+| Two late result reads | 4 | 144 | 82 | 0 | 0 |
+
+The one-consumer comparison uses UniTask `Preserve()`. The four-consumer
+comparison uses UniTask `AsTask()`, which returns a .NET `Task<int>` that
+supports multiple pending observers. The small four-consumer timing difference
+does not establish a speed lead. A prior Onity source measured 264 B/task; a
+Profiler callstack attributed the removed 16 B to its separate lock object.
+The current callstack records 120 B at source creation and 128 B in its
+constructor; the latter is consistent with the bound completion callback.
+Conversion still allocates more than either UniTask comparator. These are
+synchronous slices, not full
+task lifecycles or IL2CPP/player evidence. See the
+[candidate samples](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-preserve/docs/assets/benchmarks/onity-preserve-native-956e5cb-2026-09-23.json)
+and [allocation callstacks](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-preserve/docs/assets/benchmarks/onity-preserve-native-956e5cb-allocation-callstacks-2026-09-23.json).
+
 ## Feature coverage
 
 | Capability | OnityTask status |
@@ -209,7 +239,7 @@ cost before this change can be considered for release.
 | `WhenAll` | Available, including typed ordered results; currently materializes inputs as .NET Tasks. |
 | Native `WhenAny` | Available for two untyped inputs; consumes both without canceling the loser. Its source and two delegates allocate per call. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
-| Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. It allocates one retained source for a pooled operation; comparative cost is still being measured. |
+| Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. Pending typed conversion measured 248 B/task in Editor/Mono; see the narrow comparison above. |
 | Selectable PlayerLoop phases and immediate cancellation | Limited to the supported runner phases and next-tick cancellation. |
 | `await foreach` async enumerable | Not yet available. |
 

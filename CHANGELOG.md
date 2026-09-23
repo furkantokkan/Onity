@@ -19,10 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Read completed multi-consumer results without taking the completion-source
   lock, while preserving the bridge/status publication order for concurrent
   completion.
+- Removed the separate lock-object allocation from internal `Preserve()`
+  sources. The measured pending native conversion fell from 264 to 248 B/task
+  in the Unity 2022 Editor/Mono benchmark.
 
 ### Tested
 
-- Unity `2022.3.62f3`: EditMode `524/524` and PlayMode `23/23` passed, including
+- Unity `2022.3.62f3`: EditMode `525/525` and PlayMode `23/23` passed, including
   native sharing, fault/cancellation propagation, source reuse, and main-thread
   continuation tests.
 
