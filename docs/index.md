@@ -11,7 +11,7 @@ Onity is a Unity-first framework for dependency injection, async gameplay flows,
 reactive state, typed messaging, factories, and pooling. Its core is engine-free,
 and the package has no non-Unity third-party runtime dependencies.
 
-**Current release:** [`v0.3.11`](https://github.com/furkantokkan/Onity/releases/tag/v0.3.11) · **Unity:** 2022.3 LTS or newer
+**Current release:** [`v0.3.12`](https://github.com/furkantokkan/Onity/releases/tag/v0.3.12) · **Unity:** 2022.3 LTS or newer
 
 ## Install
 
@@ -25,7 +25,7 @@ https://github.com/furkantokkan/Onity.git#upm
 To pin the current release:
 
 ```text
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.3.11
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.3.12
 ```
 
 ## Start here

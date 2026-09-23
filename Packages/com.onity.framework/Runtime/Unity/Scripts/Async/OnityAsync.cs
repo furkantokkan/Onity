@@ -81,6 +81,7 @@ namespace Onity.Unity.Async
         public static OnityTask<int> WhenAny(OnityTask first, OnityTask second)
         {
             if (first.m_state is IOnityTaskSource
+                && !(first.m_state is IOnityMultiConsumerTaskSource)
                 && ReferenceEquals(first.m_state, second.m_state)
                 && first.m_token == second.m_token)
             {

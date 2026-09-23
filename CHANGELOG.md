@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.12] - 2026-09-23
+
+### Added
+
+- Added typed and untyped `OnityTaskCompletionSource` for completing retained,
+  multi-consumer tasks from callbacks. Multiple pending or late awaiters can
+  observe the same result, fault, or cancellation without consuming a pool token.
+- Allowed the same completion-source task in both inputs of the two-task
+  `WhenAny` overload while retaining the single-consumer guard for pooled tasks.
+
+### Fixed
+
+- Kept completion-source status reads coherent with an already completed .NET
+  task bridge during concurrent completion.
+
+### Improved
+
+- Avoided Unity synchronization-context capture while creating a completion
+  source's .NET task bridge, preserving asynchronous bridge continuations.
+  Pending typed and untyped `AsTask()` conversion fell from 848 to 176 B/op
+  in the calibrated Unity 2022 Editor/Mono comparison; pinned UniTask used
+  120 B/op in the same workloads. The other 30 allocation metrics did not change.
+
+### Tested
+
+- Unity `2022.3.62f3`: EditMode `515/515` and PlayMode `21/21` passed,
+  including concurrent completion, synchronization-context, and `AsTask()`
+  bridge tests.
+- Compared 16 completion-source scenarios with pinned UniTask `2.5.11` using
+  eight timing and allocation samples per scenario. Results vary by workload;
+  see the [comparison](docs/guide/onitytask-comparison.md) and raw reports.
+- A separate calibrated `IsCompleted` probe allocated zero bytes for both
+  libraries; Onity's pending read remained slower in this Editor/Mono run.
+
 ## [0.3.11] - 2026-09-23
 
 ### Fixed
@@ -449,6 +483,7 @@ allocation. The core uses no `System.Linq`.
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.12]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.12
 [0.3.11]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.11
 [0.3.10]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.10
 [0.3.9]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.9

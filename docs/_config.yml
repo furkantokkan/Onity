@@ -26,8 +26,8 @@ heading_anchors: true
 aux_links:
   "View on GitHub":
     - "https://github.com/furkantokkan/Onity"
-  "v0.3.11 Release":
-    - "https://github.com/furkantokkan/Onity/releases/tag/v0.3.11"
+  "v0.3.12 Release":
+    - "https://github.com/furkantokkan/Onity/releases/tag/v0.3.12"
 aux_links_new_tab: true
 
 back_to_top: true

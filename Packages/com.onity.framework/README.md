@@ -62,6 +62,8 @@ Core assemblies in this package:
   - `OnityTask.NextFrame`, `DelayFrames`, `Delay`, `WaitUntil`, scene/web/`AsyncOperation` bridges
   - `OnityTask.WhenAll` for both untyped operations and ordered typed results
   - `OnityTask.WhenAny` for two untyped, single-consumer operations
+  - `OnityTaskCompletionSource` / `OnityTaskCompletionSource<T>` for
+    callback-owned, multi-consumer completion
   - `OnityAsync.DelayAsync`, `NextFrameAsync`, `NextFixedFrameAsync`
   - `OnityAsync.WhenAll`, `OnityAsync.WhenAny`
   - `CancellationTokenSource.CancelAfterSlim(...)`
@@ -72,6 +74,8 @@ Pooled `OnityTask` values returned by frame, delay, predicate, and Unity
 operation helpers are single-consumer. Await each value once. If several
 consumers must share an operation, call `AsTask()` once and share the returned
 `Task` instead of copying the pooled `OnityTask` value.
+For an operation completed by a callback, use `OnityTaskCompletionSource<T>`
+or its untyped variant to expose an OnityTask that supports multiple consumers.
 
 Suspended `async OnityTask` methods and `WhenAll` currently use .NET `Task`
 internally. A synchronously successful `async OnityTask<T>` stores its result

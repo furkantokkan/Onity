@@ -1,0 +1,9 @@
+stage,typed,consumers,library,timing_operations_per_sample,allocation_operations_per_sample,mean_ns_per_op,bytes_per_op,allocations_available
+PendingStatus,false,1,OnityTask,4096,256,125.8697509765625,0,true
+PendingStatus,false,1,UniTask,4096,256,92.535400390625,0,true
+TerminalStatus,false,1,OnityTask,4096,256,97.5616455078125,0,true
+TerminalStatus,false,1,UniTask,4096,256,85.07080078125,0,true
+PendingStatus,true,1,OnityTask,4096,256,114.94140625,0,true
+PendingStatus,true,1,UniTask,4096,256,80.0811767578125,0,true
+TerminalStatus,true,1,OnityTask,4096,256,88.983154296875,0,true
+TerminalStatus,true,1,UniTask,4096,256,76.373291015625,0,true
