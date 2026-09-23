@@ -79,6 +79,7 @@ fixed-frame wait also completes while `Time.timeScale` is zero.
 | Need | API |
 | --- | --- |
 | Next rendered frame | `await OnityTask.NextFrame(ct)` |
+| Next several rendered frames | `await OnityTask.DelayFrames(frameCount, ct)` |
 | Next fixed update | `await OnityTask.NextFixedFrame(ct)` |
 | Next late update | `await OnityTask.NextLateFrame(ct)` |
 | Scaled delay | `await OnityTask.Delay(seconds, ct)` |
@@ -86,6 +87,7 @@ fixed-frame wait also completes while `Time.timeScale` is zero.
 | Wait for a condition | `await OnityTask.WaitUntil(predicate, ct)` |
 | Wait while a condition holds | `await OnityTask.WaitWhile(predicate, ct)` |
 | Wait for several operations | `await OnityTask.WhenAll(tasks)` |
+| Collect typed results in input order | `T[] results = await OnityTask.WhenAll(typedTasks)` |
 | Completed typed result | `await OnityTask.FromResult(value)` |
 
 ## Single-consumer rule for pooled tasks
@@ -97,6 +99,15 @@ sources. Each returned `OnityTask` value is **single-consumer**:
 - Do not copy the value to several consumers.
 - Do not await it and then call `AsTask()` on the old copy.
 - `WhenAll` consumes its input task values; do not await those inputs separately.
+
+`NextFrame` and `DelayFrames(1)` resume no earlier than the following rendered
+frame in Play Mode. `DelayFrames(0)` completes immediately. Negative frame
+counts throw `ArgumentOutOfRangeException`.
+
+`WhenAll` currently materializes its inputs as .NET `Task` values. Likewise,
+methods declared `async OnityTask` use .NET's async method builder internally.
+Use the pooled frame, delay, predicate, and `AsyncOperation` waits directly in
+hot paths; do not assume every OnityTask composition is allocation-free.
 
 When several consumers must observe one operation, materialize one independent
 `Task` and share that instead:

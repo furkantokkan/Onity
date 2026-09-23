@@ -84,6 +84,34 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void OnityTask_DelayFramesNegative_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => OnityTask.DelayFrames(-1));
+        }
+
+        [Test]
+        public void OnityTask_DelayFramesZero_CompletesImmediately()
+        {
+            OnityTask task = OnityTask.DelayFrames(0);
+
+            Assert.That(task.IsCompletedSuccessfully, Is.True);
+            Assert.DoesNotThrow(() => task.GetAwaiter().GetResult());
+        }
+
+        [TestCase(0)]
+        [TestCase(2)]
+        public void OnityTask_DelayFramesPreCanceled_ThrowsOperationCanceledException(int frameCount)
+        {
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            OnityTask task = OnityTask.DelayFrames(frameCount, cancellationTokenSource.Token);
+
+            Assert.That(task.IsCanceled, Is.True);
+            Assert.Catch<OperationCanceledException>(() => task.GetAwaiter().GetResult());
+        }
+
+        [Test]
         public async Task OnityTask_WaitUntilTrue_CompletesSuccessfully()
         {
             OnityTask task = OnityTask.WaitUntil(() => true);
@@ -241,6 +269,50 @@ namespace Onity.Tests.EditMode
             await whenAllTask;
 
             Assert.That(whenAllTask.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
+        public async Task OnityTask_WhenAllTyped_ReturnsResultsInInputOrder()
+        {
+            TaskCompletionSource<int> firstCompletionSource =
+                new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<int> secondCompletionSource =
+                new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            OnityTask<int[]> whenAllTask = OnityTask.WhenAll(
+                OnityTask<int>.FromTask(firstCompletionSource.Task),
+                OnityTask<int>.FromTask(secondCompletionSource.Task));
+
+            secondCompletionSource.SetResult(22);
+            Assert.That(whenAllTask.IsCompleted, Is.False);
+            firstCompletionSource.SetResult(11);
+
+            int[] results = await whenAllTask;
+
+            Assert.That(results, Is.EqualTo(new[] { 11, 22 }));
+        }
+
+        [Test]
+        public void OnityTask_WhenAllTyped_FaultedInputPropagatesException()
+        {
+            OnityTask<int[]> whenAllTask = OnityTask.WhenAll(
+                OnityTask<int>.FromResult(1),
+                OnityTask<int>.FromException(new InvalidOperationException("Expected failure.")));
+
+            Assert.That(whenAllTask.IsFaulted, Is.True);
+            Assert.ThrowsAsync<InvalidOperationException>(async () => await whenAllTask.AsTask());
+        }
+
+        [Test]
+        public void OnityTask_WhenAllTyped_CanceledInputPropagatesCancellation()
+        {
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+            OnityTask<int[]> whenAllTask = OnityTask.WhenAll(
+                OnityTask<int>.FromResult(1),
+                OnityTask<int>.FromCanceled(cancellationTokenSource.Token));
+
+            Assert.That(whenAllTask.IsCanceled, Is.True);
+            Assert.CatchAsync<OperationCanceledException>(async () => await whenAllTask.AsTask());
         }
 
         [Test]

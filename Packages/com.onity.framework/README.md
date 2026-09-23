@@ -59,7 +59,8 @@ Core assemblies in this package:
   - Task bridge (`FirstAsync`, `ToTask`)
 - Async helpers:
   - `OnityTask` / `OnityTask<T>` for allocation-aware Unity async flows
-  - `OnityTask.NextFrame`, `Delay`, `WaitUntil`, scene/web/`AsyncOperation` bridges
+  - `OnityTask.NextFrame`, `DelayFrames`, `Delay`, `WaitUntil`, scene/web/`AsyncOperation` bridges
+  - `OnityTask.WhenAll` for both untyped operations and ordered typed results
   - `OnityAsync.DelayAsync`, `NextFrameAsync`, `NextFixedFrameAsync`
   - `OnityAsync.WhenAll`, `OnityAsync.WhenAny`
   - `CancellationTokenSource.CancelAfterSlim(...)`
@@ -70,6 +71,10 @@ Pooled `OnityTask` values returned by frame, delay, predicate, and Unity
 operation helpers are single-consumer. Await each value once. If several
 consumers must share an operation, call `AsTask()` once and share the returned
 `Task` instead of copying the pooled `OnityTask` value.
+
+The custom `async OnityTask` method builders and `WhenAll` currently use .NET
+`Task` internally. The pooled Unity wait operations avoid a `Task` until
+explicitly converted; do not assume all OnityTask paths are allocation-free.
 
 See the [Async with OnityTask guide](https://furkantokkan.github.io/Onity/guide/onitytask.html)
 for cancellation, scene/web operations, interop, and diagnostics.
