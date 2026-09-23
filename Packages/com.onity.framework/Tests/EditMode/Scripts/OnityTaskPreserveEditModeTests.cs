@@ -110,6 +110,47 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void Preserve_AlreadyCompletedNativeTask_KeepsItsResult()
+        {
+            (OnityTask original, object source, MethodInfo tick) = NewStandaloneFrameTask();
+            Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
+
+            OnityTask shared = original.Preserve();
+
+            Assert.That(shared.IsCompleted, Is.True);
+            Assert.DoesNotThrow(() => shared.GetAwaiter().GetResult());
+            Assert.DoesNotThrow(() => shared.GetAwaiter().GetResult());
+            Assert.Throws<InvalidOperationException>(() => original.GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public async Task Preserve_ConcurrentNativeCompletion_DoesNotLoseResult()
+        {
+            for (int i = 0; i < 64; i++)
+            {
+                TaskCompletionSource<bool> firstInput = NewCompletionSource();
+                TaskCompletionSource<bool> secondInput = NewCompletionSource();
+                OnityTask<int> original = OnityTask.WhenAny(
+                    OnityTask.FromTask(firstInput.Task),
+                    OnityTask.FromTask(secondInput.Task));
+
+                using ManualResetEventSlim start = new ManualResetEventSlim(false);
+                Task producer = Task.Run(() =>
+                {
+                    start.Wait();
+                    firstInput.SetResult(true);
+                });
+                start.Set();
+                OnityTask<int> shared = original.Preserve();
+
+                Assert.That(await Observe(shared), Is.EqualTo(0));
+                await producer;
+                secondInput.SetResult(true);
+                Assert.That(shared.GetAwaiter().GetResult(), Is.EqualTo(0));
+            }
+        }
+
+        [Test]
         public void Preserve_NativeFaultedOperationCanceledException_RemainsFaulted()
         {
             OperationCanceledException failure = new OperationCanceledException("faulted input");
@@ -178,6 +219,19 @@ namespace Onity.Tests.EditMode
             Assert.Throws<InvalidOperationException>(() => original.Preserve());
             Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
             Assert.DoesNotThrow(() => bridge.GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public void Preserve_OriginalAlreadyAwaited_IsRejected()
+        {
+            (OnityTask original, object source, MethodInfo tick) = NewStandaloneFrameTask();
+            bool called = false;
+            original.GetAwaiter().OnCompleted(() => called = true);
+
+            Assert.Throws<InvalidOperationException>(() => original.Preserve());
+            Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
+            Assert.That(called, Is.True);
+            Assert.DoesNotThrow(() => original.GetAwaiter().GetResult());
         }
 
         [Test]

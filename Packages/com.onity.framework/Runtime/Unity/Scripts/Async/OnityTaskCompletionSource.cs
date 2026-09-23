@@ -487,6 +487,8 @@ namespace Onity.Unity.Async
 
     internal sealed class OnityPreservedTaskSource : OnityTaskCompletionSource<bool>
     {
+        private static readonly Action<object> s_complete = CompleteFromSource;
+
         private IOnityTaskSource m_source;
         private readonly int m_token;
 
@@ -495,10 +497,15 @@ namespace Onity.Unity.Async
         {
             m_source = source;
             m_token = token;
-            source.OnCompleted(Complete, token);
+            ((IOnityStatefulTaskSource)source).OnCompleted(s_complete, this, token);
         }
 
         public new OnityTask Task => new OnityTask((IOnityTaskSource)this);
+
+        private static void CompleteFromSource(object state)
+        {
+            ((OnityPreservedTaskSource)state).Complete();
+        }
 
         private void Complete()
         {
@@ -533,6 +540,8 @@ namespace Onity.Unity.Async
 
     internal sealed class OnityPreservedTaskSource<T> : OnityTaskCompletionSource<T>
     {
+        private static readonly Action<object> s_complete = CompleteFromSource;
+
         private IOnityTaskSource<T> m_source;
         private readonly int m_token;
 
@@ -541,7 +550,12 @@ namespace Onity.Unity.Async
         {
             m_source = source;
             m_token = token;
-            source.OnCompleted(Complete, token);
+            ((IOnityStatefulTaskSource)source).OnCompleted(s_complete, this, token);
+        }
+
+        private static void CompleteFromSource(object state)
+        {
+            ((OnityPreservedTaskSource<T>)state).Complete();
         }
 
         private void Complete()
