@@ -101,8 +101,9 @@ cost before this change can be considered for release.
 | `async OnityTask<T>` with synchronous success | Stores the result inline. Suspended and exceptional methods still use .NET `Task` internals. |
 | `WhenAll` | Available, including typed ordered results; currently materializes inputs as .NET Tasks. |
 | Native `WhenAny` | Available for two untyped inputs; consumes both without canceling the loser. Its source and two delegates allocate per call. |
+| Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; comparative allocation and timing results are pending. |
 | Selectable PlayerLoop phases and immediate cancellation | Limited to the supported runner phases and next-tick cancellation. |
-| `await foreach` async enumerable and public completion source | Not yet available. |
+| `await foreach` async enumerable | Not yet available. |
 
 OnityTask is useful for common Unity flows today, but it is **not a full
 UniTask replacement**. The next measured work is lower-allocation native async
