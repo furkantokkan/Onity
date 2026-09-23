@@ -1931,7 +1931,7 @@ namespace Onity.Unity.Async
 
         private static OnityTaskRunner GetOrCreate()
         {
-            if (s_instance != null)
+            if (!ReferenceEquals(s_instance, null))
             {
                 return s_instance;
             }
