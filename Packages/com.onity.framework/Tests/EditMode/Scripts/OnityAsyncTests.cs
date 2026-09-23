@@ -478,6 +478,95 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void OnityTask_WhenAll_TwoNativeFaults_KeepInputOrder()
+        {
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            Exception firstFailure = new InvalidOperationException("first failure");
+            Exception secondFailure = new ArgumentException("second failure");
+            Task bridge = OnityTask.WhenAll(first.Task, second.Task).AsTask();
+
+            second.TrySetException(secondFailure);
+            first.TrySetException(firstFailure);
+
+            Assert.That(bridge.IsFaulted, Is.True);
+            Assert.That(bridge.Exception.InnerExceptions,
+                Is.EqualTo(new[] { firstFailure, secondFailure }));
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_NativeFaultedCancellationException_RemainsFaulted()
+        {
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            OperationCanceledException failure = new OperationCanceledException("faulted input");
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+
+            MethodInfo setFault = typeof(OnityTaskCompletionSource<bool>).GetMethod(
+                "TrySetFault", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(setFault, Is.Not.Null);
+            Assert.That(setFault.Invoke(first, new object[] { failure }), Is.EqualTo(true));
+            second.TrySetResult();
+
+            Assert.That(combined.IsFaulted, Is.True);
+            Assert.That(combined.IsCanceled, Is.False);
+            Assert.That(combined.AsTask().Exception.InnerException, Is.SameAs(failure));
+        }
+
+        [Test]
+        public async Task OnityTask_WhenAll_TaskBackedInput_DoesNotRequireRegistrationContextPump()
+        {
+            TaskCompletionSource<bool> first =
+                new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            SynchronizationContext previousContext = SynchronizationContext.Current;
+            NoPumpSynchronizationContext registrationContext = new NoPumpSynchronizationContext();
+            OnityTask combined;
+
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(registrationContext);
+                combined = OnityTask.WhenAll(OnityTask.FromTask(first.Task), second.Task);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
+
+            await Task.Run(() =>
+            {
+                first.SetResult(true);
+                second.TrySetResult();
+            });
+
+            Task completion = combined.AsTask();
+            Task winner = await Task.WhenAny(completion, Task.Delay(TimeSpan.FromSeconds(5)));
+            Assert.That(winner, Is.SameAs(completion));
+            Assert.That(registrationContext.PostCount, Is.Zero);
+        }
+
+        [Test]
+        public async Task OnityTask_WhenAll_TwoNativeInputs_AwaitResumesOnUnityContext()
+        {
+            SynchronizationContext unityContext = SynchronizationContext.Current;
+            int unityThread = Thread.CurrentThread.ManagedThreadId;
+            Assert.That(unityContext, Is.Not.Null);
+
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+            Task<int> observing = ObserveCompletionThread(combined);
+
+            await Task.Run(() =>
+            {
+                first.TrySetResult();
+                second.TrySetResult();
+            });
+
+            Assert.That(await observing, Is.EqualTo(unityThread));
+        }
+
+        [Test]
         public async Task OnityTask_WhenAll_DuplicateNativeInput_UsesOneTaskBridge()
         {
             (OnityTask task, object source, MethodInfo tick) = NewStandaloneFrameTask();
@@ -521,7 +610,7 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
-        public void OnityTask_WhenAll_DisabledTrackerLeavesOutputTaskBridgeUncreated()
+        public void OnityTask_WhenAll_DisabledTrackerUsesTaskBackedOutputWithoutInputBridges()
         {
             bool previousTracking = OnityTaskTracker.IsEnabled;
             try
@@ -534,15 +623,16 @@ namespace Onity.Tests.EditMode
                     "m_state", BindingFlags.Instance | BindingFlags.NonPublic);
                 Assert.That(stateField, Is.Not.Null);
                 object state = stateField.GetValue(combined);
-                FieldInfo bridgeField = state.GetType().GetField(
-                    "m_taskBridge", BindingFlags.Instance | BindingFlags.NonPublic);
-                Assert.That(bridgeField, Is.Not.Null);
 
-                Assert.That(bridgeField.GetValue(state), Is.Null);
+                Assert.That(state, Is.InstanceOf<Task>());
+                Assert.That(combined.AsTask(), Is.SameAs(state));
+                Assert.That(GetCompletionSourceBridge(first), Is.Null);
+                Assert.That(GetCompletionSourceBridge(second), Is.Null);
                 first.TrySetResult();
                 second.TrySetResult();
                 Assert.DoesNotThrow(() => combined.GetAwaiter().GetResult());
-                Assert.That(bridgeField.GetValue(state), Is.Null);
+                Assert.That(GetCompletionSourceBridge(first), Is.Null);
+                Assert.That(GetCompletionSourceBridge(second), Is.Null);
             }
             finally
             {
@@ -911,6 +1001,12 @@ namespace Onity.Tests.EditMode
             return bridgeField.GetValue(source);
         }
 
+        private static async Task<int> ObserveCompletionThread(OnityTask task)
+        {
+            await task;
+            return Thread.CurrentThread.ManagedThreadId;
+        }
+
         private static (OnityTask task, object source, MethodInfo tick) NewStandaloneFrameTask()
         {
             Type sourceType = typeof(OnityTask).Assembly.GetType(
@@ -950,6 +1046,18 @@ namespace Onity.Tests.EditMode
             public bool Equals(ThrowingEquatableResult other)
             {
                 throw new InvalidOperationException("Result equality must not run during AsTask conversion.");
+            }
+        }
+
+        private sealed class NoPumpSynchronizationContext : SynchronizationContext
+        {
+            private int m_postCount;
+
+            public int PostCount => Volatile.Read(ref m_postCount);
+
+            public override void Post(SendOrPostCallback callback, object state)
+            {
+                Interlocked.Increment(ref m_postCount);
             }
         }
 
