@@ -251,7 +251,19 @@ namespace Onity.Unity.Async
         private OnityTaskSourceStatus GetStatus(int token)
         {
             ValidateToken(token);
-            return (OnityTaskSourceStatus)Volatile.Read(ref m_status);
+            OnityTaskSourceStatus status =
+                (OnityTaskSourceStatus)Volatile.Read(ref m_status);
+            if (status != OnityTaskSourceStatus.Pending)
+            {
+                return status;
+            }
+
+            // The task bridge completes under this gate before status is
+            // published. A pending read must wait for that publication.
+            lock (m_gate)
+            {
+                return (OnityTaskSourceStatus)m_status;
+            }
         }
 
         private T GetResult(int token)

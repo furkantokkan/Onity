@@ -496,6 +496,47 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void CompletedTaskBridge_NeverExposesPendingSourceStatus()
+        {
+            OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
+            Task<int> bridge = source.Task.AsTask();
+            using ManualResetEventSlim queued = new ManualResetEventSlim(false);
+            using ManualResetEventSlim release = new ManualResetEventSlim(false);
+            using ManualResetEventSlim reading = new ManualResetEventSlim(false);
+            BlockingQueueTaskScheduler scheduler =
+                new BlockingQueueTaskScheduler(queued, release);
+            Task continuation = bridge.ContinueWith(
+                _ => { }, CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously, scheduler);
+            Task<bool> completion = Task.Run(() => source.TrySetResult(82));
+
+            try
+            {
+                Assert.That(queued.Wait(5000), Is.True);
+                Assert.That(bridge.IsCompleted, Is.True);
+
+                Task<bool> statusRead = Task.Run(() =>
+                {
+                    reading.Set();
+                    return source.Task.IsCompleted;
+                });
+                Assert.That(reading.Wait(5000), Is.True);
+                Assert.That(statusRead.Wait(100), Is.False);
+
+                release.Set();
+                Assert.That(statusRead.Wait(5000), Is.True);
+                Assert.That(statusRead.Result, Is.True);
+                Assert.That(completion.Wait(5000), Is.True);
+                Assert.That(completion.Result, Is.True);
+                Assert.That(continuation.Wait(5000), Is.True);
+            }
+            finally
+            {
+                release.Set();
+            }
+        }
+
+        [Test]
         public void ConcurrentTerminalCalls_HaveOneWinnerAndMatchingOutcome()
         {
             using CancellationTokenSource cancellation = new CancellationTokenSource();
@@ -814,6 +855,41 @@ namespace Onity.Tests.EditMode
                 "m_taskBridge", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(field, Is.Not.Null);
             return field.GetValue(source);
+        }
+
+        private sealed class BlockingQueueTaskScheduler : TaskScheduler
+        {
+            private readonly ManualResetEventSlim m_queued;
+            private readonly ManualResetEventSlim m_release;
+
+            public BlockingQueueTaskScheduler(
+                ManualResetEventSlim queued,
+                ManualResetEventSlim release)
+            {
+                m_queued = queued;
+                m_release = release;
+            }
+
+            protected override IEnumerable<Task> GetScheduledTasks()
+            {
+                return null;
+            }
+
+            protected override void QueueTask(Task task)
+            {
+                m_queued.Set();
+                if (!m_release.Wait(5000))
+                {
+                    throw new TimeoutException("Task bridge completion was not released.");
+                }
+
+                ThreadPool.QueueUserWorkItem(_ => TryExecuteTask(task));
+            }
+
+            protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
+            {
+                return false;
+            }
         }
     }
 }
