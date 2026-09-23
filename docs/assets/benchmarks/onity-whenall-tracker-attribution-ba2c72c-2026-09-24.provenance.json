@@ -1,0 +1,46 @@
+{
+  "suite": "Pending two-input WhenAll tracker allocation attribution",
+  "benchmarkBranch": "benchmark/onitytask-tracker-attribution",
+  "productCommit": "ba2c72cc00880ca63645c726f8c1ea965c895404",
+  "onityAsyncGitBlob": "726369708ce7e32f046b36632ec2c64e67b038cf",
+  "onityAsyncWorkingSha256": "c0c463bb5801c6d0d417e23dd6cbe94ce2cca8b43d9db0c41a780e5115921565",
+  "runnerWorkingGitBlob": "0e6db342404d6a74c86cf9ed27b7a9cca6932c45",
+  "runnerWorkingSha256": "5b748a81eebe2307f844746c22aa55faf79b700acd31dd1650ef9f079950e7f9",
+  "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityEditor": "2022.3.62f3",
+  "scriptingBackend": "Mono",
+  "entryPoint": "Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine",
+  "timingArguments": "-batchmode -nographics -projectPath <isolated-worktree> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskBenchmarkOutput <report.json> -logFile <timing.log>",
+  "allocationArguments": "-batchmode -nographics -profiler-enable -projectPath <isolated-worktree> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <same-report.json> -logFile <allocation.log>",
+  "sampleConditions": {
+    "warmupBatchesPerScenarioAndLibrary": 10,
+    "timingBatchesPerSample": 16,
+    "timingOperationsPerSample": 2048,
+    "allocationOperationsPerSample": 128,
+    "samplesPerCase": 8,
+    "markerScope": "WhenAll scheduling and returned-value storage",
+    "excluded": "Input preparation, completion, continuation dispatch, result consumption, full lifecycle",
+    "trackerOnCallstackReconciledSamples": 8,
+    "trackerOffCallstackReconciledSamples": 8
+  },
+  "profilerControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0,
+    "emptyHarnessBytesPerSample": 0
+  },
+  "temporaryBenchmarkSetup": {
+    "description": "The isolated benchmark checkout temporarily enabled ONITY_TASK_BENCHMARKS for Standalone and pinned UniTask in manifest/lock. These three files were restored after profiling and are excluded from the evidence commit.",
+    "projectSettingsOriginalAndRestoredSha256": "9d809acea1fde1ff90f00896d84ee48b286d05fbd7f9e43aa9689e7d3a469e9c",
+    "manifestOriginalAndRestoredSha256": "ee46e8e1d23b57616f99386d25e93dda3e26e84136e4c330104e0369ccc7de49",
+    "lockOriginalAndRestoredSha256": "a75b8329367e6730f04f248e6db91f99c8c5dedc0a8f3df16cacd91ec3820a1d",
+    "projectSettingsMeasuredSha256": "24537052f35998c62ce90703190c552f6231181e9f517dccdfe3721bfbbb6dba",
+    "manifestMeasuredSha256": "c84f866ff341f81979ce8f148dd0f84d31ed574096d39b605de5c667b77bd40c",
+    "lockMeasuredSha256": "a3414d2af261076355c557626e31dd6b79691685dcc50680daec8b2032a08d74"
+  },
+  "report": {
+    "path": "docs/assets/benchmarks/onity-whenall-tracker-attribution-ba2c72c-2026-09-24.json",
+    "sha256": "3fc9fec1edfb0bf4598081c751a3644e63d9e913e2b62102ddd4805cf738c066"
+  },
+  "verification": "Focused EditMode OnityTask_WhenAll tests passed 7/7 before temporary benchmark setup. The benchmark editor/runtime assemblies compiled and both timing and Profiler processes wrote complete reports. Positive and empty controls passed; pending Onity marker/callstack bytes reconciled in all 16 samples.",
+  "limits": "Editor/Mono scheduling slice and method-level allocation callstacks. Managed object types and Player/IL2CPP/full-lifecycle performance were not established."
+}

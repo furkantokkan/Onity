@@ -1,0 +1,1103 @@
+{
+    "schemaVersion": 1,
+    "harnessVersion": 3,
+    "suite": "Two-input OnityTask WhenAll scheduling",
+    "generatedAtUtc": "2026-09-23T21:05:17.9306822Z",
+    "allocationGeneratedAtUtc": "2026-09-23T21:08:03.7776538Z",
+    "unityVersion": "2022.3.62f3",
+    "scriptingBackend": "Mono",
+    "onityAsyncSha256": "c0c463bb5801c6d0d417e23dd6cbe94ce2cca8b43d9db0c41a780e5115921565",
+    "runnerSha256": "5b748a81eebe2307f844746c22aa55faf79b700acd31dd1650ef9f079950e7f9",
+    "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+    "operationsPerBatch": 128,
+    "timingBatchesPerSample": 16,
+    "samplesPerCase": 8,
+    "warmupBatches": 10,
+    "stopwatchFrequency": 10000000,
+    "scope": "Same two-argument WhenAll call per operation. Each pending case has two fresh unresolved completion-source inputs prepared outside the measured slice. The marker includes WhenAll scheduling and storing the returned value; input completion, continuation dispatch, and GetResult occur afterward. The completed control uses both libraries' completed values. Tracker-on matches Onity's default; tracker-off changes only Onity's tracker. UniTask uses its default tracker setting. Samples include harness loop cost without subtraction. These Editor/Mono slices do not measure full lifecycle, frame time, or IL2CPP.",
+    "emptyHarnessSampleNanosecondsPerOperation": [
+        35.15625,
+        1.904296875,
+        1.904296875,
+        1.904296875,
+        1.904296875,
+        1.904296875,
+        1.904296875,
+        1.904296875
+    ],
+    "emptyHarnessSampleAllocatedBytes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+    ],
+    "allocationsAvailable": true,
+    "allocationCounter": "Unity Profiler GC.Alloc metadata and pending Onity callstacks; 65,568/0-byte controls passed.",
+    "positiveControlBytes": 65568,
+    "emptyControlBytes": 0,
+    "scenarios": [
+        {
+            "name": "Pending; Onity tracker on",
+            "pending": true,
+            "onityTrackerEnabled": true,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 9575.836181640623,
+                    "medianNanosecondsPerOperation": 9236.9140625,
+                    "minNanosecondsPerOperation": 7016.259765625,
+                    "maxNanosecondsPerOperation": 12617.96875,
+                    "standardDeviationNanosecondsPerOperation": 2027.0223727300556,
+                    "bytesPerOperation": 1556.0,
+                    "sampleNanosecondsPerOperation": [
+                        7016.259765625,
+                        7659.423828125,
+                        11324.365234375,
+                        11850.87890625,
+                        8438.8671875,
+                        10034.9609375,
+                        7663.96484375,
+                        12617.96875
+                    ],
+                    "sampleAllocatedBytes": [
+                        199168,
+                        199168,
+                        199168,
+                        199168,
+                        199168,
+                        199168,
+                        199168,
+                        199168
+                    ],
+                    "allocationCallstackSamples": [
+                        {
+                            "markerBytes": 199168,
+                            "callstackBytes": 199168,
+                            "stacks": [
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext..ctor() <- UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 70656,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18944,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 10240,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWithCore() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 5120,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 199168,
+                            "callstackBytes": 199168,
+                            "stacks": [
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext..ctor() <- UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 70656,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18944,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 10240,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWithCore() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 5120,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 199168,
+                            "callstackBytes": 199168,
+                            "stacks": [
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext..ctor() <- UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 70656,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18944,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 10240,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWithCore() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 5120,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 199168,
+                            "callstackBytes": 199168,
+                            "stacks": [
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext..ctor() <- UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 70656,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18944,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 10240,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWithCore() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 5120,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 199168,
+                            "callstackBytes": 199168,
+                            "stacks": [
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext..ctor() <- UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 70656,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18944,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 10240,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWithCore() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 5120,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 199168,
+                            "callstackBytes": 199168,
+                            "stacks": [
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext..ctor() <- UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 70656,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18944,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 10240,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWithCore() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 5120,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 199168,
+                            "callstackBytes": 199168,
+                            "stacks": [
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext..ctor() <- UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 70656,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18944,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 10240,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWithCore() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 5120,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 199168,
+                            "callstackBytes": 199168,
+                            "stacks": [
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext..ctor() <- UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 70656,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18944,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 10240,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 9216,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.CreateCopy() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading::ExecutionContext.Capture() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::ContinuationTaskFromTask..ctor() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.ContinueWithCore() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- mscorlib.dll!System.Threading.Tasks::Task.ContinueWith() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.TrackInternal() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskTracker.Track() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 5120,
+                                    "allocations": 128
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 2174.21875,
+                    "medianNanosecondsPerOperation": 2078.857421875,
+                    "minNanosecondsPerOperation": 1569.3359375,
+                    "maxNanosecondsPerOperation": 2992.578125,
+                    "standardDeviationNanosecondsPerOperation": 490.3421072351036,
+                    "bytesPerOperation": 160.0,
+                    "sampleNanosecondsPerOperation": [
+                        1654.052734375,
+                        2311.328125,
+                        2013.623046875,
+                        2857.8125,
+                        1569.3359375,
+                        2992.578125,
+                        1850.927734375,
+                        2144.091796875
+                    ],
+                    "sampleAllocatedBytes": [
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480
+                    ],
+                    "allocationCallstackSamples": []
+                }
+            ]
+        },
+        {
+            "name": "Pending; Onity tracker off",
+            "pending": true,
+            "onityTrackerEnabled": false,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 6383.14208984375,
+                    "medianNanosecondsPerOperation": 5821.337890625,
+                    "minNanosecondsPerOperation": 4015.4296875,
+                    "maxNanosecondsPerOperation": 8789.35546875,
+                    "standardDeviationNanosecondsPerOperation": 1655.3586871494806,
+                    "bytesPerOperation": 544.0,
+                    "sampleNanosecondsPerOperation": [
+                        5367.7734375,
+                        7970.751953125,
+                        8789.35546875,
+                        5297.119140625,
+                        8350.146484375,
+                        4015.4296875,
+                        6274.90234375,
+                        4999.658203125
+                    ],
+                    "sampleAllocatedBytes": [
+                        69632,
+                        69632,
+                        69632,
+                        69632,
+                        69632,
+                        69632,
+                        69632,
+                        69632
+                    ],
+                    "allocationCallstackSamples": [
+                        {
+                            "markerBytes": 69632,
+                            "callstackBytes": 69632,
+                            "stacks": [
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 69632,
+                            "callstackBytes": 69632,
+                            "stacks": [
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 69632,
+                            "callstackBytes": 69632,
+                            "stacks": [
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 69632,
+                            "callstackBytes": 69632,
+                            "stacks": [
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 69632,
+                            "callstackBytes": 69632,
+                            "stacks": [
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 69632,
+                            "callstackBytes": 69632,
+                            "stacks": [
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 69632,
+                            "callstackBytes": 69632,
+                            "stacks": [
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                }
+                            ]
+                        },
+                        {
+                            "markerBytes": 69632,
+                            "callstackBytes": 69632,
+                            "stacks": [
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 20480,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitializedCore() <- mscorlib.dll!System.Threading.Tasks::Task.EnsureContingentPropertiesInitialized() <- mscorlib.dll!System.Threading.Tasks::Task.set_CapturedContext() <- mscorlib.dll!System.Threading.Tasks::Task.TaskConstructorCore() <- mscorlib.dll!System.Threading.Tasks::Task..ctor() <- mscorlib.dll!System.Threading.Tasks::Task`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 18432,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.InternalWhenAll() <- mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 12288,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                },
+                                {
+                                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.CreateTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.GetTaskBridge() <- Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1.Onity.Unity.Async.IOnityTaskSource.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.AsTask() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 256
+                                },
+                                {
+                                    "stack": "mscorlib.dll!System.Threading.Tasks::Task.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityAsync.WhenAll() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask.WhenAll() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityWhenAllBenchmarkRunner.ScheduleBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__62.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                                    "bytes": 6144,
+                                    "allocations": 128
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 2745.21484375,
+                    "medianNanosecondsPerOperation": 2457.8857421875,
+                    "minNanosecondsPerOperation": 1322.412109375,
+                    "maxNanosecondsPerOperation": 4761.03515625,
+                    "standardDeviationNanosecondsPerOperation": 1034.271773866386,
+                    "bytesPerOperation": 160.0,
+                    "sampleNanosecondsPerOperation": [
+                        2441.357421875,
+                        2975.48828125,
+                        4761.03515625,
+                        3880.712890625,
+                        2474.4140625,
+                        1322.412109375,
+                        2097.265625,
+                        2009.033203125
+                    ],
+                    "sampleAllocatedBytes": [
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480,
+                        20480
+                    ],
+                    "allocationCallstackSamples": []
+                }
+            ]
+        },
+        {
+            "name": "Both completed; Onity tracker on",
+            "pending": false,
+            "onityTrackerEnabled": true,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanNanosecondsPerOperation": 167.059326171875,
+                    "medianNanosecondsPerOperation": 168.1640625,
+                    "minNanosecondsPerOperation": 113.37890625,
+                    "maxNanosecondsPerOperation": 224.51171875,
+                    "standardDeviationNanosecondsPerOperation": 50.156871384785258,
+                    "bytesPerOperation": 0.0,
+                    "sampleNanosecondsPerOperation": [
+                        209.814453125,
+                        215.8203125,
+                        126.513671875,
+                        113.525390625,
+                        113.37890625,
+                        115.33203125,
+                        224.51171875,
+                        217.578125
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "allocationCallstackSamples": []
+                },
+                {
+                    "library": "UniTask",
+                    "meanNanosecondsPerOperation": 1212.408447265625,
+                    "medianNanosecondsPerOperation": 1132.2998046875,
+                    "minNanosecondsPerOperation": 356.884765625,
+                    "maxNanosecondsPerOperation": 2072.75390625,
+                    "standardDeviationNanosecondsPerOperation": 676.8378190642825,
+                    "bytesPerOperation": 128.0,
+                    "sampleNanosecondsPerOperation": [
+                        1922.36328125,
+                        1967.724609375,
+                        356.884765625,
+                        812.939453125,
+                        704.98046875,
+                        409.9609375,
+                        1451.66015625,
+                        2072.75390625
+                    ],
+                    "sampleAllocatedBytes": [
+                        16384,
+                        16384,
+                        16384,
+                        16384,
+                        16384,
+                        16384,
+                        16384,
+                        16384
+                    ],
+                    "allocationCallstackSamples": []
+                }
+            ]
+        }
+    ]
+}
