@@ -227,7 +227,7 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
-        /// Awaits a scaled delay in seconds.
+        /// Awaits a scaled delay in seconds, starting no earlier than the next rendered frame in Play Mode.
         /// </summary>
         /// <param name="delaySeconds">Delay duration in seconds.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
@@ -238,7 +238,7 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
-        /// Awaits a delay in seconds.
+        /// Awaits a delay in seconds, starting no earlier than the next rendered frame in Play Mode.
         /// </summary>
         /// <param name="delaySeconds">Delay duration in seconds.</param>
         /// <param name="useUnscaledTime">Use unscaled time.</param>
@@ -269,7 +269,7 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
-        /// Awaits an unscaled delay in seconds.
+        /// Awaits an unscaled delay in seconds, starting no earlier than the next rendered frame in Play Mode.
         /// </summary>
         /// <param name="delaySeconds">Delay duration in seconds.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
@@ -1177,6 +1177,26 @@ namespace Onity.Unity.Async
         bool Tick(float deltaTime, float unscaledDeltaTime);
     }
 
+    internal static class OnityTaskContinuation
+    {
+        public static void Invoke(Action continuation)
+        {
+            if (continuation == null)
+            {
+                return;
+            }
+
+            try
+            {
+                continuation();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+        }
+    }
+
     internal abstract class OnityTaskSourceBase : IOnityTaskSource
     {
         private const int k_noConsumption = 0;
@@ -1443,7 +1463,7 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
 
-            continuation?.Invoke();
+            OnityTaskContinuation.Invoke(continuation);
             return true;
         }
 
@@ -1802,7 +1822,7 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
 
-            continuation?.Invoke();
+            OnityTaskContinuation.Invoke(continuation);
             return true;
         }
 
@@ -2084,8 +2104,10 @@ namespace Onity.Unity.Async
 
         private static readonly Stack<OnityDelayTaskSource> s_pool = new Stack<OnityDelayTaskSource>(32);
 
+        private int m_startFrameCount;
         private float m_remainingSeconds;
         private bool m_useUnscaledTime;
+        private bool m_waitForNextRenderedFrame;
 
         public static OnityDelayTaskSource Rent(
             float delaySeconds,
@@ -2099,6 +2121,8 @@ namespace Onity.Unity.Async
             }
 
             source.Reset(cancellationToken);
+            source.m_waitForNextRenderedFrame = Application.isPlaying;
+            source.m_startFrameCount = source.m_waitForNextRenderedFrame ? Time.frameCount : 0;
             source.m_remainingSeconds = delaySeconds;
             source.m_useUnscaledTime = useUnscaledTime;
             OnityTaskRunner.Schedule(source, OnityTaskLoopPhase.Update);
@@ -2110,6 +2134,11 @@ namespace Onity.Unity.Async
             if (IsPending == false)
             {
                 return true;
+            }
+
+            if (m_waitForNextRenderedFrame && Time.frameCount == m_startFrameCount)
+            {
+                return false;
             }
 
             m_remainingSeconds -= m_useUnscaledTime ? unscaledDeltaTime : deltaTime;
@@ -2124,8 +2153,10 @@ namespace Onity.Unity.Async
 
         protected override void ReleaseSource()
         {
+            m_startFrameCount = 0;
             m_remainingSeconds = 0f;
             m_useUnscaledTime = false;
+            m_waitForNextRenderedFrame = false;
             lock (s_pool)
             {
                 if (s_pool.Count < k_maxPoolSize)
@@ -2170,23 +2201,25 @@ namespace Onity.Unity.Async
                 return true;
             }
 
+            bool value;
             try
             {
-                bool value = m_predicate();
-                bool shouldComplete = m_waitWhile ? value == false : value;
-                if (shouldComplete == false)
-                {
-                    return false;
-                }
-
-                TrySetResult();
-                return true;
+                value = m_predicate();
             }
             catch (Exception exception)
             {
                 TrySetException(exception);
                 return true;
             }
+
+            bool shouldComplete = m_waitWhile ? value == false : value;
+            if (shouldComplete == false)
+            {
+                return false;
+            }
+
+            TrySetResult();
+            return true;
         }
 
         protected override void ReleaseSource()
@@ -2243,9 +2276,9 @@ namespace Onity.Unity.Async
                 return true;
             }
 
+            TAsyncOperation operation = m_operation;
             try
             {
-                TAsyncOperation operation = m_operation;
                 m_onProgress?.Invoke(Mathf.Clamp01(operation.progress));
 
                 if (operation.isDone == false)
@@ -2254,14 +2287,15 @@ namespace Onity.Unity.Async
                 }
 
                 m_onProgress?.Invoke(1f);
-                TrySetResult(operation);
-                return true;
             }
             catch (Exception exception)
             {
                 TrySetException(exception);
                 return true;
             }
+
+            TrySetResult(operation);
+            return true;
         }
 
         protected override void ReleaseSource()

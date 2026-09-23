@@ -102,7 +102,8 @@ sources. Each returned `OnityTask` value is **single-consumer**:
 
 `NextFrame` and `DelayFrames(1)` resume no earlier than the following rendered
 frame in Play Mode. `DelayFrames(0)` completes immediately. Negative frame
-counts throw `ArgumentOutOfRangeException`.
+counts throw `ArgumentOutOfRangeException`. Positive `Delay` and `DelayUnscaled`
+waits also skip the frame in which they are scheduled in Play Mode.
 
 `WhenAll` currently materializes its inputs as .NET `Task` values. Likewise,
 methods declared `async OnityTask` use .NET's async method builder internally.
