@@ -1,0 +1,100 @@
+{
+  "suite": "Pending two-input OnityTask.WhenAll scheduling and output lifecycle",
+  "date": "2026-09-24",
+  "baselineProductCommit": "6f32e15e8acee5458c0b5a9a22dde45818a0eb72",
+  "candidateProductCommit": "824b2f72000d48ec21b80e3ae51548d10038b019",
+  "benchmarkBranch": "benchmark/onitytask-pending-coordinator",
+  "benchmarkHarnessCommit": "704caac0209ef111b99cb6064eb94cc1eb9bcaea",
+  "runnerGitBlobBothHosts": "630baf6585b916d9fb20486ce1ddc0ca4e8ff6fd",
+  "menuGitBlobBothHosts": "6cb9d93b70f4517675805a23a41816597170efaa",
+  "runtimeAsmdefGitBlobBothHosts": "f894d09e50e45c866aeffc81ed8a4af87c335e3e",
+  "editorAsmdefGitBlobBothHosts": "75aed1480fcc588c876d2d60dd6eaf93ed60fd9b",
+  "manifestGitBlobBothHosts": "b4f180c450b59597db2a96a70ff552ca35909799",
+  "packageLockGitBlobBothHosts": "2f863e6d228ea9fd67dbf0d9ab62a805993dd220",
+  "baselineOnityAsyncGitBlob": "58af6e385dcdc4a9b376a7f2f87daadcc13b6547",
+  "candidateOnityAsyncGitBlob": "a1ffde1102feb09eea1649147f2a890fd773b5f4",
+  "baselineCompletionSourceGitBlob": "43e70a577acef4e2d8441c022c4d47d6c8f462be",
+  "candidateCompletionSourceGitBlob": "645b3b7a790e3338401b16f9de2c74980526dd78",
+  "runnerWorkingSha256Baseline": "be348c45ec810bf236c396367e5fd116e48a6334681a04d5d9a9571f76e5ad5a",
+  "runnerWorkingSha256Candidate": "414673af9f9e86317f3fd1f9c007d00240e2db6a9b4c206ee93c6114063059a1",
+  "runnerHashNote": "The runner Git blob and normalized source are identical. Working-file SHA-256 differs only because checkout line endings differ; each host's timing and allocation passes used its own unchanged working file.",
+  "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityEditor": "2022.3.62f3",
+  "scriptingBackend": "Mono",
+  "editorBinary": "C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Unity.exe",
+  "entryPoint": "Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine",
+  "timingArguments": "-batchmode -nographics -projectPath <exact-host> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskBenchmarkOutput <json> -logFile <log>",
+  "allocationArguments": "-batchmode -nographics -profiler-enable -projectPath <exact-host> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <existing-timing-json> -logFile <log>",
+  "conditions": {
+    "operationsPerBatch": 128,
+    "successAndCompletedTimingBatchesPerSample": 16,
+    "faultAndCancelTimingBatchesPerSample": 2,
+    "allocationOperationsPerSample": 128,
+    "samplesPerCasePerPass": 8,
+    "independentTimingProcessesPerHost": 2,
+    "independentAllocationProcessesPerHost": 2,
+    "warmupBatchesPerScenarioAndLibrary": 10,
+    "inputConstruction": "Before measured slice",
+    "schedulingSlice": "WhenAll call and returned-task storage",
+    "outputLifecycleSlice": "WhenAll call, input completion, output GetResult and cleanup; input construction excluded",
+    "tracker": "Onity on/off by scenario; UniTask default",
+    "saturationAttempt": "384 outstanding pending Onity outputs on worker thread, outside main Profiler marker"
+  },
+  "profilerControls": {
+    "positiveBytesAllFourReports": 65568,
+    "emptyBytesAllFourReports": 0,
+    "emptyHarnessBytesAllEightSamplesAllFourReports": 0,
+    "allocationSamplesPerCaseAllFourReports": 8
+  },
+  "counterLimitations": {
+    "mainDirectColdPositiveBytes": 0,
+    "workerDirectPositiveBytes": 0,
+    "coldAllocation": "unavailable; positive control failed",
+    "workerAllocation": "unavailable; positive control failed",
+    "poolSaturationAllocation": "unavailable; worker counter failed before saturation measurement"
+  },
+  "validScenarios": [
+    "Pending success schedule; tracker on",
+    "Pending success schedule; tracker off",
+    "Pending success lifecycle; tracker on",
+    "Pending success lifecycle; tracker off",
+    "Pending cancel lifecycle; tracker on",
+    "Pending cancel lifecycle; tracker off",
+    "Both completed schedule; tracker on"
+  ],
+  "invalidScenarios": {
+    "names": [
+      "Pending fault lifecycle; tracker on",
+      "Pending fault lifecycle; tracker off"
+    ],
+    "appliesTo": "All timing and allocation fault rows in all raw reports",
+    "cause": "The harness reused one InvalidOperationException across Onity, UniTask, operations and samples. Repeated throws accumulated stack trace state and cross-library contamination.",
+    "requiredCorrection": "Create separate fresh exception instances for each input operation in PrepareBatch, outside the measured slice, then rerun both hosts with identical corrected runner/config."
+  },
+  "discardedRuns": [
+    "Initial baseline smoke: benchmark-only assertion checked pending state after fault/cancel input completion; corrected before accepted runs.",
+    "Second baseline smoke: exception-heavy cohort had 16 timing batches and was stopped; reduced fault/cancel to two batches while retaining eight samples.",
+    "Early baseline timing: overlapped a separate root-checkout Unity test process and was stopped; no timing value retained.",
+    "Initial candidate allocation attempt: one Profiler marker was missed within 60 frames; exact-runner retry passed and only the retry was retained."
+  ],
+  "reports": [
+    {
+      "path": "docs/assets/benchmarks/onity-pending-whenall-baseline-6f32e15-2026-09-24.json",
+      "sha256": "9a8ddbe414f2446eb5a7804cb1564ec067ee827c5b78cc743ed9a7a13a3505f7"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-pending-whenall-candidate-824b2f7-2026-09-24.json",
+      "sha256": "9dd9242270dd908e6ba4682da192927a05ceda5ca9474c9ea431ddfd382f94d4"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-pending-whenall-baseline-6f32e15-repeat-2026-09-24.json",
+      "sha256": "962fd6e1339e507c7747dbcfc3d88d4342973fd86f5ebea40098aead6ef7471b"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-pending-whenall-candidate-824b2f7-repeat-2026-09-24.json",
+      "sha256": "1813251d52206ac09bee1b8dae165e9c97501eb2f295134d2df9430714e3e57c"
+    }
+  ],
+  "exitEvidence": "Each retained timing and allocation process wrote its expected report, logged OnityTask command-line benchmark completed, and exited. Failed, stopped, or overlapping invocations are listed in discardedRuns and did not contribute accepted results.",
+  "limits": "Unity Editor/Mono microbenchmarks, not Player/IL2CPP, device frame time, or whole-scene workloads. First candidate timing process followed fresh Library import and had globally slower UniTask controls; the independent warm repeat is the timing comparison."
+}
