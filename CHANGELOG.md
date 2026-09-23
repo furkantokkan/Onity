@@ -27,12 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   248 to 120 B/task; ordinary native awaiting stayed at 656 B/task in the
   calibrated lifecycle benchmark. The original task cannot consume the result
   while the adapter owns it.
+- Returned the pending completion-source status without taking its gate when
+  no .NET task bridge exists. A published bridge still uses the gate to keep
+  terminal status ordered after bridge completion; all measured status reads
+  remained at 0 B/op.
 
 ### Tested
 
-- Unity `2022.3.62f3`: EditMode `530/530` and PlayMode `23/23` passed, including
+- Unity `2022.3.62f3`: EditMode `531/531` and PlayMode `23/23` passed, including
   native sharing, fault/cancellation propagation, source reuse, and main-thread
-  continuation tests.
+  continuation tests. The final bridge-publication adjustment passed `36/36`
+  focused completion-source EditMode tests.
 
 ## [0.3.12] - 2026-09-23
 

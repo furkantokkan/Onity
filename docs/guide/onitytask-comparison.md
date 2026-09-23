@@ -184,6 +184,29 @@ completion. See the [raw JSON](../assets/benchmarks/onity-completion-source-stat
 [CSV](../assets/benchmarks/onity-completion-source-status-final-6dffb69-2026-09-23.csv),
 and [source provenance](../assets/benchmarks/onity-completion-source-status-final-6dffb69-2026-09-23.provenance.json).
 
+### Pending status follow-up
+
+At `25c8e20`, a pending `OnityTaskCompletionSource<T>` without a .NET task
+bridge returns its observed pending status without entering the source gate.
+Bridge creation uses a volatile write, and pending reads with a bridge still
+wait for the terminal publication under that gate. The typed and untyped gate
+tests, existing bridge/completion race tests, and the Unity EditMode suite pass.
+
+| Pending `IsCompleted` read | Earlier Onity ns/op | Earlier UniTask ns/op | Candidate Onity ns/op | Candidate UniTask ns/op |
+| --- | ---: | ---: | ---: | ---: |
+| Untyped | 128 | 91 | 91 | 78 |
+| Typed | 120 | 82 | 94 | 84 |
+
+Each column comes from an eight-sample Unity 2022 Editor/Mono run of the same
+four-scenario harness. All pending and terminal status reads allocated 0 B/op;
+the 65,568 B positive and 0 B empty controls passed. The candidate's
+same-run Onity/UniTask pending ratios were smaller than the earlier run's.
+Absolute times varied between Editor processes, and terminal-read results
+varied too, so these runs do not establish a general speed lead or a precise
+cross-run improvement. The [earlier samples](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-preserve/docs/assets/benchmarks/onity-completion-source-status-pr14-aa4c5a5-2026-09-23.json)
+and [candidate samples](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-preserve/docs/assets/benchmarks/onity-completion-source-status-25c8e20-2026-09-23.json)
+retain the raw data; adjacent provenance files identify the tested source.
+
 ## Pooled builder experiment
 
 An isolated typed async-method runner passed 23 focused builder tests and 51
