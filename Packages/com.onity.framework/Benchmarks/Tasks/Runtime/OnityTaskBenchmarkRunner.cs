@@ -505,11 +505,15 @@ namespace Onity.Benchmarks
                 return;
             }
 
+            int resultSum = 0;
+            int invalidResult = 0;
             if (library == 0)
             {
                 for (int i = 0; i < count; i++)
                 {
-                    s_lastInt = m_onityTypedAwaiters[i].GetResult();
+                    int result = m_onityTypedAwaiters[i].GetResult();
+                    resultSum += result;
+                    invalidResult |= result ^ 42;
                     m_onityTypedAwaiters[i] = default;
                 }
             }
@@ -517,9 +521,17 @@ namespace Onity.Benchmarks
             {
                 for (int i = 0; i < count; i++)
                 {
-                    s_lastInt = m_uniTaskTypedAwaiters[i].GetResult();
+                    int result = m_uniTaskTypedAwaiters[i].GetResult();
+                    resultSum += result;
+                    invalidResult |= result ^ 42;
                     m_uniTaskTypedAwaiters[i] = default;
                 }
+            }
+
+            s_lastInt = resultSum;
+            if (invalidResult != 0)
+            {
+                throw new InvalidOperationException("Async method returned an unexpected result.");
             }
         }
 
