@@ -209,6 +209,7 @@ cost before this change can be considered for release.
 | `WhenAll` | Available, including typed ordered results; currently materializes inputs as .NET Tasks. |
 | Native `WhenAny` | Available for two untyped inputs; consumes both without canceling the loser. Its source and two delegates allocate per call. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
+| Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. It allocates one retained source for a pooled operation; comparative cost is still being measured. |
 | Selectable PlayerLoop phases and immediate cancellation | Limited to the supported runner phases and next-tick cancellation. |
 | `await foreach` async enumerable | Not yet available. |
 
