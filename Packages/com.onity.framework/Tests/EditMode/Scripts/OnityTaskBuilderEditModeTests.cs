@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -89,6 +90,127 @@ namespace Onity.Tests.EditMode
             LargeResult result = await task;
             Assert.That(result.Number, Is.EqualTo(41));
             Assert.That(result.Text, Is.EqualTo("safe"));
+        }
+
+        [Test]
+        public void NativeAwait_CompletedSourceKeepsTheInlineResult()
+        {
+            OnityTask gate = OnityTask.NextFrame();
+            CompleteNativeSource(gate);
+
+            OnityTask<int> task = ReturnAfterNativeGateAsync(gate);
+
+            Assert.That(GetState(task), Is.Null);
+            Assert.That(task.GetAwaiter().GetResult(), Is.EqualTo(67));
+        }
+
+        [Test]
+        public void NativeAwait_StoresAValueContinuationUntilCompletion()
+        {
+            OnityTask gate = OnityTask.NextFrame();
+            object source = GetNativeState(gate);
+            OnityTask<int> task = ReturnAfterNativeGateAsync(gate);
+
+            Assert.That(task.IsCompleted, Is.False);
+            Assert.That(GetSourceField(source, "m_continuation"), Is.Null);
+            Assert.That(GetRecordRunner(GetNativeContinuation(source)), Is.SameAs(GetState(task)));
+
+            CompleteNativeSource(gate);
+
+            Assert.That(task.GetAwaiter().GetResult(), Is.EqualTo(67));
+            Assert.That(GetRecordRunner(GetNativeContinuation(source)), Is.Null);
+        }
+
+        [Test]
+        public async Task NativeAwait_CompletionRacingRegistrationResumesOnce()
+        {
+            for (int i = 0; i < 32; i++)
+            {
+                OnityTask gate = OnityTask.NextFrame();
+                object source = GetNativeState(gate);
+                DetachNativeSource(source);
+                using ManualResetEventSlim start = new ManualResetEventSlim(false);
+                Task completion = Task.Run(() =>
+                {
+                    start.Wait();
+                    TickNativeSource(source);
+                });
+
+                start.Set();
+                OnityTask<int> task = ReturnAfterNativeGateAsync(gate);
+                await completion;
+                Assert.That(await task, Is.EqualTo(67));
+            }
+        }
+
+        [Test]
+        public void NativeAwait_StaleAndDuplicateRecordsCannotResumeAReusedRunner()
+        {
+            OnityTask oldGate = OnityTask.NextFrame();
+            object oldSource = GetNativeState(oldGate);
+            OnityTask<int> oldTask = ReturnAfterNativeGateAsync(oldGate);
+            object oldRunner = GetState(oldTask);
+            object oldRecord = GetNativeContinuation(oldSource);
+            CompleteNativeSource(oldGate);
+            Assert.That(oldTask.GetAwaiter().GetResult(), Is.EqualTo(67));
+
+            OnityTask newGate = OnityTask.NextFrame();
+            OnityTask<int> newTask = ReturnAfterNativeGateAsync(newGate);
+            Assert.That(GetState(newTask), Is.SameAs(oldRunner));
+
+            InvokeNativeContinuation(oldRecord);
+            InvokeNativeContinuation(oldRecord);
+            Assert.That(newTask.IsCompleted, Is.False);
+
+            CompleteNativeSource(newGate);
+            Assert.That(newTask.GetAwaiter().GetResult(), Is.EqualTo(67));
+        }
+
+        [Test]
+        public async Task NativeThenExternalAwait_PreservesBothContinuations()
+        {
+            OnityTask nativeGate = OnityTask.NextFrame();
+            TaskCompletionSource<bool> externalGate = new TaskCompletionSource<bool>();
+            OnityTask<int> task = ReturnAfterNativeAndExternalGatesAsync(
+                nativeGate, externalGate.Task);
+
+            CompleteNativeSource(nativeGate);
+            Assert.That(task.IsCompleted, Is.False);
+
+            externalGate.SetResult(true);
+            Assert.That(await task, Is.EqualTo(71));
+        }
+
+        [Test]
+        public async Task NativeAwait_AsTaskFaultAndCancellationKeepTheirStatus()
+        {
+            OnityTask successGate = OnityTask.NextFrame();
+            Task<int> converted = ReturnAfterNativeGateAsync(successGate).AsTask();
+            CompleteNativeSource(successGate);
+            Assert.That(await converted, Is.EqualTo(67));
+
+            int predicateCalls = 0;
+            OnityTask faultGate = OnityTask.WaitUntil(() =>
+            {
+                if (predicateCalls++ == 0)
+                {
+                    return false;
+                }
+
+                throw new InvalidOperationException("native source failure");
+            });
+            OnityTask<int> faulted = ReturnAfterNativeGateAsync(faultGate);
+            CompleteNativeSource(faultGate);
+            Assert.That(faulted.IsFaulted, Is.True);
+            Assert.Throws<InvalidOperationException>(() => faulted.GetAwaiter().GetResult());
+
+            using CancellationTokenSource cancellation = new CancellationTokenSource();
+            OnityTask cancelGate = OnityTask.NextFrame(cancellation.Token);
+            OnityTask<int> canceled = ReturnAfterNativeGateAsync(cancelGate);
+            cancellation.Cancel();
+            CancelNativeSource(cancelGate);
+            Assert.That(canceled.IsCanceled, Is.True);
+            Assert.Catch<OperationCanceledException>(() => canceled.GetAwaiter().GetResult());
         }
 
         [Test]
@@ -450,6 +572,89 @@ namespace Onity.Tests.EditMode
             return field.GetValue(task);
         }
 
+        private static object GetNativeState(OnityTask task)
+        {
+            FieldInfo field = typeof(OnityTask).GetField("m_state",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null);
+            return field.GetValue(task);
+        }
+
+        private static object GetSourceField(object source, string fieldName)
+        {
+            FieldInfo field = source.GetType().BaseType.GetField(fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null);
+            return field.GetValue(source);
+        }
+
+        private static object GetNativeContinuation(object source)
+        {
+            return GetSourceField(source, "m_nativeContinuation");
+        }
+
+        private static object GetRecordRunner(object record)
+        {
+            FieldInfo field = record.GetType().GetField("Runner",
+                BindingFlags.Instance | BindingFlags.Public);
+            Assert.That(field, Is.Not.Null);
+            return field.GetValue(record);
+        }
+
+        private static void InvokeNativeContinuation(object record)
+        {
+            MethodInfo method = record.GetType().GetMethod("Invoke",
+                BindingFlags.Instance | BindingFlags.Public);
+            Assert.That(method, Is.Not.Null);
+            method.Invoke(record, null);
+        }
+
+        private static void DetachNativeSource(object source)
+        {
+            Type runnerType = typeof(OnityTask).Assembly.GetType(
+                "Onity.Unity.Async.OnityTaskRunner");
+            Assert.That(runnerType, Is.Not.Null);
+            FieldInfo instanceField = runnerType.GetField("s_instance",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(instanceField, Is.Not.Null);
+            object runner = instanceField.GetValue(null);
+            Assert.That(runner, Is.Not.Null);
+            FieldInfo sourcesField = runnerType.GetField("m_updateSources",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(sourcesField, Is.Not.Null);
+            IList sources = (IList)sourcesField.GetValue(runner);
+            Assert.That(sources.Contains(source), Is.True);
+            sources.Remove(source);
+        }
+
+        private static void TickNativeSource(object source)
+        {
+            MethodInfo tick = source.GetType().GetMethod("Tick",
+                BindingFlags.Instance | BindingFlags.Public);
+            Assert.That(tick, Is.Not.Null);
+            Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
+        }
+
+        private static void CompleteNativeSource(OnityTask task)
+        {
+            object source = GetNativeState(task);
+            DetachNativeSource(source);
+            TickNativeSource(source);
+        }
+
+        private static void CancelNativeSource(OnityTask task)
+        {
+            object source = GetNativeState(task);
+            DetachNativeSource(source);
+            PropertyInfo version = source.GetType().GetProperty("Version",
+                BindingFlags.Instance | BindingFlags.Public);
+            MethodInfo cancel = source.GetType().GetMethod("TrySetCanceledFromRunner",
+                BindingFlags.Instance | BindingFlags.Public);
+            Assert.That(version, Is.Not.Null);
+            Assert.That(cancel, Is.Not.Null);
+            Assert.That(cancel.Invoke(source, new[] { version.GetValue(source) }), Is.EqualTo(true));
+        }
+
         private static async OnityTask<LargeResult> ReturnSynchronousResultAsync()
         {
             await OnityTask.Completed;
@@ -486,6 +691,21 @@ namespace Onity.Tests.EditMode
             await OnityTask.Completed;
             await gate;
             return new LargeResult(41, "safe");
+        }
+
+        private static async OnityTask<int> ReturnAfterNativeGateAsync(OnityTask gate)
+        {
+            await gate;
+            return 67;
+        }
+
+        private static async OnityTask<int> ReturnAfterNativeAndExternalGatesAsync(
+            OnityTask nativeGate,
+            Task externalGate)
+        {
+            await nativeGate;
+            await externalGate;
+            return 71;
         }
 
         private static async OnityTask<int> ThrowAfterSuspensionAsync(Task gate, Exception exception)

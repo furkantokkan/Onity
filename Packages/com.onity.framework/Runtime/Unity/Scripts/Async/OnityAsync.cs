@@ -1073,6 +1073,17 @@ namespace Onity.Unity.Async
 
             ((Task)m_state).GetAwaiter().UnsafeOnCompleted(continuation);
         }
+
+        internal bool TryRegisterNative(IOnityNativeRunner runner)
+        {
+            if (m_state is IOnityTaskSource source)
+            {
+                source.OnCompleted(runner.CreateNativeContinuation(), m_token);
+                return true;
+            }
+
+            return false;
+        }
     }
 
     /// <summary>
@@ -1199,7 +1210,41 @@ namespace Onity.Unity.Async
 
         void OnCompleted(Action continuation, int token);
 
+        void OnCompleted(in OnityNativeContinuation continuation, int token);
+
         void GetResult(int token);
+    }
+
+    internal interface IOnityNativeRunner
+    {
+        OnityNativeContinuation CreateNativeContinuation();
+
+        void ResumeNative(int lease, int sequence, ExecutionContext context);
+    }
+
+    internal readonly struct OnityNativeContinuation
+    {
+        public readonly IOnityNativeRunner Runner;
+        public readonly ExecutionContext Context;
+        public readonly int Lease;
+        public readonly int Sequence;
+
+        public OnityNativeContinuation(
+            IOnityNativeRunner runner,
+            ExecutionContext context,
+            int lease,
+            int sequence)
+        {
+            Runner = runner;
+            Context = context;
+            Lease = lease;
+            Sequence = sequence;
+        }
+
+        public void Invoke()
+        {
+            Runner.ResumeNative(Lease, Sequence, Context);
+        }
     }
 
     internal interface IOnityTaskSource<T>
@@ -1244,6 +1289,23 @@ namespace Onity.Unity.Async
                 Debug.LogException(exception);
             }
         }
+
+        public static void Invoke(in OnityNativeContinuation continuation)
+        {
+            if (continuation.Runner == null)
+            {
+                return;
+            }
+
+            try
+            {
+                continuation.Invoke();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+        }
     }
 
     internal abstract class OnityTaskSourceBase : IOnityTaskSource
@@ -1255,6 +1317,7 @@ namespace Onity.Unity.Async
         private static readonly Action<object> s_cancelCallback = CancelFromToken;
 
         private Action m_continuation;
+        private OnityNativeContinuation m_nativeContinuation;
         private TaskCompletionSource<bool> m_taskCompletionSource;
         private CancellationTokenRegistration m_cancellationRegistration;
         private CancellationToken m_cancellationToken;
@@ -1379,6 +1442,42 @@ namespace Onity.Unity.Async
             }
         }
 
+        public void OnCompleted(in OnityNativeContinuation continuation, int token)
+        {
+            if (continuation.Runner == null)
+            {
+                throw new ArgumentException("A native continuation requires a runner.", nameof(continuation));
+            }
+
+            bool invokeNow;
+            lock (this)
+            {
+                ValidateToken(token);
+
+                if (m_consumed != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (m_consumptionMode != k_noConsumption)
+                {
+                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
+                }
+
+                m_consumptionMode = k_nativeConsumption;
+                invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
+                if (invokeNow == false)
+                {
+                    m_nativeContinuation = continuation;
+                }
+            }
+
+            if (invokeNow)
+            {
+                OnityTaskContinuation.Invoke(in continuation);
+            }
+        }
+
         public void GetResult(int token)
         {
             Exception exception;
@@ -1429,6 +1528,7 @@ namespace Onity.Unity.Async
             lock (this)
             {
                 m_continuation = null;
+                m_nativeContinuation = default;
                 m_taskCompletionSource = null;
                 m_cancellationToken = cancellationToken;
                 m_exception = null;
@@ -1481,6 +1581,7 @@ namespace Onity.Unity.Async
         private bool TrySetStatus(OnityTaskSourceStatus status, Exception exception)
         {
             Action continuation;
+            OnityNativeContinuation nativeContinuation;
             TaskCompletionSource<bool> taskCompletionSource;
             bool releaseSource;
 
@@ -1493,8 +1594,10 @@ namespace Onity.Unity.Async
 
                 m_exception = exception;
                 continuation = m_continuation;
+                nativeContinuation = m_nativeContinuation;
                 taskCompletionSource = m_taskCompletionSource;
                 m_continuation = null;
+                m_nativeContinuation = default;
                 m_cancellationRegistration.Dispose();
                 m_cancellationRegistration = default;
                 Volatile.Write(ref m_status, (int)status);
@@ -1513,6 +1616,7 @@ namespace Onity.Unity.Async
             }
 
             OnityTaskContinuation.Invoke(continuation);
+            OnityTaskContinuation.Invoke(in nativeContinuation);
             return true;
         }
 
@@ -1585,6 +1689,7 @@ namespace Onity.Unity.Async
 
         private void ClearCompletionReferencesUnsafe()
         {
+            m_nativeContinuation = default;
             m_taskCompletionSource = null;
             m_cancellationRegistration = default;
             m_cancellationToken = default;
@@ -2587,6 +2692,34 @@ namespace Onity.Unity.Async
         }
     }
 
+    internal delegate bool OnityNativeRegister<TAwaiter>(
+        ref TAwaiter awaiter,
+        IOnityNativeRunner runner);
+
+    internal static class OnityNativeAwaiterCache<TAwaiter>
+        where TAwaiter : ICriticalNotifyCompletion
+    {
+        public static readonly OnityNativeRegister<TAwaiter> Register = CreateRegister();
+
+        private static OnityNativeRegister<TAwaiter> CreateRegister()
+        {
+            if (typeof(TAwaiter) != typeof(OnityTaskAwaiter))
+            {
+                return null;
+            }
+
+            OnityNativeRegister<OnityTaskAwaiter> register = RegisterOnityTask;
+            return (OnityNativeRegister<TAwaiter>)(object)register;
+        }
+
+        private static bool RegisterOnityTask(
+            ref OnityTaskAwaiter awaiter,
+            IOnityNativeRunner runner)
+        {
+            return awaiter.TryRegisterNative(runner);
+        }
+    }
+
     internal interface IOnityTaskMethodRunner<T>
     {
         OnityTask<T> PublishTask();
@@ -2605,7 +2738,7 @@ namespace Onity.Unity.Async
     }
 
     internal sealed class OnityTaskStateMachineRunner<T, TStateMachine> :
-        OnityTaskSourceBase<T>, IOnityTaskMethodRunner<T>
+        OnityTaskSourceBase<T>, IOnityTaskMethodRunner<T>, IOnityNativeRunner
         where TStateMachine : IAsyncStateMachine
     {
         private const int k_maxPoolSize = 256;
@@ -2789,7 +2922,32 @@ namespace Onity.Unity.Async
         public void AwaitUnsafeOnCompleted<TAwaiter>(ref TAwaiter awaiter)
             where TAwaiter : ICriticalNotifyCompletion
         {
+            OnityNativeRegister<TAwaiter> register = OnityNativeAwaiterCache<TAwaiter>.Register;
+            if (register != null && register(ref awaiter, this))
+            {
+                return;
+            }
+
             awaiter.UnsafeOnCompleted(CreateContinuation());
+        }
+
+        public OnityNativeContinuation CreateNativeContinuation()
+        {
+            ExecutionContext context = ExecutionContext.Capture();
+            int lease = Version;
+            int sequence;
+            lock (this)
+            {
+                sequence = ++m_awaitSequence;
+                m_awaitResumed = false;
+            }
+
+            return new OnityNativeContinuation(this, context, lease, sequence);
+        }
+
+        public void ResumeNative(int lease, int sequence, ExecutionContext context)
+        {
+            Resume(lease, sequence, context);
         }
 
         protected override void ReleaseSource()
