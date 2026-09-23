@@ -926,7 +926,7 @@ namespace Onity.Unity.Async
         {
             if (m_state == null)
             {
-                return EqualityComparer<T>.Default.Equals(m_result, default) ? DefaultTaskCache.Value : Task.FromResult(m_result);
+                return Task.FromResult(m_result);
             }
 
             return m_state is IOnityTaskSource<T> source ? source.AsTask(m_token) : (Task<T>)m_state;
@@ -951,10 +951,6 @@ namespace Onity.Unity.Async
             AsTask().Forget(exceptionHandler);
         }
 
-        private static class DefaultTaskCache
-        {
-            internal static readonly Task<T> Value = Task.FromResult(default(T));
-        }
     }
 
     /// <summary>
@@ -1034,7 +1030,19 @@ namespace Onity.Unity.Async
         /// <param name="continuation">Continuation callback.</param>
         public void UnsafeOnCompleted(Action continuation)
         {
-            OnCompleted(continuation);
+            if (m_state == null)
+            {
+                continuation?.Invoke();
+                return;
+            }
+
+            if (m_state is IOnityTaskSource source)
+            {
+                source.OnCompleted(continuation, m_token);
+                return;
+            }
+
+            ((Task)m_state).GetAwaiter().UnsafeOnCompleted(continuation);
         }
     }
 
@@ -1121,7 +1129,19 @@ namespace Onity.Unity.Async
         /// <param name="continuation">Continuation callback.</param>
         public void UnsafeOnCompleted(Action continuation)
         {
-            OnCompleted(continuation);
+            if (m_state == null)
+            {
+                continuation?.Invoke();
+                return;
+            }
+
+            if (m_state is IOnityTaskSource<T> source)
+            {
+                source.OnCompleted(continuation, m_token);
+                return;
+            }
+
+            ((Task<T>)m_state).GetAwaiter().UnsafeOnCompleted(continuation);
         }
     }
 
@@ -1931,7 +1951,7 @@ namespace Onity.Unity.Async
 
         private static OnityTaskRunner GetOrCreate()
         {
-            if (s_instance != null)
+            if (!ReferenceEquals(s_instance, null))
             {
                 return s_instance;
             }

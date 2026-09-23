@@ -9,11 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Kept typed `AsTask()` conversion from invoking user-defined result equality.
+- Forwarded task-backed `UnsafeOnCompleted` registrations to the underlying
+  unsafe awaiter in both typed and untyped tasks.
 - Kept exceptions from native await continuations from stopping the task runner
   or faulting a newly rented pooled wait; unhandled callback errors reach the
   Unity log.
 - Made positive scaled and unscaled delays wait until a later rendered frame
   when scheduled before the task runner's `Update`.
+
+### Performance
+
+- Removed Unity object equality from the cached OnityTask runner lookup on every
+  scheduled frame wait.
 
 ## [0.3.9] - 2026-09-23
 
