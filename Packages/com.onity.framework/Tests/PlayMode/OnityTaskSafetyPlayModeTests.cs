@@ -318,6 +318,33 @@ namespace Onity.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator NextFrame_RecreatesRunnerAfterDestroy()
+        {
+            OnityTask warmupTask = OnityTask.NextFrame();
+            yield return WaitForCompletion(warmupTask);
+            warmupTask.GetAwaiter().GetResult();
+
+            GameObject runner = null;
+            GameObject[] objects = Resources.FindObjectsOfTypeAll<GameObject>();
+            for (int i = 0; i < objects.Length; i++)
+            {
+                if (objects[i].name == "OnityTaskRunner")
+                {
+                    runner = objects[i];
+                    break;
+                }
+            }
+
+            Assert.That(runner, Is.Not.Null);
+            UnityEngine.Object.Destroy(runner);
+            yield return null;
+
+            OnityTask task = OnityTask.NextFrame();
+            yield return WaitForCompletion(task);
+            Assert.DoesNotThrow(() => task.GetAwaiter().GetResult());
+        }
+
+        [UnityTest]
         public IEnumerator DelayFrames_ScheduledBeforeRunnerUpdate_CompletesAfterRequestedFrames()
         {
             OnityTask warmupTask = OnityTask.NextFrame();

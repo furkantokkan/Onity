@@ -22,6 +22,8 @@ for UniTask's full API. `async OnityTask` methods and `WhenAll` currently use
 .NET `Task` internally, so equivalent allocation behavior is not guaranteed.
 
 For a task-oriented introduction, read [Async with OnityTask](../guide/onitytask.html).
+For measured Unity 2022 workloads and the current feature gaps, read
+[OnityTask and UniTask comparison](../guide/onitytask-comparison.html).
 
 > **Pooled-task safety:** frame, delay, predicate, and
 > `AsyncOperation.AsOnityTask()` values are single-consumer. Await each value
