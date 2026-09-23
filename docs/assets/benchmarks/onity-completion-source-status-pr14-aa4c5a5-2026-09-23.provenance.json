@@ -1,0 +1,28 @@
+{
+  "suite": "Completion-source IsCompleted probe",
+  "benchmarkBranch": "benchmark/onitytask-preserve",
+  "benchmarkHostBaseCommit": "f2390399b929f57bfa6bfa71dfbc99b1a351cb64",
+  "sourceCommit": "aa4c5a587245270e83bc19006a6cffc472ff660c",
+  "sourceRelation": "The benchmark worktree async source blobs match PR #14 head aa4c5a5 exactly; its runtime code last changed at c2f9358.",
+  "onityAsyncGitBlob": "1dcb59297c21ec72f8c6512e3a64549c5e307074",
+  "completionSourceGitBlob": "81fcc9cc5b68df365966e256c7e272b8a4dac427",
+  "benchmarkRunnerGitBlob": "10b4f9d9e0fb8e0d6bcdda3514469b91d69b5d62",
+  "benchmarkMenuGitBlob": "f95ed8b8ed2ddfbc7bc871a6c15e253b286b5dc4",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "Pending and completed-success GetAwaiter().IsCompleted reads on fresh typed and untyped completion sources. Source construction and completion are outside each synchronous measured slice. Library order alternates by batch; no empty-harness subtraction is applied.",
+  "samplesPerCase": 8,
+  "timingOperationsPerSample": 4096,
+  "allocationOperationsPerSample": 256,
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "allocationInputGuard": "The allocation-only pass checks exact runtime and UniTask revisions, Unity/backend, benchmark parameters, scope, scenario and comparator definitions, and eight timing samples before modifying a report.",
+  "timingAndAllocationReport": "onity-completion-source-status-pr14-aa4c5a5-2026-09-23.json",
+  "reportSha256": "EA04A3C407D273C972117EBAEC62C3F441B72989AFAA2F8A395598D99A16D747",
+  "csvSha256": "347A6E66790A0A6086CBC9967AC615268A4C73460271FEB97728A6CDDB0EB85C",
+  "markdownSha256": "97AF016E01626B78FB97FDB8DDF1D4BD6382797435568DC181D177C0EDBA519D",
+  "scope": "Unity Editor/Mono synchronous status reads with 0 B measured per operation. This report is the fresh PR #14 baseline for the pending-status candidate, not device or IL2CPP evidence. Separate Editor processes may have different timing conditions."
+}

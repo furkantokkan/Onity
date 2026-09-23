@@ -1,0 +1,30 @@
+{
+  "suite": "Completion-source IsCompleted probe",
+  "benchmarkBranch": "benchmark/onitytask-preserve",
+  "benchmarkHostBaseCommit": "f2390399b929f57bfa6bfa71dfbc99b1a351cb64",
+  "candidateSourceCommit": "25c8e202214a1b7b5fa258feb87a0f5d91750ad4",
+  "unchangedOnityAsyncGitBlob": "1dcb59297c21ec72f8c6512e3a64549c5e307074",
+  "candidateCompletionSourceGitBlob": "43e70a577acef4e2d8441c022c4d47d6c8f462be",
+  "benchmarkRunnerGitBlob": "67b5d664e8f6dc7fb20159dbee1201d0a832bfb6",
+  "benchmarkRunnerChangeFromBaseline": "Only the embedded status-runtime commit changed. The four measured operations, sample counts, order, scope, and allocation validation remained identical.",
+  "benchmarkMenuGitBlob": "f95ed8b8ed2ddfbc7bc871a6c15e253b286b5dc4",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "measurement": "Pending and completed-success GetAwaiter().IsCompleted reads on fresh typed and untyped completion sources. Source construction and completion are outside each synchronous measured slice. Library order alternates by batch; no empty-harness subtraction is applied.",
+  "samplesPerCase": 8,
+  "timingOperationsPerSample": 4096,
+  "allocationOperationsPerSample": 256,
+  "allocationControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0
+  },
+  "staleInputGuardVerification": "With the candidate runner, allocation-only on a temporary copy of the aa4c5a5 timing report threw InvalidDataException for a runtime/configuration mismatch before saving. The temporary copy retained baseline SHA-256 EA04A3C407D273C972117EBAEC62C3F441B72989AFAA2F8A395598D99A16D747.",
+  "baselineReport": "onity-completion-source-status-pr14-aa4c5a5-2026-09-23.json",
+  "baselineReportSha256": "EA04A3C407D273C972117EBAEC62C3F441B72989AFAA2F8A395598D99A16D747",
+  "timingAndAllocationReport": "onity-completion-source-status-25c8e20-2026-09-23.json",
+  "reportSha256": "534BDCD07355DF31D03D35A31EAE45D04D2F53219593A8AE9B90097E910B1FA9",
+  "csvSha256": "8486F3876D779863BB57F751F4B22D6E457BD8BB7998689CA33F399D9E0C3801",
+  "markdownSha256": "AD064A9770E72AF3379DDFA0F5D784226144B61CD9299E5F521150FA57795AB7",
+  "scope": "Pending Onity versus UniTask same-run median sample ratios moved from 1.430 to 1.170 untyped and from 1.433 to 1.108 typed; both remain slower than UniTask in this run. All status reads measured 0 B. Terminal readings vary; separate-process timing does not prove a causal speed ratio or overall library ranking. No Player IL2CPP or device measurement is included."
+}

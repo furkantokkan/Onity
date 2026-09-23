@@ -356,3 +356,41 @@ show 120 B/task for Onity `Preserve`, 40 B/task for UniTask `Preserve`, and
 The calibrated [callstack report](../../../../docs/assets/benchmarks/onity-preserve-native-c2f9358-allocation-callstacks-2026-09-23.json)
 and [provenance](../../../../docs/assets/benchmarks/onity-preserve-native-c2f9358-allocation-callstacks-2026-09-23.provenance.json)
 attribute Onity's full 30,720 B conversion sample to one stack (120 B/task).
+
+## Completion-source status probe
+
+The `-onityCompletionSourceBenchmark -onityCompletionSourceStatusProbe` mode
+compares pending and completed-success `GetAwaiter().IsCompleted` reads on
+fresh typed and untyped completion sources. Construction and completion are
+outside each measured slice. The benchmark alternates library order and keeps
+eight timing samples of 4,096 reads and eight allocation samples of 256 reads
+per case. Run the timing pass, then the allocation pass against the same JSON
+path with `-onityTaskAllocationsOnly -profiler-enable`; the latter rejects a
+report from a different runtime revision or benchmark configuration before
+modifying it. The allocation controls measured 65,568 B positive and 0 B
+empty in both runs. Every status-read case measured 0 B per operation.
+
+The fresh PR #14 `aa4c5a5` [baseline JSON](../../../../docs/assets/benchmarks/onity-completion-source-status-pr14-aa4c5a5-2026-09-23.json),
+[CSV](../../../../docs/assets/benchmarks/onity-completion-source-status-pr14-aa4c5a5-2026-09-23.csv),
+[Markdown](../../../../docs/assets/benchmarks/onity-completion-source-status-pr14-aa4c5a5-2026-09-23.md),
+and [provenance](../../../../docs/assets/benchmarks/onity-completion-source-status-pr14-aa4c5a5-2026-09-23.provenance.json)
+are kept separate from the `25c8e20` candidate [JSON](../../../../docs/assets/benchmarks/onity-completion-source-status-25c8e20-2026-09-23.json),
+[CSV](../../../../docs/assets/benchmarks/onity-completion-source-status-25c8e20-2026-09-23.csv),
+[Markdown](../../../../docs/assets/benchmarks/onity-completion-source-status-25c8e20-2026-09-23.md),
+and [provenance](../../../../docs/assets/benchmarks/onity-completion-source-status-25c8e20-2026-09-23.provenance.json).
+Both use Unity 2022.3.62f3 Editor/Mono and pinned UniTask 2.5.11.
+
+| Status read | Baseline Onity / UniTask mean ns | Candidate Onity / UniTask mean ns | Median paired Onity / UniTask ratio, baseline to candidate |
+| --- | ---: | ---: | ---: |
+| Pending, untyped | 127.9 / 90.7 | 90.5 / 77.5 | 1.430 to 1.170 |
+| Pending, typed | 120.1 / 82.4 | 93.7 / 83.6 | 1.433 to 1.108 |
+| Completed, untyped | 85.7 / 78.3 | 96.1 / 78.8 | 1.082 to 1.151 |
+| Completed, typed | 98.2 / 79.7 | 83.3 / 78.0 | 1.141 to 1.086 |
+
+The candidate narrows the pending same-run gap but remains slower than UniTask
+in these samples. Terminal sample ratios vary. Baseline and candidate timings
+come from separate Editor processes and cannot alone establish a causal speed
+change; these synchronous Editor/Mono results do not rank full task lifecycles
+or Player IL2CPP. A negative guard check used a temporary copy of the baseline
+timing JSON with the candidate allocation pass: it rejected the stale runtime
+revision and left the copy unchanged.

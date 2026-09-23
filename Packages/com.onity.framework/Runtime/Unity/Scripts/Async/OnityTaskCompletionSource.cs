@@ -271,8 +271,13 @@ namespace Onity.Unity.Async
                 return status;
             }
 
+            if (Volatile.Read(ref m_taskBridge) == null)
+            {
+                return OnityTaskSourceStatus.Pending;
+            }
+
             // The task bridge completes under this gate before status is
-            // published. A pending read must wait for that publication.
+            // published. A pending read with a bridge waits for that publication.
             lock (m_gate)
             {
                 return (OnityTaskSourceStatus)m_status;
@@ -311,7 +316,7 @@ namespace Onity.Unity.Async
                 ValidateToken(token);
                 if (m_taskBridge == null)
                 {
-                    m_taskBridge = CreateTaskBridge();
+                    Volatile.Write(ref m_taskBridge, CreateTaskBridge());
                     OnityTaskSourceStatus status = (OnityTaskSourceStatus)m_status;
                     if (status != OnityTaskSourceStatus.Pending)
                     {

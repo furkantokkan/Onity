@@ -1354,6 +1354,7 @@ namespace Onity.Benchmarks
         private const string k_scopePrefix = "Onity.CompletionSource.Allocation.";
         private const string k_pinnedUniTaskCommit = "2e993ff18f28c931602a07292df0b0804eebef99";
         private const string k_onityRuntimeCommit = "a7c7c9c07867a0f2a20a0b817ca0482e75b77795";
+        private const string k_statusRuntimeCommit = "25c8e202214a1b7b5fa258feb87a0f5d91750ad4";
         private const string k_preserveRuntimeCommit = "c2f9358994b8198c12ab48e1569014787f65325e";
 
         private static bool s_isRunning;
@@ -1491,9 +1492,11 @@ namespace Onity.Benchmarks
                         throw new InvalidDataException("A complete completion-source timing report is required.");
                     }
 
-                    if (m_preserveBenchmark)
+                    if (m_preserveBenchmark || m_statusProbe)
                     {
-                        ValidatePreserveAllocationInput(report, m_lifecycleBenchmark);
+                        CompletionReport expected = m_statusProbe ? CreateStatusReport() :
+                            m_lifecycleBenchmark ? CreateLifecycleReport() : CreatePreserveReport();
+                        ValidateAllocationInput(report, expected);
                     }
 
                     ClearAllocations(report);
@@ -1667,6 +1670,7 @@ namespace Onity.Benchmarks
         {
             CompletionReport report = CreateReport();
             report.suite = "Completion-source IsCompleted probe";
+            report.onityRuntimeCommit = k_statusRuntimeCommit;
             report.scope = "Pending and completed-success GetAwaiter().IsCompleted reads on fresh "
                 + "typed and untyped sources. Setup and completion stay outside each measured slice. "
                 + "Samples retain harness overhead; no baseline subtraction or overall winner is inferred.";
@@ -1794,12 +1798,12 @@ namespace Onity.Benchmarks
             return report;
         }
 
-        private static void ValidatePreserveAllocationInput(
-            CompletionReport report, bool lifecycleBenchmark)
+        private static void ValidateAllocationInput(
+            CompletionReport report, CompletionReport expected)
         {
-            CompletionReport expected = lifecycleBenchmark
-                ? CreateLifecycleReport() : CreatePreserveReport();
-            if (report.onityRuntimeCommit != expected.onityRuntimeCommit ||
+            if (report.schemaVersion != expected.schemaVersion ||
+                report.suite != expected.suite ||
+                report.onityRuntimeCommit != expected.onityRuntimeCommit ||
                 report.uniTaskCommit != expected.uniTaskCommit ||
                 report.unityVersion != expected.unityVersion ||
                 report.scriptingBackend != expected.scriptingBackend ||
@@ -1812,7 +1816,7 @@ namespace Onity.Benchmarks
                 report.scope != expected.scope)
             {
                 throw new InvalidDataException(
-                    "Preserve allocation pass requires a timing report from this exact runtime and benchmark configuration.");
+                    "Allocation pass requires a timing report from this exact runtime and benchmark configuration.");
             }
 
             for (int i = 0; i < expected.scenarios.Length; i++)
@@ -1827,7 +1831,7 @@ namespace Onity.Benchmarks
                     actualScenario.results == null ||
                     actualScenario.results.Length != expectedScenario.results.Length)
                 {
-                    throw new InvalidDataException("Preserve timing scenario definitions do not match this benchmark.");
+                    throw new InvalidDataException("Timing scenario definitions do not match this benchmark.");
                 }
 
                 for (int result = 0; result < expectedScenario.results.Length; result++)
@@ -1838,7 +1842,7 @@ namespace Onity.Benchmarks
                         actualMetric.sampleNanosecondsPerOperation == null ||
                         actualMetric.sampleNanosecondsPerOperation.Length != k_samples)
                     {
-                        throw new InvalidDataException("Preserve timing samples are incomplete or use another comparator.");
+                        throw new InvalidDataException("Timing samples are incomplete or use another comparator.");
                     }
                 }
             }
