@@ -1482,6 +1482,11 @@ namespace Onity.Benchmarks
                         throw new InvalidDataException("A complete completion-source timing report is required.");
                     }
 
+                    if (m_preserveBenchmark)
+                    {
+                        ValidatePreserveAllocationInput(report);
+                    }
+
                     ClearAllocations(report);
                 }
                 else
@@ -1725,6 +1730,54 @@ namespace Onity.Benchmarks
             }
 
             return report;
+        }
+
+        private static void ValidatePreserveAllocationInput(CompletionReport report)
+        {
+            CompletionReport expected = CreatePreserveReport();
+            if (report.onityRuntimeCommit != expected.onityRuntimeCommit ||
+                report.uniTaskCommit != expected.uniTaskCommit ||
+                report.unityVersion != expected.unityVersion ||
+                report.scriptingBackend != expected.scriptingBackend ||
+                report.operationsPerSample != expected.operationsPerSample ||
+                report.timingBatchesPerSample != expected.timingBatchesPerSample ||
+                report.timingOperationsPerSample != expected.timingOperationsPerSample ||
+                report.allocationOperationsPerSample != expected.allocationOperationsPerSample ||
+                report.samplesPerCase != expected.samplesPerCase ||
+                report.warmupBatches != expected.warmupBatches ||
+                report.scope != expected.scope)
+            {
+                throw new InvalidDataException(
+                    "Preserve allocation pass requires a timing report from this exact runtime and benchmark configuration.");
+            }
+
+            for (int i = 0; i < expected.scenarios.Length; i++)
+            {
+                CompletionScenario actualScenario = report.scenarios[i];
+                CompletionScenario expectedScenario = expected.scenarios[i];
+                if (actualScenario == null ||
+                    actualScenario.stage != expectedScenario.stage ||
+                    actualScenario.stageName != expectedScenario.stageName ||
+                    actualScenario.typed != expectedScenario.typed ||
+                    actualScenario.consumers != expectedScenario.consumers ||
+                    actualScenario.results == null ||
+                    actualScenario.results.Length != expectedScenario.results.Length)
+                {
+                    throw new InvalidDataException("Preserve timing scenario definitions do not match this benchmark.");
+                }
+
+                for (int result = 0; result < expectedScenario.results.Length; result++)
+                {
+                    CompletionMetric actualMetric = actualScenario.results[result];
+                    if (actualMetric == null ||
+                        actualMetric.library != expectedScenario.results[result].library ||
+                        actualMetric.sampleNanosecondsPerOperation == null ||
+                        actualMetric.sampleNanosecondsPerOperation.Length != k_samples)
+                    {
+                        throw new InvalidDataException("Preserve timing samples are incomplete or use another comparator.");
+                    }
+                }
+            }
         }
 
         private void PrepareBatch()

@@ -191,6 +191,10 @@ Unity.exe -batchmode -nographics -projectPath <host> -executeMethod Onity.Editor
 Unity.exe -batchmode -nographics -profiler-enable -projectPath <host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityPreserveBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <same-absolute-report.json> -logFile <absolute-allocations.log>
 ```
 
+The allocation pass rejects a timing JSON whose runtime revision, UniTask
+revision, Unity version, benchmark settings, or scenario definitions differ
+from the current runner.
+
 The report is Unity Editor/Mono evidence for these synchronous slices. It does
 not measure complete frame latency, player IL2CPP, or all UniTask APIs.
 
