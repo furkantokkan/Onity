@@ -39,11 +39,12 @@ showed substantial timing variance, so use the raw samples when assessing a
 small difference. This run does **not** establish OnityTask performance
 superiority over UniTask.
 
-Allocation bytes per operation are **unavailable**. Unity 2022 Mono's
+Allocation bytes per operation are **unavailable in the original release
+reports**. Unity 2022 Mono's
 `GC.GetAllocatedBytesForCurrentThread()` returned zero for the harness's known
 64 KiB allocation, so calibration rejected it. A `GC.Alloc` ProfilerRecorder
 probe reported sample values of 200/400 for that allocation; those are not
-byte counts. No zero-allocation comparison follows from these reports.
+byte counts. No zero-allocation comparison follows from those reports.
 
 The [isolated comparison host](https://github.com/furkantokkan/Onity/tree/codex/onitytask-benchmarks)
 pins UniTask as a test dependency and enables the benchmark define. The Onity
@@ -52,6 +53,44 @@ runtime package does not depend on UniTask. The
 and [after-builder JSON](https://github.com/furkantokkan/Onity/releases/download/v0.3.10/onitytask-expanded-after-builder-2026-09-23.json)
 retain every raw sample. The release also includes their CSV and Markdown
 summaries.
+
+## Calibrated allocation follow-up
+
+A later run used the isolated comparison host at commit `832310f` and a
+**separate Unity Editor profiler process** for allocation samples. Both
+libraries received the same completed warmup batches before measurement. The
+profiler read `GC.Alloc` sample byte metadata inside each measured synchronous
+slice. Its 64 KiB positive control read 65,568 bytes, and its empty control
+read zero. Each library has eight raw samples per scenario.
+
+| Scheduling slice | Concurrent operations | OnityTask B/op | UniTask B/op |
+| --- | ---: | ---: | ---: |
+| `NextFrame` | 128 | 0 | 0 |
+| `NextFrame` | 4,096 | 112.5 | 0 |
+| Untyped `async` method awaiting `NextFrame` | 128 | 304 | 64 |
+| Typed `async` method awaiting `NextFrame` | 128 | 312 | 72 |
+| Typed `async` method awaiting `NextFrame` | 4,096 | 424.5 | 72 |
+
+The 4,096 cohort exceeds Onity's retained frame-source pool capacity. These
+figures cover scheduling only, under Editor/Mono profiler instrumentation; they
+exclude continuation dispatch and PlayerLoop work. The [raw baseline JSON](../assets/benchmarks/onitytask-unity2022-mono-warm-baseline-2026-09-23.json)
+and [CSV](../assets/benchmarks/onitytask-unity2022-mono-warm-baseline-2026-09-23.csv)
+contain all 16 timing scenarios, 32 allocation metrics, controls, and samples.
+
+## Pooled builder experiment
+
+An isolated typed async-method runner passed 23 focused builder tests and 51
+existing async tests, but was **not merged or released**. In its matched
+benchmark host, typed `async` `NextFrame` scheduling at 128 concurrent
+operations measured 2,687 ns/op and 920 B/op for the candidate, versus
+1,018 ns/op and 72 B/op for UniTask. The released Onity implementation measured
+1,713 ns/op and 312 B/op in the separate baseline run. Its UniTask timing
+control measured 925 ns/op in that run, so the cross-run timing difference is
+not a precise speedup or slowdown ratio. The candidate's allocation regression
+is consistent across all eight samples. The [candidate JSON](../assets/benchmarks/onitytask-unity2022-mono-pooled-candidate-2026-09-23.json)
+and [CSV](../assets/benchmarks/onitytask-unity2022-mono-pooled-candidate-2026-09-23.csv)
+preserve the full evidence. Work continues on reducing native-await scheduling
+cost before this change can be considered for release.
 
 ## Feature coverage
 
@@ -66,5 +105,5 @@ summaries.
 | `await foreach` async enumerable and public completion source | Not yet available. |
 
 OnityTask is useful for common Unity flows today, but it is **not a full
-UniTask replacement**. The next measured work is a pooled async-method runner,
-source-based composition, and a separate calibrated allocation-byte pass.
+UniTask replacement**. The next measured work is lower-allocation native async
+continuations, source-based composition, and IL2CPP/player validation.
