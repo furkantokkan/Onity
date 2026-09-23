@@ -1,0 +1,56 @@
+{
+  "suite": "Two-input OnityTask WhenAll scheduling",
+  "cohort": "corrected candidate, rejected on allocation evidence",
+  "benchmarkBranch": "benchmark/onitytask-whenall-candidate",
+  "benchmarkHostCommitBeforeReports": "6f5d147dbdf1127ca929ca8d3d331186e3f31381",
+  "productRuntimeCommit": "a75793fcdb8640bd354b932550a38bce387e3ce9",
+  "onityAsyncGitBlob": "6bab53f83864d960c5970e81535df04af2c92933",
+  "onityAsyncWorkingSha256": "810a3bb53a8a1bcb16a357eb87873338058dbf81e5397052ac0992f16affeb72",
+  "benchmarkRunnerGitBlob": "8a43d9d6bfab86c8f8e1c6b8d4beb482f1f840d3",
+  "benchmarkRunnerWorkingSha256": "3f1ad4d0d4ecd58998b3fa5d3b76ecd252c8aa97e4ddcf066902b4f9443cbb0b",
+  "runnerHashNote": "Both hosts share the same Git runner blob. Working-file SHA-256 differs because the edited baseline checkout has mixed line endings and this fresh candidate checkout has CRLF line endings.",
+  "benchmarkMenuGitBlob": "6cb9d93b70f4517675805a23a41816597170efaa",
+  "packageLockGitBlob": "2f863e6d228ea9fd67dbf0d9ab62a805993dd220",
+  "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityEditor": "2022.3.62f3",
+  "scriptingBackend": "Mono",
+  "editorBinary": "C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Unity.exe",
+  "entryPoint": "Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine",
+  "timingArguments": "-batchmode -nographics -projectPath <candidate-worktree> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskBenchmarkOutput <primary-or-repeat-json> -logFile <timing-log>",
+  "allocationArguments": "-batchmode -nographics -profiler-enable -projectPath <candidate-worktree> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <primary-json> -logFile <allocation-log>",
+  "conditions": {
+    "operationsPerBatch": 128,
+    "warmupBatchesPerScenarioAndLibrary": 10,
+    "timingBatchesPerSample": 16,
+    "timingOperationsPerSample": 2048,
+    "allocationOperationsPerSample": 128,
+    "samplesPerCasePerPass": 8,
+    "scenarios": [
+      "Pending; Onity tracker on",
+      "Pending; Onity tracker off",
+      "Both completed; Onity tracker on"
+    ],
+    "measuredSlice": "Two-argument WhenAll scheduling and storing its returned task",
+    "excluded": "Input creation, input completion, continuation dispatch, result consumption, and full lifecycle"
+  },
+  "profilerControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0,
+    "emptyHarnessBytesPerSample": 0
+  },
+  "reports": [
+    {
+      "path": "docs/assets/benchmarks/onity-whenall-candidate-a75793f-2026-09-23.json",
+      "sha256": "53a1ebd495cf5713df49230345765b913a2ab4ad3c3d3ac70a374ad4dc15a6ab",
+      "passes": "Timing and calibrated Profiler allocation"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-whenall-candidate-a75793f-timing-repeat-2026-09-23.json",
+      "sha256": "0e24ac4e8585ff1af4862bee3b8cb4d60cc9551ee59bf473f0c48b88bac1644b",
+      "passes": "Separate timing repeat only"
+    }
+  ],
+  "verification": "Corrected product commit passed 546/546 EditMode and 23/23 PlayMode tests in its feature worktree before this benchmark. Candidate benchmark processes wrote complete reports and logged completion.",
+  "observation": "All eight Profiler samples agree: candidate Onity allocation exceeds baseline in pending tracker-on, pending tracker-off, and both-completed scenarios. The first candidate timing process was slower for both libraries; the separate timing repeat returned UniTask controls near baseline and showed a completed-input Onity slowdown. Separate-process timing cannot establish a causal speed change.",
+  "limits": "Editor/Mono synchronous scheduling slice; no full lifecycle or IL2CPP claim. The empty timing loop was measured but not subtracted."
+}
