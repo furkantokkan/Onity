@@ -11,7 +11,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 namespace Onity.Benchmarks
 {
     /// <summary>
-    /// Compares matched OnityTask and UniTask primitives in Play Mode.
+    /// Compares matched OnityTask and UniTask primitives and async methods in Play Mode.
     /// Frame timings cover scheduling and consumption, not PlayerLoop execution or frame latency.
     /// </summary>
     public sealed class OnityTaskBenchmarkRunner : MonoBehaviour
@@ -29,6 +29,10 @@ namespace Onity.Benchmarks
 
         private readonly OnityTaskAwaiter[] m_onityAwaiters = new OnityTaskAwaiter[k_burstConcurrency];
         private readonly UniTask.Awaiter[] m_uniTaskAwaiters = new UniTask.Awaiter[k_burstConcurrency];
+        private readonly OnityTaskAwaiter<int>[] m_onityTypedAwaiters =
+            new OnityTaskAwaiter<int>[k_burstConcurrency];
+        private readonly UniTask<int>.Awaiter[] m_uniTaskTypedAwaiters =
+            new UniTask<int>.Awaiter[k_burstConcurrency];
         private string m_latestJson;
         private Action<string, Exception> m_completed;
         private bool m_allocationCounterAvailable;
@@ -150,9 +154,10 @@ namespace Onity.Benchmarks
                 warmupIterations = k_warmupIterations,
                 frameBatchesPerSample = k_batchesPerSample,
                 measurementScope = "Main-thread synchronous slices only. Scheduling and GetResult are separate. "
-                    + "PlayerLoop execution, continuation dispatch, frame latency and async method builders are excluded. "
+                    + "Async-method cases include builder work within those slices. PlayerLoop execution, "
+                    + "suspended-frame time, continuation dispatch and builder completion during resumption are excluded. "
                     + "Raw times include harness overhead; no baseline subtraction or overall winner is inferred.",
-                scenarios = new TaskBenchmarkScenarioReport[6]
+                scenarios = new TaskBenchmarkScenarioReport[16]
             };
 
             CalibrateAllocationCounter(report);
@@ -222,6 +227,19 @@ namespace Onity.Benchmarks
                 "Completed GetResult", MeasureOnityCompleted, MeasureUniTaskCompleted);
             report.scenarios[1] = MeasureSynchronousScenario(
                 "FromResult<int> GetResult", MeasureOnityResult, MeasureUniTaskResult);
+
+            for (int i = 0; i < k_warmupIterations; i++)
+            {
+                MeasureOnityAsyncCompleted();
+                MeasureUniTaskAsyncCompleted();
+                MeasureOnityAsyncResult();
+                MeasureUniTaskAsyncResult();
+            }
+
+            report.scenarios[6] = MeasureSynchronousScenario(
+                "Async method completed GetResult", MeasureOnityAsyncCompleted, MeasureUniTaskAsyncCompleted);
+            report.scenarios[7] = MeasureSynchronousScenario(
+                "Async method completed<int> GetResult", MeasureOnityAsyncResult, MeasureUniTaskAsyncResult);
         }
 
         private TaskBenchmarkScenarioReport MeasureSynchronousScenario(
@@ -336,6 +354,173 @@ namespace Onity.Benchmarks
                 report.scenarios[index + 1] = BuildScenario("NextFrame GetResult", workload,
                     concurrency, operations, consumption[0], consumption[1]);
             }
+
+            IEnumerator asyncMethodBenchmarks = RunAsyncMethodFrameBenchmarks(report);
+            while (asyncMethodBenchmarks.MoveNext())
+            {
+                yield return null;
+            }
+        }
+
+        private IEnumerator RunAsyncMethodFrameBenchmarks(TaskBenchmarkReport report)
+        {
+            for (int resultKind = 0; resultKind < 2; resultKind++)
+            {
+                bool typed = resultKind == 1;
+                string name = typed ? "Async method NextFrame<int>" : "Async method NextFrame";
+                for (int cohort = 0; cohort < 2; cohort++)
+                {
+                    int concurrency = cohort == 0 ? k_steadyConcurrency : k_burstConcurrency;
+                    string workload = (cohort == 0
+                        ? "Warm steady state; 128 concurrent operations"
+                        : "Repeated burst; 4096 concurrent operations")
+                        + "; one NextFrame suspension; scheduling/consumption slices only; "
+                        + "suspended-frame time and resumption excluded";
+
+                    for (int warmup = 0; warmup < 2; warmup++)
+                    {
+                        for (int library = 0; library < 2; library++)
+                        {
+                            ScheduleAsyncMethods(library, concurrency, typed);
+                            int remaining = k_completionTimeoutFrames;
+                            do
+                            {
+                                yield return null;
+                                if (--remaining == 0)
+                                {
+                                    throw new TimeoutException(name + " warmup did not complete.");
+                                }
+                            }
+                            while (!AreAsyncMethodsCompleted(library, concurrency, typed));
+                            ConsumeAsyncMethods(library, concurrency, typed);
+                        }
+                    }
+
+                    SampleSet[] creation = { new SampleSet(), new SampleSet() };
+                    SampleSet[] consumption = { new SampleSet(), new SampleSet() };
+                    for (int sample = 0; sample < k_samplesPerCase; sample++)
+                    {
+                        ForceFullGc();
+                        for (int batch = 0; batch < k_batchesPerSample; batch++)
+                        {
+                            for (int turn = 0; turn < 2; turn++)
+                            {
+                                int library = (sample + batch + turn) & 1;
+                                long bytes = ReadAllocatedBytes();
+                                long started = Stopwatch.GetTimestamp();
+                                ScheduleAsyncMethods(library, concurrency, typed);
+                                long stopped = Stopwatch.GetTimestamp();
+                                creation[library].bytes[sample] += ReadAllocatedBytes() - bytes;
+                                creation[library].ticks[sample] += stopped - started;
+
+                                int remaining = k_completionTimeoutFrames;
+                                do
+                                {
+                                    yield return null;
+                                    if (--remaining == 0)
+                                    {
+                                        throw new TimeoutException(name + " sample did not complete.");
+                                    }
+                                }
+                                while (!AreAsyncMethodsCompleted(library, concurrency, typed));
+
+                                bytes = ReadAllocatedBytes();
+                                started = Stopwatch.GetTimestamp();
+                                ConsumeAsyncMethods(library, concurrency, typed);
+                                stopped = Stopwatch.GetTimestamp();
+                                consumption[library].bytes[sample] += ReadAllocatedBytes() - bytes;
+                                consumption[library].ticks[sample] += stopped - started;
+                            }
+                        }
+                    }
+
+                    int index = 8 + resultKind * 4 + cohort * 2;
+                    int operations = concurrency * k_batchesPerSample;
+                    report.scenarios[index] = BuildScenario(name + " scheduling", workload,
+                        concurrency, operations, creation[0], creation[1]);
+                    report.scenarios[index + 1] = BuildScenario(name + " GetResult", workload,
+                        concurrency, operations, consumption[0], consumption[1]);
+                }
+            }
+        }
+
+        private void ScheduleAsyncMethods(int library, int count, bool typed)
+        {
+            if (typed)
+            {
+                if (library == 0)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        m_onityTypedAwaiters[i] = OnityNextFrameResultAsync().GetAwaiter();
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        m_uniTaskTypedAwaiters[i] = UniTaskNextFrameResultAsync().GetAwaiter();
+                    }
+                }
+            }
+            else if (library == 0)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    m_onityAwaiters[i] = OnityNextFrameAsync().GetAwaiter();
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    m_uniTaskAwaiters[i] = UniTaskNextFrameAsync().GetAwaiter();
+                }
+            }
+        }
+
+        private bool AreAsyncMethodsCompleted(int library, int count, bool typed)
+        {
+            if (!typed)
+            {
+                return IsCompleted(library, count);
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                if (library == 0 ? !m_onityTypedAwaiters[i].IsCompleted : !m_uniTaskTypedAwaiters[i].IsCompleted)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void ConsumeAsyncMethods(int library, int count, bool typed)
+        {
+            if (!typed)
+            {
+                Consume(library, count);
+                return;
+            }
+
+            if (library == 0)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    s_lastInt = m_onityTypedAwaiters[i].GetResult();
+                    m_onityTypedAwaiters[i] = default;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    s_lastInt = m_uniTaskTypedAwaiters[i].GetResult();
+                    m_uniTaskTypedAwaiters[i] = default;
+                }
+            }
         }
 
         private void Schedule(int library, int count)
@@ -447,6 +632,54 @@ namespace Onity.Benchmarks
         private static void MeasureUniTaskCompleted() => UniTask.CompletedTask.GetAwaiter().GetResult();
         private static void MeasureOnityResult() => s_lastInt = OnityTask.FromResult(42).GetAwaiter().GetResult();
         private static void MeasureUniTaskResult() => s_lastInt = UniTask.FromResult(42).GetAwaiter().GetResult();
+        private static void MeasureOnityAsyncCompleted() => OnityCompletedAsync().GetAwaiter().GetResult();
+        private static void MeasureUniTaskAsyncCompleted() => UniTaskCompletedAsync().GetAwaiter().GetResult();
+        private static void MeasureOnityAsyncResult() => s_lastInt = OnityCompletedResultAsync().GetAwaiter().GetResult();
+        private static void MeasureUniTaskAsyncResult() => s_lastInt = UniTaskCompletedResultAsync().GetAwaiter().GetResult();
+
+        private static async OnityTask OnityCompletedAsync()
+        {
+            await OnityTask.CompletedTask;
+        }
+
+        private static async UniTask UniTaskCompletedAsync()
+        {
+            await UniTask.CompletedTask;
+        }
+
+        private static async OnityTask<int> OnityCompletedResultAsync()
+        {
+            await OnityTask.CompletedTask;
+            return 42;
+        }
+
+        private static async UniTask<int> UniTaskCompletedResultAsync()
+        {
+            await UniTask.CompletedTask;
+            return 42;
+        }
+
+        private static async OnityTask OnityNextFrameAsync()
+        {
+            await OnityTask.NextFrame();
+        }
+
+        private static async UniTask UniTaskNextFrameAsync()
+        {
+            await UniTask.NextFrame();
+        }
+
+        private static async OnityTask<int> OnityNextFrameResultAsync()
+        {
+            await OnityTask.NextFrame();
+            return 42;
+        }
+
+        private static async UniTask<int> UniTaskNextFrameResultAsync()
+        {
+            await UniTask.NextFrame();
+            return 42;
+        }
 
         private static void ForceFullGc()
         {
@@ -508,7 +741,7 @@ namespace Onity.Benchmarks
         private static string BuildMarkdown(TaskBenchmarkReport report)
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("# OnityTask primitive benchmark").AppendLine();
+            builder.AppendLine("# OnityTask primitive and async-method benchmark").AppendLine();
             builder.AppendLine($"- UTC: {report.generatedAtUtc}");
             builder.AppendLine($"- Unity: {report.unityVersion}; {report.platform}; {report.scriptingBackend}");
             builder.AppendLine($"- Samples: {report.samplesPerCase}; frame batches/sample: {report.frameBatchesPerSample}");
@@ -535,7 +768,7 @@ namespace Onity.Benchmarks
 
             builder.AppendLine().AppendLine("128 concurrent operations is the warm steady-state cohort; "
                 + "4096 is a repeated burst exceeding Onity's 256 retained frame sources. "
-                + "These primitive measurements do not establish overall library superiority.");
+                + "Primitive and async-method slice measurements do not establish overall library superiority.");
             return builder.ToString();
         }
 
