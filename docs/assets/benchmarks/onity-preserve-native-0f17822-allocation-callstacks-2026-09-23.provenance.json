@@ -1,0 +1,39 @@
+{
+  "suite": "Native OnityTask Preserve conversion allocation callstacks",
+  "benchmarkBranch": "benchmark/onitytask-preserve",
+  "benchmarkHostBaseCommit": "b224df1",
+  "candidateSourceCommit": "0f1782236c43fb89a4ba630f3c7e5a020f0be30e",
+  "onityAsyncGitBlob": "1de7f38332b01b7d68016c78ab1fb4b580b5a3a8",
+  "onityTaskCompletionSourceGitBlob": "447192a970a5a3ccfa74dcd036a3e3af40d8b4d7",
+  "benchmarkRunnerGitBlob": "cb055a3373847f1908af26b683a3e843048d8d51",
+  "benchmarkMenuGitBlob": "ee3277d20019331b0dd02159ab4c4a2fb2ea813d",
+  "pinnedUniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityVersion": "2022.3.62f3",
+  "scriptingBackend": "Editor Mono",
+  "profiler": "Unity Profiler GC.Alloc metadata with allocation callstacks enabled",
+  "operationsPerCase": 256,
+  "measurement": "Pending typed native WhenAny conversion only; source setup, callback registration after conversion, completion, and result reads are outside the profiled scope.",
+  "sourceKindCheck": "The runner reflects OnityTask<int> state and requires OnityWhenAnyTaskSource.",
+  "controls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0,
+    "attributedBytesEqualSampleBytes": true
+  },
+  "report": "onity-preserve-native-0f17822-allocation-callstacks-2026-09-23.json",
+  "reportSha256": "E08B5974C1E9A27846C693A4FB2712433B7D525A39AB296E41220FE9501F7F42",
+  "independentRepeatSha256": "E08B5974C1E9A27846C693A4FB2712433B7D525A39AB296E41220FE9501F7F42",
+  "hashScope": "SHA-256 of the UTF-8 LF raw report bytes, identical to the Git blob. Windows autocrlf checkout may change the working-tree byte hash.",
+  "reproducibility": "Two separate pinned Unity Editor batch processes produced byte-identical attribution JSON and passed the controls. The duplicate repeat is omitted from the repository.",
+  "onityBytesPerTask": {
+    "preservedSourceCreation": 120,
+    "preservedSourceConstructor": 128,
+    "completionSourceGate": 16,
+    "total": 264
+  },
+  "comparatorsBytesPerTask": {
+    "uniTaskPreserveOneConsumer": 40,
+    "uniTaskAsTaskFourConsumers": 104
+  },
+  "interpretation": "Callstack sites and byte counts are measured. The preserved source object, bound Complete delegate, and gate object labels are inferred from the pinned C# allocation expressions and constructor body.",
+  "scope": "Unity 2022 Editor/Mono on Windows for the pending typed conversion slice. This does not measure Player IL2CPP, device allocation, full task lifecycle, or universal library performance."
+}

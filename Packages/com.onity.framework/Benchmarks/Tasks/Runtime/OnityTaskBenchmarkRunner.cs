@@ -1463,7 +1463,11 @@ namespace Onity.Benchmarks
                 {
                     attributionReport = new CompletionAttributionReport
                     {
-                        onityRuntimeCommit = k_onityRuntimeCommit,
+                        suite = m_preserveBenchmark
+                            ? "Native OnityTask Preserve conversion allocation callstacks"
+                            : "Completion-source allocation callstacks",
+                        onityRuntimeCommit = m_preserveBenchmark
+                            ? k_preserveRuntimeCommit : k_onityRuntimeCommit,
                         uniTaskCommit = k_pinnedUniTaskCommit,
                         unityVersion = Application.unityVersion,
                         operations = k_operations,
@@ -2352,15 +2356,17 @@ namespace Onity.Benchmarks
             int index = 0;
             for (int stageIndex = 0; stageIndex < 2; stageIndex++)
             {
-                CompletionStage stage = stageIndex == 0
-                    ? CompletionStage.Construction : CompletionStage.AsTask;
+                CompletionStage stage = m_preserveBenchmark
+                    ? CompletionStage.PreserveConversion
+                    : stageIndex == 0 ? CompletionStage.Construction : CompletionStage.AsTask;
+                int consumers = m_preserveBenchmark && stageIndex != 0 ? 4 : 1;
                 for (int library = 0; library < 2; library++)
                 {
                     m_activeScenario = new CompletionScenario
                     {
                         stage = stage,
                         typed = true,
-                        consumers = 1
+                        consumers = consumers
                     };
                     m_activeLibrary = library;
                     for (int warmup = 0; warmup < k_warmupBatches; warmup++)
@@ -2395,7 +2401,11 @@ namespace Onity.Benchmarks
                     result.cases[index++] = new CompletionAttributionCase
                     {
                         stage = stage.ToString(),
-                        library = library == 0 ? "OnityTask" : "UniTask",
+                        consumers = consumers,
+                        library = m_preserveBenchmark
+                            ? library == 0 ? "OnityTask.Preserve"
+                                : consumers == 1 ? "UniTask.Preserve" : "UniTask.AsTask"
+                            : library == 0 ? "OnityTask" : "UniTask",
                         sampleBytes = sampleBytes,
                         bytesPerOperation = (double)sampleBytes / k_operations,
                         attributedBytes = attributedBytes,
@@ -2853,6 +2863,7 @@ namespace Onity.Benchmarks
         [Serializable]
         private sealed class CompletionAttributionReport
         {
+            public string suite;
             public string onityRuntimeCommit;
             public string uniTaskCommit;
             public string unityVersion;
@@ -2868,6 +2879,7 @@ namespace Onity.Benchmarks
         private sealed class CompletionAttributionCase
         {
             public string stage;
+            public int consumers;
             public string library;
             public long sampleBytes;
             public double bytesPerOperation;

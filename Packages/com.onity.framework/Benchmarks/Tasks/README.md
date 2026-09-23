@@ -189,11 +189,28 @@ Run timing and allocations in separate pinned Editor processes. Do not add
 ```text
 Unity.exe -batchmode -nographics -projectPath <host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityPreserveBenchmark -onityTaskBenchmarkOutput <absolute-report.json> -logFile <absolute-timing.log>
 Unity.exe -batchmode -nographics -profiler-enable -projectPath <host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityPreserveBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <same-absolute-report.json> -logFile <absolute-allocations.log>
+Unity.exe -batchmode -nographics -profiler-enable -projectPath <host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityPreserveBenchmark -onityPreserveAttribution -onityTaskBenchmarkOutput <absolute-attribution.json> -logFile <absolute-attribution.log>
 ```
 
 The allocation pass rejects a timing JSON whose runtime revision, UniTask
 revision, Unity version, benchmark settings, or scenario definitions differ
 from the current runner.
+
+The attribution command profiles only pending native conversion. It saves
+`GC.Alloc` callstacks for one and four consumer cases, plus a 64 KiB positive
+control and a zero-allocation empty control. Callstack bytes must sum to each
+case's total sample bytes before `available` becomes true.
+
+The [native Preserve allocation callstacks](../../../../docs/assets/benchmarks/onity-preserve-native-0f17822-allocation-callstacks-2026-09-23.json)
+and [provenance](../../../../docs/assets/benchmarks/onity-preserve-native-0f17822-allocation-callstacks-2026-09-23.provenance.json)
+record two byte-identical Unity Editor captures of the `0f17822` candidate.
+Each Onity conversion allocated 264 B: 120 B at the preserved-source creation
+site, 128 B in its constructor when registering the bound `Complete` action,
+and 16 B in the base completion source for its gate object. These site-to-object
+interpretations follow the pinned source code; the measured callstack bytes are
+in the JSON. UniTask `Preserve` allocated 40 B and `AsTask` allocated 104 B.
+Source construction, callback dispatch, completion, and result consumption
+remain outside the profiled conversion slice.
 
 The report is Unity Editor/Mono evidence for these synchronous slices. It does
 not measure complete frame latency, player IL2CPP, or all UniTask APIs.

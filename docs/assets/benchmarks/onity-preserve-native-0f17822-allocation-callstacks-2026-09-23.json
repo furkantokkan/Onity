@@ -1,0 +1,98 @@
+{
+    "suite": "Native OnityTask Preserve conversion allocation callstacks",
+    "onityRuntimeCommit": "0f1782236c43fb89a4ba630f3c7e5a020f0be30e",
+    "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+    "unityVersion": "2022.3.62f3",
+    "operations": 256,
+    "available": true,
+    "reason": "Calibrated GC.Alloc samples and fully attributed callstacks captured.",
+    "positiveControlBytes": 65568,
+    "emptyControlBytes": 0,
+    "cases": [
+        {
+            "stage": "PreserveConversion",
+            "consumers": 1,
+            "library": "OnityTask.Preserve",
+            "sampleBytes": 67584,
+            "bytesPerOperation": 264.0,
+            "attributedBytes": 67584,
+            "callstacks": [
+                {
+                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityPreservedTaskSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask`1.Preserve() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.ConvertPreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasurePreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasureActiveBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__76.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 32768,
+                    "allocations": 256
+                },
+                {
+                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask`1.Preserve() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.ConvertPreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasurePreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasureActiveBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__76.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 30720,
+                    "allocations": 256
+                },
+                {
+                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityPreservedTaskSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask`1.Preserve() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.ConvertPreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasurePreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasureActiveBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__76.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 4096,
+                    "allocations": 256
+                }
+            ]
+        },
+        {
+            "stage": "PreserveConversion",
+            "consumers": 1,
+            "library": "UniTask.Preserve",
+            "sampleBytes": 10240,
+            "bytesPerOperation": 40.0,
+            "attributedBytes": 10240,
+            "callstacks": [
+                {
+                    "stack": "UniTask.dll!Cysharp.Threading.Tasks::UniTask`1.Preserve() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.ConvertPreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasurePreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasureActiveBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__76.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 10240,
+                    "allocations": 256
+                }
+            ]
+        },
+        {
+            "stage": "PreserveConversion",
+            "consumers": 4,
+            "library": "OnityTask.Preserve",
+            "sampleBytes": 67584,
+            "bytesPerOperation": 264.0,
+            "attributedBytes": 67584,
+            "callstacks": [
+                {
+                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityPreservedTaskSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask`1.Preserve() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.ConvertPreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasurePreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasureActiveBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__76.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 32768,
+                    "allocations": 256
+                },
+                {
+                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTask`1.Preserve() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.ConvertPreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasurePreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasureActiveBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__76.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 30720,
+                    "allocations": 256
+                },
+                {
+                    "stack": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskCompletionSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityPreservedTaskSource`1..ctor() <- Onity.Unity.dll!Onity.Unity.Async::OnityTask`1.Preserve() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.ConvertPreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasurePreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasureActiveBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__76.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 4096,
+                    "allocations": 256
+                }
+            ]
+        },
+        {
+            "stage": "PreserveConversion",
+            "consumers": 4,
+            "library": "UniTask.AsTask",
+            "sampleBytes": 26624,
+            "bytesPerOperation": 104.0,
+            "attributedBytes": 26624,
+            "callstacks": [
+                {
+                    "stack": "mscorlib.dll!System.Threading.Tasks::TaskCompletionSource`1..ctor() <- UniTask.dll!Cysharp.Threading.Tasks::UniTaskExtensions.AsTask() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.ConvertPreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasurePreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasureActiveBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__76.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 20480,
+                    "allocations": 256
+                },
+                {
+                    "stack": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskExtensions.AsTask() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.ConvertPreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasurePreserveBatch() <- Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityCompletionSourceBenchmarkRunner.MeasureActiveBatch() <- Onity.TaskBenchmarks.dll!::<CaptureAllocation>d__76.MoveNext() <- UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()",
+                    "bytes": 6144,
+                    "allocations": 256
+                }
+            ]
+        }
+    ]
+}

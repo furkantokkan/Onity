@@ -29,6 +29,7 @@ namespace Onity.Editor.Benchmarks
         private const string k_allocationOnlyArgument = "-onityTaskAllocationsOnly";
         private const string k_completionSourceArgument = "-onityCompletionSourceBenchmark";
         private const string k_attributionArgument = "-onityCompletionSourceAttribution";
+        private const string k_preserveAttributionArgument = "-onityPreserveAttribution";
         private const string k_statusProbeArgument = "-onityCompletionSourceStatusProbe";
         private const string k_preserveArgument = "-onityPreserveBenchmark";
         private const double k_commandLineTimeoutSeconds = 900d;
@@ -147,16 +148,26 @@ namespace Onity.Editor.Benchmarks
             string latestJson = GetArgumentValue(k_outputArgument);
             bool allocationOnly = HasArgument(k_allocationOnlyArgument);
             bool completionSource = HasArgument(k_completionSourceArgument);
-            bool attribution = HasArgument(k_attributionArgument);
+            bool completionAttribution = HasArgument(k_attributionArgument);
+            bool preserveAttribution = HasArgument(k_preserveAttributionArgument);
+            bool attribution = completionAttribution || preserveAttribution;
             bool statusProbe = HasArgument(k_statusProbeArgument);
             bool preserve = HasArgument(k_preserveArgument);
             if ((allocationOnly || attribution) && !HasArgument("-profiler-enable"))
             {
                 throw new ArgumentException("Allocation pass requires Unity's -profiler-enable startup flag.");
             }
-            if (attribution && !completionSource)
+            if (completionAttribution && !completionSource)
             {
                 throw new ArgumentException("Completion-source attribution requires -onityCompletionSourceBenchmark.");
+            }
+            if (preserveAttribution && !preserve)
+            {
+                throw new ArgumentException("Preserve attribution requires -onityPreserveBenchmark.");
+            }
+            if (attribution && allocationOnly)
+            {
+                throw new ArgumentException("Attribution and allocation-only modes cannot run together.");
             }
             if (statusProbe && !completionSource)
             {
@@ -166,7 +177,7 @@ namespace Onity.Editor.Benchmarks
             {
                 throw new ArgumentException("Status probe and attribution cannot run together.");
             }
-            if (preserve && (completionSource || statusProbe || attribution))
+            if (preserve && (completionSource || statusProbe || completionAttribution))
             {
                 throw new ArgumentException("Preserve benchmark must run without completion-source modes.");
             }
