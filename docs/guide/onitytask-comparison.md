@@ -342,6 +342,34 @@ The [raw comparison](https://github.com/furkantokkan/Onity/blob/benchmark/onityt
 and [provenance](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-whenall-fastpath/docs/assets/benchmarks/onity-whenall-fastpath-a27c14d-2026-09-23.provenance.json)
 record the exact product source, benchmark runner, and UniTask commit.
 
+### Completed typed `WhenAll<T>` fast path
+
+At `970a4ae`, eligible already successful typed inputs are consumed into an
+ordered result array without individual .NET Task bridges or a tracker entry.
+The prior `c9ba354` source and candidate used the same benchmark runner and
+UniTask 2.5.11 pin in isolated Unity 2022.3.62f3 Editor/Mono hosts. Input
+`params` arrays were prepared before the scheduling marker; result-array
+creation was included, and result consumption happened afterward.
+
+| Inputs | Previous Onity B/op | Candidate Onity B/op | UniTask B/op | Candidate first run Onity / UniTask ns/op | Candidate repeat Onity / UniTask ns/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Two completed | 392 | 40 | 112 | 622 / 1,391 | 341 / 433 |
+| Four completed | 592 | 48 | 120 | 986 / 1,640 | 408 / 593 |
+
+The first candidate timing process was slower for both libraries than the
+repeat; both same-process comparisons favored Onity in these completed cases.
+The pending two-input Onity path stayed at **1,408 B/op** versus UniTask's
+**144 B/op**. In the candidate repeat, pending scheduling took **4,648.7 ns/op**
+for Onity versus **848.1 ns/op** for UniTask. The candidate first run measured
+**14,037.2 ns/op** for Onity versus **2,932.7 ns/op** for UniTask; both libraries
+had a process-wide cold slowdown. Both hosts passed the 65,568 B positive and
+0 B empty allocation controls, and all eight allocation
+samples per case agreed. This measures the scheduling slice in the Editor,
+not completion, the full task lifetime, or Player/IL2CPP behavior.
+The [raw comparison](https://github.com/furkantokkan/Onity/blob/d3495f2/docs/assets/benchmarks/onity-typed-whenall-comparison-2026-09-24.md)
+and [provenance](https://github.com/furkantokkan/Onity/blob/d3495f2/docs/assets/benchmarks/onity-typed-whenall-comparison-2026-09-24.provenance.json)
+record the measured samples and source pins.
+
 ### Pending task tracker registration
 
 The `dcdcb51` change replaces the task tracker's per-operation capturing
@@ -368,7 +396,7 @@ retain the exact source and runner hashes.
 | Frame, fixed-frame, and late-frame waits; scaled and unscaled delays; predicate waits | Available with cancellation and single-consumer pooled sources. |
 | Scene, `AsyncOperation`, and web-request bridges | Available. Deferred scene loads require the caller to activate a started operation, even after cancellation. |
 | `async OnityTask<T>` with synchronous success | Stores the result inline. Suspended and exceptional methods still use .NET `Task` internals. |
-| `WhenAll` | Available, including typed ordered results. Already successful two-input untyped calls complete without Task bridges; pending/faulted/canceled inputs and other shapes use Task bridging. |
+| `WhenAll` | Available, including typed ordered results. Already successful two-input untyped and eligible typed calls avoid Task bridges. Pending/faulted/canceled inputs, duplicate single-consumer native inputs, and larger native typed sets use the Task bridge path. |
 | Native `WhenAny` | Available for two untyped inputs; consumes both without canceling the loser. Its source and two delegates allocate per call. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
 | Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. Pending typed conversion measured 120 B/task in Editor/Mono at `c2f9358`; see the follow-up above. |

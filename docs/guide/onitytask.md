@@ -113,9 +113,13 @@ waits also skip the frame in which they are scheduled in Play Mode.
 Two successful, already completed inputs to the untyped
 `WhenAll(first, second)` are consumed immediately and return the completed
 task without .NET task bridges or a tracker entry. Pending, faulted, and
-canceled inputs still use
-the .NET `Task.WhenAll` path. Typed calls and untyped calls with other input
-counts also materialize their inputs as .NET `Task` values. Methods declared
+canceled inputs still use the .NET `Task.WhenAll` path. Typed `WhenAll` also
+collects eligible already successful results directly in input order, without
+.NET task bridges or a tracker entry. Repeated single-consumer native inputs,
+large native input sets, and pending, faulted, or canceled typed inputs retain
+the .NET path. Typed calls still need a result array and callers using inline
+`params` arguments create an input array. Untyped calls with other input counts
+also materialize their inputs as .NET `Task` values. Methods declared
 `async OnityTask` use .NET's async method builder internally. The two-input
 `WhenAny` uses a native result source, but currently allocates that source and
 two continuation delegates per call.

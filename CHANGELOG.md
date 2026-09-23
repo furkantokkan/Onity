@@ -46,6 +46,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   0 B/op; the pinned UniTask comparison used 128 B/op. Pending calls saved
   64 B/op by avoiding the `params` input array. Already-completed calls do not
   add a tracker entry.
+- Collected eligible already successful typed `WhenAll<T>` results directly in
+  input order, without a .NET Task bridge or tracker entry. Duplicate
+  single-consumer native inputs retain the previous conversion behavior, and
+  native duplicate scans are bounded to 16 inputs before falling back. In the
+  calibrated Unity 2022 Editor/Mono scheduling slice, completed two-input
+  allocation fell from 392 to 40 B/op and four-input allocation from 592 to
+  48 B/op; the pinned UniTask controls were 112 and 120 B/op respectively.
+  Pending two-input Onity allocation remained at 1,408 B/op.
 - Reused a static task tracker completion callback instead of allocating a
   capture and delegate per pending task. In the two-input `WhenAll` scheduling
   comparison with tracking enabled, allocation fell from 1,556 to 1,408 B/op;
@@ -54,12 +62,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tested
 
-- Unity `2022.3.62f3`: EditMode `538/538` and PlayMode `23/23` passed, including
+- Unity `2022.3.62f3`: EditMode `549/549` and PlayMode `23/23` passed, including
   native sharing, fault/cancellation propagation, source reuse, and main-thread
   continuation tests. The final bridge-publication adjustment passed `36/36`
   focused completion-source EditMode tests; the two-input `WhenAll` subset
   passed `7/7`. Both reentrant tracker regressions failed before their fixes
-  and passed after them. The Release `Onity.Unity` build passed with no errors.
+  and passed after them. Typed `WhenAll` covered completed and pending inputs,
+  duplicate native sources, source consumption, faults, cancellation, and large
+  result sets. The Release `Onity.Unity` build passed with no errors.
 
 ## [0.3.12] - 2026-09-23
 
