@@ -583,6 +583,94 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void TaskTracker_PendingTasks_RecordSuccessFaultAndCancellation()
+        {
+            bool previousTrackingEnabled = OnityTaskTracker.IsEnabled;
+            bool previousStackTraceEnabled = OnityTaskTracker.EnableStackTrace;
+
+            try
+            {
+                OnityTaskTracker.IsEnabled = true;
+                OnityTaskTracker.EnableStackTrace = false;
+                OnityTaskTracker.ClearAll();
+
+                TaskCompletionSource<bool> success = new TaskCompletionSource<bool>();
+                TaskCompletionSource<bool> fault = new TaskCompletionSource<bool>();
+                TaskCompletionSource<bool> cancellation = new TaskCompletionSource<bool>();
+                OnityTaskTracker.Track(success.Task, "success");
+                OnityTaskTracker.Track(fault.Task, "fault");
+                OnityTaskTracker.Track(cancellation.Task, "cancellation");
+
+                success.SetResult(true);
+                fault.SetException(new InvalidOperationException("tracked failure"));
+                cancellation.SetCanceled();
+
+                List<OnityTrackedTaskInfo> rows = new List<OnityTrackedTaskInfo>(3);
+                OnityTaskTracker.GetSnapshot(rows);
+                Dictionary<int, OnityTrackedTaskInfo> byId =
+                    new Dictionary<int, OnityTrackedTaskInfo>(rows.Count);
+                for (int i = 0; i < rows.Count; i++)
+                {
+                    byId[rows[i].TaskId] = rows[i];
+                }
+
+                Assert.That(byId[success.Task.Id].Status, Is.EqualTo(TaskStatus.RanToCompletion));
+                Assert.That(byId[fault.Task.Id].Status, Is.EqualTo(TaskStatus.Faulted));
+                Assert.That(byId[fault.Task.Id].ErrorMessage, Is.EqualTo("tracked failure"));
+                Assert.That(byId[cancellation.Task.Id].Status, Is.EqualTo(TaskStatus.Canceled));
+                Assert.That(byId[cancellation.Task.Id].ErrorMessage, Is.EqualTo("Canceled"));
+                Assert.That(byId[success.Task.Id].IsCompleted, Is.True);
+                Assert.That(byId[fault.Task.Id].IsCompleted, Is.True);
+                Assert.That(byId[cancellation.Task.Id].IsCompleted, Is.True);
+            }
+            finally
+            {
+                OnityTaskTracker.ClearAll();
+                OnityTaskTracker.IsEnabled = previousTrackingEnabled;
+                OnityTaskTracker.EnableStackTrace = previousStackTraceEnabled;
+            }
+        }
+
+        [Test]
+        public void TaskTracker_PendingFault_PreservesRegistrationContextForMessage()
+        {
+            bool previousTrackingEnabled = OnityTaskTracker.IsEnabled;
+            bool previousStackTraceEnabled = OnityTaskTracker.EnableStackTrace;
+            AsyncLocal<string> context = new AsyncLocal<string>();
+            SynchronizationContext registrationContext = SynchronizationContext.Current;
+
+            try
+            {
+                OnityTaskTracker.IsEnabled = true;
+                OnityTaskTracker.EnableStackTrace = false;
+                OnityTaskTracker.ClearAll();
+                context.Value = "registration";
+
+                TaskCompletionSource<bool> source = new TaskCompletionSource<bool>();
+                OnityTaskTracker.Track(source.Task, "context");
+                Assert.That(context.Value, Is.EqualTo("registration"));
+                Assert.That(SynchronizationContext.Current, Is.SameAs(registrationContext));
+                context.Value = "completion";
+                source.SetException(new ContextMessageException(context));
+
+                List<OnityTrackedTaskInfo> rows = new List<OnityTrackedTaskInfo>(1);
+                OnityTaskTracker.GetSnapshot(rows);
+                Assert.That(rows.Count, Is.EqualTo(1));
+                Assert.That(rows[0].TaskId, Is.EqualTo(source.Task.Id));
+                Assert.That(rows[0].ErrorMessage, Is.EqualTo("registration"));
+                Assert.That(context.Value, Is.EqualTo("completion"));
+                Assert.That(SynchronizationContext.Current, Is.SameAs(registrationContext));
+            }
+            finally
+            {
+                context.Value = null;
+                OnityTaskTracker.ClearAll();
+                OnityTaskTracker.IsEnabled = previousTrackingEnabled;
+                OnityTaskTracker.EnableStackTrace = previousStackTraceEnabled;
+            }
+        }
+
+        [Test]
         public void AsyncOperationAsTask_NullOperation_ThrowsArgumentNullException()
         {
             Assert.That(
@@ -732,6 +820,18 @@ namespace Onity.Tests.EditMode
             public bool Equals(ThrowingEquatableResult other)
             {
                 throw new InvalidOperationException("Result equality must not run during AsTask conversion.");
+            }
+        }
+
+        private sealed class ContextMessageException : Exception
+        {
+            private readonly AsyncLocal<string> m_context;
+
+            public override string Message => m_context.Value;
+
+            public ContextMessageException(AsyncLocal<string> context)
+            {
+                m_context = context;
             }
         }
 

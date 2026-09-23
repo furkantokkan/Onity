@@ -15,6 +15,7 @@ namespace Onity.Unity.Async
         private static readonly object s_gate = new object();
         private static readonly Dictionary<int, TrackedTaskEntry> s_entryByTaskId = new Dictionary<int, TrackedTaskEntry>(256);
         private static readonly Queue<int> s_taskOrder = new Queue<int>(256);
+        private static readonly Action<Task> s_completeTrackedTask = CompleteTrackedTask;
         private static bool s_isEnabled = true;
         private static bool s_enableStackTrace;
 
@@ -182,10 +183,15 @@ namespace Onity.Unity.Async
             }
 
             task.ContinueWith(
-                completedTask => CompleteTrackedTask(taskId, completedTask),
+                s_completeTrackedTask,
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
+        }
+
+        private static void CompleteTrackedTask(Task task)
+        {
+            CompleteTrackedTask(task.Id, task);
         }
 
         private static void CompleteTrackedTask(int taskId, Task task)
