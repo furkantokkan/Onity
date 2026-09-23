@@ -428,6 +428,11 @@ namespace Onity.Unity.Async
                 throw new ArgumentNullException(nameof(tasks));
             }
 
+            if (tasks.Length == 2)
+            {
+                return WhenAll(tasks[0], tasks[1]);
+            }
+
             Task[] taskArray = new Task[tasks.Length];
 
             for (int i = 0; i < tasks.Length; i++)
@@ -436,6 +441,32 @@ namespace Onity.Unity.Async
             }
 
             return FromTask(OnityAsync.WhenAll(taskArray));
+        }
+
+        /// <summary>
+        /// Completes after both inputs complete. Already successful inputs are
+        /// consumed immediately without creating a .NET task bridge.
+        /// </summary>
+        /// <param name="first">First input task.</param>
+        /// <param name="second">Second input task.</param>
+        /// <returns>A task that completes after both inputs.</returns>
+        public static OnityTask WhenAll(OnityTask first, OnityTask second)
+        {
+            bool duplicateSingleConsumer =
+                ReferenceEquals(first.m_state, second.m_state)
+                && first.m_state is IOnityTaskSource
+                && !(first.m_state is IOnityMultiConsumerTaskSource);
+
+            if (duplicateSingleConsumer == false
+                && first.IsCompletedSuccessfully
+                && second.IsCompletedSuccessfully)
+            {
+                first.GetAwaiter().GetResult();
+                second.GetAwaiter().GetResult();
+                return Completed;
+            }
+
+            return FromTask(OnityAsync.WhenAll(first.AsTask(), second.AsTask()));
         }
 
         /// <summary>

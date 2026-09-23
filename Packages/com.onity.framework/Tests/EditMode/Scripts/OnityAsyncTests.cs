@@ -369,6 +369,61 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void OnityTask_WhenAll_CompletedNativeInputs_ReturnsCompletedTask()
+        {
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            first.TrySetResult();
+            second.TrySetResult();
+
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+
+            Assert.That(combined.IsCompletedSuccessfully, Is.True);
+            Assert.That(combined.AsTask(), Is.SameAs(Task.CompletedTask));
+        }
+
+        [Test]
+        public async Task OnityTask_WhenAll_PendingInputs_WaitsForBoth()
+        {
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+
+            first.TrySetResult();
+            Assert.That(combined.IsCompleted, Is.False);
+            second.TrySetResult();
+            await combined;
+
+            Assert.That(combined.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
+        public async Task OnityTask_WhenAll_FaultedInputWinsOverCancellation()
+        {
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            Exception failure = new InvalidOperationException("Expected failure.");
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+
+            first.TrySetCanceled();
+            second.TrySetException(failure);
+
+            Exception observed = null;
+            try
+            {
+                await combined;
+            }
+            catch (Exception exception)
+            {
+                observed = exception;
+            }
+
+            Assert.That(observed, Is.SameAs(failure));
+            Assert.That(combined.IsFaulted, Is.True);
+            Assert.That(combined.AsTask().Exception.InnerException, Is.SameAs(failure));
+        }
+
+        [Test]
         public async Task OnityTask_WhenAllTyped_ReturnsResultsInInputOrder()
         {
             TaskCompletionSource<int> firstCompletionSource =
