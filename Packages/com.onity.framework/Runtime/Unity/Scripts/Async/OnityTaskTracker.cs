@@ -198,24 +198,41 @@ namespace Onity.Unity.Async
         {
             lock (s_gate)
             {
-                if (s_entryByTaskId.TryGetValue(taskId, out TrackedTaskEntry entry) == false)
+                if (s_entryByTaskId.ContainsKey(taskId) == false)
+                {
+                    return;
+                }
+            }
+
+            TaskStatus status = task.Status;
+            DateTime completedAtUtc = DateTime.UtcNow;
+            string errorMessage = null;
+
+            if (task.IsFaulted)
+            {
+                AggregateException exception = task.Exception;
+                if (exception != null)
+                {
+                    errorMessage = exception.GetBaseException().Message;
+                }
+            }
+            else if (task.IsCanceled)
+            {
+                errorMessage = "Canceled";
+            }
+
+            lock (s_gate)
+            {
+                if (s_entryByTaskId.TryGetValue(taskId, out TrackedTaskEntry entry) == false
+                    || entry.IsCompleted)
                 {
                     return;
                 }
 
-                entry.Status = task.Status;
+                entry.Status = status;
                 entry.IsCompleted = true;
-                entry.CompletedAtUtc = DateTime.UtcNow;
-
-                if (task.IsFaulted && task.Exception != null)
-                {
-                    entry.ErrorMessage = task.Exception.GetBaseException().Message;
-                }
-                else if (task.IsCanceled)
-                {
-                    entry.ErrorMessage = "Canceled";
-                }
-
+                entry.CompletedAtUtc = completedAtUtc;
+                entry.ErrorMessage = errorMessage;
                 s_entryByTaskId[taskId] = entry;
             }
         }

@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   already successful inputs are consumed immediately; other states retain the
   existing `Task.WhenAll` behavior.
 
+### Fixed
+
+- Kept the task tracker dictionary and display order consistent when a fault's
+  custom `Exception.Message` clears or clears and retracks during completion.
+  Error text is read outside the tracker lock; an already completed replacement
+  entry retains its own completion time.
+
 ### Improved
 
 - Read completed multi-consumer results without taking the completion-source
@@ -47,11 +54,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tested
 
-- Unity `2022.3.62f3`: EditMode `536/536` and PlayMode `23/23` passed, including
+- Unity `2022.3.62f3`: EditMode `538/538` and PlayMode `23/23` passed, including
   native sharing, fault/cancellation propagation, source reuse, and main-thread
   continuation tests. The final bridge-publication adjustment passed `36/36`
   focused completion-source EditMode tests; the two-input `WhenAll` subset
-  passed `7/7`; tracker status/context tests passed `3/3`.
+  passed `7/7`. Both reentrant tracker regressions failed before their fixes
+  and passed after them. The Release `Onity.Unity` build passed with no errors.
 
 ## [0.3.12] - 2026-09-23
 

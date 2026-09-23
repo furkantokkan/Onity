@@ -671,6 +671,69 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void TaskTracker_ReentrantErrorMessage_DoesNotRestoreClearedEntry()
+        {
+            bool previousTrackingEnabled = OnityTaskTracker.IsEnabled;
+            bool previousStackTraceEnabled = OnityTaskTracker.EnableStackTrace;
+
+            try
+            {
+                OnityTaskTracker.IsEnabled = true;
+                OnityTaskTracker.EnableStackTrace = false;
+                OnityTaskTracker.ClearAll();
+
+                TaskCompletionSource<bool> source = new TaskCompletionSource<bool>();
+                OnityTaskTracker.Track(source.Task, "before clear");
+                source.SetException(new ClearingTrackerException());
+                OnityTaskTracker.Track(source.Task, "after clear");
+
+                List<OnityTrackedTaskInfo> rows = new List<OnityTrackedTaskInfo>(1);
+                OnityTaskTracker.GetSnapshot(rows);
+                Assert.That(rows.Count, Is.EqualTo(1));
+                Assert.That(rows[0].Source, Is.EqualTo("after clear"));
+                Assert.That(rows[0].IsCompleted, Is.True);
+            }
+            finally
+            {
+                OnityTaskTracker.ClearAll();
+                OnityTaskTracker.IsEnabled = previousTrackingEnabled;
+                OnityTaskTracker.EnableStackTrace = previousStackTraceEnabled;
+            }
+        }
+
+        [Test]
+        public void TaskTracker_ReentrantRetrack_PreservesReplacementCompletionTime()
+        {
+            bool previousTrackingEnabled = OnityTaskTracker.IsEnabled;
+            bool previousStackTraceEnabled = OnityTaskTracker.EnableStackTrace;
+
+            try
+            {
+                OnityTaskTracker.IsEnabled = true;
+                OnityTaskTracker.EnableStackTrace = false;
+                OnityTaskTracker.ClearAll();
+
+                TaskCompletionSource<bool> source = new TaskCompletionSource<bool>();
+                OnityTaskTracker.Track(source.Task, "before clear");
+                source.SetException(new ClearingTrackerException(
+                    () => OnityTaskTracker.Track(source.Task, "during clear")));
+
+                List<OnityTrackedTaskInfo> rows = new List<OnityTrackedTaskInfo>(1);
+                OnityTaskTracker.GetSnapshot(rows);
+                Assert.That(rows.Count, Is.EqualTo(1));
+                Assert.That(rows[0].Source, Is.EqualTo("during clear"));
+                Assert.That(rows[0].IsCompleted, Is.True);
+                Assert.That(rows[0].ElapsedMilliseconds, Is.GreaterThanOrEqualTo(0));
+            }
+            finally
+            {
+                OnityTaskTracker.ClearAll();
+                OnityTaskTracker.IsEnabled = previousTrackingEnabled;
+                OnityTaskTracker.EnableStackTrace = previousStackTraceEnabled;
+            }
+        }
+
+        [Test]
         public void AsyncOperationAsTask_NullOperation_ThrowsArgumentNullException()
         {
             Assert.That(
@@ -832,6 +895,31 @@ namespace Onity.Tests.EditMode
             public ContextMessageException(AsyncLocal<string> context)
             {
                 m_context = context;
+            }
+        }
+
+        private sealed class ClearingTrackerException : Exception
+        {
+            private readonly Action m_afterClear;
+            private int m_hasCleared;
+
+            public ClearingTrackerException(Action afterClear = null)
+            {
+                m_afterClear = afterClear;
+            }
+
+            public override string Message
+            {
+                get
+                {
+                    if (Interlocked.Exchange(ref m_hasCleared, 1) == 0)
+                    {
+                        OnityTaskTracker.ClearAll();
+                        m_afterClear?.Invoke();
+                    }
+
+                    return "tracker cleared during error message";
+                }
             }
         }
 
