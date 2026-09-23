@@ -342,6 +342,25 @@ The [raw comparison](https://github.com/furkantokkan/Onity/blob/benchmark/onityt
 and [provenance](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-whenall-fastpath/docs/assets/benchmarks/onity-whenall-fastpath-a27c14d-2026-09-23.provenance.json)
 record the exact product source, benchmark runner, and UniTask commit.
 
+### Pending task tracker registration
+
+The `dcdcb51` change replaces the task tracker's per-operation capturing
+completion callback with one cached delegate. Calibrated Unity 2022 Editor/Mono
+Profiler samples for pending two-input `WhenAll` fell from **1,556 to 1,408
+B/op** with tracking enabled. Tracking-disabled Onity remained at **544 B/op**,
+and the pinned UniTask control remained at **160 B/op**. All eight samples per
+case agreed and the 65,568/0 B controls passed. Callstacks attributed the
+removed **148 B/op and two allocations** to the old direct `TrackInternal`
+registration site. The remaining 864 B/op tracker-on/off difference is in
+`ContinueWith` and execution/synchronization-context capture. Removing that
+capture would change observable `AsyncLocal` behavior in the tracker's error
+message path, so it remains in place. This marker measures scheduling, not
+completion or the full task lifecycle.
+The [comparison summary](https://github.com/furkantokkan/Onity/blob/693634b5f55b6ef6a4d8eccfab39b5e0e99f9bc8/docs/assets/benchmarks/onity-whenall-tracker-static-callback-dcdcb51-2026-09-24-summary.md),
+[raw callstacks](https://github.com/furkantokkan/Onity/blob/693634b5f55b6ef6a4d8eccfab39b5e0e99f9bc8/docs/assets/benchmarks/onity-whenall-tracker-static-callback-dcdcb51-2026-09-24.json),
+and [provenance](https://github.com/furkantokkan/Onity/blob/693634b5f55b6ef6a4d8eccfab39b5e0e99f9bc8/docs/assets/benchmarks/onity-whenall-tracker-static-callback-dcdcb51-2026-09-24.provenance.json)
+retain the exact source and runner hashes.
+
 ## Feature coverage
 
 | Capability | OnityTask status |
