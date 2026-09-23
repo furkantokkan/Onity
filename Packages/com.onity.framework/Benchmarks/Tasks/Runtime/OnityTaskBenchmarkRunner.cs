@@ -1,0 +1,600 @@
+using System;
+using System.Collections;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using Cysharp.Threading.Tasks;
+using Onity.Unity.Async;
+using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
+
+namespace Onity.Benchmarks
+{
+    /// <summary>
+    /// Compares matched OnityTask and UniTask primitives in Play Mode.
+    /// Frame timings cover scheduling and consumption, not PlayerLoop execution or frame latency.
+    /// </summary>
+    public sealed class OnityTaskBenchmarkRunner : MonoBehaviour
+    {
+        private const int k_warmupIterations = 4096;
+        private const int k_samplesPerCase = 8;
+        private const int k_synchronousIterations = 1000000;
+        private const int k_batchesPerSample = 32;
+        private const int k_steadyConcurrency = 128;
+        private const int k_burstConcurrency = 4096;
+        private const int k_completionTimeoutFrames = 240;
+
+        private static bool s_isRunning;
+        private static int s_lastInt;
+
+        private readonly OnityTaskAwaiter[] m_onityAwaiters = new OnityTaskAwaiter[k_burstConcurrency];
+        private readonly UniTask.Awaiter[] m_uniTaskAwaiters = new UniTask.Awaiter[k_burstConcurrency];
+        private string m_latestJson;
+        private Action<string, Exception> m_completed;
+        private bool m_allocationCounterAvailable;
+
+        /// <summary>
+        /// Queues a benchmark run. The optional callback receives a report path or failure.
+        /// </summary>
+        /// <param name="latestJson">Output JSON path.</param>
+        /// <param name="completed">Optional completion callback.</param>
+        public static void Run(string latestJson, Action<string, Exception> completed = null)
+        {
+            if (string.IsNullOrWhiteSpace(latestJson))
+            {
+                throw new ArgumentException("Benchmark output path is required.", nameof(latestJson));
+            }
+
+            if (s_isRunning)
+            {
+                throw new InvalidOperationException("An OnityTask benchmark is already running.");
+            }
+
+            GameObject runnerObject = new GameObject("Onity Task Benchmark Runner");
+            DontDestroyOnLoad(runnerObject);
+            OnityTaskBenchmarkRunner runner = runnerObject.AddComponent<OnityTaskBenchmarkRunner>();
+            runner.m_latestJson = Path.GetFullPath(latestJson);
+            runner.m_completed = completed;
+            s_isRunning = true;
+        }
+
+        private IEnumerator Start()
+        {
+            yield return null;
+            Exception failure = null;
+            TaskBenchmarkReport report = null;
+            try
+            {
+                report = CreateReport();
+                RunSynchronousBenchmarks(report);
+            }
+            catch (Exception exception)
+            {
+                failure = exception;
+            }
+
+            if (failure == null)
+            {
+                // This iterator yields only null, so every measured batch is inside this guard.
+                IEnumerator frameBenchmarks = RunFrameBenchmarks(report);
+                while (true)
+                {
+                    bool hasNext;
+                    try
+                    {
+                        hasNext = frameBenchmarks.MoveNext();
+                    }
+                    catch (Exception exception)
+                    {
+                        failure = exception;
+                        break;
+                    }
+
+                    if (!hasNext)
+                    {
+                        break;
+                    }
+
+                    yield return null;
+                }
+            }
+
+            if (failure == null)
+            {
+                try
+                {
+                    SaveReport(report, m_latestJson);
+                    Debug.Log($"OnityTask benchmark completed: {m_latestJson}", this);
+                }
+                catch (Exception exception)
+                {
+                    failure = exception;
+                }
+            }
+
+            if (failure != null)
+            {
+                Debug.LogException(failure, this);
+            }
+
+            try
+            {
+                m_completed?.Invoke(m_latestJson, failure);
+            }
+            finally
+            {
+                s_isRunning = false;
+                Destroy(gameObject);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            s_isRunning = false;
+        }
+
+        private TaskBenchmarkReport CreateReport()
+        {
+            TaskBenchmarkReport report = new TaskBenchmarkReport
+            {
+                schemaVersion = 2,
+                generatedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
+                unityVersion = Application.unityVersion,
+                platform = Application.platform.ToString(),
+                isEditor = Application.isEditor,
+                scriptingBackend = GetScriptingBackendLabel(),
+                uniTaskAssembly = typeof(UniTask).Assembly.FullName,
+                stopwatchFrequency = Stopwatch.Frequency,
+                timerResolutionNanoseconds = 1000000000d / Stopwatch.Frequency,
+                samplesPerCase = k_samplesPerCase,
+                warmupIterations = k_warmupIterations,
+                frameBatchesPerSample = k_batchesPerSample,
+                measurementScope = "Main-thread synchronous slices only. Scheduling and GetResult are separate. "
+                    + "PlayerLoop execution, continuation dispatch, frame latency and async method builders are excluded. "
+                    + "Raw times include harness overhead; no baseline subtraction or overall winner is inferred.",
+                scenarios = new TaskBenchmarkScenarioReport[6]
+            };
+
+            CalibrateAllocationCounter(report);
+            return report;
+        }
+
+        private void CalibrateAllocationCounter(TaskBenchmarkReport report)
+        {
+#if ENABLE_IL2CPP
+            report.allocationCounter = "Unavailable: Unity 2022 IL2CPP managed allocation counter is disabled "
+                + "because the existing DI harness observed crashes. Use a profiler capture for allocations.";
+#else
+            try
+            {
+                GC.GetAllocatedBytesForCurrentThread();
+                long before = GC.GetAllocatedBytesForCurrentThread();
+                byte[] calibration = new byte[65536];
+                long after = GC.GetAllocatedBytesForCurrentThread();
+                GC.KeepAlive(calibration);
+                report.allocationCalibrationBytes = after - before;
+                before = GC.GetAllocatedBytesForCurrentThread();
+                after = GC.GetAllocatedBytesForCurrentThread();
+                report.emptyAllocationDeltaBytes = after - before;
+                m_allocationCounterAvailable = report.allocationCalibrationBytes >= 65536
+                    && report.emptyAllocationDeltaBytes == 0;
+                report.allocationCounter = m_allocationCounterAvailable
+                    ? "GC.GetAllocatedBytesForCurrentThread; 64 KiB positive control and empty control passed."
+                    : "Unavailable: allocation counter calibration failed.";
+            }
+            catch (Exception exception)
+            {
+                report.allocationCounter = "Unavailable: " + exception.GetType().Name;
+            }
+#endif
+            report.allocationsAvailable = m_allocationCounterAvailable;
+        }
+
+        private long ReadAllocatedBytes()
+        {
+#if ENABLE_IL2CPP
+            return 0;
+#else
+            return m_allocationCounterAvailable ? GC.GetAllocatedBytesForCurrentThread() : 0;
+#endif
+        }
+
+        private void RunSynchronousBenchmarks(TaskBenchmarkReport report)
+        {
+            Action empty = EmptyOperation;
+            SampleSet baseline = new SampleSet();
+            for (int i = 0; i < k_warmupIterations; i++)
+            {
+                empty();
+                MeasureOnityCompleted();
+                MeasureUniTaskCompleted();
+                MeasureOnityResult();
+                MeasureUniTaskResult();
+            }
+
+            for (int sample = 0; sample < k_samplesPerCase; sample++)
+            {
+                MeasureLoop(empty, baseline, sample);
+            }
+
+            report.synchronousHarnessBaseline = BuildMetric("Empty delegate loop", baseline, k_synchronousIterations);
+            report.scenarios[0] = MeasureSynchronousScenario(
+                "Completed GetResult", MeasureOnityCompleted, MeasureUniTaskCompleted);
+            report.scenarios[1] = MeasureSynchronousScenario(
+                "FromResult<int> GetResult", MeasureOnityResult, MeasureUniTaskResult);
+        }
+
+        private TaskBenchmarkScenarioReport MeasureSynchronousScenario(
+            string name, Action onity, Action uniTask)
+        {
+            SampleSet onitySamples = new SampleSet();
+            SampleSet uniTaskSamples = new SampleSet();
+            for (int sample = 0; sample < k_samplesPerCase; sample++)
+            {
+                ForceFullGc();
+                if ((sample & 1) == 0)
+                {
+                    MeasureLoop(onity, onitySamples, sample);
+                    MeasureLoop(uniTask, uniTaskSamples, sample);
+                }
+                else
+                {
+                    MeasureLoop(uniTask, uniTaskSamples, sample);
+                    MeasureLoop(onity, onitySamples, sample);
+                }
+            }
+
+            return BuildScenario(name, "Synchronous; delegate invocation included", 1,
+                k_synchronousIterations, onitySamples, uniTaskSamples);
+        }
+
+        private void MeasureLoop(Action operation, SampleSet samples, int sample)
+        {
+            long bytes = ReadAllocatedBytes();
+            long started = Stopwatch.GetTimestamp();
+            for (int i = 0; i < k_synchronousIterations; i++)
+            {
+                operation();
+            }
+
+            long stopped = Stopwatch.GetTimestamp();
+            samples.bytes[sample] = ReadAllocatedBytes() - bytes;
+            samples.ticks[sample] = stopped - started;
+        }
+
+        private IEnumerator RunFrameBenchmarks(TaskBenchmarkReport report)
+        {
+            for (int cohort = 0; cohort < 2; cohort++)
+            {
+                int concurrency = cohort == 0 ? k_steadyConcurrency : k_burstConcurrency;
+                string workload = cohort == 0
+                    ? "Warm steady state; 128 concurrent operations; below Onity's 256 source retention cap"
+                    : "Repeated burst; 4096 concurrent operations; exceeds Onity's 256 source retention cap";
+
+                // Warm each library with the exact concurrency and completed consumption pattern.
+                for (int warmup = 0; warmup < 2; warmup++)
+                {
+                    for (int library = 0; library < 2; library++)
+                    {
+                        Schedule(library, concurrency);
+                        int remaining = k_completionTimeoutFrames;
+                        do
+                        {
+                            yield return null;
+                            if (--remaining == 0)
+                            {
+                                throw new TimeoutException("NextFrame warmup did not complete.");
+                            }
+                        }
+                        while (!IsCompleted(library, concurrency));
+                        Consume(library, concurrency);
+                    }
+                }
+
+                SampleSet[] creation = { new SampleSet(), new SampleSet() };
+                SampleSet[] consumption = { new SampleSet(), new SampleSet() };
+                for (int sample = 0; sample < k_samplesPerCase; sample++)
+                {
+                    ForceFullGc();
+                    for (int batch = 0; batch < k_batchesPerSample; batch++)
+                    {
+                        for (int turn = 0; turn < 2; turn++)
+                        {
+                            int library = (sample + batch + turn) & 1;
+                            long bytes = ReadAllocatedBytes();
+                            long started = Stopwatch.GetTimestamp();
+                            Schedule(library, concurrency);
+                            long stopped = Stopwatch.GetTimestamp();
+                            creation[library].bytes[sample] += ReadAllocatedBytes() - bytes;
+                            creation[library].ticks[sample] += stopped - started;
+
+                            int remaining = k_completionTimeoutFrames;
+                            do
+                            {
+                                yield return null;
+                                if (--remaining == 0)
+                                {
+                                    throw new TimeoutException("NextFrame sample did not complete.");
+                                }
+                            }
+                            while (!IsCompleted(library, concurrency));
+
+                            bytes = ReadAllocatedBytes();
+                            started = Stopwatch.GetTimestamp();
+                            Consume(library, concurrency);
+                            stopped = Stopwatch.GetTimestamp();
+                            consumption[library].bytes[sample] += ReadAllocatedBytes() - bytes;
+                            consumption[library].ticks[sample] += stopped - started;
+                        }
+                    }
+                }
+
+                int index = 2 + cohort * 2;
+                int operations = concurrency * k_batchesPerSample;
+                report.scenarios[index] = BuildScenario("NextFrame scheduling", workload,
+                    concurrency, operations, creation[0], creation[1]);
+                report.scenarios[index + 1] = BuildScenario("NextFrame GetResult", workload,
+                    concurrency, operations, consumption[0], consumption[1]);
+            }
+        }
+
+        private void Schedule(int library, int count)
+        {
+            if (library == 0)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    m_onityAwaiters[i] = OnityTask.NextFrame().GetAwaiter();
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    m_uniTaskAwaiters[i] = UniTask.NextFrame().GetAwaiter();
+                }
+            }
+        }
+
+        private bool IsCompleted(int library, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (library == 0 ? !m_onityAwaiters[i].IsCompleted : !m_uniTaskAwaiters[i].IsCompleted)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void Consume(int library, int count)
+        {
+            if (library == 0)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    m_onityAwaiters[i].GetResult();
+                    m_onityAwaiters[i] = default;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    m_uniTaskAwaiters[i].GetResult();
+                    m_uniTaskAwaiters[i] = default;
+                }
+            }
+        }
+
+        private TaskBenchmarkScenarioReport BuildScenario(
+            string name, string workload, int concurrency, int operations, SampleSet onity, SampleSet uniTask)
+        {
+            return new TaskBenchmarkScenarioReport
+            {
+                displayName = name,
+                workload = workload,
+                concurrency = concurrency,
+                iterationsPerSample = operations,
+                results = new[] { BuildMetric("OnityTask", onity, operations), BuildMetric("UniTask", uniTask, operations) }
+            };
+        }
+
+        private TaskBenchmarkMetricReport BuildMetric(string label, SampleSet samples, int operations)
+        {
+            double[] milliseconds = new double[k_samplesPerCase];
+            double total = 0;
+            long totalBytes = 0;
+            for (int i = 0; i < milliseconds.Length; i++)
+            {
+                milliseconds[i] = samples.ticks[i] * 1000d / Stopwatch.Frequency;
+                total += milliseconds[i];
+                totalBytes += samples.bytes[i];
+            }
+
+            double mean = total / milliseconds.Length;
+            double variance = 0;
+            for (int i = 0; i < milliseconds.Length; i++)
+            {
+                double delta = milliseconds[i] - mean;
+                variance += delta * delta;
+            }
+
+            double[] sorted = (double[])milliseconds.Clone();
+            Array.Sort(sorted);
+            return new TaskBenchmarkMetricReport
+            {
+                library = label,
+                meanMilliseconds = mean,
+                medianMilliseconds = (sorted[(sorted.Length - 1) / 2] + sorted[sorted.Length / 2]) / 2d,
+                minMilliseconds = sorted[0],
+                maxMilliseconds = sorted[sorted.Length - 1],
+                standardDeviationMilliseconds = Math.Sqrt(variance / milliseconds.Length),
+                nanosecondsPerOperation = mean * 1000000d / operations,
+                allocatedBytesPerOperation = m_allocationCounterAvailable
+                    ? (double)totalBytes / (milliseconds.Length * (long)operations) : -1d,
+                sampleMilliseconds = milliseconds,
+                sampleAllocatedBytes = m_allocationCounterAvailable ? samples.bytes : null
+            };
+        }
+
+        private static void EmptyOperation()
+        {
+        }
+        private static void MeasureOnityCompleted() => OnityTask.CompletedTask.GetAwaiter().GetResult();
+        private static void MeasureUniTaskCompleted() => UniTask.CompletedTask.GetAwaiter().GetResult();
+        private static void MeasureOnityResult() => s_lastInt = OnityTask.FromResult(42).GetAwaiter().GetResult();
+        private static void MeasureUniTaskResult() => s_lastInt = UniTask.FromResult(42).GetAwaiter().GetResult();
+
+        private static void ForceFullGc()
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
+        private static string GetScriptingBackendLabel()
+        {
+#if ENABLE_IL2CPP
+            return "IL2CPP";
+#elif ENABLE_MONO
+            return "Mono";
+#else
+            return "Unknown";
+#endif
+        }
+
+        private static void SaveReport(TaskBenchmarkReport report, string latestJson)
+        {
+            string directory = Path.GetDirectoryName(latestJson);
+            Directory.CreateDirectory(directory);
+            string stamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+            string json = JsonUtility.ToJson(report, true);
+            File.WriteAllText(Path.Combine(directory, $"onity-task-benchmark-{stamp}.json"), json, Encoding.UTF8);
+            File.WriteAllText(latestJson, json, Encoding.UTF8);
+            File.WriteAllText(Path.ChangeExtension(latestJson, ".csv"), BuildCsv(report), Encoding.UTF8);
+            File.WriteAllText(Path.ChangeExtension(latestJson, ".md"), BuildMarkdown(report), Encoding.UTF8);
+        }
+
+        private static string BuildCsv(TaskBenchmarkReport report)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("scenario,workload,concurrency,library,operations_per_sample,mean_ms,median_ms,"
+                + "min_ms,max_ms,stddev_ms,ns_per_op,bytes_per_op,allocations_available");
+            foreach (TaskBenchmarkScenarioReport scenario in report.scenarios)
+            {
+                foreach (TaskBenchmarkMetricReport metric in scenario.results)
+                {
+                    builder.Append(EscapeCsv(scenario.displayName)).Append(',');
+                    builder.Append(EscapeCsv(scenario.workload)).Append(',');
+                    builder.Append(scenario.concurrency).Append(',').Append(metric.library).Append(',');
+                    builder.Append(scenario.iterationsPerSample).Append(',');
+                    builder.Append(Number(metric.meanMilliseconds)).Append(',');
+                    builder.Append(Number(metric.medianMilliseconds)).Append(',');
+                    builder.Append(Number(metric.minMilliseconds)).Append(',');
+                    builder.Append(Number(metric.maxMilliseconds)).Append(',');
+                    builder.Append(Number(metric.standardDeviationMilliseconds)).Append(',');
+                    builder.Append(Number(metric.nanosecondsPerOperation)).Append(',');
+                    builder.Append(Number(metric.allocatedBytesPerOperation)).Append(',');
+                    builder.AppendLine(report.allocationsAvailable ? "true" : "false");
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static string BuildMarkdown(TaskBenchmarkReport report)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("# OnityTask primitive benchmark").AppendLine();
+            builder.AppendLine($"- UTC: {report.generatedAtUtc}");
+            builder.AppendLine($"- Unity: {report.unityVersion}; {report.platform}; {report.scriptingBackend}");
+            builder.AppendLine($"- Samples: {report.samplesPerCase}; frame batches/sample: {report.frameBatchesPerSample}");
+            builder.AppendLine($"- Allocation counter: {report.allocationCounter}");
+            builder.AppendLine($"- Timer resolution: {Number(report.timerResolutionNanoseconds)} ns");
+            builder.AppendLine($"- Empty synchronous delegate loop: {Number(report.synchronousHarnessBaseline.nanosecondsPerOperation)} ns/op");
+            builder.AppendLine().AppendLine(report.measurementScope).AppendLine();
+            builder.AppendLine("Both libraries use identical concurrency and two full warmup batches per frame cohort. "
+                + "Execution order alternates per sample and batch. Burst results include pool retention differences. "
+                + "Unavailable allocations are written as -1, never zero.").AppendLine();
+            builder.AppendLine("| Scenario | Concurrency | Library | Mean ns/op | Bytes/op | Stddev ms |");
+            builder.AppendLine("|---|---:|---|---:|---:|---:|");
+            foreach (TaskBenchmarkScenarioReport scenario in report.scenarios)
+            {
+                foreach (TaskBenchmarkMetricReport metric in scenario.results)
+                {
+                    builder.Append("| ").Append(scenario.displayName).Append(" | ");
+                    builder.Append(scenario.concurrency).Append(" | ").Append(metric.library).Append(" | ");
+                    builder.Append(Number(metric.nanosecondsPerOperation)).Append(" | ");
+                    builder.Append(report.allocationsAvailable ? Number(metric.allocatedBytesPerOperation) : "unavailable");
+                    builder.Append(" | ").Append(Number(metric.standardDeviationMilliseconds)).AppendLine(" |");
+                }
+            }
+
+            builder.AppendLine().AppendLine("128 concurrent operations is the warm steady-state cohort; "
+                + "4096 is a repeated burst exceeding Onity's 256 retained frame sources. "
+                + "These primitive measurements do not establish overall library superiority.");
+            return builder.ToString();
+        }
+
+        private static string EscapeCsv(string value) => "\"" + value.Replace("\"", "\"\"") + "\"";
+        private static string Number(double value) => value.ToString("G17", CultureInfo.InvariantCulture);
+
+        private sealed class SampleSet
+        {
+            public readonly long[] ticks = new long[k_samplesPerCase];
+            public readonly long[] bytes = new long[k_samplesPerCase];
+        }
+
+        [Serializable]
+        private sealed class TaskBenchmarkReport
+        {
+            public int schemaVersion;
+            public string generatedAtUtc;
+            public string unityVersion;
+            public string platform;
+            public bool isEditor;
+            public string scriptingBackend;
+            public string uniTaskAssembly;
+            public long stopwatchFrequency;
+            public double timerResolutionNanoseconds;
+            public int samplesPerCase;
+            public int warmupIterations;
+            public int frameBatchesPerSample;
+            public string measurementScope;
+            public bool allocationsAvailable;
+            public string allocationCounter;
+            public long allocationCalibrationBytes;
+            public long emptyAllocationDeltaBytes;
+            public TaskBenchmarkMetricReport synchronousHarnessBaseline;
+            public TaskBenchmarkScenarioReport[] scenarios;
+        }
+
+        [Serializable]
+        private sealed class TaskBenchmarkScenarioReport
+        {
+            public string displayName;
+            public string workload;
+            public int concurrency;
+            public int iterationsPerSample;
+            public TaskBenchmarkMetricReport[] results;
+        }
+
+        [Serializable]
+        private sealed class TaskBenchmarkMetricReport
+        {
+            public string library;
+            public double meanMilliseconds;
+            public double medianMilliseconds;
+            public double minMilliseconds;
+            public double maxMilliseconds;
+            public double standardDeviationMilliseconds;
+            public double nanosecondsPerOperation;
+            public double allocatedBytesPerOperation;
+            public double[] sampleMilliseconds;
+            public long[] sampleAllocatedBytes;
+        }
+    }
+}

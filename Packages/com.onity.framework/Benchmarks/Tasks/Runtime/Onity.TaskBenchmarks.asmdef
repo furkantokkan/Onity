@@ -1,21 +1,14 @@
 {
-  "name": "Onity.Benchmarks",
+  "name": "Onity.TaskBenchmarks",
   "rootNamespace": "Onity.Benchmarks",
-  "references": [
-    "Onity.DI",
-    "Onity.Unity",
-    "VContainer",
-    "Zenject"
-  ],
+  "references": ["Onity.Unity", "UniTask"],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": false,
   "precompiledReferences": [],
   "autoReferenced": true,
-  "defineConstraints": [
-    "ONITY_BENCHMARKS"
-  ],
+  "defineConstraints": ["ONITY_TASK_BENCHMARKS"],
   "versionDefines": [],
   "noEngineReferences": false
 }
