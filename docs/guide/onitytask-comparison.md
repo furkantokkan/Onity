@@ -77,6 +77,42 @@ exclude continuation dispatch and PlayerLoop work. The [raw baseline JSON](../as
 and [CSV](../assets/benchmarks/onitytask-unity2022-mono-warm-baseline-2026-09-23.csv)
 contain all 16 timing scenarios, 32 allocation metrics, controls, and samples.
 
+## Completion-source baseline
+
+The new callback-owned completion sources were compared with pinned UniTask
+`2.5.11` in a separate Unity 2022.3.62f3 Editor/Mono host. The Onity runtime
+was commit `a7c7c9c`; the [reproducible benchmark host](https://github.com/furkantokkan/Onity/tree/benchmark/completion-source)
+pins both implementations. Each of 16 scenarios has eight timing samples and
+eight allocation samples. Timing uses 4,096 operations per sample; allocation
+uses 256. The profiler's 64 KiB positive control read 65,568 bytes and the
+empty control read zero.
+
+| Synchronous slice | Consumers | Onity ns/op | UniTask ns/op | Onity B/op | UniTask B/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Typed source construction | 1 | 210 | 81 | 120 | 80 |
+| Typed pending registration | 1 | 138 | 220 | 0 | 16 |
+| Typed pending registration | 4 | 786 | 994 | 104 | 152 |
+| Typed completion and callback dispatch | 4 | 148 | 358 | 0 | 0 |
+| Typed pending `AsTask()` conversion | 1 | 1,103 | 497 | 848 | 120 |
+| Untyped source construction | 1 | 482 | 216 | 120 | 72 |
+| Untyped pending registration | 1 | 179 | 448 | 0 | 16 |
+| Untyped completion and callback dispatch | 4 | 176 | 402 | 0 | 0 |
+
+Onity wins the measured pending-registration slices and four-consumer
+dispatch; it loses source construction and pending `AsTask()` conversion.
+These are separate synchronous slices, not a measured end-to-end workflow.
+`AsTask()` measures conversion before completion; completion and result
+consumption occur outside that slice. One diagnostic allocation sample
+attributed 744 of Onity's 848 B to context capture and Unity synchronization
+context copying during bridge creation. That diagnostic identifies allocation
+sites, while the eight-sample report supplies the comparison values.
+
+The [raw JSON](../assets/benchmarks/onity-completion-source-a7c7c9c-warmed-2026-09-23.json),
+[CSV](../assets/benchmarks/onity-completion-source-a7c7c9c-warmed-2026-09-23.csv),
+and [allocation attribution](../assets/benchmarks/onity-completion-source-a7c7c9c-attribution-2026-09-23.json)
+retain every scenario, sample, control, and measured boundary. This is an
+Editor/Mono result; it does not establish IL2CPP or device performance.
+
 ## Pooled builder experiment
 
 An isolated typed async-method runner passed 23 focused builder tests and 51
@@ -101,7 +137,7 @@ cost before this change can be considered for release.
 | `async OnityTask<T>` with synchronous success | Stores the result inline. Suspended and exceptional methods still use .NET `Task` internals. |
 | `WhenAll` | Available, including typed ordered results; currently materializes inputs as .NET Tasks. |
 | Native `WhenAny` | Available for two untyped inputs; consumes both without canceling the loser. Its source and two delegates allocate per call. |
-| Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; comparative allocation and timing results are pending. |
+| Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
 | Selectable PlayerLoop phases and immediate cancellation | Limited to the supported runner phases and next-tick cancellation. |
 | `await foreach` async enumerable | Not yet available. |
 
