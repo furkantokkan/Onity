@@ -71,6 +71,10 @@ in namespace `Onity.SourceGen.Generated` with:
 
 The module initializer runs once when the generated assembly is loaded, so
 registration happens automatically with no bootstrap call.
+For Unity 2022.3, generated source supplies an internal
+`ModuleInitializerAttribute` when the target framework does not define it.
+When the target already defines that attribute, the generator uses the existing
+definition.
 
 ## Runtime hook
 
@@ -107,7 +111,7 @@ Like `Onity.Analyzers`, Unity loads this as a **`RoslynAnalyzer`**-labeled
 managed plugin that is **excluded from every platform** (it participates only in
 compilation, never in a player build). Copy **only** `Onity.SourceGen.dll` into
 the Unity project (for example under
-`Assets/Onity-Packages/Onity/Analyzers/`), set its asset label to
+`Packages/com.onity.framework/Analyzers/`), set its asset label to
 `RoslynAnalyzer`, uncheck **Any Platform** and every individual platform in the
 plugin importer, and apply. Do **not** copy the `Microsoft.CodeAnalysis.*`
 dependencies — Unity already provides the Roslyn assemblies its compiler runs
@@ -121,7 +125,7 @@ compiled assembly loads; no Unity-side bootstrap call is required.
 
 ```
 Onity.SourceGen/
-  Onity.SourceGen.csproj        netstandard2.0, IsRoslynComponent, references Microsoft.CodeAnalysis.CSharp 4.x
+  Onity.SourceGen.csproj        netstandard2.0, IsRoslynComponent, references Microsoft.CodeAnalysis.CSharp 4.3.1
   OnityActivatorGenerator.cs    IIncrementalGenerator: selects [OnityGenerateActivator] types, emits activators + module initializer
   ActivatorModel.cs             equatable per-type model used by the incremental pipeline
   README.md                     this file

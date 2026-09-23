@@ -167,7 +167,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3.6
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.3.8
 ```
 
 …or in `Packages/manifest.json`:
@@ -180,7 +180,7 @@ https://github.com/furkantokkan/Onity.git?path=Packages/com.onity.framework#v0.3
 }
 ```
 
-(`#upm` tracks the latest package; use the `?path=…#v0.3.6` form to pin a specific release.)
+(`#upm` tracks the latest package; use the `?path=/Packages/com.onity.framework#v0.3.8` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 
@@ -286,7 +286,7 @@ For the complete, source-verified API across all three pillars, read the [Onity 
 - **[Events & Messaging](docs/guide/events-messaging.md)** — MessageBroker/MessagePipe-style publish, subscribe, typed channel, and reactive event examples.
 - **[Factories & Pooling](docs/guide/factories-and-pooling.md)** — `BindFactory`, `BindPooledFactory`, `IPool<T>`, `IPoolHooks`, and prefab pool examples.
 - **[Refactoring from Existing Architecture](docs/guide/refactoring-from-existing-architecture.md)** — moving from `GameManager.Instance`, Unity reference graphs, ScriptableObject config, VContainer, Zenject, or static events to Onity services.
-- **[Architecture](docs/Architecture-Review.md)** — current v0.3.6 module boundaries, composition roots, activation paths, and Unity adapters.
+- **[Architecture](docs/Architecture-Review.md)** — module boundaries, composition roots, activation paths, and Unity adapters.
 - **Migration guides** — moving an existing project over:
   - [From Zenject](docs/Migration/From-Zenject.md)
   - [From VContainer](docs/Migration/From-VContainer.md)

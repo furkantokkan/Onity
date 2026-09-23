@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-09-23
+
+### Fixed
+
+- Rebuilt the shipped Roslyn analyzer and source generator with compiler APIs
+  compatible with Unity 2022.3, removing newer-Roslyn load warnings.
+- Made generated activators compile on Unity 2022.3 by emitting an internal
+  `ModuleInitializerAttribute` only when the target framework lacks it.
+- Kept nested message and reactive dispatch stable when subscriptions change
+  during callbacks, and restored throttle state after a callback throws.
+- Allowed an async container build to retry after cancellation or failure,
+  kept lifecycle registrations distinct by object identity, and completed
+  disposal of remaining services when one disposal throws.
+- Kept child context injection within its nearest owning context.
+
+### Tested
+
+- Unity `2022.3.62f3`: EditMode `445/445` and PlayMode `13/13` passed in the
+  release candidate worktree.
+- Roslyn analyzer/source-generator tests: `26/26` passed.
+- Engine-free core, analyzer, and source-generator Release builds passed;
+  package metadata coverage remained `228/228` files.
+
+### Documentation
+
+- Updated the release install pins and analyzer/source-generator build guidance.
+
 ## [0.3.7] - 2026-07-30
 
 ### Added
@@ -339,6 +366,7 @@ allocation. The core uses no `System.Linq`.
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.8]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.8
 [0.3.7]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.7
 [0.3.6]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.6
 [0.3.5]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.5
