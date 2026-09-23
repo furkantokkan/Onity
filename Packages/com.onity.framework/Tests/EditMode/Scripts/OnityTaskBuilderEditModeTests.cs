@@ -1,10 +1,13 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using Onity.Unity.Async;
+using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Onity.Tests.EditMode
 {
@@ -289,6 +292,156 @@ namespace Onity.Tests.EditMode
             Assert.That(context.Value, Is.EqualTo("caller"));
         }
 
+        [Test]
+        public async Task ConfigureAwaitFalse_DoesNotRestoreTheUnitySynchronizationContext()
+        {
+            SynchronizationContext unityContext = SynchronizationContext.Current;
+            Assert.That(unityContext, Is.Not.Null);
+            int unityThreadId = Thread.CurrentThread.ManagedThreadId;
+            AsyncLocal<string> ambient = new AsyncLocal<string>();
+            ambient.Value = "captured";
+            TaskCompletionSource<bool> gate = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            OnityTask<ContextSnapshot> task = ReadContextAfterGateAsync(
+                gate.Task, ambient, true);
+            ambient.Value = "caller";
+
+            gate.SetResult(true);
+            ContextSnapshot snapshot = await task;
+
+            Assert.That(snapshot.FirstContext, Is.Null);
+            Assert.That(snapshot.AfterYieldContext, Is.Null);
+            Assert.That(snapshot.FirstThreadId, Is.Not.EqualTo(unityThreadId));
+            Assert.That(snapshot.AfterYieldThreadId, Is.Not.EqualTo(unityThreadId));
+            Assert.That(snapshot.AmbientValue, Is.EqualTo("captured"));
+            Assert.That(snapshot.AmbientValueAfterYield, Is.EqualTo("captured"));
+            Assert.That(ambient.Value, Is.EqualTo("caller"));
+        }
+
+        [Test]
+        public async Task DefaultAwait_ResumesOnTheUnitySynchronizationContext()
+        {
+            SynchronizationContext unityContext = SynchronizationContext.Current;
+            Assert.That(unityContext, Is.Not.Null);
+            int unityThreadId = Thread.CurrentThread.ManagedThreadId;
+            AsyncLocal<string> ambient = new AsyncLocal<string>();
+            ambient.Value = "captured";
+            TaskCompletionSource<bool> gate = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            OnityTask<ContextSnapshot> task = ReadContextAfterGateAsync(
+                gate.Task, ambient, false);
+            ambient.Value = "caller";
+
+            gate.SetResult(true);
+            ContextSnapshot snapshot = await task;
+
+            Assert.That(snapshot.FirstContext, Is.Not.Null);
+            Assert.That(snapshot.AfterYieldContext, Is.Not.Null);
+            Assert.That(snapshot.FirstContext.GetType(), Is.EqualTo(unityContext.GetType()));
+            Assert.That(snapshot.AfterYieldContext.GetType(), Is.EqualTo(unityContext.GetType()));
+            Assert.That(snapshot.FirstThreadId, Is.EqualTo(unityThreadId));
+            Assert.That(snapshot.AfterYieldThreadId, Is.EqualTo(unityThreadId));
+            Assert.That(snapshot.AmbientValue, Is.EqualTo("captured"));
+            Assert.That(snapshot.AmbientValueAfterYield, Is.EqualTo("captured"));
+            Assert.That(ambient.Value, Is.EqualTo("caller"));
+        }
+
+        [Test]
+        public async Task NativeOnityAwait_ResumesOnTheUnitySynchronizationContext()
+        {
+            SynchronizationContext unityContext = SynchronizationContext.Current;
+            Assert.That(unityContext, Is.Not.Null);
+            int unityThreadId = Thread.CurrentThread.ManagedThreadId;
+            AsyncLocal<string> ambient = new AsyncLocal<string>();
+            ambient.Value = "captured";
+            TaskCompletionSource<bool> firstGate = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> secondGate = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            OnityTask<ContextSnapshot> task = ReadContextAfterNativeGateAsync(
+                firstGate.Task, secondGate.Task, ambient);
+            ambient.Value = "caller";
+
+            firstGate.SetResult(true);
+            ContextSnapshot snapshot = await task;
+            secondGate.SetResult(true);
+
+            Assert.That(snapshot.FirstContext, Is.Not.Null);
+            Assert.That(snapshot.AfterYieldContext, Is.Not.Null);
+            Assert.That(snapshot.FirstContext.GetType(), Is.EqualTo(unityContext.GetType()));
+            Assert.That(snapshot.AfterYieldContext.GetType(), Is.EqualTo(unityContext.GetType()));
+            Assert.That(snapshot.FirstThreadId, Is.EqualTo(unityThreadId));
+            Assert.That(snapshot.AfterYieldThreadId, Is.EqualTo(unityThreadId));
+            Assert.That(snapshot.AmbientValue, Is.EqualTo("captured"));
+            Assert.That(snapshot.AmbientValueAfterYield, Is.EqualTo("captured"));
+            Assert.That(ambient.Value, Is.EqualTo("caller"));
+        }
+
+        [Test]
+        public async Task CrossThreadCallbackQueuedDuringMoveNext_ResumesOnThreadPool()
+        {
+            int unityThreadId = Thread.CurrentThread.ManagedThreadId;
+            AsyncLocal<string> ambient = new AsyncLocal<string>();
+            ambient.Value = "captured";
+            SafeAwaitable firstGate = new SafeAwaitable();
+            OnityTask<ContextSnapshot> task = ReadContextAfterCrossThreadGateAsync(
+                firstGate, new CrossThreadSafeAwaitable(), ambient);
+            ambient.Value = "caller";
+
+            firstGate.Complete();
+            ContextSnapshot snapshot = await task;
+
+            Assert.That(snapshot.FirstContext, Is.Null);
+            Assert.That(snapshot.AfterYieldContext, Is.Null);
+            Assert.That(snapshot.FirstThreadId, Is.Not.EqualTo(unityThreadId));
+            Assert.That(snapshot.AfterYieldThreadId, Is.Not.EqualTo(unityThreadId));
+            Assert.That(snapshot.AmbientValue, Is.EqualTo("captured"));
+            Assert.That(snapshot.AmbientValueAfterYield, Is.EqualTo("captured"));
+            Assert.That(ambient.Value, Is.EqualTo("caller"));
+        }
+
+        [Test]
+        public async Task SuppressedFlow_QueuedResumeDoesNotInheritCallerAsyncLocal()
+        {
+            AsyncLocal<string> ambient = new AsyncLocal<string>();
+            ambient.Value = "caller";
+            SafeAwaitable firstGate = new SafeAwaitable();
+            OnityTask<string> task = ReadAfterSuppressedCrossThreadGateAsync(
+                firstGate, new SuppressedCrossThreadSafeAwaitable(), ambient);
+
+            firstGate.Complete();
+
+            Assert.That(await task, Is.Null);
+            Assert.That(ambient.Value, Is.EqualTo("caller"));
+        }
+
+        [Test]
+        public async Task PostThenThrow_DoesNotFaultAReusedRunner()
+        {
+            SafeAwaitable firstGate = new SafeAwaitable();
+            SafeAwaitable replacementGate = new SafeAwaitable();
+            OnityTask<int> replacement = default;
+            ThrowAfterPostingContext context = new ThrowAfterPostingContext(() =>
+            {
+                replacement = ReturnAfterPostContextGateAsync(
+                    replacementGate, new PostContextSafeAwaitable(null));
+            });
+            OnityTask<int> original = ReturnAfterPostContextGateAsync(
+                firstGate, new PostContextSafeAwaitable(context));
+            object originalRunner = GetState(original);
+            Task<int> originalTask = original.AsTask();
+            LogAssert.Expect(LogType.Exception, new Regex("post after callback"));
+
+            firstGate.Complete();
+
+            Assert.That(await originalTask, Is.EqualTo(3));
+            Assert.That(GetState(replacement), Is.SameAs(originalRunner));
+            Assert.That(replacement.IsCompleted, Is.False);
+
+            replacementGate.Complete();
+            Assert.That(await replacement, Is.EqualTo(3));
+        }
+
         private static object GetState<T>(OnityTask<T> task)
         {
             FieldInfo field = typeof(OnityTask<T>).GetField("m_state",
@@ -402,6 +555,96 @@ namespace Onity.Tests.EditMode
             return context.Value;
         }
 
+        private static async OnityTask<ContextSnapshot> ReadContextAfterGateAsync(
+            Task gate,
+            AsyncLocal<string> ambient,
+            bool configureFalse)
+        {
+            if (configureFalse)
+            {
+                await gate.ConfigureAwait(false);
+            }
+            else
+            {
+                await gate;
+            }
+
+            SynchronizationContext firstContext = SynchronizationContext.Current;
+            int firstThreadId = Thread.CurrentThread.ManagedThreadId;
+            string ambientValue = ambient.Value;
+            await Task.Yield();
+            return new ContextSnapshot(
+                firstContext,
+                SynchronizationContext.Current,
+                firstThreadId,
+                Thread.CurrentThread.ManagedThreadId,
+                ambientValue,
+                ambient.Value);
+        }
+
+        private static async OnityTask<ContextSnapshot> ReadContextAfterNativeGateAsync(
+            Task firstGate,
+            Task secondGate,
+            AsyncLocal<string> ambient)
+        {
+            await OnityTask.WhenAny(
+                OnityTask.FromTask(firstGate),
+                OnityTask.FromTask(secondGate));
+
+            SynchronizationContext firstContext = SynchronizationContext.Current;
+            int firstThreadId = Thread.CurrentThread.ManagedThreadId;
+            string ambientValue = ambient.Value;
+            await Task.Yield();
+            return new ContextSnapshot(
+                firstContext,
+                SynchronizationContext.Current,
+                firstThreadId,
+                Thread.CurrentThread.ManagedThreadId,
+                ambientValue,
+                ambient.Value);
+        }
+
+        private static async OnityTask<ContextSnapshot> ReadContextAfterCrossThreadGateAsync(
+            SafeAwaitable firstGate,
+            CrossThreadSafeAwaitable secondGate,
+            AsyncLocal<string> ambient)
+        {
+            await firstGate;
+            await secondGate;
+
+            SynchronizationContext firstContext = SynchronizationContext.Current;
+            int firstThreadId = Thread.CurrentThread.ManagedThreadId;
+            string ambientValue = ambient.Value;
+            await Task.Yield();
+            return new ContextSnapshot(
+                firstContext,
+                SynchronizationContext.Current,
+                firstThreadId,
+                Thread.CurrentThread.ManagedThreadId,
+                ambientValue,
+                ambient.Value);
+        }
+
+        private static async OnityTask<string> ReadAfterSuppressedCrossThreadGateAsync(
+            SafeAwaitable firstGate,
+            SuppressedCrossThreadSafeAwaitable secondGate,
+            AsyncLocal<string> ambient)
+        {
+            await firstGate;
+            ExecutionContext.SuppressFlow();
+            await secondGate;
+            return ambient.Value;
+        }
+
+        private static async OnityTask<int> ReturnAfterPostContextGateAsync(
+            SafeAwaitable firstGate,
+            PostContextSafeAwaitable secondGate)
+        {
+            await firstGate;
+            await secondGate;
+            return 3;
+        }
+
         private sealed class InlineSafeAwaitable : INotifyCompletion
         {
             public bool IsCompleted => false;
@@ -437,6 +680,114 @@ namespace Onity.Tests.EditMode
 
             public void GetResult()
             {
+            }
+        }
+
+        private sealed class CrossThreadSafeAwaitable : INotifyCompletion
+        {
+            public bool IsCompleted => false;
+
+            public CrossThreadSafeAwaitable GetAwaiter()
+            {
+                return this;
+            }
+
+            public void OnCompleted(Action continuation)
+            {
+                Task.Run(() =>
+                {
+                    SynchronizationContext.SetSynchronizationContext(null);
+                    continuation();
+                }).GetAwaiter().GetResult();
+            }
+
+            public void GetResult()
+            {
+            }
+        }
+
+        private sealed class SuppressedCrossThreadSafeAwaitable : INotifyCompletion
+        {
+            public bool IsCompleted => false;
+
+            public SuppressedCrossThreadSafeAwaitable GetAwaiter()
+            {
+                return this;
+            }
+
+            public void OnCompleted(Action continuation)
+            {
+                ExecutionContext.RestoreFlow();
+                using (ExecutionContext.SuppressFlow())
+                {
+                    Task.Run(() =>
+                    {
+                        SynchronizationContext.SetSynchronizationContext(null);
+                        continuation();
+                    }).GetAwaiter().GetResult();
+                }
+            }
+
+            public void GetResult()
+            {
+            }
+        }
+
+        private sealed class PostContextSafeAwaitable : INotifyCompletion
+        {
+            private readonly SynchronizationContext m_context;
+
+            public PostContextSafeAwaitable(SynchronizationContext context)
+            {
+                m_context = context;
+            }
+
+            public bool IsCompleted => false;
+
+            public PostContextSafeAwaitable GetAwaiter()
+            {
+                return this;
+            }
+
+            public void OnCompleted(Action continuation)
+            {
+                if (m_context == null)
+                {
+                    continuation();
+                    return;
+                }
+
+                Task.Run(() =>
+                {
+                    SynchronizationContext.SetSynchronizationContext(m_context);
+                    continuation();
+                }).GetAwaiter().GetResult();
+            }
+
+            public void GetResult()
+            {
+            }
+        }
+
+        private sealed class ThrowAfterPostingContext : SynchronizationContext
+        {
+            private readonly Action m_afterCallback;
+
+            public ThrowAfterPostingContext(Action afterCallback)
+            {
+                m_afterCallback = afterCallback;
+            }
+
+            public override void Post(SendOrPostCallback callback, object state)
+            {
+                Task.Run(() =>
+                {
+                    SetSynchronizationContext(this);
+                    callback(state);
+                }).GetAwaiter().GetResult();
+
+                m_afterCallback();
+                throw new InvalidOperationException("post after callback");
             }
         }
 
@@ -514,6 +865,32 @@ namespace Onity.Tests.EditMode
             {
                 Number = number;
                 Text = text;
+            }
+        }
+
+        private readonly struct ContextSnapshot
+        {
+            public readonly SynchronizationContext FirstContext;
+            public readonly SynchronizationContext AfterYieldContext;
+            public readonly int FirstThreadId;
+            public readonly int AfterYieldThreadId;
+            public readonly string AmbientValue;
+            public readonly string AmbientValueAfterYield;
+
+            public ContextSnapshot(
+                SynchronizationContext firstContext,
+                SynchronizationContext afterYieldContext,
+                int firstThreadId,
+                int afterYieldThreadId,
+                string ambientValue,
+                string ambientValueAfterYield)
+            {
+                FirstContext = firstContext;
+                AfterYieldContext = afterYieldContext;
+                FirstThreadId = firstThreadId;
+                AfterYieldThreadId = afterYieldThreadId;
+                AmbientValue = ambientValue;
+                AmbientValueAfterYield = ambientValueAfterYield;
             }
         }
     }

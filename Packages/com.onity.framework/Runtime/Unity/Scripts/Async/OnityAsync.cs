@@ -2613,10 +2613,46 @@ namespace Onity.Unity.Async
         private static readonly Stack<OnityTaskStateMachineRunner<T, TStateMachine>> s_pool =
             new Stack<OnityTaskStateMachineRunner<T, TStateMachine>>(16);
         private static readonly ContextCallback s_moveNextCallback = MoveNextWithContext;
+        private static readonly WaitCallback s_threadPoolResumeCallback = ResumeDispatched;
+        private static readonly SendOrPostCallback s_contextResumeCallback = ResumeDispatched;
+
+        private sealed class QueuedResumeState
+        {
+            public readonly OnityTaskStateMachineRunner<T, TStateMachine> Runner;
+            public readonly ExecutionContext Context;
+            public readonly SynchronizationContext SynchronizationContext;
+            public readonly int Lease;
+            public readonly int Sequence;
+            private int m_claimed;
+
+            public QueuedResumeState(
+                OnityTaskStateMachineRunner<T, TStateMachine> runner,
+                ExecutionContext context,
+                SynchronizationContext synchronizationContext,
+                int lease,
+                int sequence)
+            {
+                Runner = runner;
+                Context = context;
+                SynchronizationContext = synchronizationContext;
+                Lease = lease;
+                Sequence = sequence;
+            }
+
+            public bool TryClaim()
+            {
+                return Interlocked.Exchange(ref m_claimed, 1) == 0;
+            }
+        }
 
         private TStateMachine m_stateMachine;
         private ExecutionContext m_queuedContext;
+        private SynchronizationContext m_queuedSynchronizationContext;
+        private SynchronizationContext m_resumeSynchronizationContext;
         private int m_awaitSequence;
+        private int m_queuedLease;
+        private int m_queuedSequence;
+        private int m_queuedThreadId;
         private bool m_awaitResumed;
         private bool m_active;
         private bool m_starting;
@@ -2648,6 +2684,8 @@ namespace Onity.Unity.Async
             runner.m_completionActive = false;
             runner.m_resumeQueued = false;
             runner.m_releaseRequested = false;
+            runner.m_queuedSynchronizationContext = null;
+            runner.m_resumeSynchronizationContext = null;
             return runner;
         }
 
@@ -2677,6 +2715,10 @@ namespace Onity.Unity.Async
         public void CompleteStart()
         {
             ExecutionContext context = null;
+            SynchronizationContext synchronizationContext = null;
+            int lease = 0;
+            int sequence = 0;
+            int threadId = 0;
             bool resume = false;
             bool release;
             lock (this)
@@ -2686,11 +2728,17 @@ namespace Onity.Unity.Async
                 {
                     m_resumeQueued = false;
                     m_queuedContext = null;
+                    m_queuedSynchronizationContext = null;
                 }
                 else if (m_resumeQueued && m_running == false)
                 {
                     context = m_queuedContext;
+                    synchronizationContext = m_queuedSynchronizationContext;
+                    lease = m_queuedLease;
+                    sequence = m_queuedSequence;
+                    threadId = m_queuedThreadId;
                     m_queuedContext = null;
+                    m_queuedSynchronizationContext = null;
                     m_resumeQueued = false;
                     m_running = true;
                     resume = true;
@@ -2706,7 +2754,7 @@ namespace Onity.Unity.Async
 
             if (resume)
             {
-                Drive(context);
+                RunQueued(context, synchronizationContext, lease, sequence, threadId);
             }
         }
 
@@ -2763,7 +2811,20 @@ namespace Onity.Unity.Async
         {
             OnityTaskStateMachineRunner<T, TStateMachine> runner =
                 (OnityTaskStateMachineRunner<T, TStateMachine>)state;
+            // Keep AsyncLocal values from the captured context, but follow the
+            // awaiter's actual resume context (including ConfigureAwait(false)).
+            SynchronizationContext.SetSynchronizationContext(
+                runner.m_resumeSynchronizationContext);
             runner.m_stateMachine.MoveNext();
+        }
+
+        private static void ResumeDispatched(object state)
+        {
+            QueuedResumeState resumeState = (QueuedResumeState)state;
+            if (resumeState.TryClaim())
+            {
+                resumeState.Runner.RunDispatched(resumeState);
+            }
         }
 
         private Action CreateContinuation()
@@ -2782,6 +2843,7 @@ namespace Onity.Unity.Async
 
         private void Resume(int lease, int sequence, ExecutionContext context)
         {
+            SynchronizationContext synchronizationContext = SynchronizationContext.Current;
             bool resume = false;
             lock (this)
             {
@@ -2795,6 +2857,10 @@ namespace Onity.Unity.Async
                 if (m_starting || m_running)
                 {
                     m_queuedContext = context;
+                    m_queuedSynchronizationContext = synchronizationContext;
+                    m_queuedLease = lease;
+                    m_queuedSequence = sequence;
+                    m_queuedThreadId = Thread.CurrentThread.ManagedThreadId;
                     m_resumeQueued = true;
                 }
                 else
@@ -2806,25 +2872,51 @@ namespace Onity.Unity.Async
 
             if (resume)
             {
-                Drive(context);
+                Drive(context, synchronizationContext);
             }
         }
 
-        private void Drive(ExecutionContext context)
+        private void Drive(
+            ExecutionContext context,
+            SynchronizationContext synchronizationContext)
         {
             while (true)
             {
                 ExecutionContext nextContext = null;
+                SynchronizationContext nextSynchronizationContext = null;
+                int nextLease = 0;
+                int nextSequence = 0;
+                int nextThreadId = 0;
                 bool resume;
                 bool release;
                 try
                 {
                     if (context == null)
                     {
-                        m_stateMachine.MoveNext();
+                        SynchronizationContext currentContext =
+                            SynchronizationContext.Current;
+                        if (ReferenceEquals(currentContext, synchronizationContext))
+                        {
+                            m_stateMachine.MoveNext();
+                        }
+                        else
+                        {
+                            SynchronizationContext.SetSynchronizationContext(
+                                synchronizationContext);
+                            try
+                            {
+                                m_stateMachine.MoveNext();
+                            }
+                            finally
+                            {
+                                SynchronizationContext.SetSynchronizationContext(
+                                    currentContext);
+                            }
+                        }
                     }
                     else
                     {
+                        m_resumeSynchronizationContext = synchronizationContext;
                         ExecutionContext.Run(context, s_moveNextCallback, this);
                     }
                 }
@@ -2836,9 +2928,15 @@ namespace Onity.Unity.Async
                         if (resume)
                         {
                             nextContext = m_queuedContext;
+                            nextSynchronizationContext = m_queuedSynchronizationContext;
+                            nextLease = m_queuedLease;
+                            nextSequence = m_queuedSequence;
+                            nextThreadId = m_queuedThreadId;
                         }
 
                         m_queuedContext = null;
+                        m_queuedSynchronizationContext = null;
+                        m_resumeSynchronizationContext = null;
                         m_resumeQueued = false;
                         if (resume == false)
                         {
@@ -2859,7 +2957,120 @@ namespace Onity.Unity.Async
                     return;
                 }
 
+                if (nextThreadId != Thread.CurrentThread.ManagedThreadId)
+                {
+                    DispatchQueued(
+                        nextContext,
+                        nextSynchronizationContext,
+                        nextLease,
+                        nextSequence);
+                    return;
+                }
+
                 context = nextContext;
+                synchronizationContext = nextSynchronizationContext;
+            }
+        }
+
+        private void RunQueued(
+            ExecutionContext context,
+            SynchronizationContext synchronizationContext,
+            int lease,
+            int sequence,
+            int threadId)
+        {
+            if (threadId == Thread.CurrentThread.ManagedThreadId)
+            {
+                Drive(context, synchronizationContext);
+                return;
+            }
+
+            DispatchQueued(context, synchronizationContext, lease, sequence);
+        }
+
+        private void DispatchQueued(
+            ExecutionContext context,
+            SynchronizationContext synchronizationContext,
+            int lease,
+            int sequence)
+        {
+            QueuedResumeState state = new QueuedResumeState(
+                this, context, synchronizationContext, lease, sequence);
+
+            try
+            {
+                if (synchronizationContext == null)
+                {
+                    if (ThreadPool.UnsafeQueueUserWorkItem(s_threadPoolResumeCallback, state) == false)
+                    {
+                        throw new InvalidOperationException(
+                            "The queued OnityTask continuation could not be scheduled.");
+                    }
+                }
+                else
+                {
+                    synchronizationContext.Post(s_contextResumeCallback, state);
+                }
+            }
+            catch (Exception exception)
+            {
+                if (state.TryClaim() == false)
+                {
+                    Debug.LogException(exception);
+                    return;
+                }
+
+                bool canFault;
+                lock (this)
+                {
+                    canFault = m_active && m_finished == false
+                        && state.Lease == Version
+                        && state.Sequence == m_awaitSequence;
+                    if (canFault)
+                    {
+                        m_running = false;
+                    }
+                }
+
+                if (canFault)
+                {
+                    SetException(exception);
+                }
+                else
+                {
+                    Debug.LogException(exception);
+                }
+            }
+        }
+
+        private void RunDispatched(QueuedResumeState state)
+        {
+            bool resume;
+            bool release = false;
+            lock (this)
+            {
+                if (m_active == false || state.Lease != Version
+                    || state.Sequence != m_awaitSequence)
+                {
+                    return;
+                }
+
+                resume = m_finished == false;
+                if (resume == false)
+                {
+                    m_running = false;
+                    release = TryReleaseUnsafe();
+                }
+            }
+
+            if (release)
+            {
+                ReturnToPool();
+            }
+
+            if (resume)
+            {
+                Drive(state.Context, state.SynchronizationContext);
             }
         }
 
@@ -2913,6 +3124,8 @@ namespace Onity.Unity.Async
             m_active = false;
             m_stateMachine = default;
             m_queuedContext = null;
+            m_queuedSynchronizationContext = null;
+            m_resumeSynchronizationContext = null;
             return true;
         }
 
