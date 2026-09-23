@@ -88,6 +88,7 @@ fixed-frame wait also completes while `Time.timeScale` is zero.
 | Wait while a condition holds | `await OnityTask.WaitWhile(predicate, ct)` |
 | Wait for several operations | `await OnityTask.WhenAll(tasks)` |
 | Collect typed results in input order | `T[] results = await OnityTask.WhenAll(typedTasks)` |
+| First of two untyped operations | `int winner = await OnityTask.WhenAny(first, second)` |
 | Completed typed result | `await OnityTask.FromResult(value)` |
 
 ## Single-consumer rule for pooled tasks
@@ -98,7 +99,9 @@ sources. Each returned `OnityTask` value is **single-consumer**:
 - Await the value once, or call `AsTask()` once.
 - Do not copy the value to several consumers.
 - Do not await it and then call `AsTask()` on the old copy.
-- `WhenAll` consumes its input task values; do not await those inputs separately.
+- `WhenAll` and `WhenAny` consume their input task values; do not await those
+  inputs separately. `WhenAny` does not cancel the loser, which is consumed
+  when it eventually completes.
 
 `NextFrame` and `DelayFrames(1)` resume no earlier than the following rendered
 frame in Play Mode. `DelayFrames(0)` completes immediately. Negative frame
@@ -107,6 +110,8 @@ waits also skip the frame in which they are scheduled in Play Mode.
 
 `WhenAll` currently materializes its inputs as .NET `Task` values. Likewise,
 methods declared `async OnityTask` use .NET's async method builder internally.
+The two-input `WhenAny` uses a native result source, but currently allocates
+that source and two continuation delegates per call.
 Use the pooled frame, delay, predicate, and `AsyncOperation` waits directly in
 hot paths; do not assume every OnityTask composition is allocation-free.
 

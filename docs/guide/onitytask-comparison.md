@@ -46,8 +46,11 @@ probe reported sample values of 200/400 for that allocation; those are not
 byte counts. No zero-allocation comparison follows from these reports.
 
 The comparison host uses a pinned UniTask test dependency. The Onity runtime
-package does not depend on UniTask. The raw before/after JSON, CSV, and Markdown
-reports are kept with the release artifacts for independent inspection.
+package does not depend on UniTask. The
+[before-builder JSON](https://github.com/furkantokkan/Onity/releases/download/v0.3.10/onitytask-expanded-before-2026-09-23.json)
+and [after-builder JSON](https://github.com/furkantokkan/Onity/releases/download/v0.3.10/onitytask-expanded-after-builder-2026-09-23.json)
+retain every raw sample. The release also includes their CSV and Markdown
+summaries.
 
 ## Feature coverage
 
@@ -57,7 +60,7 @@ reports are kept with the release artifacts for independent inspection.
 | Scene, `AsyncOperation`, and web-request bridges | Available. Deferred scene loads require the caller to activate a started operation, even after cancellation. |
 | `async OnityTask<T>` with synchronous success | Stores the result inline. Suspended and exceptional methods still use .NET `Task` internals. |
 | `WhenAll` | Available, including typed ordered results; currently materializes inputs as .NET Tasks. |
-| Native `WhenAny` | Under development; current `OnityAsync.WhenAny` accepts .NET Tasks. |
+| Native `WhenAny` | Available for two untyped inputs; consumes both without canceling the loser. Its source and two delegates allocate per call. |
 | Selectable PlayerLoop phases and immediate cancellation | Limited to the supported runner phases and next-tick cancellation. |
 | `await foreach` async enumerable and public completion source | Not yet available. |
 

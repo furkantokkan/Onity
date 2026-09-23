@@ -167,7 +167,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.3.9
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.3.10
 ```
 
 …or in `Packages/manifest.json`:
@@ -180,7 +180,7 @@ https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.
 }
 ```
 
-(`#upm` tracks the latest package; use the `?path=/Packages/com.onity.framework#v0.3.9` form to pin a specific release.)
+(`#upm` tracks the latest package; use the `?path=/Packages/com.onity.framework#v0.3.10` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 
@@ -283,6 +283,7 @@ For the complete, source-verified API across all three pillars, read the [Onity 
 - **[Onity AI Usage Guide](docs/Onity-AI-Usage-Guide.md)** — the source-of-truth, machine-readable reference for the real public API across DI, Reactive, and Events. Read this first.
 - **[Getting Started](docs/Getting-Started.md)** — a step-by-step human walkthrough: install, your first installer, DI + reactive state + events, and common mistakes.
 - **[Async with OnityTask](docs/guide/onitytask.md)** — Unity frame waits, cancellation, scene/web operations, task interop, and pooled-task safety.
+- **[OnityTask and UniTask comparison](docs/guide/onitytask-comparison.md)** — measured Unity 2022 timing slices, API coverage, and current limits.
 - **[Events & Messaging](docs/guide/events-messaging.md)** — MessageBroker/MessagePipe-style publish, subscribe, typed channel, and reactive event examples.
 - **[Factories & Pooling](docs/guide/factories-and-pooling.md)** — `BindFactory`, `BindPooledFactory`, `IPool<T>`, `IPoolHooks`, and prefab pool examples.
 - **[Refactoring from Existing Architecture](docs/guide/refactoring-from-existing-architecture.md)** — moving from `GameManager.Instance`, Unity reference graphs, ScriptableObject config, VContainer, Zenject, or static events to Onity services.

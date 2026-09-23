@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-09-23
+
+### Added
+
+- Added two-input `OnityTask.WhenAny` with a native result source. It consumes
+  both single-consumer inputs and preserves the winner's fault or cancellation.
+- Expanded the optional UniTask benchmark harness with matched typed and
+  untyped async-method workloads at 128 and 4,096 concurrent operations.
+
 ### Fixed
 
 - Kept typed `AsTask()` conversion from invoking user-defined result equality.
@@ -25,6 +34,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed Unity object equality from the cached OnityTask runner lookup on every
   scheduled frame wait.
+- Stored synchronous successful `async OnityTask<T>` results inline. Suspended
+  and exceptional methods continue to use .NET Task internals.
+
+### Measurement
+
+- Measured 16 matched OnityTask and pinned UniTask 2.5.11 workloads in Unity
+  `2022.3.62f3` Windows Editor/Mono. Async-method scheduling remains slower for
+  OnityTask in the measured cohorts; the faster `GetResult` slices exclude the
+  suspended frame and continuation work. Allocation bytes are unavailable
+  because the 64 KiB positive control failed calibration. No overall
+  OnityTask superiority claim is made.
+
+### Tested
+
+- Unity `2022.3.62f3`: integrated EditMode `476/476` and PlayMode `21/21` passed.
+- Engine-free core, analyzer, and source-generator Release builds passed with
+  zero warnings; package metadata covered all `234/234` files.
+- The 16-scenario Editor/Mono comparison completed in a separate host with
+  official UniTask 2.5.11 pinned by Git commit. Raw reports accompany the
+  GitHub release; IL2CPP player performance was not measured for this version.
 
 ## [0.3.9] - 2026-09-23
 
@@ -407,6 +436,7 @@ allocation. The core uses no `System.Linq`.
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.10]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.10
 [0.3.9]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.9
 [0.3.8]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.8
 [0.3.7]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.7

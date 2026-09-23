@@ -1,12 +1,12 @@
 ---
 title: "Architecture"
 nav_order: 8
-description: "Current Onity v0.3.9 module boundaries, dependency direction, composition roots, DI activation paths, and Unity integration."
+description: "Current Onity v0.3.10 module boundaries, dependency direction, composition roots, DI activation paths, and Unity integration."
 ---
 
 # Architecture
 
-This page describes the architecture shipped in Onity `v0.3.9`. The package
+This page describes the architecture shipped in Onity `v0.3.10`. The package
 source lives under `Packages/com.onity.framework`; the `upm` branch mirrors that
 folder to the repository root for installation.
 
@@ -103,7 +103,9 @@ Unity async support lives in `Onity.Unity.Async` because frame waits, scenes,
 `AsyncOperation`, web requests, and main-thread continuation are engine-facing.
 `OnityTask` uses pooled sources for common Unity waits. Those values are
 single-consumer; share an independently materialized `Task` when multiple
-consumers need the same result. See [Async with OnityTask](guide/onitytask.html).
+consumers need the same result. Two-input `WhenAny` uses a native, currently
+unpooled source and consumes both inputs. See
+[Async with OnityTask](guide/onitytask.html).
 
 Engine-free reactive/message APIs continue to expose `Task` or `ValueTask` where
 that is the appropriate .NET contract.
@@ -122,16 +124,15 @@ runtime dependencies shipped to gameplay code.
 
 ## Verification snapshot
 
-The `v0.3.9` release candidate was verified on Unity `2022.3.62f3` with:
+The `v0.3.10` release candidate was verified on Unity `2022.3.62f3` with:
 
-- 452 passing EditMode tests and 15 passing PlayMode tests;
-- 26 passing analyzer and source-generator tests;
-- engine-free core, analyzer, and source-generator Release builds;
-- metadata coverage for all 228 package files.
+- 476 passing EditMode tests and 21 passing PlayMode tests;
+- engine-free core, analyzer, and source-generator Release builds with zero warnings;
+- metadata coverage for all 234 package files.
 
 The Editor/Mono, Windows IL2CPP, and focused 1000-sample singleton DI benchmark
 results published with `v0.3.6` remain historical measurements; they were not
-rerun for `v0.3.9`. Exact counts are release evidence, not a permanent promise;
+rerun for `v0.3.10`. Exact counts are release evidence, not a permanent promise;
 use the current CI and Unity Test Runner results for later versions.
 
 ## Intentional limits
