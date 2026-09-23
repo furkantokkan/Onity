@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -190,6 +191,59 @@ namespace Onity.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator ThrowingNativeContinuation_DoesNotFaultReusedSourceOrStopOtherWait()
+        {
+            bool completeFirst = false;
+            bool completeReplacement = false;
+            bool completeOther = false;
+            bool replacementStarted = false;
+
+            using CancellationTokenSource replacementCancellation = new CancellationTokenSource();
+            using CancellationTokenSource otherCancellation = new CancellationTokenSource();
+
+            OnityTask otherTask = OnityTask.WaitUntil(
+                () => completeOther, otherCancellation.Token);
+            OnityTask firstTask = OnityTask.WaitUntil(() => completeFirst);
+            OnityTask replacementTask = default;
+
+            firstTask.GetAwaiter().OnCompleted(
+                () =>
+                {
+                    firstTask.GetAwaiter().GetResult();
+                    replacementTask = OnityTask.WaitUntil(
+                        () => completeReplacement, replacementCancellation.Token);
+                    replacementStarted = true;
+                    throw new InvalidOperationException("Continuation failure after source reuse.");
+                });
+
+            try
+            {
+                yield return null;
+                LogAssert.Expect(LogType.Exception,
+                    new Regex("InvalidOperationException: Continuation failure after source reuse\\."));
+                completeFirst = true;
+                yield return WaitForFlag(() => replacementStarted);
+
+                Assert.That(replacementTask.IsCompleted, Is.False,
+                    "A throwing continuation faulted the replacement task.");
+                Assert.That(otherTask.IsCompleted, Is.False);
+
+                completeOther = true;
+                yield return WaitForCompletion(otherTask);
+                Assert.DoesNotThrow(() => otherTask.GetAwaiter().GetResult());
+
+                completeReplacement = true;
+                yield return WaitForCompletion(replacementTask);
+                Assert.DoesNotThrow(() => replacementTask.GetAwaiter().GetResult());
+            }
+            finally
+            {
+                otherCancellation.Cancel();
+                replacementCancellation.Cancel();
+            }
+        }
+
+        [UnityTest]
         public IEnumerator FixedFrameCancellation_CompletesWhenTimeScaleIsZero()
         {
             float previousTimeScale = Time.timeScale;
@@ -295,6 +349,41 @@ namespace Onity.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator PositiveDelays_ScheduledBeforeRunnerUpdate_WaitBeyondSchedulingFrame()
+        {
+            OnityTask warmupTask = OnityTask.NextFrame();
+            yield return WaitForCompletion(warmupTask);
+            warmupTask.GetAwaiter().GetResult();
+
+            for (int delayKind = 0; delayKind < 2; delayKind++)
+            {
+                GameObject probeObject = new GameObject("DelayUpdateProbe");
+                probeObject.SetActive(false);
+                NextFrameUpdateProbe probe = probeObject.AddComponent<NextFrameUpdateProbe>();
+                probe.DelaySeconds = 0.0001f;
+                probe.UseUnscaledTime = delayKind == 1;
+                probeObject.SetActive(true);
+
+                try
+                {
+                    yield return WaitForFlag(() => probe.CompletedFrame >= 0);
+
+                    Assert.That(probe.ObservedStartFrame, Is.True);
+                    Assert.That(probe.CompletedFrame, Is.GreaterThan(probe.StartedFrame),
+                        probe.UseUnscaledTime
+                            ? "DelayUnscaled completed in its scheduling frame."
+                            : "Delay completed in its scheduling frame.");
+
+                    probe.ConsumeTask();
+                }
+                finally
+                {
+                    UnityEngine.Object.Destroy(probeObject);
+                }
+            }
+        }
+
         private static IEnumerator WaitForCompletion(OnityTask task)
         {
             int remainingFrames = k_timeoutFrames;
@@ -342,6 +431,10 @@ namespace Onity.Tests.PlayMode
 
             public int FrameCount { get; set; } = -1;
 
+            public float DelaySeconds { get; set; }
+
+            public bool UseUnscaledTime { get; set; }
+
             public int StartedFrame { get; private set; } = -1;
 
             public int CompletedFrame { get; private set; } = -1;
@@ -361,9 +454,18 @@ namespace Onity.Tests.PlayMode
                 }
 
                 StartedFrame = Time.frameCount;
-                m_task = FrameCount < 0
-                    ? OnityTask.NextFrame()
-                    : OnityTask.DelayFrames(FrameCount);
+                if (DelaySeconds > 0f)
+                {
+                    m_task = UseUnscaledTime
+                        ? OnityTask.DelayUnscaled(DelaySeconds)
+                        : OnityTask.Delay(DelaySeconds);
+                }
+                else
+                {
+                    m_task = FrameCount < 0
+                        ? OnityTask.NextFrame()
+                        : OnityTask.DelayFrames(FrameCount);
+                }
             }
 
             private void LateUpdate()
