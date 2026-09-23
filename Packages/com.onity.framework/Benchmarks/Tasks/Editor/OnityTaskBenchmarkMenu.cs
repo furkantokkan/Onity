@@ -18,6 +18,7 @@ namespace Onity.Editor.Benchmarks
         private const string k_preserveJsonFileName = "onity-preserve-benchmark-latest.json";
         private const string k_lifecycleJsonFileName = "onity-native-lifecycle-benchmark-latest.json";
         private const string k_builderAttributionJsonFileName = "onity-task-builder-attribution-latest.json";
+        private const string k_whenAllJsonFileName = "onity-whenall-benchmark-latest.json";
         private const string k_pendingSessionKey = "Onity.Benchmarks.PendingOnityTaskRun";
         private const string k_outputSessionKey = "Onity.Benchmarks.OnityTaskOutput";
         private const string k_commandLineSessionKey = "Onity.Benchmarks.OnityTaskCommandLine";
@@ -29,6 +30,7 @@ namespace Onity.Editor.Benchmarks
         private const string k_preserveSessionKey = "Onity.Benchmarks.OnityPreserve";
         private const string k_lifecycleSessionKey = "Onity.Benchmarks.OnityNativeLifecycle";
         private const string k_builderAttributionSessionKey = "Onity.Benchmarks.OnityTaskBuilderAttribution";
+        private const string k_whenAllSessionKey = "Onity.Benchmarks.OnityWhenAll";
         private const string k_outputArgument = "-onityTaskBenchmarkOutput";
         private const string k_allocationOnlyArgument = "-onityTaskAllocationsOnly";
         private const string k_completionSourceArgument = "-onityCompletionSourceBenchmark";
@@ -38,6 +40,7 @@ namespace Onity.Editor.Benchmarks
         private const string k_preserveArgument = "-onityPreserveBenchmark";
         private const string k_lifecycleArgument = "-onityNativeLifecycleBenchmark";
         private const string k_builderAttributionArgument = "-onityTaskBuilderAttribution";
+        private const string k_whenAllArgument = "-onityWhenAllBenchmark";
         private const double k_commandLineTimeoutSeconds = 900d;
 
         static OnityTaskBenchmarkMenu()
@@ -91,6 +94,13 @@ namespace Onity.Editor.Benchmarks
             RunFromMenu();
         }
 
+        [MenuItem("Onity/Benchmarks/Run WhenAll Benchmarks (Play Mode)")]
+        private static void RunWhenAllFromMenu()
+        {
+            SessionState.SetBool(k_whenAllSessionKey, true);
+            RunFromMenu();
+        }
+
         private static void HandlePlayModeStateChanged(PlayModeStateChange state)
         {
             if (state != PlayModeStateChange.EnteredPlayMode)
@@ -122,8 +132,9 @@ namespace Onity.Editor.Benchmarks
             bool preserve = SessionState.GetBool(k_preserveSessionKey, false);
             bool lifecycle = SessionState.GetBool(k_lifecycleSessionKey, false);
             bool builderAttribution = SessionState.GetBool(k_builderAttributionSessionKey, false);
+            bool whenAll = SessionState.GetBool(k_whenAllSessionKey, false);
             string latestJson = GetLatestJsonPath(completionSource, preserve, lifecycle,
-                builderAttribution);
+                builderAttribution, whenAll);
             if (!commandLineRun)
             {
                 SessionState.EraseBool(k_completionSourceSessionKey);
@@ -132,9 +143,17 @@ namespace Onity.Editor.Benchmarks
                 SessionState.EraseBool(k_preserveSessionKey);
                 SessionState.EraseBool(k_lifecycleSessionKey);
                 SessionState.EraseBool(k_builderAttributionSessionKey);
+                SessionState.EraseBool(k_whenAllSessionKey);
             }
 
-            if (completionSource || preserve || lifecycle)
+            if (whenAll)
+            {
+                OnityWhenAllBenchmarkRunner.Run(
+                    latestJson,
+                    commandLineRun ? HandleCommandLineCompleted : null,
+                    allocationOnly);
+            }
+            else if (completionSource || preserve || lifecycle)
             {
                 OnityCompletionSourceBenchmarkRunner.Run(
                     latestJson,
@@ -175,6 +194,7 @@ namespace Onity.Editor.Benchmarks
             bool preserve = HasArgument(k_preserveArgument);
             bool lifecycle = HasArgument(k_lifecycleArgument);
             bool builderAttribution = HasArgument(k_builderAttributionArgument);
+            bool whenAll = HasArgument(k_whenAllArgument);
             if ((allocationOnly || attribution || builderAttribution) && !HasArgument("-profiler-enable"))
             {
                 throw new ArgumentException("Allocation pass requires Unity's -profiler-enable startup flag.");
@@ -211,6 +231,11 @@ namespace Onity.Editor.Benchmarks
             {
                 throw new ArgumentException("Async builder attribution requires its own mode.");
             }
+            if (whenAll && (completionSource || preserve || lifecycle || attribution ||
+                statusProbe || builderAttribution))
+            {
+                throw new ArgumentException("WhenAll benchmark requires its own mode.");
+            }
             if (string.IsNullOrEmpty(latestJson))
             {
                 string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
@@ -218,7 +243,8 @@ namespace Onity.Editor.Benchmarks
                     lifecycle ? k_lifecycleJsonFileName :
                     preserve ? k_preserveJsonFileName :
                     completionSource ? k_completionSourceJsonFileName :
-                    builderAttribution ? k_builderAttributionJsonFileName : k_latestJsonFileName);
+                    builderAttribution ? k_builderAttributionJsonFileName :
+                    whenAll ? k_whenAllJsonFileName : k_latestJsonFileName);
             }
 
             latestJson = Path.GetFullPath(latestJson);
@@ -239,6 +265,7 @@ namespace Onity.Editor.Benchmarks
             SessionState.SetBool(k_preserveSessionKey, preserve);
             SessionState.SetBool(k_lifecycleSessionKey, lifecycle);
             SessionState.SetBool(k_builderAttributionSessionKey, builderAttribution);
+            SessionState.SetBool(k_whenAllSessionKey, whenAll);
             SessionState.SetString(k_commandLineStartTicksSessionKey, DateTime.UtcNow.Ticks.ToString());
             EditorApplication.update -= HandleCommandLineTimeout;
             EditorApplication.update += HandleCommandLineTimeout;
@@ -283,7 +310,7 @@ namespace Onity.Editor.Benchmarks
         }
 
         private static string GetLatestJsonPath(bool completionSource, bool preserve,
-            bool lifecycle, bool builderAttribution)
+            bool lifecycle, bool builderAttribution, bool whenAll)
         {
             string latestJson = SessionState.GetString(k_outputSessionKey, string.Empty);
             if (!string.IsNullOrEmpty(latestJson))
@@ -296,7 +323,8 @@ namespace Onity.Editor.Benchmarks
                 lifecycle ? k_lifecycleJsonFileName :
                 preserve ? k_preserveJsonFileName :
                 completionSource ? k_completionSourceJsonFileName :
-                builderAttribution ? k_builderAttributionJsonFileName : k_latestJsonFileName);
+                builderAttribution ? k_builderAttributionJsonFileName :
+                whenAll ? k_whenAllJsonFileName : k_latestJsonFileName);
         }
 
         private static void HandleCommandLineCompleted(string latestJson, Exception exception)
@@ -357,6 +385,7 @@ namespace Onity.Editor.Benchmarks
             SessionState.EraseBool(k_preserveSessionKey);
             SessionState.EraseBool(k_lifecycleSessionKey);
             SessionState.EraseBool(k_builderAttributionSessionKey);
+            SessionState.EraseBool(k_whenAllSessionKey);
             SessionState.EraseString(k_outputSessionKey);
             SessionState.EraseString(k_commandLineStartTicksSessionKey);
             EditorApplication.update -= HandleCommandLineTimeout;

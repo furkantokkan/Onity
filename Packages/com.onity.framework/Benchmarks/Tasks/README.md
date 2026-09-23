@@ -438,3 +438,45 @@ case. The measured stack names identify allocation sites, not object types.
 The 240 B/op Onity suspension increment is therefore localized to .NET builder
 calls in this Editor/Mono workload. These synchronous scheduling measurements
 do not include the remaining async lifecycle or establish an IL2CPP result.
+
+## Two-input WhenAll scheduling comparison
+
+The isolated `-onityWhenAllBenchmark` mode compares the exact user-level call
+`OnityTask.WhenAll(first, second)` with `UniTask.WhenAll(first, second)`.
+The pinned UniTask version is `2.5.11` at
+`2e993ff18f28c931602a07292df0b0804eebef99`. Use the same benchmark
+runner and menu source in both baseline and candidate hosts. The report records
+SHA-256 values for the runner and the actual Onity runtime source. An allocation
+pass rejects a timing report if either source, the Unity version, the pinned
+UniTask revision, or the scenario configuration differs.
+
+Three scenarios are kept separate: two pending completion-source inputs with
+Onity's tracker at its default-on setting; the same pending inputs with only
+Onity's tracker disabled; and two already completed inputs with the tracker on.
+The completed-input case is a control, not part of the pending result. Input
+sources and task values are prepared outside each marker. The timed/profiled
+slice includes `WhenAll` scheduling and storing its returned task. Both inputs
+are completed and the result is consumed and checked after the marker. This
+excludes completion callbacks, continuation dispatch, consumption, and the
+full task lifecycle.
+
+There are two warmup batches per library and scenario, eight raw timing samples
+of 16 batches × 128 operations, and eight raw allocation samples of 128
+operations. Library order alternates by sample. Full GC is outside each
+measured sample. Raw values, mean, median, minimum, maximum, standard
+deviation, Stopwatch frequency, and empty harness samples remain in JSON;
+the empty harness time is not subtracted. A separate Profiler process must
+measure exactly 65,568 B in the positive control and 0 B in the empty control
+before bytes/op is reported.
+
+Run the pinned Unity 2022.3.62f3 Editor in two sequential processes without
+`-quit`; the menu exits when each report is written:
+
+```text
+Unity.exe -batchmode -nographics -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityWhenAllBenchmark -onityTaskBenchmarkOutput <absolute-report.json> -logFile <absolute-timing.log>
+Unity.exe -batchmode -nographics -profiler-enable -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityWhenAllBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <same-absolute-report.json> -logFile <absolute-allocations.log>
+```
+
+These Editor/Mono scheduling samples are not Player/IL2CPP or full-lifecycle
+evidence. The two libraries' default task trackers differ; the tracker-off
+scenario isolates Onity's optional tracking overhead but is not its default.

@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Onity.Unity.Async;
 using UnityEngine;
@@ -3568,6 +3570,968 @@ namespace Onity.Benchmarks
         {
             public string library;
             public double meanNanosecondsPerOperation;
+            public double bytesPerOperation;
+            public double[] sampleNanosecondsPerOperation;
+            public long[] sampleAllocatedBytes;
+        }
+    }
+
+    /// <summary>
+    /// Measures the user-level two-input WhenAll scheduling slice in a pinned Editor.
+    /// Inputs are prepared before each slice and completed and consumed afterward.
+    /// </summary>
+    public sealed class OnityWhenAllBenchmarkRunner : MonoBehaviour
+    {
+        private const int k_operations = 128;
+        private const int k_samples = 8;
+        private const int k_timingBatches = 16;
+        private const int k_warmupBatches = 2;
+        private const int k_profilerStartupFrames = 120;
+        private const int k_profilerReadFrames = 60;
+        private const int k_harnessVersion = 1;
+        private const string k_uniTaskCommit = "2e993ff18f28c931602a07292df0b0804eebef99";
+        private const string k_scopePrefix = "Onity.WhenAll.Allocation.";
+        private const string k_runtimePath =
+            "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs";
+        private const string k_runnerPath =
+            "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs";
+
+        private static bool s_isRunning;
+
+        private readonly OnityTaskCompletionSource[] m_onityFirstSources =
+            new OnityTaskCompletionSource[k_operations];
+        private readonly OnityTaskCompletionSource[] m_onitySecondSources =
+            new OnityTaskCompletionSource[k_operations];
+        private readonly OnityTask[] m_onityFirstTasks = new OnityTask[k_operations];
+        private readonly OnityTask[] m_onitySecondTasks = new OnityTask[k_operations];
+        private readonly OnityTask[] m_onityResults = new OnityTask[k_operations];
+        private readonly UniTaskCompletionSource[] m_uniTaskFirstSources =
+            new UniTaskCompletionSource[k_operations];
+        private readonly UniTaskCompletionSource[] m_uniTaskSecondSources =
+            new UniTaskCompletionSource[k_operations];
+        private readonly UniTask[] m_uniTaskFirstTasks = new UniTask[k_operations];
+        private readonly UniTask[] m_uniTaskSecondTasks = new UniTask[k_operations];
+        private readonly UniTask[] m_uniTaskResults = new UniTask[k_operations];
+
+        private string m_outputPath;
+        private Action<string, Exception> m_completed;
+        private bool m_allocationOnly;
+        private bool m_originalTrackerEnabled;
+        private WhenAllScenario m_activeScenario;
+        private int m_activeLibrary;
+        private Action m_scheduleBatch;
+        private Action m_emptyBatch;
+        private Action m_positiveControl;
+        private bool m_trackerStateCaptured;
+#if UNITY_EDITOR
+        private bool m_profilerStateCaptured;
+        private bool m_profilerWasEnabled;
+        private bool m_profilerDriverWasEnabled;
+        private bool m_profileEditorWasEnabled;
+        private int m_lastCapturedFrame = -1;
+        private int m_markerSequence;
+        private bool m_lastAllocationValid;
+        private long m_lastAllocationBytes;
+#endif
+
+        private void Awake()
+        {
+            m_scheduleBatch = ScheduleBatch;
+            m_emptyBatch = EmptyBatch;
+            m_positiveControl = AllocatePositiveControl;
+        }
+
+        /// <summary>Queues the isolated two-input WhenAll comparison in Play Mode.</summary>
+        /// <param name="outputPath">Absolute report JSON path.</param>
+        /// <param name="completed">Receives the report path and any failure.</param>
+        /// <param name="allocationOnly">Adds calibrated Profiler samples to a timing report.</param>
+        public static void Run(string outputPath, Action<string, Exception> completed,
+            bool allocationOnly)
+        {
+            if (s_isRunning)
+            {
+                throw new InvalidOperationException("A WhenAll benchmark is already running.");
+            }
+
+            GameObject runnerObject = new GameObject("WhenAll Benchmark Runner");
+            DontDestroyOnLoad(runnerObject);
+            OnityWhenAllBenchmarkRunner runner =
+                runnerObject.AddComponent<OnityWhenAllBenchmarkRunner>();
+            runner.m_outputPath = Path.GetFullPath(outputPath);
+            runner.m_completed = completed;
+            runner.m_allocationOnly = allocationOnly;
+            s_isRunning = true;
+        }
+
+        private IEnumerator Start()
+        {
+            yield return null;
+            m_originalTrackerEnabled = OnityTaskTracker.IsEnabled;
+            m_trackerStateCaptured = true;
+#if UNITY_EDITOR
+            m_profilerWasEnabled = Profiler.enabled;
+            m_profilerDriverWasEnabled = ProfilerDriver.enabled;
+            m_profileEditorWasEnabled = ProfilerDriver.profileEditor;
+            m_profilerStateCaptured = true;
+            if (!m_allocationOnly)
+            {
+                Profiler.enabled = false;
+                ProfilerDriver.enabled = false;
+            }
+#endif
+
+            Exception failure = null;
+            WhenAllReport report = null;
+            try
+            {
+                if (OnityTaskTracker.EnableStackTrace)
+                {
+                    throw new InvalidOperationException(
+                        "Disable OnityTask tracker stack traces before benchmarking.");
+                }
+
+                WhenAllReport expected = CreateReport();
+                if (m_allocationOnly)
+                {
+                    report = JsonUtility.FromJson<WhenAllReport>(File.ReadAllText(m_outputPath));
+                    ValidateAllocationInput(report, expected);
+                    ClearAllocations(report);
+                }
+                else
+                {
+                    report = expected;
+                    RunTiming(report);
+                }
+            }
+            catch (Exception exception)
+            {
+                failure = exception;
+            }
+
+#if UNITY_EDITOR
+            if (failure == null && m_allocationOnly)
+            {
+                IEnumerator allocation = RunAllocations(report);
+                while (true)
+                {
+                    bool hasNext;
+                    try
+                    {
+                        hasNext = allocation.MoveNext();
+                    }
+                    catch (Exception exception)
+                    {
+                        failure = exception;
+                        break;
+                    }
+
+                    if (!hasNext)
+                    {
+                        break;
+                    }
+
+                    yield return allocation.Current;
+                }
+            }
+#endif
+
+            if (failure == null)
+            {
+                try
+                {
+                    SaveReport(report);
+                    Debug.Log("WhenAll benchmark completed: " + m_outputPath, this);
+                }
+                catch (Exception exception)
+                {
+                    failure = exception;
+                }
+            }
+
+            if (failure != null)
+            {
+                Debug.LogException(failure, this);
+            }
+
+            try
+            {
+                m_completed?.Invoke(m_outputPath, failure);
+            }
+            finally
+            {
+                RestoreState();
+                s_isRunning = false;
+                Destroy(gameObject);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            RestoreState();
+            s_isRunning = false;
+        }
+
+        private static WhenAllReport CreateReport()
+        {
+            string root = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            return new WhenAllReport
+            {
+                schemaVersion = 1,
+                harnessVersion = k_harnessVersion,
+                suite = "Two-input OnityTask WhenAll scheduling",
+                generatedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
+                unityVersion = Application.unityVersion,
+#if ENABLE_IL2CPP
+                scriptingBackend = "IL2CPP",
+#else
+                scriptingBackend = "Mono",
+#endif
+                onityAsyncSha256 = HashFile(root, k_runtimePath),
+                runnerSha256 = HashFile(root, k_runnerPath),
+                uniTaskCommit = k_uniTaskCommit,
+                operationsPerBatch = k_operations,
+                timingBatchesPerSample = k_timingBatches,
+                samplesPerCase = k_samples,
+                warmupBatches = k_warmupBatches,
+                stopwatchFrequency = Stopwatch.Frequency,
+                scope = "Same two-argument WhenAll call per operation. Each pending case has two "
+                    + "fresh unresolved completion-source inputs prepared outside the measured slice. "
+                    + "The marker includes WhenAll scheduling and storing the returned value; input "
+                    + "completion, continuation dispatch, and GetResult occur afterward. The completed "
+                    + "control uses both libraries' completed values. Tracker-on matches Onity's "
+                    + "default; tracker-off changes only Onity's tracker. UniTask uses its default "
+                    + "tracker setting. Samples include harness loop cost without subtraction. "
+                    + "These Editor/Mono slices do not measure full lifecycle, frame time, or IL2CPP.",
+                allocationCounter = "Unavailable: separate Profiler pass not run.",
+                scenarios = new[]
+                {
+                    NewScenario("Pending; Onity tracker on", true, true),
+                    NewScenario("Pending; Onity tracker off", true, false),
+                    NewScenario("Both completed; Onity tracker on", false, true)
+                }
+            };
+        }
+
+        private static WhenAllScenario NewScenario(string name, bool pending,
+            bool onityTrackerEnabled)
+        {
+            return new WhenAllScenario
+            {
+                name = name,
+                pending = pending,
+                onityTrackerEnabled = onityTrackerEnabled,
+                results = new[]
+                {
+                    new WhenAllMetric { library = "OnityTask", bytesPerOperation = -1 },
+                    new WhenAllMetric { library = "UniTask", bytesPerOperation = -1 }
+                }
+            };
+        }
+
+        private static string HashFile(string root, string relativePath)
+        {
+            string path = Path.Combine(root,
+                relativePath.Replace('/', Path.DirectorySeparatorChar));
+            using (SHA256 sha = SHA256.Create())
+            using (FileStream stream = File.OpenRead(path))
+            {
+                return BitConverter.ToString(sha.ComputeHash(stream))
+                    .Replace("-", string.Empty).ToLowerInvariant();
+            }
+        }
+
+        private static void ValidateAllocationInput(WhenAllReport report,
+            WhenAllReport expected)
+        {
+            if (report == null || report.schemaVersion != expected.schemaVersion ||
+                report.harnessVersion != expected.harnessVersion ||
+                report.unityVersion != expected.unityVersion ||
+                report.scriptingBackend != expected.scriptingBackend ||
+                report.onityAsyncSha256 != expected.onityAsyncSha256 ||
+                report.runnerSha256 != expected.runnerSha256 ||
+                report.uniTaskCommit != expected.uniTaskCommit ||
+                report.operationsPerBatch != expected.operationsPerBatch ||
+                report.timingBatchesPerSample != expected.timingBatchesPerSample ||
+                report.samplesPerCase != expected.samplesPerCase ||
+                report.scenarios == null ||
+                report.scenarios.Length != expected.scenarios.Length)
+            {
+                throw new InvalidDataException(
+                    "Allocation pass requires timing data from this exact source and harness.");
+            }
+
+            for (int i = 0; i < expected.scenarios.Length; i++)
+            {
+                if (report.scenarios[i] == null ||
+                    report.scenarios[i].name != expected.scenarios[i].name ||
+                    report.scenarios[i].pending != expected.scenarios[i].pending ||
+                    report.scenarios[i].onityTrackerEnabled !=
+                    expected.scenarios[i].onityTrackerEnabled ||
+                    report.scenarios[i].results == null ||
+                    report.scenarios[i].results.Length != 2)
+                {
+                    throw new InvalidDataException("WhenAll scenario definitions changed.");
+                }
+            }
+        }
+
+        private void RunTiming(WhenAllReport report)
+        {
+            for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+            {
+                m_activeScenario = report.scenarios[scenario];
+                for (int warmup = 0; warmup < k_warmupBatches; warmup++)
+                {
+                    for (int library = 0; library < 2; library++)
+                    {
+                        m_activeLibrary = library;
+                        PrepareBatch();
+                        ScheduleBatch();
+                        FinishBatch();
+                    }
+                }
+            }
+
+            report.emptyHarnessSampleNanosecondsPerOperation = new double[k_samples];
+            for (int sample = 0; sample < k_samples; sample++)
+            {
+                long start = Stopwatch.GetTimestamp();
+                for (int batch = 0; batch < k_timingBatches; batch++)
+                {
+                    m_emptyBatch();
+                }
+
+                report.emptyHarnessSampleNanosecondsPerOperation[sample] =
+                    NanosecondsPerOperation(Stopwatch.GetTimestamp() - start,
+                        k_operations * k_timingBatches);
+            }
+
+            for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+            {
+                m_activeScenario = report.scenarios[scenario];
+                WhenAllMetric[] metrics = m_activeScenario.results;
+                metrics[0].sampleNanosecondsPerOperation = new double[k_samples];
+                metrics[1].sampleNanosecondsPerOperation = new double[k_samples];
+                for (int sample = 0; sample < k_samples; sample++)
+                {
+                    for (int turn = 0; turn < 2; turn++)
+                    {
+                        m_activeLibrary = (sample + turn) & 1;
+                        ForceFullGc();
+                        long elapsedTicks = 0;
+                        for (int batch = 0; batch < k_timingBatches; batch++)
+                        {
+                            PrepareBatch();
+                            long start = Stopwatch.GetTimestamp();
+                            m_scheduleBatch();
+                            elapsedTicks += Stopwatch.GetTimestamp() - start;
+                            FinishBatch();
+                        }
+
+                        metrics[m_activeLibrary].sampleNanosecondsPerOperation[sample] =
+                            NanosecondsPerOperation(elapsedTicks,
+                                k_operations * k_timingBatches);
+                    }
+                }
+
+                for (int library = 0; library < 2; library++)
+                {
+                    SummarizeTiming(metrics[library]);
+                }
+            }
+        }
+
+        private static double NanosecondsPerOperation(long ticks, int operations)
+        {
+            return (double)ticks * 1000000000d / (Stopwatch.Frequency * operations);
+        }
+
+        private static void SummarizeTiming(WhenAllMetric metric)
+        {
+            double[] samples = metric.sampleNanosecondsPerOperation;
+            double total = 0;
+            for (int i = 0; i < samples.Length; i++)
+            {
+                total += samples[i];
+            }
+
+            metric.meanNanosecondsPerOperation = total / samples.Length;
+            double[] sorted = (double[])samples.Clone();
+            Array.Sort(sorted);
+            metric.medianNanosecondsPerOperation =
+                (sorted[sorted.Length / 2 - 1] + sorted[sorted.Length / 2]) / 2d;
+            metric.minNanosecondsPerOperation = sorted[0];
+            metric.maxNanosecondsPerOperation = sorted[sorted.Length - 1];
+            double squared = 0;
+            for (int i = 0; i < samples.Length; i++)
+            {
+                double delta = samples[i] - metric.meanNanosecondsPerOperation;
+                squared += delta * delta;
+            }
+
+            metric.standardDeviationNanosecondsPerOperation =
+                Math.Sqrt(squared / samples.Length);
+        }
+
+        private void PrepareBatch()
+        {
+            OnityTaskTracker.IsEnabled = m_activeScenario.onityTrackerEnabled;
+            if (m_activeLibrary == 0)
+            {
+                for (int i = 0; i < k_operations; i++)
+                {
+                    if (m_activeScenario.pending)
+                    {
+                        m_onityFirstSources[i] = new OnityTaskCompletionSource();
+                        m_onitySecondSources[i] = new OnityTaskCompletionSource();
+                        m_onityFirstTasks[i] = m_onityFirstSources[i].Task;
+                        m_onitySecondTasks[i] = m_onitySecondSources[i].Task;
+                    }
+                    else
+                    {
+                        m_onityFirstTasks[i] = OnityTask.Completed;
+                        m_onitySecondTasks[i] = OnityTask.Completed;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < k_operations; i++)
+                {
+                    if (m_activeScenario.pending)
+                    {
+                        m_uniTaskFirstSources[i] = new UniTaskCompletionSource();
+                        m_uniTaskSecondSources[i] = new UniTaskCompletionSource();
+                        m_uniTaskFirstTasks[i] = m_uniTaskFirstSources[i].Task;
+                        m_uniTaskSecondTasks[i] = m_uniTaskSecondSources[i].Task;
+                    }
+                    else
+                    {
+                        m_uniTaskFirstTasks[i] = UniTask.CompletedTask;
+                        m_uniTaskSecondTasks[i] = UniTask.CompletedTask;
+                    }
+                }
+            }
+        }
+
+        private void ScheduleBatch()
+        {
+            if (m_activeLibrary == 0)
+            {
+                for (int i = 0; i < k_operations; i++)
+                {
+                    m_onityResults[i] = OnityTask.WhenAll(
+                        m_onityFirstTasks[i], m_onitySecondTasks[i]);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < k_operations; i++)
+                {
+                    m_uniTaskResults[i] = UniTask.WhenAll(
+                        m_uniTaskFirstTasks[i], m_uniTaskSecondTasks[i]);
+                }
+            }
+        }
+
+        private void FinishBatch()
+        {
+            if (m_activeLibrary == 0)
+            {
+                for (int i = 0; i < k_operations; i++)
+                {
+                    OnityTaskAwaiter awaiter = m_onityResults[i].GetAwaiter();
+                    if (m_activeScenario.pending)
+                    {
+                        if (awaiter.IsCompleted ||
+                            !m_onityFirstSources[i].TrySetResult() ||
+                            !m_onitySecondSources[i].TrySetResult())
+                        {
+                            throw new InvalidOperationException(
+                                "Onity pending WhenAll input did not complete exactly once.");
+                        }
+                    }
+
+                    if (!m_activeScenario.pending && !awaiter.IsCompleted)
+                    {
+                        throw new InvalidOperationException(
+                            "Onity completed-input WhenAll returned a pending task.");
+                    }
+                }
+
+                WaitForBatchCompletion();
+                for (int i = 0; i < k_operations; i++)
+                {
+                    OnityTaskAwaiter awaiter = m_onityResults[i].GetAwaiter();
+
+                    if (!awaiter.IsCompleted)
+                    {
+                        throw new InvalidOperationException("Onity WhenAll did not complete.");
+                    }
+
+                    awaiter.GetResult();
+                    m_onityFirstSources[i] = null;
+                    m_onitySecondSources[i] = null;
+                    m_onityFirstTasks[i] = default;
+                    m_onitySecondTasks[i] = default;
+                    m_onityResults[i] = default;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < k_operations; i++)
+                {
+                    UniTask.Awaiter awaiter = m_uniTaskResults[i].GetAwaiter();
+                    if (m_activeScenario.pending)
+                    {
+                        if (awaiter.IsCompleted ||
+                            !m_uniTaskFirstSources[i].TrySetResult() ||
+                            !m_uniTaskSecondSources[i].TrySetResult())
+                        {
+                            throw new InvalidOperationException(
+                                "UniTask pending WhenAll input did not complete exactly once.");
+                        }
+                    }
+
+                    if (!m_activeScenario.pending && !awaiter.IsCompleted)
+                    {
+                        throw new InvalidOperationException(
+                            "UniTask completed-input WhenAll returned a pending task.");
+                    }
+                }
+
+                WaitForBatchCompletion();
+                for (int i = 0; i < k_operations; i++)
+                {
+                    UniTask.Awaiter awaiter = m_uniTaskResults[i].GetAwaiter();
+
+                    if (!awaiter.IsCompleted)
+                    {
+                        throw new InvalidOperationException("UniTask WhenAll did not complete.");
+                    }
+
+                    awaiter.GetResult();
+                    m_uniTaskFirstSources[i] = null;
+                    m_uniTaskSecondSources[i] = null;
+                    m_uniTaskFirstTasks[i] = default;
+                    m_uniTaskSecondTasks[i] = default;
+                    m_uniTaskResults[i] = default;
+                }
+            }
+        }
+
+        private void WaitForBatchCompletion()
+        {
+            long deadline = Stopwatch.GetTimestamp() + 10L * Stopwatch.Frequency;
+            while (true)
+            {
+                bool allCompleted = true;
+                if (m_activeLibrary == 0)
+                {
+                    for (int i = 0; i < k_operations; i++)
+                    {
+                        if (!m_onityResults[i].IsCompleted)
+                        {
+                            allCompleted = false;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < k_operations; i++)
+                    {
+                        if (!m_uniTaskResults[i].GetAwaiter().IsCompleted)
+                        {
+                            allCompleted = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (allCompleted)
+                {
+                    return;
+                }
+
+                if (Stopwatch.GetTimestamp() >= deadline)
+                {
+                    throw new TimeoutException("WhenAll output did not complete within 10 seconds.");
+                }
+
+                Thread.Sleep(1);
+            }
+        }
+
+        private static void ForceFullGc()
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
+        private static void EmptyBatch()
+        {
+            for (int i = 0; i < k_operations; i++)
+            {
+            }
+        }
+
+        private static void AllocatePositiveControl()
+        {
+            byte[] bytes = new byte[65536];
+            GC.KeepAlive(bytes);
+        }
+
+#if UNITY_EDITOR
+        private IEnumerator RunAllocations(WhenAllReport report)
+        {
+            Profiler.enabled = true;
+            ProfilerDriver.enabled = true;
+            ProfilerDriver.profileEditor = false;
+            for (int frame = 0; frame < k_profilerStartupFrames; frame++)
+            {
+                yield return null;
+            }
+
+            yield return CaptureAllocation(m_positiveControl);
+            report.positiveControlBytes = m_lastAllocationBytes;
+            if (!m_lastAllocationValid || report.positiveControlBytes != 65568)
+            {
+                throw new InvalidDataException(
+                    "Profiler positive control did not capture exactly 65,568 bytes.");
+            }
+
+            yield return CaptureAllocation(m_emptyBatch);
+            report.emptyControlBytes = m_lastAllocationBytes;
+            if (!m_lastAllocationValid || report.emptyControlBytes != 0)
+            {
+                throw new InvalidDataException(
+                    "Profiler empty control was not zero bytes.");
+            }
+
+            for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+            {
+                m_activeScenario = report.scenarios[scenario];
+                for (int warmup = 0; warmup < k_warmupBatches; warmup++)
+                {
+                    for (int library = 0; library < 2; library++)
+                    {
+                        m_activeLibrary = library;
+                        PrepareBatch();
+                        ScheduleBatch();
+                        FinishBatch();
+                    }
+                }
+            }
+
+            report.emptyHarnessSampleAllocatedBytes = new long[k_samples];
+            for (int sample = 0; sample < k_samples; sample++)
+            {
+                yield return CaptureAllocation(m_emptyBatch);
+                if (!m_lastAllocationValid)
+                {
+                    throw new InvalidDataException("Empty harness allocation sample was missing.");
+                }
+
+                report.emptyHarnessSampleAllocatedBytes[sample] = m_lastAllocationBytes;
+            }
+
+            for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+            {
+                m_activeScenario = report.scenarios[scenario];
+                for (int sample = 0; sample < k_samples; sample++)
+                {
+                    for (int turn = 0; turn < 2; turn++)
+                    {
+                        m_activeLibrary = (sample + turn) & 1;
+                        ForceFullGc();
+                        PrepareBatch();
+                        yield return CaptureAllocation(m_scheduleBatch);
+                        if (!m_lastAllocationValid)
+                        {
+                            throw new InvalidDataException(
+                                "WhenAll allocation sample was missing.");
+                        }
+
+                        FinishBatch();
+                        WhenAllMetric metric = m_activeScenario.results[m_activeLibrary];
+                        if (metric.sampleAllocatedBytes == null)
+                        {
+                            metric.sampleAllocatedBytes = new long[k_samples];
+                        }
+
+                        metric.sampleAllocatedBytes[sample] = m_lastAllocationBytes;
+                    }
+                }
+
+                for (int library = 0; library < 2; library++)
+                {
+                    WhenAllMetric metric = m_activeScenario.results[library];
+                    long total = 0;
+                    for (int sample = 0; sample < k_samples; sample++)
+                    {
+                        total += metric.sampleAllocatedBytes[sample];
+                    }
+
+                    metric.bytesPerOperation = (double)total / (k_samples * k_operations);
+                }
+            }
+
+            report.allocationsAvailable = true;
+            report.allocationCounter =
+                "Unity Profiler GC.Alloc metadata; 65,568/0-byte controls passed.";
+            report.allocationGeneratedAtUtc =
+                DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        private IEnumerator CaptureAllocation(Action operation)
+        {
+            m_lastAllocationValid = false;
+            m_lastAllocationBytes = 0;
+            string marker = k_scopePrefix
+                + (m_markerSequence++).ToString(CultureInfo.InvariantCulture);
+            Profiler.BeginSample(marker);
+            try
+            {
+                operation();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
+
+            for (int wait = 0; wait < k_profilerReadFrames; wait++)
+            {
+                yield return null;
+                if (TryReadAllocation(
+                    Math.Max(m_lastCapturedFrame, ProfilerDriver.firstFrameIndex),
+                    ProfilerDriver.lastFrameIndex, marker,
+                    out long bytes, out int foundFrame))
+                {
+                    m_lastAllocationBytes = bytes;
+                    m_lastCapturedFrame = foundFrame;
+                    m_lastAllocationValid = true;
+                    yield break;
+                }
+            }
+        }
+
+        private static bool TryReadAllocation(int firstFrame, int lastFrame,
+            string marker, out long bytes, out int foundFrame)
+        {
+            bytes = 0;
+            foundFrame = -1;
+            for (int frame = firstFrame; frame <= lastFrame; frame++)
+            {
+                for (int thread = 0; ; thread++)
+                {
+                    using (RawFrameDataView data = ProfilerDriver.GetRawFrameDataView(frame, thread))
+                    {
+                        if (!data.valid)
+                        {
+                            break;
+                        }
+
+                        int scopeId = data.GetMarkerId(marker);
+                        int allocationId = data.GetMarkerId("GC.Alloc");
+                        if (scopeId == FrameDataView.invalidMarkerId)
+                        {
+                            continue;
+                        }
+
+                        for (int sample = 0; sample < data.sampleCount; sample++)
+                        {
+                            if (data.GetSampleMarkerId(sample) != scopeId)
+                            {
+                                continue;
+                            }
+
+                            int end = sample + data.GetSampleChildrenCountRecursive(sample);
+                            for (int child = sample + 1; child <= end; child++)
+                            {
+                                if (data.GetSampleMarkerId(child) == allocationId)
+                                {
+                                    bytes += data.GetSampleMetadataAsLong(child, 0);
+                                }
+                            }
+
+                            foundFrame = frame;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+#endif
+
+        private static void ClearAllocations(WhenAllReport report)
+        {
+            report.allocationsAvailable = false;
+            report.allocationCounter = "Unavailable: separate Profiler pass not run.";
+            report.allocationGeneratedAtUtc = null;
+            report.positiveControlBytes = 0;
+            report.emptyControlBytes = 0;
+            report.emptyHarnessSampleAllocatedBytes = null;
+            for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+            {
+                for (int library = 0; library < 2; library++)
+                {
+                    report.scenarios[scenario].results[library].bytesPerOperation = -1;
+                    report.scenarios[scenario].results[library].sampleAllocatedBytes = null;
+                }
+            }
+        }
+
+        private void SaveReport(WhenAllReport report)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(m_outputPath));
+            File.WriteAllText(m_outputPath, JsonUtility.ToJson(report, true));
+            File.WriteAllText(Path.ChangeExtension(m_outputPath, ".csv"), BuildCsv(report));
+            File.WriteAllText(Path.ChangeExtension(m_outputPath, ".md"), BuildMarkdown(report));
+        }
+
+        private static string BuildCsv(WhenAllReport report)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("scenario,library,timing_operations_per_sample,allocation_operations_per_sample,"
+                + "mean_ns_per_op,median_ns_per_op,min_ns_per_op,max_ns_per_op,"
+                + "standard_deviation_ns_per_op,bytes_per_op,allocations_available");
+            for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+            {
+                for (int library = 0; library < 2; library++)
+                {
+                    WhenAllMetric metric = report.scenarios[scenario].results[library];
+                    builder.Append(report.scenarios[scenario].name).Append(',');
+                    builder.Append(metric.library).Append(',');
+                    builder.Append(k_operations * k_timingBatches).Append(',');
+                    builder.Append(k_operations).Append(',');
+                    builder.Append(Number(metric.meanNanosecondsPerOperation)).Append(',');
+                    builder.Append(Number(metric.medianNanosecondsPerOperation)).Append(',');
+                    builder.Append(Number(metric.minNanosecondsPerOperation)).Append(',');
+                    builder.Append(Number(metric.maxNanosecondsPerOperation)).Append(',');
+                    builder.Append(Number(metric.standardDeviationNanosecondsPerOperation))
+                        .Append(',');
+                    builder.Append(Number(metric.bytesPerOperation)).Append(',');
+                    builder.AppendLine(report.allocationsAvailable ? "true" : "false");
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static string BuildMarkdown(WhenAllReport report)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("# " + report.suite);
+            builder.AppendLine();
+            builder.AppendLine("- Unity: " + report.unityVersion + "; " + report.scriptingBackend);
+            builder.AppendLine("- UniTask: " + report.uniTaskCommit);
+            builder.AppendLine("- OnityAsync SHA-256: " + report.onityAsyncSha256);
+            builder.AppendLine("- Runner SHA-256: " + report.runnerSha256);
+            builder.AppendLine("- Samples: " + report.samplesPerCase + "; operations/sample: "
+                + (k_operations * k_timingBatches) + " timing, " + k_operations
+                + " allocation; warmup batches: " + report.warmupBatches);
+            builder.AppendLine("- Allocation counter: " + report.allocationCounter);
+            builder.AppendLine("- Controls: " + report.positiveControlBytes
+                + " B positive; " + report.emptyControlBytes + " B empty.");
+            builder.AppendLine();
+            builder.AppendLine(report.scope);
+            builder.AppendLine();
+            builder.AppendLine("| Scenario | Library | Mean ns/op | Median ns/op | Range ns/op | SD ns/op | B/op |");
+            builder.AppendLine("| --- | --- | ---: | ---: | ---: | ---: | ---: |");
+            for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+            {
+                for (int library = 0; library < 2; library++)
+                {
+                    WhenAllMetric metric = report.scenarios[scenario].results[library];
+                    builder.Append("| ").Append(report.scenarios[scenario].name)
+                        .Append(" | ").Append(metric.library)
+                        .Append(" | ").Append(Number(metric.meanNanosecondsPerOperation))
+                        .Append(" | ").Append(Number(metric.medianNanosecondsPerOperation))
+                        .Append(" | ").Append(Number(metric.minNanosecondsPerOperation))
+                        .Append("–").Append(Number(metric.maxNanosecondsPerOperation))
+                        .Append(" | ").Append(Number(metric.standardDeviationNanosecondsPerOperation))
+                        .Append(" | ").Append(Number(metric.bytesPerOperation)).AppendLine(" |");
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static string Number(double value)
+        {
+            return value.ToString("G17", CultureInfo.InvariantCulture);
+        }
+
+        private void RestoreState()
+        {
+            if (m_trackerStateCaptured)
+            {
+                OnityTaskTracker.IsEnabled = m_originalTrackerEnabled;
+                m_trackerStateCaptured = false;
+            }
+#if UNITY_EDITOR
+            if (!m_profilerStateCaptured)
+            {
+                return;
+            }
+
+            m_profilerStateCaptured = false;
+            Profiler.enabled = m_profilerWasEnabled;
+            ProfilerDriver.enabled = m_profilerDriverWasEnabled;
+            ProfilerDriver.profileEditor = m_profileEditorWasEnabled;
+#endif
+        }
+
+        [Serializable]
+        private sealed class WhenAllReport
+        {
+            public int schemaVersion;
+            public int harnessVersion;
+            public string suite;
+            public string generatedAtUtc;
+            public string allocationGeneratedAtUtc;
+            public string unityVersion;
+            public string scriptingBackend;
+            public string onityAsyncSha256;
+            public string runnerSha256;
+            public string uniTaskCommit;
+            public int operationsPerBatch;
+            public int timingBatchesPerSample;
+            public int samplesPerCase;
+            public int warmupBatches;
+            public long stopwatchFrequency;
+            public string scope;
+            public double[] emptyHarnessSampleNanosecondsPerOperation;
+            public long[] emptyHarnessSampleAllocatedBytes;
+            public bool allocationsAvailable;
+            public string allocationCounter;
+            public long positiveControlBytes;
+            public long emptyControlBytes;
+            public WhenAllScenario[] scenarios;
+        }
+
+        [Serializable]
+        private sealed class WhenAllScenario
+        {
+            public string name;
+            public bool pending;
+            public bool onityTrackerEnabled;
+            public WhenAllMetric[] results;
+        }
+
+        [Serializable]
+        private sealed class WhenAllMetric
+        {
+            public string library;
+            public double meanNanosecondsPerOperation;
+            public double medianNanosecondsPerOperation;
+            public double minNanosecondsPerOperation;
+            public double maxNanosecondsPerOperation;
+            public double standardDeviationNanosecondsPerOperation;
             public double bytesPerOperation;
             public double[] sampleNanosecondsPerOperation;
             public long[] sampleAllocatedBytes;
