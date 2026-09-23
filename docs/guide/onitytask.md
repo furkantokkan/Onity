@@ -129,6 +129,33 @@ await shared;
 // Other consumers may await the same Task instance.
 ```
 
+## Complete a task from a callback
+
+Use `OnityTaskCompletionSource<T>` when an external callback owns completion.
+Its `Task` can be awaited by several consumers, including consumers that arrive
+after it completes. Only the first completion attempt succeeds. The untyped
+`OnityTaskCompletionSource` has the same behavior without a result value.
+
+```csharp
+using System;
+using Onity.Unity.Async;
+
+OnityTaskCompletionSource<string> source = new OnityTaskCompletionSource<string>();
+OnityTask<string> completion = source.Task;
+
+// Each callback tries to complete the same operation.
+void OnLoaded(string value) => source.TrySetResult(value);
+void OnFailed(Exception error) => source.TrySetException(error);
+
+string first = await completion;
+string second = await completion; // Retained result; no pool token is consumed.
+```
+
+Use `TrySetCanceled(cancellationToken)` for cancellation. `TrySetException`
+also treats `OperationCanceledException` as cancellation and preserves its
+token. A fault that nobody observes may be reported to the Unity log after
+garbage collection; use `Forget` with an error handler for fire-and-forget work.
+
 Generation checks reject stale pooled task copies instead of letting them read a
 later operation that reused the same source.
 

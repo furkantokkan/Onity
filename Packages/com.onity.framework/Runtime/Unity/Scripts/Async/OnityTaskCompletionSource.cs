@@ -3,9 +3,14 @@ using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Onity.Unity.Async
 {
+    internal interface IOnityMultiConsumerTaskSource
+    {
+    }
+
     /// <summary>
     /// Completes an Onity task from a callback or another external operation.
     /// The source is not pooled, so its task can be awaited by multiple consumers.
@@ -39,10 +44,101 @@ namespace Onity.Unity.Async
     /// The source is not pooled, so its task can be awaited by multiple consumers.
     /// </summary>
     /// <typeparam name="T">Result type.</typeparam>
-    public class OnityTaskCompletionSource<T> : IOnityTaskSource<T>, IOnityTaskSource
+    public class OnityTaskCompletionSource<T> :
+        IOnityTaskSource<T>, IOnityTaskSource, IOnityMultiConsumerTaskSource
     {
         private const int k_version = 1;
 
+        private sealed class UnobservedFault
+        {
+            private static readonly SendOrPostCallback s_reportCallback = ReportPosted;
+
+            private readonly ExceptionDispatchInfo m_exception;
+            private readonly SynchronizationContext m_context;
+            private readonly int m_contextThreadId;
+            private int m_observed;
+
+            public UnobservedFault(
+                ExceptionDispatchInfo exception,
+                SynchronizationContext context,
+                int contextThreadId)
+            {
+                m_exception = exception;
+                m_context = context;
+                m_contextThreadId = contextThreadId;
+            }
+
+            ~UnobservedFault()
+            {
+                if (Volatile.Read(ref m_observed) != 0)
+                {
+                    return;
+                }
+
+                if (m_context != null)
+                {
+                    try
+                    {
+                        m_context.Post(s_reportCallback, this);
+                        return;
+                    }
+                    catch (Exception)
+                    {
+                        // A context may be unavailable during domain shutdown.
+                    }
+                }
+
+                ReportToConsole();
+            }
+
+            public void Observe()
+            {
+                if (Interlocked.Exchange(ref m_observed, 1) == 0)
+                {
+                    GC.SuppressFinalize(this);
+                }
+            }
+
+            private static void ReportPosted(object state)
+            {
+                UnobservedFault fault = (UnobservedFault)state;
+                if (Volatile.Read(ref fault.m_observed) != 0)
+                {
+                    return;
+                }
+
+                if (Thread.CurrentThread.ManagedThreadId == fault.m_contextThreadId)
+                {
+                    try
+                    {
+                        Debug.LogException(fault.m_exception.SourceException);
+                        return;
+                    }
+                    catch (Exception)
+                    {
+                        // A custom context may dispatch after Unity shuts down.
+                    }
+                }
+
+                fault.ReportToConsole();
+            }
+
+            private void ReportToConsole()
+            {
+                try
+                {
+                    Console.Error.WriteLine("Unobserved OnityTask exception: "
+                        + m_exception.SourceException);
+                }
+                catch (Exception)
+                {
+                    // Finalizers must never throw during process shutdown.
+                }
+            }
+        }
+
+        private readonly SynchronizationContext m_reportingContext = SynchronizationContext.Current;
+        private readonly int m_reportingThreadId = Thread.CurrentThread.ManagedThreadId;
         private readonly object m_gate = new object();
 
         private Action m_firstContinuation;
@@ -50,6 +146,7 @@ namespace Onity.Unity.Async
         private List<Action> m_otherContinuations;
         private TaskCompletionSource<T> m_taskBridge;
         private ExceptionDispatchInfo m_exception;
+        private UnobservedFault m_unobservedFault;
         private CancellationToken m_cancellationToken;
         private T m_result;
         private int m_status;
@@ -185,6 +282,7 @@ namespace Onity.Unity.Async
 
             if (status == OnityTaskSourceStatus.Faulted)
             {
+                m_unobservedFault?.Observe();
                 exception.Throw();
             }
 
@@ -203,6 +301,7 @@ namespace Onity.Unity.Async
                     OnityTaskSourceStatus status = (OnityTaskSourceStatus)m_status;
                     if (status != OnityTaskSourceStatus.Pending)
                     {
+                        m_unobservedFault?.Observe();
                         CompleteTaskBridge(
                             m_taskBridge, status, m_result, m_exception, m_cancellationToken);
                     }
@@ -275,6 +374,20 @@ namespace Onity.Unity.Async
                     : ExceptionDispatchInfo.Capture(exception);
                 m_result = result;
                 m_exception = capturedException;
+                if (capturedException != null && m_taskBridge == null)
+                {
+                    SynchronizationContext context = m_reportingContext;
+                    int contextThreadId = m_reportingThreadId;
+                    if (context == null)
+                    {
+                        context = SynchronizationContext.Current;
+                        contextThreadId = Thread.CurrentThread.ManagedThreadId;
+                    }
+
+                    m_unobservedFault = new UnobservedFault(
+                        capturedException, context, contextThreadId);
+                }
+
                 m_cancellationToken = cancellationToken;
                 firstContinuation = m_firstContinuation;
                 secondContinuation = m_secondContinuation;
@@ -284,6 +397,7 @@ namespace Onity.Unity.Async
                 m_otherContinuations = null;
                 if (m_taskBridge != null)
                 {
+                    m_unobservedFault?.Observe();
                     CompleteTaskBridge(
                         m_taskBridge, status, result, capturedException, cancellationToken);
                 }

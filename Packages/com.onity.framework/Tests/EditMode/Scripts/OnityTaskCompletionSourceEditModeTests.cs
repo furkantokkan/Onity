@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -74,6 +75,58 @@ namespace Onity.Tests.EditMode
             Assert.That(calls, Is.EqualTo(3));
             Assert.DoesNotThrow(() => task.GetAwaiter().GetResult());
             Assert.DoesNotThrow(() => task.GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public void WhenAny_SharedPendingSource_FirstInputWins()
+        {
+            OnityTaskCompletionSource source = new OnityTaskCompletionSource();
+            OnityTask sharedTask = source.Task;
+            OnityTask<int> race = OnityTask.WhenAny(sharedTask, sharedTask);
+
+            Assert.That(race.IsCompleted, Is.False);
+            Assert.That(source.TrySetResult(), Is.True);
+            Assert.That(race.GetAwaiter().GetResult(), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void WhenAny_SharedCompletedSource_FirstInputWins()
+        {
+            OnityTaskCompletionSource source = new OnityTaskCompletionSource();
+            Assert.That(source.TrySetResult(), Is.True);
+
+            OnityTask sharedTask = source.Task;
+            OnityTask<int> race = OnityTask.WhenAny(sharedTask, sharedTask);
+
+            Assert.That(race.GetAwaiter().GetResult(), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void WhenAny_SharedFaultedSource_PreservesFailure()
+        {
+            OnityTaskCompletionSource source = new OnityTaskCompletionSource();
+            InvalidOperationException failure = new InvalidOperationException("shared source failed");
+            OnityTask sharedTask = source.Task;
+            OnityTask<int> race = OnityTask.WhenAny(sharedTask, sharedTask);
+
+            Assert.That(source.TrySetException(failure), Is.True);
+            Assert.That(Assert.Throws<InvalidOperationException>(
+                () => race.GetAwaiter().GetResult()), Is.SameAs(failure));
+        }
+
+        [Test]
+        public void WhenAny_SharedCanceledSource_PreservesToken()
+        {
+            using CancellationTokenSource cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            OnityTaskCompletionSource source = new OnityTaskCompletionSource();
+            OnityTask sharedTask = source.Task;
+            OnityTask<int> race = OnityTask.WhenAny(sharedTask, sharedTask);
+
+            Assert.That(source.TrySetCanceled(cancellation.Token), Is.True);
+            Assert.That(Assert.Throws<OperationCanceledException>(
+                () => race.GetAwaiter().GetResult()).CancellationToken,
+                Is.EqualTo(cancellation.Token));
         }
 
         [Test]
@@ -393,6 +446,158 @@ namespace Onity.Tests.EditMode
                 Assert.That(bridge, Is.SameAs(source.Task.AsTask()));
                 Assert.That(bridge.IsCompleted, Is.True);
                 Assert.That(bridge.GetAwaiter().GetResult(), Is.EqualTo(expected));
+            }
+        }
+
+        [Test]
+        public void UnobservedFault_FinalizerPostsOnceToCapturedContext()
+        {
+            SynchronizationContext previous = SynchronizationContext.Current;
+            QueuedSynchronizationContext context = new QueuedSynchronizationContext();
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
+                source.TrySetException(new InvalidOperationException("unobserved source failure"));
+                LogAssert.Expect(LogType.Exception, new Regex("unobserved source failure"));
+                Assert.That(Task.Run(() => InvokeFaultFinalizer(source)).Wait(5000), Is.True);
+                Assert.That(context.Count, Is.EqualTo(1));
+                context.Drain();
+                Assert.That(context.Count, Is.Zero);
+                Assert.Throws<InvalidOperationException>(
+                    () => source.Task.GetAwaiter().GetResult());
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previous);
+            }
+        }
+
+        [Test]
+        public void ObservedFault_FinalizerDoesNotReport()
+        {
+            SynchronizationContext previous = SynchronizationContext.Current;
+            QueuedSynchronizationContext context = new QueuedSynchronizationContext();
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
+                source.TrySetException(new InvalidOperationException("observed source failure"));
+                Assert.Throws<InvalidOperationException>(
+                    () => source.Task.GetAwaiter().GetResult());
+                InvokeFaultFinalizer(source);
+                Assert.That(context.Count, Is.Zero);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previous);
+            }
+        }
+
+        [Test]
+        public void FaultedTaskBridge_DoesNotCreateFaultHolder()
+        {
+            SynchronizationContext previous = SynchronizationContext.Current;
+            QueuedSynchronizationContext context = new QueuedSynchronizationContext();
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
+                Task<int> bridge = source.Task.AsTask();
+                source.TrySetException(new InvalidOperationException("bridged source failure"));
+                Assert.Throws<InvalidOperationException>(() => bridge.GetAwaiter().GetResult());
+                Assert.That(GetFaultHolder(source), Is.Null);
+                Assert.That(context.Count, Is.Zero);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previous);
+            }
+        }
+
+        [Test]
+        public void LateTaskBridge_ObservesExistingFaultHolder()
+        {
+            SynchronizationContext previous = SynchronizationContext.Current;
+            QueuedSynchronizationContext context = new QueuedSynchronizationContext();
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
+                source.TrySetException(new InvalidOperationException("late bridge failure"));
+                Assert.That(GetFaultHolder(source), Is.Not.Null);
+
+                Task<int> bridge = source.Task.AsTask();
+                Assert.Throws<InvalidOperationException>(() => bridge.GetAwaiter().GetResult());
+                InvokeFaultFinalizer(source);
+                Assert.That(context.Count, Is.Zero);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previous);
+            }
+        }
+
+        private static void InvokeFaultFinalizer(OnityTaskCompletionSource<int> source)
+        {
+            object fault = GetFaultHolder(source);
+            Assert.That(fault, Is.Not.Null);
+            MethodInfo finalizer = fault.GetType().GetMethod(
+                "Finalize", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(finalizer, Is.Not.Null);
+            finalizer.Invoke(fault, null);
+        }
+
+        private static object GetFaultHolder(OnityTaskCompletionSource<int> source)
+        {
+            FieldInfo field = typeof(OnityTaskCompletionSource<int>).GetField(
+                "m_unobservedFault", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null);
+            return field.GetValue(source);
+        }
+
+        private sealed class QueuedSynchronizationContext : SynchronizationContext
+        {
+            private readonly Queue<(SendOrPostCallback Callback, object State)> m_callbacks =
+                new Queue<(SendOrPostCallback Callback, object State)>();
+
+            public int Count
+            {
+                get
+                {
+                    lock (m_callbacks)
+                    {
+                        return m_callbacks.Count;
+                    }
+                }
+            }
+
+            public override void Post(SendOrPostCallback callback, object state)
+            {
+                lock (m_callbacks)
+                {
+                    m_callbacks.Enqueue((callback, state));
+                }
+            }
+
+            public void Drain()
+            {
+                while (true)
+                {
+                    (SendOrPostCallback Callback, object State) callback;
+                    lock (m_callbacks)
+                    {
+                        if (m_callbacks.Count == 0)
+                        {
+                            return;
+                        }
+
+                        callback = m_callbacks.Dequeue();
+                    }
+
+                    callback.Callback(callback.State);
+                }
             }
         }
 

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added typed and untyped `OnityTaskCompletionSource` for completing retained,
+  multi-consumer tasks from callbacks. Multiple pending or late awaiters can
+  observe the same result, fault, or cancellation without consuming a pool token.
+- Allowed the same completion-source task in both inputs of the two-task
+  `WhenAny` overload while retaining the single-consumer guard for pooled tasks.
+
+### Tested
+
+- Unity `2022.3.62f3`: EditMode `505/505` and PlayMode `21/21` passed,
+  including concurrent completion and `AsTask()` bridge tests.
+
 ## [0.3.11] - 2026-09-23
 
 ### Fixed
