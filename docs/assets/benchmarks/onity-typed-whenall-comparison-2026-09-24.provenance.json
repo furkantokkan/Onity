@@ -1,0 +1,72 @@
+{
+  "suite": "Typed params-array OnityTask WhenAll scheduling",
+  "baselineProductCommit": "c9ba3548dbf7432d88801739da0d93fc908a3d6c",
+  "candidateProductCommit": "970a4ae77d1fed16a83b2930fff4fdbb24da320d",
+  "benchmarkBranch": "benchmark/onitytask-typed-whenall",
+  "benchmarkHarnessCommit": "bd710b7efd16cc054a866342c1b65a1c5bd43912",
+  "runnerGitBlobBothHosts": "8233d48b0ebe3f79653c6062475d23af9bae5e3e",
+  "menuGitBlobBothHosts": "9c1a538de4ef990e539cade32052aafcd98454dc",
+  "manifestGitBlobBothHosts": "b4f180c450b59597db2a96a70ff552ca35909799",
+  "packageLockGitBlobBothHosts": "2f863e6d228ea9fd67dbf0d9ab62a805993dd220",
+  "baselineOnityAsyncGitBlob": "726369708ce7e32f046b36632ec2c64e67b038cf",
+  "candidateOnityAsyncGitBlob": "58af6e385dcdc4a9b376a7f2f87daadcc13b6547",
+  "baselineOnityAsyncWorkingSha256": "c0c463bb5801c6d0d417e23dd6cbe94ce2cca8b43d9db0c41a780e5115921565",
+  "candidateOnityAsyncWorkingSha256": "971222c94b83220e9225a3a9696a4a21c496ed26647236f54f12c00ae183d465",
+  "baselineRunnerWorkingSha256": "67e84073edc33d4613135d5e8b6ae3c126a962973e0085919e29be26e288f008",
+  "candidateRunnerWorkingSha256": "0249bdf33302114de936f3749299161cfc47c4061d8edc96b44d56359b756f63",
+  "runnerHashNote": "The runner Git blob and normalized source text are identical. Working-file SHA-256 differs only because checkout line endings differ.",
+  "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityEditor": "2022.3.62f3",
+  "scriptingBackend": "Mono",
+  "editorBinary": "C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Unity.exe",
+  "entryPoint": "Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine",
+  "timingArguments": "-batchmode -nographics -projectPath <exact-host> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskBenchmarkOutput <json> -logFile <log>",
+  "allocationArguments": "-batchmode -nographics -profiler-enable -projectPath <exact-host> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <primary-json> -logFile <log>",
+  "exitEvidence": "All six reports were written and all six logs contain the successful command-line completion path, which calls EditorApplication.Exit(0); all six Editor processes terminated. PowerShell Wait-Process did not independently expose OS exit codes.",
+  "benchmarkDefine": "ONITY_TASK_BENCHMARKS was temporarily added to Standalone scripting defines in each isolated host and ProjectSettings was restored afterward.",
+  "conditions": {
+    "operationsPerBatch": 128,
+    "timingBatchesPerSample": 16,
+    "timingOperationsPerSample": 2048,
+    "allocationOperationsPerSample": 128,
+    "warmupBatchesPerScenarioAndLibrary": 10,
+    "samplesPerCasePerPass": 8,
+    "timingProcessesPerHost": 2,
+    "scenarios": [
+      "Pending two inputs; Onity tracker on",
+      "Completed two inputs; Onity tracker on",
+      "Completed four inputs; Onity tracker on"
+    ],
+    "included": "Typed WhenAll<int>(params) scheduling and storing the returned value",
+    "excluded": "Input array/task creation, pending input completion, continuation dispatch, ordered-result validation, GetResult, and full lifecycle"
+  },
+  "profilerControls": {
+    "positiveBytesBothHosts": 65568,
+    "emptyBytesBothHosts": 0,
+    "emptyHarnessBytesAllEightSamplesBothHosts": 0,
+    "allEightRawAllocationSamplesMatchWithinEachCase": true
+  },
+  "reports": [
+    {
+      "path": "docs/assets/benchmarks/onity-typed-whenall-baseline-c9ba354-2026-09-24.json",
+      "sha256": "8dba8d6a6eff87d90a7090ae3a6e402fec4560bc434ff712811f334ba68f14bc",
+      "passes": "baseline timing and calibrated allocation"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-typed-whenall-baseline-c9ba354-timing-repeat-2026-09-24.json",
+      "sha256": "a29819df3021a62f2b597241f64560ebf4a52ee196c45faede6131df2bf340c7",
+      "passes": "baseline independent timing repeat"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-typed-whenall-candidate-970a4ae-2026-09-24.json",
+      "sha256": "a61bd779e576bdb33a26d2e3704acaa2863f61a50d14a2d532968d3f935c2c39",
+      "passes": "candidate timing and calibrated allocation"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-typed-whenall-candidate-970a4ae-timing-repeat-2026-09-24.json",
+      "sha256": "918ca55685e01a8b059fcba5fd4b53502398985619c29e34c6d5b023530114b6",
+      "passes": "candidate independent timing repeat"
+    }
+  ],
+  "limits": "Unity Editor/Mono scheduling slice only; no Player, IL2CPP, frame-time, completion-callback, or full-lifecycle claim. Empty timing loop measured but not subtracted. First candidate timing process was globally slow for both libraries after fresh Library import."
+}
