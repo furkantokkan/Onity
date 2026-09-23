@@ -89,6 +89,27 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void Preserve_InvokesPendingConsumerOutsideSourceLock()
+        {
+            (OnityTask original, object source, MethodInfo tick) = NewStandaloneFrameTask();
+            OnityTask shared = original.Preserve();
+            object retainedSource = GetState(shared);
+            bool called = false;
+            bool lockHeld = true;
+
+            shared.GetAwaiter().OnCompleted(() =>
+            {
+                called = true;
+                lockHeld = Monitor.IsEntered(retainedSource);
+            });
+
+            Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
+            Assert.That(called, Is.True);
+            Assert.That(lockHeld, Is.False);
+            Assert.DoesNotThrow(() => shared.GetAwaiter().GetResult());
+        }
+
+        [Test]
         public void Preserve_NativeFaultedOperationCanceledException_RemainsFaulted()
         {
             OperationCanceledException failure = new OperationCanceledException("faulted input");
