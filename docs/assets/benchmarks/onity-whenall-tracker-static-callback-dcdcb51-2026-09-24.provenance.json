@@ -1,0 +1,52 @@
+{
+  "suite": "Pending WhenAll tracker static-callback comparison",
+  "benchmarkBranch": "benchmark/onitytask-tracker-static-callback",
+  "baselineProductCommit": "ba2c72cc00880ca63645c726f8c1ea965c895404",
+  "candidateProductCommit": "dcdcb510b32c86c6d5d4d99cc898a56193aa431a",
+  "candidateOnityAsyncWorkingSha256": "c0c463bb5801c6d0d417e23dd6cbe94ce2cca8b43d9db0c41a780e5115921565",
+  "baselineTrackerGitBlob": "b3f2df437db45fdd8bb201926e54efa1c47abf3f",
+  "baselineTrackerWorkingSha256": "a3cc0105dd73a88c0cc2b22a22fefc9c3ca3637d04fdb2d57b6dc3930de06e1c",
+  "candidateTrackerGitBlob": "3941b6ef81d673884b9a8b8aca06ea47a8e6496f",
+  "candidateTrackerWorkingSha256BeforeAndAfter": "de3a9102d3865e1d836e907e97c4605c7ece54569d0dca54c77c0ef1fc215d61",
+  "runnerGitBlobSharedWithBaseline": "0e6db342404d6a74c86cf9ed27b7a9cca6932c45",
+  "menuGitBlobSharedWithBaseline": "6cb9d93b70f4517675805a23a41816597170efaa",
+  "candidateRunnerWorkingSha256": "7239ef6da5cc3366f866f2ce64f260d0b12d5e99b7852a7e3d86361cfedf6f9b",
+  "runnerHashNote": "The Git blobs match exactly; baseline and candidate working-file SHA-256 values differ only because checkout line endings differ. The benchmark's timing-to-allocation hash guard passed within the candidate host.",
+  "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "unityEditor": "2022.3.62f3",
+  "scriptingBackend": "Mono",
+  "entryPoint": "Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine",
+  "timingArguments": "-batchmode -nographics -projectPath <isolated-candidate-worktree> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskBenchmarkOutput <report.json> -logFile <timing.log>",
+  "allocationArguments": "-batchmode -nographics -profiler-enable -projectPath <isolated-candidate-worktree> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <same-report.json> -logFile <allocation.log>",
+  "sampleConditions": {
+    "warmupBatchesPerScenarioAndLibrary": 10,
+    "timingBatchesPerSample": 16,
+    "timingOperationsPerSample": 2048,
+    "allocationOperationsPerSample": 128,
+    "samplesPerCase": 8,
+    "markerScope": "WhenAll scheduling and returned-value storage",
+    "excluded": "Input preparation, completion, continuation dispatch, result consumption, full lifecycle",
+    "trackerOnCallstackReconciledSamples": 8,
+    "trackerOffCallstackReconciledSamples": 8
+  },
+  "profilerControls": {
+    "positiveBytes": 65568,
+    "emptyBytes": 0,
+    "emptyHarnessBytesPerSample": 0
+  },
+  "temporaryBenchmarkSetup": {
+    "description": "The isolated candidate checkout temporarily enabled ONITY_TASK_BENCHMARKS for Standalone and pinned UniTask in manifest/lock. These three files were restored after profiling and are excluded from the evidence commit.",
+    "projectSettingsOriginalAndRestoredSha256": "9d809acea1fde1ff90f00896d84ee48b286d05fbd7f9e43aa9689e7d3a469e9c",
+    "manifestOriginalAndRestoredSha256": "ee46e8e1d23b57616f99386d25e93dda3e26e84136e4c330104e0369ccc7de49",
+    "lockOriginalAndRestoredSha256": "a75b8329367e6730f04f248e6db91f99c8c5dedc0a8f3df16cacd91ec3820a1d",
+    "projectSettingsMeasuredSha256": "24537052f35998c62ce90703190c552f6231181e9f517dccdfe3721bfbbb6dba",
+    "manifestMeasuredSha256": "c84f866ff341f81979ce8f148dd0f84d31ed574096d39b605de5c667b77bd40c",
+    "lockMeasuredSha256": "a3414d2af261076355c557626e31dd6b79691685dcc50680daec8b2032a08d74"
+  },
+  "report": {
+    "path": "docs/assets/benchmarks/onity-whenall-tracker-static-callback-dcdcb51-2026-09-24.json",
+    "sha256": "5b77395cfb83ed056e040c886f53592583670ed2f5e835e9742cdffb60939640"
+  },
+  "verification": "Product candidate dcdcb51 passed focused tracker tests 3/3, full Unity EditMode 536/536, PlayMode 23/23, and Release build with zero errors (16 existing reference warnings), as verified by the product branch owner. Both candidate benchmark processes completed; Profiler controls passed and all 16 pending Onity callstack samples reconciled.",
+  "limits": "Editor/Mono scheduling slice. Timing was collected in separate Editor processes and is retained raw, not used for an isolated speed claim. Full lifecycle, Player/IL2CPP, and managed object types remain unmeasured here."
+}
