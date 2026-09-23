@@ -167,7 +167,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.3.10
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.3.11
 ```
 
 …or in `Packages/manifest.json`:
@@ -180,7 +180,7 @@ https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.
 }
 ```
 
-(`#upm` tracks the latest package; use the `?path=/Packages/com.onity.framework#v0.3.10` form to pin a specific release.)
+(`#upm` tracks the latest package; use the `?path=/Packages/com.onity.framework#v0.3.11` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 

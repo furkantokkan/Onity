@@ -1,7 +1,7 @@
 ---
 title: "Architecture"
 nav_order: 8
-description: "Current Onity v0.3.10 module boundaries, dependency direction, composition roots, DI activation paths, and Unity integration."
+description: "Onity v0.3.10 architecture snapshot: module boundaries, dependency direction, composition roots, DI activation paths, and Unity integration."
 ---
 
 # Architecture
