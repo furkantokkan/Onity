@@ -3590,7 +3590,7 @@ namespace Onity.Benchmarks
         private const int k_warmupBatches = 10;
         private const int k_profilerStartupFrames = 120;
         private const int k_profilerReadFrames = 60;
-        private const int k_harnessVersion = 5;
+        private const int k_harnessVersion = 6;
         private const string k_uniTaskCommit = "2e993ff18f28c931602a07292df0b0804eebef99";
         private const string k_scopePrefix = "Onity.WhenAll.Allocation.";
         private const string k_windowPrefix = "Onity.WhenAll.AllThreadWindow.";
@@ -3610,6 +3610,10 @@ namespace Onity.Benchmarks
         private readonly OnityTask[] m_onityFirstTasks = new OnityTask[k_operations];
         private readonly OnityTask[] m_onitySecondTasks = new OnityTask[k_operations];
         private readonly OnityTask[] m_onityResults = new OnityTask[k_operations];
+        private readonly System.Threading.Tasks.Task[] m_onityFirstBridges =
+            new System.Threading.Tasks.Task[k_operations];
+        private readonly System.Threading.Tasks.Task[] m_onitySecondBridges =
+            new System.Threading.Tasks.Task[k_operations];
         private readonly UniTaskCompletionSource[] m_uniTaskFirstSources =
             new UniTaskCompletionSource[k_operations];
         private readonly UniTaskCompletionSource[] m_uniTaskSecondSources =
@@ -3843,7 +3847,7 @@ namespace Onity.Benchmarks
             {
                 schemaVersion = 1,
                 harnessVersion = k_harnessVersion,
-                suite = "Two-input OnityTask WhenAll corrected pending lifecycle",
+                suite = "Two-input OnityTask WhenAll pending lifecycle and completed fast path",
                 generatedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
                 unityVersion = Application.unityVersion,
 #if ENABLE_IL2CPP
@@ -3859,12 +3863,15 @@ namespace Onity.Benchmarks
                 samplesPerCase = k_samples,
                 warmupBatches = k_warmupBatches,
                 stopwatchFrequency = Stopwatch.Frequency,
-                scope = "Same two-argument WhenAll call per operation. Fresh unresolved inputs "
-                    + "are prepared outside each slice. Scheduling scenarios include WhenAll and "
+                scope = "Same two-argument WhenAll call per operation. Pending cases prepare "
+                    + "fresh unresolved inputs outside each slice; completed case uses completed "
+                    + "inputs. Scheduling scenarios include WhenAll and "
                     + "storage; lifecycle scenarios include scheduling, input completion, output "
                     + "GetResult, and cleanup. Input construction is outside both slices. "
                     + "Fault cases use a fresh exception per operation, prepared outside the "
-                    + "slice; cancel cases use a precreated token. Tracker-on matches "
+                    + "slice; the Onity-only bridge diagnostic also creates input AsTask "
+                    + "bridges before the slice and leaves their exceptions unobserved. "
+                    + "Cancel cases use a precreated token. Tracker-on matches "
                     + "Onity default; tracker-off changes only Onity. UniTask stays at its default. "
                     + "Profiler lifecycle bytes cover only the main-thread marker; tracker "
                     + "continuations may allocate later on worker threads. Samples include "
@@ -3892,13 +3899,17 @@ namespace Onity.Benchmarks
                     NewScenario("Pending fault lifecycle; tracker on", true, true, true, 1),
                     NewScenario("Pending fault lifecycle; tracker off", true, false, true, 1),
                     NewScenario("Pending cancel lifecycle; tracker on", true, true, true, 2),
-                    NewScenario("Pending cancel lifecycle; tracker off", true, false, true, 2)
+                    NewScenario("Pending cancel lifecycle; tracker off", true, false, true, 2),
+                    NewScenario("Both completed schedule; tracker on", false, true, false, 0),
+                    NewScenario("Pending fault lifecycle, input bridges present; tracker off",
+                        true, false, true, 1, true)
                 }
             };
         }
 
         private static WhenAllScenario NewScenario(string name, bool pending,
-            bool onityTrackerEnabled, bool fullLifecycle, int outcome)
+            bool onityTrackerEnabled, bool fullLifecycle, int outcome,
+            bool bridgePresent = false)
         {
             return new WhenAllScenario
             {
@@ -3907,20 +3918,20 @@ namespace Onity.Benchmarks
                 onityTrackerEnabled = onityTrackerEnabled,
                 fullLifecycle = fullLifecycle,
                 outcome = outcome,
+                bridgePresent = bridgePresent,
                 timingBatches = outcome == 0 ? k_timingBatches : 2,
-                results = new[]
-                {
-                    new WhenAllMetric
-                    {
-                        library = "OnityTask", bytesPerOperation = -1,
-                        workerBytesPerOperation = -1
-                    },
-                    new WhenAllMetric
-                    {
-                        library = "UniTask", bytesPerOperation = -1,
-                        workerBytesPerOperation = -1
-                    }
-                }
+                results = bridgePresent
+                    ? new[] { NewMetric("OnityTask") }
+                    : new[] { NewMetric("OnityTask"), NewMetric("UniTask") }
+            };
+        }
+
+        private static WhenAllMetric NewMetric(string library)
+        {
+            return new WhenAllMetric
+            {
+                library = library, bytesPerOperation = -1,
+                workerBytesPerOperation = -1
             };
         }
 
@@ -3965,9 +3976,10 @@ namespace Onity.Benchmarks
                     expected.scenarios[i].onityTrackerEnabled ||
                     report.scenarios[i].fullLifecycle != expected.scenarios[i].fullLifecycle ||
                     report.scenarios[i].outcome != expected.scenarios[i].outcome ||
+                    report.scenarios[i].bridgePresent != expected.scenarios[i].bridgePresent ||
                     report.scenarios[i].timingBatches != expected.scenarios[i].timingBatches ||
                     report.scenarios[i].results == null ||
-                    report.scenarios[i].results.Length != 2)
+                    report.scenarios[i].results.Length != expected.scenarios[i].results.Length)
                 {
                     throw new InvalidDataException("WhenAll scenario definitions changed.");
                 }
@@ -3981,7 +3993,7 @@ namespace Onity.Benchmarks
                 m_activeScenario = report.scenarios[scenario];
                 for (int warmup = 0; warmup < k_warmupBatches; warmup++)
                 {
-                    for (int library = 0; library < 2; library++)
+                    for (int library = 0; library < m_activeScenario.results.Length; library++)
                     {
                         m_activeLibrary = library;
                         PrepareBatch();
@@ -4009,13 +4021,15 @@ namespace Onity.Benchmarks
             {
                 m_activeScenario = report.scenarios[scenario];
                 WhenAllMetric[] metrics = m_activeScenario.results;
-                metrics[0].sampleNanosecondsPerOperation = new double[k_samples];
-                metrics[1].sampleNanosecondsPerOperation = new double[k_samples];
+                for (int library = 0; library < metrics.Length; library++)
+                {
+                    metrics[library].sampleNanosecondsPerOperation = new double[k_samples];
+                }
                 for (int sample = 0; sample < k_samples; sample++)
                 {
-                    for (int turn = 0; turn < 2; turn++)
+                    for (int turn = 0; turn < metrics.Length; turn++)
                     {
-                        m_activeLibrary = (sample + turn) & 1;
+                        m_activeLibrary = (sample + turn) % metrics.Length;
                         ForceFullGc();
                         long elapsedTicks = 0;
                         for (int batch = 0; batch < m_activeScenario.timingBatches; batch++)
@@ -4043,7 +4057,7 @@ namespace Onity.Benchmarks
                     }
                 }
 
-                for (int library = 0; library < 2; library++)
+                for (int library = 0; library < metrics.Length; library++)
                 {
                     SummarizeTiming(metrics[library]);
                 }
@@ -4095,6 +4109,11 @@ namespace Onity.Benchmarks
                         m_onitySecondSources[i] = new OnityTaskCompletionSource();
                         m_onityFirstTasks[i] = m_onityFirstSources[i].Task;
                         m_onitySecondTasks[i] = m_onitySecondSources[i].Task;
+                        if (m_activeScenario.bridgePresent)
+                        {
+                            m_onityFirstBridges[i] = m_onityFirstTasks[i].AsTask();
+                            m_onitySecondBridges[i] = m_onitySecondTasks[i].AsTask();
+                        }
                         m_onityFailures[i] = m_activeScenario.outcome == 1
                             ? new InvalidOperationException("Expected benchmark fault") : null;
                     }
@@ -4314,6 +4333,8 @@ namespace Onity.Benchmarks
                     m_onitySecondTasks[i] = default;
                     m_onityResults[i] = default;
                     m_onityFailures[i] = null;
+                    m_onityFirstBridges[i] = null;
+                    m_onitySecondBridges[i] = null;
                 }
             }
             else
@@ -4529,7 +4550,7 @@ namespace Onity.Benchmarks
                 m_activeScenario = report.scenarios[scenario];
                 for (int warmup = 0; warmup < k_warmupBatches; warmup++)
                 {
-                    for (int library = 0; library < 2; library++)
+                    for (int library = 0; library < m_activeScenario.results.Length; library++)
                     {
                         m_activeLibrary = library;
                         PrepareBatch();
@@ -4556,9 +4577,9 @@ namespace Onity.Benchmarks
                 m_activeScenario = report.scenarios[scenario];
                 for (int sample = 0; sample < k_samples; sample++)
                 {
-                    for (int turn = 0; turn < 2; turn++)
+                    for (int turn = 0; turn < m_activeScenario.results.Length; turn++)
                     {
-                        m_activeLibrary = (sample + turn) & 1;
+                        m_activeLibrary = (sample + turn) % m_activeScenario.results.Length;
                         ForceFullGc();
                         PrepareBatch();
                         yield return CaptureAllocation(m_activeScenario.fullLifecycle
@@ -4583,7 +4604,7 @@ namespace Onity.Benchmarks
                     }
                 }
 
-                for (int library = 0; library < 2; library++)
+                for (int library = 0; library < m_activeScenario.results.Length; library++)
                 {
                     WhenAllMetric metric = m_activeScenario.results[library];
                     long total = 0;
@@ -4849,7 +4870,8 @@ namespace Onity.Benchmarks
                 report.saturationSampleAllocatedBytes = null;
                 for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
                 {
-                    for (int library = 0; library < 2; library++)
+                    for (int library = 0;
+                        library < report.scenarios[scenario].results.Length; library++)
                     {
                         WhenAllMetric metric = report.scenarios[scenario].results[library];
                         metric.workerBytesPerOperation = -1;
@@ -4879,7 +4901,7 @@ namespace Onity.Benchmarks
             for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
             {
                 m_activeScenario = report.scenarios[scenario];
-                for (int library = 0; library < 2; library++)
+                for (int library = 0; library < m_activeScenario.results.Length; library++)
                 {
                     m_activeLibrary = library;
                     for (int warmup = 0; warmup < k_warmupBatches; warmup++)
@@ -5201,7 +5223,8 @@ namespace Onity.Benchmarks
             report.emptyHarnessSampleAllocatedBytes = null;
             for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
             {
-                for (int library = 0; library < 2; library++)
+                for (int library = 0;
+                    library < report.scenarios[scenario].results.Length; library++)
                 {
                     report.scenarios[scenario].results[library].bytesPerOperation = -1;
                     report.scenarios[scenario].results[library].sampleAllocatedBytes = null;
@@ -5217,7 +5240,8 @@ namespace Onity.Benchmarks
         {
             for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
             {
-                for (int library = 0; library < 2; library++)
+                for (int library = 0;
+                    library < report.scenarios[scenario].results.Length; library++)
                 {
                     report.scenarios[scenario].results[library].allThreadSampleAllocatedBytes = null;
                     report.scenarios[scenario].results[library].otherThreadSampleAllocatedBytes = null;
@@ -5242,7 +5266,8 @@ namespace Onity.Benchmarks
                 + "allocations_available");
             for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
             {
-                for (int library = 0; library < 2; library++)
+                for (int library = 0;
+                    library < report.scenarios[scenario].results.Length; library++)
                 {
                     WhenAllMetric metric = report.scenarios[scenario].results[library];
                     builder.Append(report.scenarios[scenario].name).Append(',');
@@ -5275,7 +5300,7 @@ namespace Onity.Benchmarks
             builder.AppendLine("- OnityAsync SHA-256: " + report.onityAsyncSha256);
             builder.AppendLine("- Runner SHA-256: " + report.runnerSha256);
             builder.AppendLine("- Samples: " + report.samplesPerCase + "; operations/sample: "
-                + (k_operations * k_timingBatches) + " timing for success, "
+                + (k_operations * k_timingBatches) + " timing for success/completed, "
                 + (k_operations * 2) + " timing for fault/cancel, " + k_operations
                 + " allocation; warmup batches: " + report.warmupBatches);
             builder.AppendLine("- Allocation counter: " + report.allocationCounter);
@@ -5327,7 +5352,8 @@ namespace Onity.Benchmarks
                     + "they are reported separately from the main-thread marker slices.");
                 for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
                 {
-                    for (int library = 0; library < 2; library++)
+                    for (int library = 0;
+                        library < report.scenarios[scenario].results.Length; library++)
                     {
                         WhenAllMetric metric = report.scenarios[scenario].results[library];
                         if (metric.allThreadSampleAllocatedBytes == null)
@@ -5351,7 +5377,8 @@ namespace Onity.Benchmarks
             builder.AppendLine("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |");
             for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
             {
-                for (int library = 0; library < 2; library++)
+                for (int library = 0;
+                    library < report.scenarios[scenario].results.Length; library++)
                 {
                     WhenAllMetric metric = report.scenarios[scenario].results[library];
                     builder.Append("| ").Append(report.scenarios[scenario].name)
@@ -5454,6 +5481,7 @@ namespace Onity.Benchmarks
             public bool onityTrackerEnabled;
             public bool fullLifecycle;
             public int outcome;
+            public bool bridgePresent;
             public int timingBatches;
             public WhenAllMetric[] results;
         }
