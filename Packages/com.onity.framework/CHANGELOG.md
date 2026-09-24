@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.13] - 2026-09-24
+
 ### Added
 
 - Added typed homogeneous two-input `OnityTask.WhenAny<T>(first, second)`,
@@ -576,6 +578,7 @@ allocation. The core uses no `System.Linq`.
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.13]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.13
 [0.3.12]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.12
 [0.3.11]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.11
 [0.3.10]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.10

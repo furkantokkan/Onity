@@ -30,8 +30,9 @@ For measured Unity 2022 workloads and the current feature gaps, read
 
 > **Pooled-task safety:** frame, delay, predicate, and
 > `AsyncOperation.AsOnityTask()` values are single-consumer. Await each value
-> once. If several consumers must share the operation, call `AsTask()` once and
-> share the returned `Task`; do not copy or re-await the pooled `OnityTask`.
+> once. If several consumers must share the operation, call `Preserve()` once
+> before sharing its returned `OnityTask`, or call `AsTask()` once and share the
+> returned `Task`. Do not copy or re-await the original pooled value.
 
 For local timing evidence, run `Onity/Benchmarks/Run OnityTask Benchmarks (Play Mode)`.
 It writes `Packages/com.onity.framework/Benchmarks/Results/onity-task-benchmark-latest.*`.
