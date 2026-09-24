@@ -24,6 +24,15 @@ guaranteed. Two already successful untyped inputs complete directly; eligible
 pending callback-owned inputs use a pooled coordinator with a Task-backed
 output.
 
+An eligible two-input **typed pending-pair** coordinator exists only in a
+parked experimental branch. It is on hold and will not be merged into PR 14 or
+the release. A prebridged-fault allocation outlier has no known source after
+follow-up diagnostics, despite full EditMode and PlayMode suites passing. For a
+published package, plan typed pending `WhenAll<T>` calls as Task-based
+composition; the mapping below describes the public result API, not a
+guaranteed allocation profile. Do not change pooled task sharing or consumption
+rules based on the prototype.
+
 For a task-oriented introduction, read [Async with OnityTask](../guide/onitytask.html).
 For measured Unity 2022 workloads and the current feature gaps, read
 [OnityTask and UniTask comparison](../guide/onitytask-comparison.html).

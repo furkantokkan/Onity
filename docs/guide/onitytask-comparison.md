@@ -417,6 +417,51 @@ not Player, IL2CPP, device frame time, or battery use. The
 [provenance record](https://github.com/furkantokkan/Onity/blob/b6233dd84533c517890ecb3705b7f285269b42ca/docs/assets/benchmarks/onity-pending-whenall-v6-bridge-fallback-2026-09-24.provenance.json)
 and four adjacent raw JSON reports retain the controls and sample values.
 
+### Experimental typed pending-pair `WhenAll<T>` prototype
+
+At local candidate `adb4141`, two typed inputs use a pooled coordinator when
+each is an inline result or an exact, unbridged `OnityTaskCompletionSource<T>`
+task and at least one is pending. It retains the ordered result array after
+both succeed and returns a shareable, Task-backed output. Prebridged,
+Task-backed, preserved, pooled native, and derived-source inputs retain the
+existing Task composition path. Promotion is **on hold**: the prototype is
+parked in an isolated branch and will not be merged into PR 14 or included in
+the release. It is not a migration or performance guarantee.
+
+The matched Unity 2022.3.62f3 Editor/Mono v7 comparison used baseline
+`19fa8ab` and candidate `adb4141`, with two timing and two Profiler processes
+per revision. Each of 11 cases had eight allocation samples. The main-thread
+positive and empty controls measured exactly 65,568 and 0 B in both revisions.
+
+| Typed two-input case, main-thread allocation | Baseline B/op | Candidate B/op |
+| --- | ---: | ---: |
+| Warm pending-success schedule, tracker on | 1,408 | 1,040 |
+| Warm pending-success schedule, tracker off | 544 | 176 |
+| Full success lifecycle, tracker on | about 1,489 | about 1,088 |
+| Full success lifecycle, tracker off | 625 | 216 |
+| Two completed inputs, schedule | 40 | 40 |
+| Four completed inputs, schedule | 48 | 48 |
+
+The first tracker-off pending schedule increased from 990 to 1,480 B, with
+one observation per warmed Editor process. A warmed burst with 384 outstanding
+outputs fell from 544 to 304 B/op. Pinned UniTask 2.5.11 used 144 B/op for the
+pending-success scheduling slice, below even the candidate's tracker-off
+176 B/op. The candidate also remained slower than pinned UniTask in the
+measured pending-success timing slices in both v7 runs. The prebridged-fault
+mean changed from 936.93 to 937.30 B/op: its medians were equal, but each
+candidate pass had one extra intermittent 376 B allocation in a 128-operation
+sample. In a 32-sample v8 prebridge diagnostic, baseline and candidate each had
+31 normal samples and one elevated sample, at different positions (baseline
+sample 1, candidate sample 18). In v9, all 32 samples per revision were normal;
+callstack controls passed and ordinary callsite counts were equal. The elevated
+allocation did not recur, so its source remains unknown. Baseline v7 all-thread
+controls were invalid, so no cross-revision total or worker-thread allocation
+claim is supported. These are Editor/Mono main-thread measurements, not Player,
+IL2CPP, or general UniTask superiority evidence. Full Unity verification passed
+605/605 EditMode and 26/26 PlayMode tests. The Release build had zero errors
+and 16 existing generated-reference warnings. Candidate product Git blobs
+matched the benchmark worktree despite checkout line-ending differences.
+
 ### Pending task tracker registration
 
 The `dcdcb51` change replaces the task tracker's per-operation capturing
@@ -443,7 +488,7 @@ retain the exact source and runner hashes.
 | Frame, fixed-frame, and late-frame waits; scaled and unscaled delays; predicate waits | Available with cancellation and single-consumer pooled sources. |
 | Scene, `AsyncOperation`, and web-request bridges | Available. Deferred scene loads require the caller to activate a started operation, even after cancellation. |
 | `async OnityTask<T>` with synchronous success | Stores the result inline. Suspended and exceptional methods still use .NET `Task` internals. |
-| `WhenAll` | Available, including typed ordered results. Already successful two-input untyped and eligible typed calls avoid Task bridges. Eligible pending two-input untyped completion-source calls use a pooled coordinator and a Task-backed output. Pending calls with existing input `AsTask()` bridges, other pending input types, duplicate single-consumer native inputs, and larger native typed sets use the Task bridge path. |
+| `WhenAll` | Available, including typed ordered results. Already successful two-input untyped and eligible typed calls avoid Task bridges. Eligible pending two-input untyped completion-source calls use a pooled coordinator and a Task-backed output. Pending calls with existing input `AsTask()` bridges, other pending input types, duplicate single-consumer native inputs, and larger native typed sets use the Task bridge path. The typed pending-pair coordinator above is a local prototype on hold; released behavior for pending typed inputs remains the Task bridge path. |
 | Native `WhenAny` | Available for two untyped inputs; consumes both without canceling the loser. Its source and two delegates allocate per call. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
 | Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. Pending typed conversion measured 120 B/task in Editor/Mono at `c2f9358`; see the follow-up above. |
