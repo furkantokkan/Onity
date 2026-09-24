@@ -17,6 +17,8 @@ namespace Onity.Editor.Benchmarks
         private const string k_typedWhenAllJsonFileName = "onity-typed-whenall-benchmark-latest.json";
         private const string k_prebridgeDiagnosticJsonFileName =
             "onity-typed-prebridge-diagnostic-latest.json";
+        private const string k_prebridgeAttributionJsonFileName =
+            "onity-typed-prebridge-attribution-latest.json";
         private const string k_pendingSessionKey = "Onity.Benchmarks.PendingOnityTaskRun";
         private const string k_outputSessionKey = "Onity.Benchmarks.OnityTaskOutput";
         private const string k_commandLineSessionKey = "Onity.Benchmarks.OnityTaskCommandLine";
@@ -24,11 +26,14 @@ namespace Onity.Editor.Benchmarks
         private const string k_allocationOnlySessionKey = "Onity.Benchmarks.TypedWhenAllAllocationsOnly";
         private const string k_prebridgeDiagnosticSessionKey =
             "Onity.Benchmarks.TypedPrebridgeDiagnostic";
+        private const string k_prebridgeAttributionSessionKey =
+            "Onity.Benchmarks.TypedPrebridgeAttribution";
         private const string k_commandLineStartTicksSessionKey = "Onity.Benchmarks.OnityTaskCommandLineStartTicks";
         private const string k_outputArgument = "-onityTaskBenchmarkOutput";
         private const string k_typedWhenAllArgument = "-onityTypedWhenAllBenchmark";
         private const string k_allocationOnlyArgument = "-onityTaskAllocationsOnly";
         private const string k_prebridgeDiagnosticArgument = "-onityTypedPrebridgeDiagnostic";
+        private const string k_prebridgeAttributionArgument = "-onityTypedPrebridgeAttribution";
         private const double k_commandLineTimeoutSeconds = 900d;
 
         static OnityTaskBenchmarkMenu()
@@ -91,7 +96,8 @@ namespace Onity.Editor.Benchmarks
                 OnityTypedWhenAllBenchmarkRunner.Run(latestJson,
                     commandLineRun ? HandleCommandLineCompleted : null,
                     SessionState.GetBool(k_allocationOnlySessionKey, false),
-                    SessionState.GetBool(k_prebridgeDiagnosticSessionKey, false));
+                    SessionState.GetBool(k_prebridgeDiagnosticSessionKey, false),
+                    SessionState.GetBool(k_prebridgeAttributionSessionKey, false));
             }
             else
             {
@@ -110,8 +116,15 @@ namespace Onity.Editor.Benchmarks
         public static void RunFromCommandLine()
         {
             bool prebridgeDiagnostic = HasArgument(k_prebridgeDiagnosticArgument);
-            bool typedWhenAll = HasArgument(k_typedWhenAllArgument) || prebridgeDiagnostic;
+            bool prebridgeAttribution = HasArgument(k_prebridgeAttributionArgument);
+            bool typedWhenAll = HasArgument(k_typedWhenAllArgument) || prebridgeDiagnostic ||
+                prebridgeAttribution;
             bool allocationOnly = HasArgument(k_allocationOnlyArgument);
+            if (prebridgeAttribution && (prebridgeDiagnostic || allocationOnly))
+            {
+                throw new ArgumentException(
+                    "Prebridge attribution requires its own benchmark process.");
+            }
             if (prebridgeDiagnostic && allocationOnly)
             {
                 throw new ArgumentException(
@@ -122,17 +135,23 @@ namespace Onity.Editor.Benchmarks
                 throw new ArgumentException("Allocation-only mode requires typed WhenAll mode.");
             }
 
-            if ((allocationOnly || prebridgeDiagnostic) && !HasArgument("-profiler-enable"))
+            if ((allocationOnly || prebridgeDiagnostic || prebridgeAttribution) &&
+                !HasArgument("-profiler-enable"))
             {
                 throw new ArgumentException("Allocation measurement requires -profiler-enable.");
+            }
+            if (prebridgeAttribution && HasArgument("-deepprofiling"))
+            {
+                throw new ArgumentException("Prebridge attribution requires Deep Profiling off.");
             }
 
             string latestJson = GetArgumentValue(k_outputArgument);
             if (string.IsNullOrEmpty(latestJson))
             {
                 string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-                string fileName = prebridgeDiagnostic
-                    ? k_prebridgeDiagnosticJsonFileName
+                string fileName = prebridgeAttribution
+                    ? k_prebridgeAttributionJsonFileName
+                    : prebridgeDiagnostic ? k_prebridgeDiagnosticJsonFileName
                     : typedWhenAll ? k_typedWhenAllJsonFileName : k_latestJsonFileName;
                 latestJson = Path.Combine(projectRoot, k_resultsDirectory, fileName);
             }
@@ -143,10 +162,10 @@ namespace Onity.Editor.Benchmarks
                 throw new FileNotFoundException(
                     "Allocation pass requires an existing timing report.", latestJson);
             }
-            if (prebridgeDiagnostic && File.Exists(latestJson))
+            if ((prebridgeDiagnostic || prebridgeAttribution) && File.Exists(latestJson))
             {
                 throw new IOException(
-                    "Prebridge diagnostic requires a new report path: " + latestJson);
+                    "Prebridge measurement requires a new report path: " + latestJson);
             }
             Directory.CreateDirectory(Path.GetDirectoryName(latestJson));
 
@@ -156,6 +175,7 @@ namespace Onity.Editor.Benchmarks
             SessionState.SetBool(k_typedWhenAllSessionKey, typedWhenAll);
             SessionState.SetBool(k_allocationOnlySessionKey, allocationOnly);
             SessionState.SetBool(k_prebridgeDiagnosticSessionKey, prebridgeDiagnostic);
+            SessionState.SetBool(k_prebridgeAttributionSessionKey, prebridgeAttribution);
             SessionState.SetString(k_commandLineStartTicksSessionKey, DateTime.UtcNow.Ticks.ToString());
             EditorApplication.update -= HandleCommandLineTimeout;
             EditorApplication.update += HandleCommandLineTimeout;
@@ -265,6 +285,7 @@ namespace Onity.Editor.Benchmarks
             SessionState.EraseBool(k_typedWhenAllSessionKey);
             SessionState.EraseBool(k_allocationOnlySessionKey);
             SessionState.EraseBool(k_prebridgeDiagnosticSessionKey);
+            SessionState.EraseBool(k_prebridgeAttributionSessionKey);
             SessionState.EraseString(k_outputSessionKey);
             SessionState.EraseString(k_commandLineStartTicksSessionKey);
             EditorApplication.update -= HandleCommandLineTimeout;

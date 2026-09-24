@@ -868,6 +868,7 @@ namespace Onity.Benchmarks
         private const int k_profilerReadFrames = 60;
         private const int k_harnessVersion = 7;
         private const int k_prebridgeDiagnosticVersion = 8;
+        private const int k_prebridgeAttributionVersion = 1;
         private const string k_uniTaskCommit = "2e993ff18f28c931602a07292df0b0804eebef99";
         private const string k_scopePrefix = "Onity.TypedWhenAll.Allocation.";
         private const string k_windowPrefix = "Onity.TypedWhenAll.AllThreadWindow.";
@@ -949,6 +950,7 @@ namespace Onity.Benchmarks
         private Action<string, Exception> m_completed;
         private bool m_allocationOnly;
         private bool m_prebridgeDiagnostic;
+        private bool m_prebridgeAttribution;
         private bool m_originalTrackerEnabled;
         private TypedWhenAllScenario m_activeScenario;
         private int m_activeLibrary;
@@ -966,10 +968,14 @@ namespace Onity.Benchmarks
         private bool m_profilerWasEnabled;
         private bool m_profilerDriverWasEnabled;
         private bool m_profileEditorWasEnabled;
+        private bool m_allocationCallstacksWereEnabled;
         private int m_lastCapturedFrame = -1;
         private int m_markerSequence;
         private bool m_lastAllocationValid;
         private long m_lastAllocationBytes;
+        private string m_lastAllocationMarker;
+        private int m_lastAllocationThread;
+        private int m_lastAllocationMarkerSample;
         private bool m_lastWindowValid;
         private long m_lastWindowMainBytes;
         private long m_lastWindowOtherThreadBytes;
@@ -994,14 +1000,17 @@ namespace Onity.Benchmarks
         /// <param name="completed">Receives the report path and any failure.</param>
         /// <param name="allocationOnly">Adds calibrated Profiler samples to a timing report.</param>
         /// <param name="prebridgeDiagnostic">Measures only prebridged pending faults.</param>
+        /// <param name="prebridgeAttribution">Records allocation callstacks for that case.</param>
         public static void Run(string outputPath, Action<string, Exception> completed,
-            bool allocationOnly, bool prebridgeDiagnostic = false)
+            bool allocationOnly, bool prebridgeDiagnostic = false,
+            bool prebridgeAttribution = false)
         {
             if (s_isRunning)
             {
                 throw new InvalidOperationException("A WhenAll benchmark is already running.");
             }
-            if (allocationOnly && prebridgeDiagnostic)
+            if ((allocationOnly && prebridgeDiagnostic) ||
+                (prebridgeAttribution && (allocationOnly || prebridgeDiagnostic)))
             {
                 throw new ArgumentException("Benchmark modes are mutually exclusive.");
             }
@@ -1014,6 +1023,7 @@ namespace Onity.Benchmarks
             runner.m_completed = completed;
             runner.m_allocationOnly = allocationOnly;
             runner.m_prebridgeDiagnostic = prebridgeDiagnostic;
+            runner.m_prebridgeAttribution = prebridgeAttribution;
             s_isRunning = true;
         }
 
@@ -1026,8 +1036,9 @@ namespace Onity.Benchmarks
             m_profilerWasEnabled = Profiler.enabled;
             m_profilerDriverWasEnabled = ProfilerDriver.enabled;
             m_profileEditorWasEnabled = ProfilerDriver.profileEditor;
+            m_allocationCallstacksWereEnabled = Profiler.enableAllocationCallstacks;
             m_profilerStateCaptured = true;
-            if (!m_allocationOnly && !m_prebridgeDiagnostic)
+            if (!m_allocationOnly && !m_prebridgeDiagnostic && !m_prebridgeAttribution)
             {
                 Profiler.enabled = false;
                 ProfilerDriver.enabled = false;
@@ -1036,6 +1047,7 @@ namespace Onity.Benchmarks
 
             Exception failure = null;
             TypedWhenAllReport report = null;
+            PrebridgeAttributionReport attributionReport = null;
             try
             {
                 if (OnityTaskTracker.EnableStackTrace)
@@ -1045,7 +1057,12 @@ namespace Onity.Benchmarks
                 }
 
                 TypedWhenAllReport expected = CreateReport();
-                if (m_prebridgeDiagnostic)
+                if (m_prebridgeAttribution)
+                {
+                    report = CreatePrebridgeDiagnosticReport(expected);
+                    attributionReport = CreatePrebridgeAttributionReport(report);
+                }
+                else if (m_prebridgeDiagnostic)
                 {
                     report = CreatePrebridgeDiagnosticReport(expected);
                 }
@@ -1067,9 +1084,12 @@ namespace Onity.Benchmarks
             }
 
 #if UNITY_EDITOR
-            if (failure == null && (m_allocationOnly || m_prebridgeDiagnostic))
+            if (failure == null &&
+                (m_allocationOnly || m_prebridgeDiagnostic || m_prebridgeAttribution))
             {
-                IEnumerator allocation = RunAllocations(report);
+                IEnumerator allocation = m_prebridgeAttribution
+                    ? RunPrebridgeAttribution(attributionReport, report.scenarios[0])
+                    : RunAllocations(report);
                 while (true)
                 {
                     bool hasNext;
@@ -1091,7 +1111,7 @@ namespace Onity.Benchmarks
                     yield return allocation.Current;
                 }
 
-                if (failure == null && !m_prebridgeDiagnostic)
+                if (failure == null && !m_prebridgeDiagnostic && !m_prebridgeAttribution)
                 {
                     try
                     {
@@ -1111,7 +1131,14 @@ namespace Onity.Benchmarks
             {
                 try
                 {
-                    SaveReport(report);
+                    if (m_prebridgeAttribution)
+                    {
+                        SaveAttributionReport(attributionReport);
+                    }
+                    else
+                    {
+                        SaveReport(report);
+                    }
                     Debug.Log("Typed WhenAll benchmark completed: " + m_outputPath, this);
                 }
                 catch (Exception exception)
@@ -1246,6 +1273,36 @@ namespace Onity.Benchmarks
 
             report.scenarios = new[] { scenario };
             return report;
+        }
+
+        private static PrebridgeAttributionReport CreatePrebridgeAttributionReport(
+            TypedWhenAllReport source)
+        {
+            return new PrebridgeAttributionReport
+            {
+                schemaVersion = 1,
+                attributionVersion = k_prebridgeAttributionVersion,
+                suite = "Typed int prebridged pending-fault callstack attribution",
+                generatedAtUtc = source.generatedAtUtc,
+                unityVersion = source.unityVersion,
+                scriptingBackend = source.scriptingBackend,
+                onityAsyncSha256 = source.onityAsyncSha256,
+                completionSourceSha256 = source.completionSourceSha256,
+                runnerSha256 = source.runnerSha256,
+                menuSha256 = source.menuSha256,
+                runtimeAsmdefSha256 = source.runtimeAsmdefSha256,
+                editorAsmdefSha256 = source.editorAsmdefSha256,
+                manifestSha256 = source.manifestSha256,
+                lockSha256 = source.lockSha256,
+                uniTaskCommit = source.uniTaskCommit,
+                scenario = source.scenarios[0].name,
+                operationsPerSample = k_operations,
+                samplesPerCase = k_prebridgeDiagnosticSamples,
+                warmupBatches = k_warmupBatches,
+                scope = source.scope,
+                emptyHarnessSamples = new PrebridgeAttributionSample[k_prebridgeDiagnosticSamples],
+                samples = new PrebridgeAttributionSample[k_prebridgeDiagnosticSamples]
+            };
         }
 
         private static TypedWhenAllScenario NewScenario(string name, bool pending,
@@ -1870,6 +1927,125 @@ namespace Onity.Benchmarks
             }
         }
 
+        private IEnumerator RunPrebridgeAttribution(PrebridgeAttributionReport report,
+            TypedWhenAllScenario scenario)
+        {
+            if (ProfilerDriver.deepProfiling)
+            {
+                throw new InvalidOperationException(
+                    "Disable Deep Profiling before allocation attribution.");
+            }
+
+            Profiler.enableAllocationCallstacks = true;
+            ProfilerDriver.profileEditor = false;
+            ProfilerDriver.enabled = true;
+            Profiler.enabled = true;
+            for (int frame = 0; frame < k_profilerStartupFrames; frame++)
+            {
+                yield return null;
+            }
+
+            ValidateAttributionProfilerState();
+
+            yield return CaptureAllocation(m_positiveControl);
+            if (!m_lastAllocationValid || m_lastAllocationBytes != 65568)
+            {
+                throw new InvalidDataException(
+                    "Attribution positive control did not capture exactly 65,568 bytes.");
+            }
+
+            report.positiveControl = ReadLastAttribution(-1);
+            report.positiveControlBytes = m_lastAllocationBytes;
+            if (report.positiveControl.attributedBytes != 65568 ||
+                report.positiveControl.unresolvedBytes != 0 ||
+                !HasResolvedPositiveCallsite(report.positiveControl))
+            {
+                throw new InvalidDataException(
+                    "Attribution positive control callstack was unresolved or missing its callsite.");
+            }
+
+            yield return CaptureAllocation(m_emptyBatch);
+            if (!m_lastAllocationValid || m_lastAllocationBytes != 0)
+            {
+                throw new InvalidDataException("Attribution empty control was not zero bytes.");
+            }
+
+            report.emptyControl = ReadLastAttribution(-1);
+            report.emptyControlBytes = m_lastAllocationBytes;
+
+            m_activeScenario = scenario;
+            m_activeLibrary = 0;
+            for (int warmup = 0; warmup < k_warmupBatches; warmup++)
+            {
+                PrepareBatch();
+                ScheduleBatch();
+                FinishBatch();
+            }
+
+            for (int sample = 0; sample < k_prebridgeDiagnosticSamples; sample++)
+            {
+                yield return CaptureAllocation(m_emptyBatch);
+                if (!m_lastAllocationValid || m_lastAllocationBytes != 0)
+                {
+                    throw new InvalidDataException(
+                        "Attribution empty harness sample was missing or nonzero.");
+                }
+
+                report.emptyHarnessSamples[sample] = ReadLastAttribution(sample);
+            }
+
+            for (int sample = 0; sample < k_prebridgeDiagnosticSamples; sample++)
+            {
+                ForceFullGc();
+                PrepareBatch();
+                yield return CaptureAllocation(m_lifecycleBatch);
+                if (!m_lastAllocationValid)
+                {
+                    throw new InvalidDataException(
+                        "Attribution lifecycle allocation sample was missing.");
+                }
+
+                report.samples[sample] = ReadLastAttribution(sample);
+            }
+
+            ValidateAttributionProfilerState();
+            report.allocationCallstacksEnabled = Profiler.enableAllocationCallstacks;
+            report.deepProfilingEnabled = ProfilerDriver.deepProfiling;
+            report.completedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        private static bool HasResolvedPositiveCallsite(PrebridgeAttributionSample sample)
+        {
+            for (int allocation = 0; allocation < sample.events.Length; allocation++)
+            {
+                PrebridgeAllocationEvent item = sample.events[allocation];
+                if (item.bytes <= 0 || item.resolvedAddressCount == 0)
+                {
+                    continue;
+                }
+
+                for (int frame = 0; frame < item.resolvedMethods.Length; frame++)
+                {
+                    if (item.resolvedMethods[frame].IndexOf(
+                        "AllocatePositiveControl", StringComparison.Ordinal) >= 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static void ValidateAttributionProfilerState()
+        {
+            if (!Profiler.enableAllocationCallstacks || ProfilerDriver.deepProfiling)
+            {
+                throw new InvalidOperationException(
+                    "Allocation callstacks must stay enabled and Deep Profiling must stay off.");
+            }
+        }
+
         private IEnumerator RunAllocations(TypedWhenAllReport report)
         {
             report.allThreadAllocationError = null;
@@ -2422,10 +2598,18 @@ namespace Onity.Benchmarks
 
         private IEnumerator CaptureAllocation(Action operation)
         {
+            if (m_prebridgeAttribution)
+            {
+                ValidateAttributionProfilerState();
+            }
+
             m_lastAllocationValid = false;
             m_lastAllocationBytes = 0;
+            m_lastAllocationThread = -1;
+            m_lastAllocationMarkerSample = -1;
             string marker = k_scopePrefix
                 + (m_markerSequence++).ToString(CultureInfo.InvariantCulture);
+            m_lastAllocationMarker = marker;
             Profiler.BeginSample(marker);
             try
             {
@@ -2436,27 +2620,172 @@ namespace Onity.Benchmarks
                 Profiler.EndSample();
             }
 
+            if (m_prebridgeAttribution)
+            {
+                ValidateAttributionProfilerState();
+            }
+
             for (int wait = 0; wait < k_profilerReadFrames; wait++)
             {
                 yield return null;
+                if (m_prebridgeAttribution)
+                {
+                    ValidateAttributionProfilerState();
+                }
+
                 if (TryReadAllocation(
                     Math.Max(m_lastCapturedFrame, ProfilerDriver.firstFrameIndex),
                     ProfilerDriver.lastFrameIndex, marker,
-                    out long bytes, out int foundFrame))
+                    out long bytes, out int foundFrame,
+                    out int foundThread, out int markerSample))
                 {
                     m_lastAllocationBytes = bytes;
                     m_lastCapturedFrame = foundFrame;
+                    m_lastAllocationThread = foundThread;
+                    m_lastAllocationMarkerSample = markerSample;
                     m_lastAllocationValid = true;
                     yield break;
                 }
             }
         }
 
+        private PrebridgeAttributionSample ReadLastAttribution(int sampleIndex)
+        {
+            ValidateAttributionProfilerState();
+            if (!m_lastAllocationValid || m_lastCapturedFrame < 0 ||
+                m_lastAllocationThread < 0 || m_lastAllocationMarkerSample < 0)
+            {
+                throw new InvalidDataException("Attribution marker identity was missing.");
+            }
+
+            using (RawFrameDataView data = ProfilerDriver.GetRawFrameDataView(
+                m_lastCapturedFrame, m_lastAllocationThread))
+            {
+                if (!data.valid || m_lastAllocationMarkerSample >= data.sampleCount ||
+                    data.GetSampleMarkerId(m_lastAllocationMarkerSample) !=
+                    data.GetMarkerId(m_lastAllocationMarker))
+                {
+                    throw new InvalidDataException("Attribution marker frame or thread changed.");
+                }
+
+                int allocationId = data.GetMarkerId("GC.Alloc");
+                int markerEnd = m_lastAllocationMarkerSample +
+                    data.GetSampleChildrenCountRecursive(m_lastAllocationMarkerSample);
+                if (markerEnd >= data.sampleCount)
+                {
+                    throw new InvalidDataException("Attribution marker sample tree was truncated.");
+                }
+                List<int> parents = new List<int> { m_lastAllocationMarkerSample };
+                List<int> parentEnds = new List<int> { markerEnd };
+                List<PrebridgeAllocationEvent> events = new List<PrebridgeAllocationEvent>();
+                List<ulong> addresses = new List<ulong>(32);
+                long attributedBytes = 0;
+                long unresolvedBytes = 0;
+                for (int child = m_lastAllocationMarkerSample + 1; child <= markerEnd; child++)
+                {
+                    while (parentEnds.Count > 0 && parentEnds[parentEnds.Count - 1] < child)
+                    {
+                        int last = parentEnds.Count - 1;
+                        parentEnds.RemoveAt(last);
+                        parents.RemoveAt(last);
+                    }
+
+                    if (parents.Count == 0)
+                    {
+                        throw new InvalidDataException("Attribution sample tree was incomplete.");
+                    }
+
+                    int parent = parents[parents.Count - 1];
+                    if (data.GetSampleMarkerId(child) == allocationId)
+                    {
+                        long bytes = data.GetSampleMetadataAsLong(child, 0);
+                        addresses.Clear();
+                        data.GetSampleCallstack(child, addresses);
+                        string[] rawAddresses = new string[addresses.Count];
+                        string[] resolvedMethods = new string[addresses.Count];
+                        string[] resolutionErrors = new string[addresses.Count];
+                        int resolvedCount = 0;
+                        for (int address = 0; address < addresses.Count; address++)
+                        {
+                            rawAddresses[address] = addresses[address].ToString(
+                                "X16", CultureInfo.InvariantCulture);
+                            try
+                            {
+                                FrameDataView.MethodInfo method =
+                                    data.ResolveMethodInfo(addresses[address]);
+                                resolvedMethods[address] = method.methodName ?? string.Empty;
+                            }
+                            catch (Exception exception)
+                            {
+                                resolvedMethods[address] = string.Empty;
+                                resolutionErrors[address] = exception.GetType().Name;
+                            }
+
+                            if (resolvedMethods[address].Length > 0)
+                            {
+                                resolvedCount++;
+                            }
+                        }
+
+                        events.Add(new PrebridgeAllocationEvent
+                        {
+                            profilerSampleIndex = child,
+                            parentSampleIndex = parent,
+                            parentSampleName = data.GetSampleName(parent),
+                            bytes = bytes,
+                            rawAddresses = rawAddresses,
+                            resolvedMethods = resolvedMethods,
+                            resolutionErrors = resolutionErrors,
+                            resolvedAddressCount = resolvedCount,
+                            unresolvedAddressCount = addresses.Count - resolvedCount
+                        });
+                        if (resolvedCount > 0)
+                        {
+                            attributedBytes += bytes;
+                        }
+                        else
+                        {
+                            unresolvedBytes += bytes;
+                        }
+                    }
+
+                    int childEnd = child + data.GetSampleChildrenCountRecursive(child);
+                    if (childEnd > child)
+                    {
+                        parents.Add(child);
+                        parentEnds.Add(childEnd);
+                    }
+                }
+
+                if (attributedBytes + unresolvedBytes != m_lastAllocationBytes)
+                {
+                    throw new InvalidDataException(
+                        "Attributed and unresolved bytes did not match the marker total.");
+                }
+
+                return new PrebridgeAttributionSample
+                {
+                    sampleIndex = sampleIndex,
+                    frameIndex = m_lastCapturedFrame,
+                    threadIndex = m_lastAllocationThread,
+                    markerSampleIndex = m_lastAllocationMarkerSample,
+                    markerName = m_lastAllocationMarker,
+                    markerTotalBytes = m_lastAllocationBytes,
+                    attributedBytes = attributedBytes,
+                    unresolvedBytes = unresolvedBytes,
+                    events = events.ToArray()
+                };
+            }
+        }
+
         private static bool TryReadAllocation(int firstFrame, int lastFrame,
-            string marker, out long bytes, out int foundFrame)
+            string marker, out long bytes, out int foundFrame,
+            out int foundThread, out int markerSample)
         {
             bytes = 0;
             foundFrame = -1;
+            foundThread = -1;
+            markerSample = -1;
             for (int frame = firstFrame; frame <= lastFrame; frame++)
             {
                 for (int thread = 0; ; thread++)
@@ -2492,6 +2821,8 @@ namespace Onity.Benchmarks
                             }
 
                             foundFrame = frame;
+                            foundThread = thread;
+                            markerSample = sample;
                             return true;
                         }
                     }
@@ -2704,6 +3035,12 @@ namespace Onity.Benchmarks
             File.WriteAllText(Path.ChangeExtension(m_outputPath, ".md"), BuildMarkdown(report));
         }
 
+        private void SaveAttributionReport(PrebridgeAttributionReport report)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(m_outputPath));
+            File.WriteAllText(m_outputPath, JsonUtility.ToJson(report, true));
+        }
+
         private static string BuildCsv(TypedWhenAllReport report)
         {
             StringBuilder builder = new StringBuilder();
@@ -2872,7 +3209,70 @@ namespace Onity.Benchmarks
             Profiler.enabled = m_profilerWasEnabled;
             ProfilerDriver.enabled = m_profilerDriverWasEnabled;
             ProfilerDriver.profileEditor = m_profileEditorWasEnabled;
+            Profiler.enableAllocationCallstacks = m_allocationCallstacksWereEnabled;
 #endif
+        }
+
+        [Serializable]
+        private sealed class PrebridgeAttributionReport
+        {
+            public int schemaVersion;
+            public int attributionVersion;
+            public string suite;
+            public string generatedAtUtc;
+            public string completedAtUtc;
+            public string unityVersion;
+            public string scriptingBackend;
+            public string onityAsyncSha256;
+            public string completionSourceSha256;
+            public string runnerSha256;
+            public string menuSha256;
+            public string runtimeAsmdefSha256;
+            public string editorAsmdefSha256;
+            public string manifestSha256;
+            public string lockSha256;
+            public string uniTaskCommit;
+            public string scenario;
+            public int operationsPerSample;
+            public int samplesPerCase;
+            public int warmupBatches;
+            public string scope;
+            public bool allocationCallstacksEnabled;
+            public bool deepProfilingEnabled;
+            public long positiveControlBytes;
+            public long emptyControlBytes;
+            public PrebridgeAttributionSample positiveControl;
+            public PrebridgeAttributionSample emptyControl;
+            public PrebridgeAttributionSample[] emptyHarnessSamples;
+            public PrebridgeAttributionSample[] samples;
+        }
+
+        [Serializable]
+        private sealed class PrebridgeAttributionSample
+        {
+            public int sampleIndex;
+            public int frameIndex;
+            public int threadIndex;
+            public int markerSampleIndex;
+            public string markerName;
+            public long markerTotalBytes;
+            public long attributedBytes;
+            public long unresolvedBytes;
+            public PrebridgeAllocationEvent[] events;
+        }
+
+        [Serializable]
+        private sealed class PrebridgeAllocationEvent
+        {
+            public int profilerSampleIndex;
+            public int parentSampleIndex;
+            public string parentSampleName;
+            public long bytes;
+            public string[] rawAddresses;
+            public string[] resolvedMethods;
+            public string[] resolutionErrors;
+            public int resolvedAddressCount;
+            public int unresolvedAddressCount;
         }
 
         [Serializable]
