@@ -860,11 +860,14 @@ namespace Onity.Benchmarks
         private const int k_operations = 128;
         private const int k_saturationOperations = 384;
         private const int k_samples = 8;
+        private const int k_prebridgeDiagnosticSamples = 32;
+        private const int k_prebridgeScenarioIndex = 10;
         private const int k_timingBatches = 16;
         private const int k_warmupBatches = 10;
         private const int k_profilerStartupFrames = 120;
         private const int k_profilerReadFrames = 60;
         private const int k_harnessVersion = 7;
+        private const int k_prebridgeDiagnosticVersion = 8;
         private const string k_uniTaskCommit = "2e993ff18f28c931602a07292df0b0804eebef99";
         private const string k_scopePrefix = "Onity.TypedWhenAll.Allocation.";
         private const string k_windowPrefix = "Onity.TypedWhenAll.AllThreadWindow.";
@@ -945,6 +948,7 @@ namespace Onity.Benchmarks
         private string m_outputPath;
         private Action<string, Exception> m_completed;
         private bool m_allocationOnly;
+        private bool m_prebridgeDiagnostic;
         private bool m_originalTrackerEnabled;
         private TypedWhenAllScenario m_activeScenario;
         private int m_activeLibrary;
@@ -989,12 +993,17 @@ namespace Onity.Benchmarks
         /// <param name="outputPath">Absolute report JSON path.</param>
         /// <param name="completed">Receives the report path and any failure.</param>
         /// <param name="allocationOnly">Adds calibrated Profiler samples to a timing report.</param>
+        /// <param name="prebridgeDiagnostic">Measures only prebridged pending faults.</param>
         public static void Run(string outputPath, Action<string, Exception> completed,
-            bool allocationOnly)
+            bool allocationOnly, bool prebridgeDiagnostic = false)
         {
             if (s_isRunning)
             {
                 throw new InvalidOperationException("A WhenAll benchmark is already running.");
+            }
+            if (allocationOnly && prebridgeDiagnostic)
+            {
+                throw new ArgumentException("Benchmark modes are mutually exclusive.");
             }
 
             GameObject runnerObject = new GameObject("Typed WhenAll Benchmark Runner");
@@ -1004,6 +1013,7 @@ namespace Onity.Benchmarks
             runner.m_outputPath = Path.GetFullPath(outputPath);
             runner.m_completed = completed;
             runner.m_allocationOnly = allocationOnly;
+            runner.m_prebridgeDiagnostic = prebridgeDiagnostic;
             s_isRunning = true;
         }
 
@@ -1017,7 +1027,7 @@ namespace Onity.Benchmarks
             m_profilerDriverWasEnabled = ProfilerDriver.enabled;
             m_profileEditorWasEnabled = ProfilerDriver.profileEditor;
             m_profilerStateCaptured = true;
-            if (!m_allocationOnly)
+            if (!m_allocationOnly && !m_prebridgeDiagnostic)
             {
                 Profiler.enabled = false;
                 ProfilerDriver.enabled = false;
@@ -1035,7 +1045,11 @@ namespace Onity.Benchmarks
                 }
 
                 TypedWhenAllReport expected = CreateReport();
-                if (m_allocationOnly)
+                if (m_prebridgeDiagnostic)
+                {
+                    report = CreatePrebridgeDiagnosticReport(expected);
+                }
+                else if (m_allocationOnly)
                 {
                     report = JsonUtility.FromJson<TypedWhenAllReport>(File.ReadAllText(m_outputPath));
                     ValidateAllocationInput(report, expected);
@@ -1053,7 +1067,7 @@ namespace Onity.Benchmarks
             }
 
 #if UNITY_EDITOR
-            if (failure == null && m_allocationOnly)
+            if (failure == null && (m_allocationOnly || m_prebridgeDiagnostic))
             {
                 IEnumerator allocation = RunAllocations(report);
                 while (true)
@@ -1077,7 +1091,7 @@ namespace Onity.Benchmarks
                     yield return allocation.Current;
                 }
 
-                if (failure == null)
+                if (failure == null && !m_prebridgeDiagnostic)
                 {
                     try
                     {
@@ -1205,6 +1219,33 @@ namespace Onity.Benchmarks
                         true, false, true, 1, true)
                 }
             };
+        }
+
+        private static TypedWhenAllReport CreatePrebridgeDiagnosticReport(
+            TypedWhenAllReport report)
+        {
+            report.harnessVersion = k_prebridgeDiagnosticVersion;
+            report.suite = "Typed int prebridged pending-fault allocation diagnostic";
+            report.samplesPerCase = k_prebridgeDiagnosticSamples;
+            report.timingBatchesPerSample = 0;
+            report.scope = "Only the Onity tracker-off, prebridged pending-fault lifecycle. "
+                + "Each sample includes 128 WhenAll<int> schedules, input completion, output "
+                + "GetResult, and cleanup. Fresh sources, typed arrays, input AsTask bridges, "
+                + "and per-operation exceptions are prepared outside the Profiler marker. "
+                + "Input bridge exceptions remain unobserved. This is a main-thread Editor/Mono "
+                + "allocation diagnostic, not a timing or all-thread comparison.";
+            report.coldScheduling = null;
+            report.burstScheduling = null;
+            TypedWhenAllScenario scenario = report.scenarios[k_prebridgeScenarioIndex];
+            if (!scenario.pending || scenario.onityTrackerEnabled || !scenario.fullLifecycle ||
+                scenario.outcome != 1 || !scenario.bridgePresent ||
+                scenario.results.Length != 1)
+            {
+                throw new InvalidDataException("Prebridge scenario definition changed.");
+            }
+
+            report.scenarios = new[] { scenario };
+            return report;
         }
 
         private static TypedWhenAllScenario NewScenario(string name, bool pending,
@@ -1854,6 +1895,63 @@ namespace Onity.Benchmarks
             {
                 throw new InvalidDataException(
                     "Profiler empty control was not zero bytes.");
+            }
+
+            if (m_prebridgeDiagnostic)
+            {
+                m_activeScenario = report.scenarios[0];
+                m_activeLibrary = 0;
+                for (int warmup = 0; warmup < k_warmupBatches; warmup++)
+                {
+                    PrepareBatch();
+                    ScheduleBatch();
+                    FinishBatch();
+                }
+
+                report.emptyHarnessSampleAllocatedBytes =
+                    new long[k_prebridgeDiagnosticSamples];
+                for (int sample = 0; sample < k_prebridgeDiagnosticSamples; sample++)
+                {
+                    yield return CaptureAllocation(m_emptyBatch);
+                    if (!m_lastAllocationValid || m_lastAllocationBytes != 0)
+                    {
+                        throw new InvalidDataException(
+                            "Prebridge empty harness sample was missing or nonzero.");
+                    }
+
+                    report.emptyHarnessSampleAllocatedBytes[sample] = m_lastAllocationBytes;
+                }
+
+                TypedWhenAllMetric metric = m_activeScenario.results[0];
+                metric.sampleAllocatedBytes = new long[k_prebridgeDiagnosticSamples];
+                long total = 0;
+                for (int sample = 0; sample < k_prebridgeDiagnosticSamples; sample++)
+                {
+                    ForceFullGc();
+                    PrepareBatch();
+                    yield return CaptureAllocation(m_lifecycleBatch);
+                    if (!m_lastAllocationValid)
+                    {
+                        throw new InvalidDataException(
+                            "Prebridge lifecycle allocation sample was missing.");
+                    }
+
+                    metric.sampleAllocatedBytes[sample] = m_lastAllocationBytes;
+                    total += m_lastAllocationBytes;
+                }
+
+                metric.bytesPerOperation = (double)total /
+                    (k_prebridgeDiagnosticSamples * k_operations);
+                report.allocationsAvailable = true;
+                report.allThreadAllocationError =
+                    "Not collected in the main-thread prebridge diagnostic.";
+                report.workerAllocationError =
+                    "Not collected in the main-thread prebridge diagnostic.";
+                report.allocationCounter =
+                    "Unity Profiler main-thread GC.Alloc metadata; 65,568/0-byte controls passed.";
+                report.allocationGeneratedAtUtc =
+                    DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+                yield break;
             }
 
             // Scenario 1 remains pending success with the Onity tracker disabled.
@@ -2597,6 +2695,11 @@ namespace Onity.Benchmarks
         {
             Directory.CreateDirectory(Path.GetDirectoryName(m_outputPath));
             File.WriteAllText(m_outputPath, JsonUtility.ToJson(report, true));
+            if (m_prebridgeDiagnostic)
+            {
+                return;
+            }
+
             File.WriteAllText(Path.ChangeExtension(m_outputPath, ".csv"), BuildCsv(report));
             File.WriteAllText(Path.ChangeExtension(m_outputPath, ".md"), BuildMarkdown(report));
         }
