@@ -87,6 +87,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and passed after them. Typed `WhenAll` covered completed and pending inputs,
   duplicate native sources, source consumption, faults, cancellation, and large
   result sets. The Release `Onity.Unity` build passed with no errors.
+- At the integrated pending-pair revision `556602a`, independent Unity
+  `2022.3.62f3` verification passed EditMode `579/579` and PlayMode `25/25`.
+  `Onity.Unity` Release built with zero errors and 16 preexisting Unity
+  reference warnings. The new coverage includes pending success, ordered
+  faults, cancellation, preexisting and concurrent `AsTask()` bridges, worker
+  completion, tracker context, and coordinator reuse.
 
 ## [0.3.12] - 2026-09-23
 
