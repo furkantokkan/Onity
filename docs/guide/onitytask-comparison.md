@@ -463,6 +463,31 @@ results, not whole-library, Player, or IL2CPP claims. The
 [benchmark note and raw samples](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-typed-whenany-candidate/docs/assets/benchmarks/onity-typed-whenany-unity2022-mono-2026-09-24.md)
 record the exact boundaries and provenance.
 
+### Typed `WhenAny` callback follow-up
+
+Candidate `d66946f` defers each bound completion callback until its input is
+pending, compared with product baseline `37c309a`. In Unity 2022.3.62f3
+Editor/Mono, four calibrated Profiler processes and six timing processes
+measured both tracker ON and OFF. Main-thread allocation was identical across
+tracker modes and both Profiler repetitions:
+
+| Case | Baseline B/op | Candidate B/op |
+| --- | ---: | ---: |
+| Both inputs completed | 424 | 152 |
+| Second input completed first | 424 | 280 |
+| Pending success, scheduling and lifecycle | 424 | 408 |
+| Pending fault or cancellation, lifecycle | 936 | 920 |
+
+Prepared-host B2/C2 and B3/C3 timing pairs did not show a repeatable pending
+scheduling slowdown; the first-import B1/C1 pair was noisy. Completed-input
+timing improved in both prepared-host pairs. UniTask still allocated less for
+pending success (160 B/op), both completed (128 B/op), and cancellation
+(600 B/op), so this change does not establish overall superiority. The
+candidate passed 602/602 EditMode and 28/28 PlayMode tests; the Release
+`Onity.Unity.csproj` build had zero errors and 16 existing MSB3277 warnings.
+The [immutable comparison and raw evidence](https://github.com/furkantokkan/Onity/blob/9d68815f38847731377f59c25a34d5b736f118c3/docs/assets/benchmarks/onity-typed-whenany-callbacks-2026-09-24.md)
+record the controls, sample values, and Editor/Mono measurement boundaries.
+
 ## Feature coverage
 
 | Capability | OnityTask status |

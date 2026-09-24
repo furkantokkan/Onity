@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- Deferred typed `WhenAny` callbacks until inputs are pending, reducing
+  completed-input allocation from 424 to 152 B/op in Unity 2022 Editor/Mono.
 - Read completed multi-consumer results without taking the completion-source
   lock, while preserving the bridge/status publication order for concurrent
   completion.
