@@ -436,6 +436,33 @@ The [comparison summary](https://github.com/furkantokkan/Onity/blob/693634b5f55b
 and [provenance](https://github.com/furkantokkan/Onity/blob/693634b5f55b6ef6a4d8eccfab39b5e0e99f9bc8/docs/assets/benchmarks/onity-whenall-tracker-static-callback-dcdcb51-2026-09-24.provenance.json)
 retain the exact source and runner hashes.
 
+## Typed two-input `WhenAny` comparison
+
+Product commit `37c309a` was measured against UniTask commit `2e993ff` in
+Unity 2022.3.62f3 Windows Editor/Mono. Two independent timing processes and
+two calibrated Profiler processes each recorded eight raw samples per case.
+The 12 scenarios covered tracker ON and OFF; the allocation values below were
+the same in both modes. Times are median ranges across the two runs, rounded.
+
+| Measured case | OnityTask B/op | UniTask B/op | Timing result |
+| --- | ---: | ---: | --- |
+| Pending success, scheduling | 424 | 160 | Onity ~679–709 ns/op; UniTask ~784–838 ns/op |
+| Pending success, full lifecycle | 424 | 160 | Onity ~1.93–1.97 µs/op; UniTask ~2.01–2.03 µs/op |
+| Pending fault, full lifecycle | 936 | 1,666 | Onity faster |
+| Pending cancellation, full lifecycle | 936 | 600 | Onity slower |
+| Both inputs completed, lifecycle | 424 | 128 | Onity slower |
+| Second input completed first, lifecycle | 424 | 144 | Onity slower |
+
+Sources, faults, and cancellation tokens were prepared outside the markers.
+The pending scheduling slice includes `WhenAny` creation, including UniTask's
+fresh two-element `params` array, and excludes completion and consumption.
+Lifecycle markers also include winner completion and observation, loser
+completion and validation, and cleanup. Completed-input controls measure the
+corresponding lifecycle. These are calibrated **main-thread** Editor/Mono
+results, not whole-library, Player, or IL2CPP claims. The
+[benchmark note and raw samples](https://github.com/furkantokkan/Onity/blob/benchmark/onitytask-typed-whenany-candidate/docs/assets/benchmarks/onity-typed-whenany-unity2022-mono-2026-09-24.md)
+record the exact boundaries and provenance.
+
 ## Feature coverage
 
 | Capability | OnityTask status |
@@ -444,7 +471,7 @@ retain the exact source and runner hashes.
 | Scene, `AsyncOperation`, and web-request bridges | Available. Deferred scene loads require the caller to activate a started operation, even after cancellation. |
 | `async OnityTask<T>` with synchronous success | Stores the result inline. Suspended and exceptional methods still use .NET `Task` internals. |
 | `WhenAll` | Available, including typed ordered results. Already successful two-input untyped and eligible typed calls avoid Task bridges. Eligible pending two-input untyped completion-source calls use a pooled coordinator and a Task-backed output. Pending calls with existing input `AsTask()` bridges, other pending input types, duplicate single-consumer native inputs, and larger native typed sets use the Task bridge path. |
-| Native `WhenAny` | Available for two untyped inputs (winner index) and two inputs of the same result type (winner index and value). Both inputs are consumed; the loser is observed without cancellation. Duplicate single-consumer native inputs are rejected. The typed result source is nonpooled and allocates; the untyped source and two delegates allocate per call. No typed benchmark result is reported yet. |
+| Native `WhenAny` | Available for two untyped inputs (winner index) and two inputs of the same result type (winner index and value). Both inputs are consumed; the loser is observed without cancellation. Duplicate single-consumer native inputs are rejected. The typed result source is nonpooled and allocates; the untyped source and two delegates allocate per call. Typed Editor/Mono results are reported above. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
 | Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. Pending typed conversion measured 120 B/task in Editor/Mono at `c2f9358`; see the follow-up above. |
 | Selectable PlayerLoop phases and immediate cancellation | Limited to the supported runner phases and next-tick cancellation. |

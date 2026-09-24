@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added typed homogeneous two-input `OnityTask.WhenAny<T>(first, second)`,
+  returning the winner index and value. It consumes both inputs, observes the
+  loser, and rejects duplicate single-consumer native inputs.
 - Added typed and untyped `OnityTask.Preserve()` for sharing one pooled native
   operation with multiple pending or late consumers. The original task is
   claimed once; completed, Task-backed, and completion-source tasks are returned
