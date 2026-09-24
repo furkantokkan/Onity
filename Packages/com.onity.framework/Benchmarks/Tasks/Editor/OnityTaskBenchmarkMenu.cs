@@ -18,7 +18,11 @@ namespace Onity.Editor.Benchmarks
         private const string k_outputSessionKey = "Onity.Benchmarks.OnityTaskOutput";
         private const string k_commandLineSessionKey = "Onity.Benchmarks.OnityTaskCommandLine";
         private const string k_commandLineStartTicksSessionKey = "Onity.Benchmarks.OnityTaskCommandLineStartTicks";
+        private const string k_typedWhenAnySessionKey = "Onity.Benchmarks.TypedWhenAny";
+        private const string k_allocationOnlySessionKey = "Onity.Benchmarks.TaskAllocationOnly";
         private const string k_outputArgument = "-onityTaskBenchmarkOutput";
+        private const string k_typedWhenAnyArgument = "-onityTypedWhenAnyBenchmark";
+        private const string k_allocationOnlyArgument = "-onityTaskAllocationsOnly";
         private const double k_commandLineTimeoutSeconds = 900d;
 
         static OnityTaskBenchmarkMenu()
@@ -51,6 +55,13 @@ namespace Onity.Editor.Benchmarks
             return !EditorApplication.isCompiling;
         }
 
+        [MenuItem("Onity/Benchmarks/Run Typed WhenAny Benchmarks (Play Mode)")]
+        private static void RunTypedWhenAnyFromMenu()
+        {
+            SessionState.SetBool(k_typedWhenAnySessionKey, true);
+            RunFromMenu();
+        }
+
         private static void HandlePlayModeStateChanged(PlayModeStateChange state)
         {
             if (state != PlayModeStateChange.EnteredPlayMode)
@@ -74,11 +85,29 @@ namespace Onity.Editor.Benchmarks
                 return;
             }
 
-            string latestJson = GetLatestJsonPath();
             bool commandLineRun = SessionState.GetBool(k_commandLineSessionKey, false);
-            OnityTaskBenchmarkRunner.Run(
-                latestJson,
-                commandLineRun ? HandleCommandLineCompleted : null);
+            bool typedWhenAny = SessionState.GetBool(k_typedWhenAnySessionKey, false);
+            bool allocationOnly = SessionState.GetBool(k_allocationOnlySessionKey, false);
+            string latestJson = GetLatestJsonPath(typedWhenAny);
+            if (!commandLineRun)
+            {
+                SessionState.EraseBool(k_typedWhenAnySessionKey);
+                SessionState.EraseBool(k_allocationOnlySessionKey);
+            }
+
+            if (typedWhenAny)
+            {
+                OnityTypedWhenAnyBenchmarkRunner.Run(
+                    latestJson,
+                    commandLineRun ? HandleCommandLineCompleted : null,
+                    allocationOnly);
+            }
+            else
+            {
+                OnityTaskBenchmarkRunner.Run(
+                    latestJson,
+                    commandLineRun ? HandleCommandLineCompleted : null);
+            }
 
             Debug.Log("Queued OnityTask benchmark for the next Play Mode frame.");
         }
@@ -90,18 +119,41 @@ namespace Onity.Editor.Benchmarks
         public static void RunFromCommandLine()
         {
             string latestJson = GetArgumentValue(k_outputArgument);
+            bool typedWhenAny = HasArgument(k_typedWhenAnyArgument);
+            bool allocationOnly = HasArgument(k_allocationOnlyArgument);
+            if (allocationOnly && (!typedWhenAny || !HasArgument("-profiler-enable")))
+            {
+                throw new ArgumentException(
+                    "Typed WhenAny allocation pass requires its mode and -profiler-enable.");
+            }
+
             if (string.IsNullOrEmpty(latestJson))
             {
                 string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-                latestJson = Path.Combine(projectRoot, k_resultsDirectory, k_latestJsonFileName);
+                latestJson = Path.Combine(projectRoot, k_resultsDirectory,
+                    typedWhenAny ? "onity-typed-whenany-benchmark-latest.json" :
+                        k_latestJsonFileName);
             }
 
             latestJson = Path.GetFullPath(latestJson);
+            if (typedWhenAny && allocationOnly && !File.Exists(latestJson))
+            {
+                throw new FileNotFoundException(
+                    "Typed WhenAny allocations require a timing report.", latestJson);
+            }
+
+            if (typedWhenAny && !allocationOnly && File.Exists(latestJson))
+            {
+                throw new IOException("Typed WhenAny timing output already exists: " + latestJson);
+            }
+
             Directory.CreateDirectory(Path.GetDirectoryName(latestJson));
 
             SessionState.SetBool(k_pendingSessionKey, true);
             SessionState.SetString(k_outputSessionKey, latestJson);
             SessionState.SetBool(k_commandLineSessionKey, true);
+            SessionState.SetBool(k_typedWhenAnySessionKey, typedWhenAny);
+            SessionState.SetBool(k_allocationOnlySessionKey, allocationOnly);
             SessionState.SetString(k_commandLineStartTicksSessionKey, DateTime.UtcNow.Ticks.ToString());
             EditorApplication.update -= HandleCommandLineTimeout;
             EditorApplication.update += HandleCommandLineTimeout;
@@ -131,7 +183,21 @@ namespace Onity.Editor.Benchmarks
             return null;
         }
 
-        private static string GetLatestJsonPath()
+        private static bool HasArgument(string argumentName)
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (string.Equals(args[i], argumentName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string GetLatestJsonPath(bool typedWhenAny)
         {
             string latestJson = SessionState.GetString(k_outputSessionKey, string.Empty);
             if (!string.IsNullOrEmpty(latestJson))
@@ -140,7 +206,8 @@ namespace Onity.Editor.Benchmarks
             }
 
             string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            return Path.Combine(projectRoot, k_resultsDirectory, k_latestJsonFileName);
+            return Path.Combine(projectRoot, k_resultsDirectory,
+                typedWhenAny ? "onity-typed-whenany-benchmark-latest.json" : k_latestJsonFileName);
         }
 
         private static void HandleCommandLineCompleted(string latestJson, Exception exception)
@@ -194,6 +261,8 @@ namespace Onity.Editor.Benchmarks
         private static void ClearCommandLineSession()
         {
             SessionState.EraseBool(k_commandLineSessionKey);
+            SessionState.EraseBool(k_typedWhenAnySessionKey);
+            SessionState.EraseBool(k_allocationOnlySessionKey);
             SessionState.EraseString(k_outputSessionKey);
             SessionState.EraseString(k_commandLineStartTicksSessionKey);
             EditorApplication.update -= HandleCommandLineTimeout;

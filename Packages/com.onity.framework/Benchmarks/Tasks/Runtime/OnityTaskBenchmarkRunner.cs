@@ -2,10 +2,18 @@ using System;
 using System.Collections;
 using System.Globalization;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using Onity.Unity.Async;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor.Profiling;
+using UnityEditorInternal;
+using UnityEngine.Profiling;
+#endif
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace Onity.Benchmarks
@@ -839,6 +847,1143 @@ namespace Onity.Benchmarks
             public double nanosecondsPerOperation;
             public double allocatedBytesPerOperation;
             public double[] sampleMilliseconds;
+            public long[] sampleAllocatedBytes;
+        }
+    }
+
+    /// <summary>
+    /// Measures the native typed two-input WhenAny route, UniTask's exact-shape
+    /// params route, and Onity's older Task bridge migration route.
+    /// </summary>
+    public sealed class OnityTypedWhenAnyBenchmarkRunner : MonoBehaviour
+    {
+        private const int k_operations = 128;
+        private const int k_samples = 8;
+        private const int k_warmupBatches = 10;
+        private const int k_successTimingBatches = 16;
+        private const int k_failureTimingBatches = 2;
+        private const int k_profilerStartupFrames = 120;
+        private const int k_profilerReadFrames = 60;
+        private const string k_uniTaskCommit =
+            "2e993ff18f28c931602a07292df0b0804eebef99";
+        private const string k_productCommit =
+            "37c309a950b2142c91eeb62ad12f0a8a585b1d76";
+        private const string k_markerPrefix = "Onity.TypedWhenAny.Allocation.";
+        private const string k_runtimePath =
+            "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs";
+        private const string k_completionPath =
+            "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCompletionSource.cs";
+        private const string k_runnerPath =
+            "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs";
+        private const string k_menuPath =
+            "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkMenu.cs";
+        private const string k_runtimeAsmdefPath =
+            "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/Onity.TaskBenchmarks.asmdef";
+        private const string k_editorAsmdefPath =
+            "Packages/com.onity.framework/Benchmarks/Tasks/Editor/Onity.TaskBenchmarks.Editor.asmdef";
+
+        private static bool s_isRunning;
+        private static int s_emptySink;
+        private static readonly CancellationToken s_canceledToken = new CancellationToken(true);
+
+        private readonly OnityTaskCompletionSource<int>[] m_onityFirst =
+            new OnityTaskCompletionSource<int>[k_operations];
+        private readonly OnityTaskCompletionSource<int>[] m_onitySecond =
+            new OnityTaskCompletionSource<int>[k_operations];
+        private readonly UniTaskCompletionSource<int>[] m_uniFirst =
+            new UniTaskCompletionSource<int>[k_operations];
+        private readonly UniTaskCompletionSource<int>[] m_uniSecond =
+            new UniTaskCompletionSource<int>[k_operations];
+        private readonly OnityTask<(int winnerIndex, int result)>[] m_nativeResults =
+            new OnityTask<(int winnerIndex, int result)>[k_operations];
+        private readonly UniTask<(int winArgumentIndex, int result)>[] m_uniResults =
+            new UniTask<(int winArgumentIndex, int result)>[k_operations];
+        private readonly Task<Task<int>>[] m_legacyResults =
+            new Task<Task<int>>[k_operations];
+        private readonly Task<int>[] m_legacyFirst = new Task<int>[k_operations];
+        private readonly Task<int>[] m_legacySecond = new Task<int>[k_operations];
+        private readonly Exception[] m_failures = new Exception[k_operations];
+
+        private string m_outputPath;
+        private Action<string, Exception> m_completed;
+        private bool m_allocationOnly;
+        private bool m_originalTracker;
+        private bool m_trackerCaptured;
+        private bool m_trackerStackTraceAtStart;
+        private Scenario m_activeScenario;
+        private int m_activeRoute;
+        private int m_activeCount;
+        private Action m_measureBatch;
+        private Action m_emptyBatch;
+        private Action m_positiveControl;
+#if UNITY_EDITOR
+        private bool m_profilerCaptured;
+        private bool m_profilerWasEnabled;
+        private bool m_driverWasEnabled;
+        private bool m_profileEditorWasEnabled;
+        private bool m_callstacksWereEnabled;
+        private bool m_deepProfilingAtStart;
+        private int m_lastFrame = -1;
+        private int m_markerSequence;
+        private bool m_lastCaptureValid;
+        private long m_lastCaptureBytes;
+#endif
+
+        public static void Run(string outputPath, Action<string, Exception> completed,
+            bool allocationOnly)
+        {
+            if (s_isRunning)
+            {
+                throw new InvalidOperationException("A typed WhenAny benchmark is already running.");
+            }
+
+            if (string.IsNullOrWhiteSpace(outputPath))
+            {
+                throw new ArgumentException("Output path is required.", nameof(outputPath));
+            }
+
+            GameObject runnerObject = new GameObject("Typed WhenAny Benchmark Runner");
+            DontDestroyOnLoad(runnerObject);
+            OnityTypedWhenAnyBenchmarkRunner runner =
+                runnerObject.AddComponent<OnityTypedWhenAnyBenchmarkRunner>();
+            runner.m_outputPath = Path.GetFullPath(outputPath);
+            runner.m_completed = completed;
+            runner.m_allocationOnly = allocationOnly;
+            s_isRunning = true;
+        }
+
+        private void Awake()
+        {
+            m_measureBatch = MeasureBatch;
+            m_emptyBatch = MeasureEmptyBatch;
+            m_positiveControl = AllocatePositiveControl;
+        }
+
+        private IEnumerator Start()
+        {
+            yield return null;
+            m_originalTracker = OnityTaskTracker.IsEnabled;
+            m_trackerStackTraceAtStart = OnityTaskTracker.EnableStackTrace;
+            m_trackerCaptured = true;
+#if UNITY_EDITOR
+            m_profilerWasEnabled = Profiler.enabled;
+            m_driverWasEnabled = ProfilerDriver.enabled;
+            m_profileEditorWasEnabled = ProfilerDriver.profileEditor;
+            m_callstacksWereEnabled = Profiler.enableAllocationCallstacks;
+            m_deepProfilingAtStart = ProfilerDriver.deepProfiling;
+            m_profilerCaptured = true;
+#endif
+            Exception failure = null;
+            Report report = null;
+            try
+            {
+                ValidateNumericSettings();
+#if UNITY_EDITOR
+                if (!m_allocationOnly)
+                {
+                    Profiler.enabled = false;
+                    ProfilerDriver.enabled = false;
+                }
+#endif
+                Report expected = CreateReport();
+                if (m_allocationOnly)
+                {
+                    report = JsonUtility.FromJson<Report>(File.ReadAllText(m_outputPath));
+                    ValidateAllocationInput(report, expected);
+                    ClearAllocations(report);
+                    report.allocationTrackerStackTraceEnabled = m_trackerStackTraceAtStart;
+#if UNITY_EDITOR
+                    report.allocationDeepProfilingEnabled = m_deepProfilingAtStart;
+                    report.allocationCallstacksEnabled = m_callstacksWereEnabled;
+#endif
+                }
+                else
+                {
+                    report = expected;
+                    RunTiming(report);
+                }
+            }
+            catch (Exception exception)
+            {
+                failure = exception;
+            }
+
+#if UNITY_EDITOR
+            if (failure == null && m_allocationOnly)
+            {
+                IEnumerator allocation = RunAllocations(report);
+                while (true)
+                {
+                    bool hasNext;
+                    try
+                    {
+                        hasNext = allocation.MoveNext();
+                    }
+                    catch (Exception exception)
+                    {
+                        failure = exception;
+                        break;
+                    }
+
+                    if (!hasNext)
+                    {
+                        break;
+                    }
+
+                    yield return allocation.Current;
+                }
+            }
+#endif
+            if (failure == null)
+            {
+                try
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(m_outputPath));
+                    File.WriteAllText(m_outputPath, JsonUtility.ToJson(report, true));
+                    Debug.Log("Typed WhenAny benchmark completed: " + m_outputPath, this);
+                }
+                catch (Exception exception)
+                {
+                    failure = exception;
+                }
+            }
+
+            if (failure != null)
+            {
+                Debug.LogException(failure, this);
+            }
+
+            try
+            {
+                m_completed?.Invoke(m_outputPath, failure);
+            }
+            finally
+            {
+                RestoreState();
+                s_isRunning = false;
+                Destroy(gameObject);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            RestoreState();
+            s_isRunning = false;
+        }
+
+        private void RestoreState()
+        {
+            if (m_trackerCaptured)
+            {
+                OnityTaskTracker.IsEnabled = m_originalTracker;
+                m_trackerCaptured = false;
+            }
+#if UNITY_EDITOR
+            if (m_profilerCaptured)
+            {
+                Profiler.enabled = m_profilerWasEnabled;
+                ProfilerDriver.enabled = m_driverWasEnabled;
+                ProfilerDriver.profileEditor = m_profileEditorWasEnabled;
+                Profiler.enableAllocationCallstacks = m_callstacksWereEnabled;
+                m_profilerCaptured = false;
+            }
+#endif
+        }
+
+        private static void ValidateNumericSettings()
+        {
+            if (OnityTaskTracker.EnableStackTrace)
+            {
+                throw new InvalidOperationException(
+                    "Typed WhenAny numerical runs require OnityTaskTracker.EnableStackTrace=false.");
+            }
+#if UNITY_EDITOR
+            if (ProfilerDriver.deepProfiling || Profiler.enableAllocationCallstacks)
+            {
+                throw new InvalidOperationException(
+                    "Typed WhenAny numerical runs require Deep Profiling and allocation callstacks off. "
+                    + "DeepProfiling=" + ProfilerDriver.deepProfiling
+                    + ", AllocationCallstacks=" + Profiler.enableAllocationCallstacks);
+            }
+#endif
+        }
+
+        private static Report CreateReport()
+        {
+            string root = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            Report report = new Report
+            {
+                schemaVersion = 1,
+                harnessVersion = 1,
+                suite = "Typed int two-input WhenAny native, UniTask, and legacy migration routes",
+                generatedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
+                unityVersion = Application.unityVersion,
+                scriptingBackend = "Editor Mono",
+                uniTaskCommit = k_uniTaskCommit,
+                productCommit = k_productCommit,
+                onityAsyncSha256 = HashFile(root, k_runtimePath),
+                completionSourceSha256 = HashFile(root, k_completionPath),
+                runnerSha256 = HashFile(root, k_runnerPath),
+                menuSha256 = HashFile(root, k_menuPath),
+                runtimeAsmdefSha256 = HashFile(root, k_runtimeAsmdefPath),
+                editorAsmdefSha256 = HashFile(root, k_editorAsmdefPath),
+                manifestSha256 = HashFile(root, "Packages/manifest.json"),
+                lockSha256 = HashFile(root, "Packages/packages-lock.json"),
+                projectSettingsSha256 = HashFile(root, "ProjectSettings/ProjectSettings.asset"),
+                operationsPerBatch = k_operations,
+                samplesPerCase = k_samples,
+                warmupBatches = k_warmupBatches,
+                successTimingBatches = k_successTimingBatches,
+                failureTimingBatches = k_failureTimingBatches,
+                stopwatchFrequency = Stopwatch.Frequency,
+                timingTrackerStackTraceEnabled = OnityTaskTracker.EnableStackTrace,
+#if UNITY_EDITOR
+                timingDeepProfilingEnabled = ProfilerDriver.deepProfiling,
+                timingCallstacksEnabled = Profiler.enableAllocationCallstacks,
+#endif
+                allocationCounter = "Unavailable: independent Profiler calibration pending.",
+                positiveControlBytes = -1,
+                emptyControlBytes = -1,
+                scope = "Main-thread Editor/Mono. Native Onity versus UniTask params is the "
+                    + "primary comparison. Same-revision OnityAsync Task bridge is a migration "
+                    + "route, not a product baseline. UniTask's two-element params array and "
+                    + "legacy AsTask bridges, Task array, index mapping, and value observation "
+                    + "are inside measured operations. Sources and fresh faults are prepared "
+                    + "outside markers. Pending scheduling markers exclude completion and "
+                    + "consumption; those occur during cleanup outside the marker. Pending "
+                    + "lifecycle markers include winner completion and observation, loser "
+                    + "completion and validation, and reference cleanup. Completed-input "
+                    + "controls are lifecycle measurements: inputs are completed during "
+                    + "preparation when both are complete; the second-completed control "
+                    + "completes its loser inside the marker. Native tracker ON/OFF is "
+                    + "OnityTask tracking only, not legacy Task-tracker observability. "
+                    + "Legacy Task bridge tracker callbacks may run outside the main-thread "
+                    + "marker. First-observed calls precede warmups in each process "
+                    + "but are sequential per route, not three process-cold measurements. "
+                    + "Tracker ON/OFF changes only Onity; UniTask retains its default "
+                    + "task tracking. Worker allocations and Player performance are unavailable.",
+                scenarios = new Scenario[12],
+                firstObserved = new Metric[3]
+            };
+
+            int index = 0;
+            for (int tracker = 1; tracker >= 0; tracker--)
+            {
+                report.scenarios[index++] = NewScenario("Pending success schedule", tracker != 0, 0, 0);
+                report.scenarios[index++] = NewScenario("Pending success lifecycle", tracker != 0, 1, 0);
+                report.scenarios[index++] = NewScenario("Pending fault lifecycle", tracker != 0, 1, 1);
+                report.scenarios[index++] = NewScenario("Pending cancel lifecycle", tracker != 0, 1, 2);
+                report.scenarios[index++] = NewScenario("Both completed, first wins", tracker != 0, 2, 0);
+                report.scenarios[index++] = NewScenario("Second completed first", tracker != 0, 3, 0);
+            }
+
+            for (int route = 0; route < 3; route++)
+            {
+                report.firstObserved[route] = NewMetric(RouteName(route));
+            }
+
+            return report;
+        }
+
+        private static Scenario NewScenario(string name, bool trackerEnabled, int mode, int outcome)
+        {
+            Scenario scenario = new Scenario
+            {
+                name = name,
+                trackerEnabled = trackerEnabled,
+                mode = mode,
+                outcome = outcome,
+                results = new Metric[3]
+            };
+            for (int route = 0; route < 3; route++)
+            {
+                scenario.results[route] = NewMetric(RouteName(route));
+            }
+
+            return scenario;
+        }
+
+        private static Metric NewMetric(string library)
+        {
+            return new Metric { library = library, bytesPerOperation = -1 };
+        }
+
+        private static string RouteName(int route)
+        {
+            return route == 0 ? "OnityTask native" :
+                route == 1 ? "UniTask params" : "OnityAsync Task bridge migration";
+        }
+
+        private static string HashFile(string root, string relativePath)
+        {
+            using (SHA256 hash = SHA256.Create())
+            using (FileStream stream = File.OpenRead(Path.Combine(root, relativePath)))
+            {
+                return BitConverter.ToString(hash.ComputeHash(stream))
+                    .Replace("-", string.Empty).ToLowerInvariant();
+            }
+        }
+
+        private static void ValidateAllocationInput(Report report, Report expected)
+        {
+            if (report == null || report.schemaVersion != 1 || report.harnessVersion != 1 ||
+                report.suite != expected.suite ||
+                report.unityVersion != expected.unityVersion ||
+                report.scriptingBackend != expected.scriptingBackend ||
+                report.uniTaskCommit != expected.uniTaskCommit ||
+                report.productCommit != expected.productCommit ||
+                report.onityAsyncSha256 != expected.onityAsyncSha256 ||
+                report.completionSourceSha256 != expected.completionSourceSha256 ||
+                report.runnerSha256 != expected.runnerSha256 ||
+                report.menuSha256 != expected.menuSha256 ||
+                report.runtimeAsmdefSha256 != expected.runtimeAsmdefSha256 ||
+                report.editorAsmdefSha256 != expected.editorAsmdefSha256 ||
+                report.manifestSha256 != expected.manifestSha256 ||
+                report.lockSha256 != expected.lockSha256 ||
+                report.projectSettingsSha256 != expected.projectSettingsSha256 ||
+                report.operationsPerBatch != k_operations ||
+                report.samplesPerCase != k_samples ||
+                report.warmupBatches != k_warmupBatches ||
+                report.successTimingBatches != k_successTimingBatches ||
+                report.failureTimingBatches != k_failureTimingBatches ||
+                report.scope != expected.scope ||
+                report.timingTrackerStackTraceEnabled ||
+                report.timingDeepProfilingEnabled ||
+                report.timingCallstacksEnabled ||
+                !report.nativePendingGatePassed ||
+                report.scenarios == null || report.scenarios.Length != 12 ||
+                report.firstObserved == null || report.firstObserved.Length != 3)
+            {
+                throw new InvalidDataException(
+                    "Allocation pass requires timing from identical product, harness, and config.");
+            }
+
+            for (int route = 0; route < 3; route++)
+            {
+                if (report.firstObserved[route] == null ||
+                    report.firstObserved[route].library != RouteName(route) ||
+                    report.firstObserved[route].sampleNanosecondsPerOperation == null ||
+                    report.firstObserved[route].sampleNanosecondsPerOperation.Length != 1)
+                {
+                    throw new InvalidDataException("First-observed timing sample is incomplete.");
+                }
+            }
+
+            for (int i = 0; i < report.scenarios.Length; i++)
+            {
+                Scenario actual = report.scenarios[i];
+                Scenario wanted = expected.scenarios[i];
+                if (actual == null || actual.name != wanted.name ||
+                    actual.trackerEnabled != wanted.trackerEnabled ||
+                    actual.mode != wanted.mode || actual.outcome != wanted.outcome ||
+                    actual.results == null || actual.results.Length != 3)
+                {
+                    throw new InvalidDataException("Timing scenario definitions changed.");
+                }
+
+                for (int route = 0; route < 3; route++)
+                {
+                    Metric metric = actual.results[route];
+                    if (metric == null || metric.library != RouteName(route) ||
+                        metric.sampleNanosecondsPerOperation == null ||
+                        metric.sampleNanosecondsPerOperation.Length != k_samples)
+                    {
+                        throw new InvalidDataException("Timing samples are incomplete.");
+                    }
+                }
+            }
+        }
+
+        private static void ClearAllocations(Report report)
+        {
+            report.allocationsAvailable = false;
+            report.allocationCounter = "Unavailable: independent Profiler calibration pending.";
+            report.positiveControlBytes = -1;
+            report.emptyControlBytes = -1;
+            report.emptyHarnessSampleAllocatedBytes = null;
+            for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+            {
+                for (int route = 0; route < 3; route++)
+                {
+                    Metric metric = report.scenarios[scenario].results[route];
+                    metric.bytesPerOperation = -1;
+                    metric.sampleAllocatedBytes = null;
+                }
+            }
+
+            for (int route = 0; route < 3; route++)
+            {
+                report.firstObserved[route].bytesPerOperation = -1;
+                report.firstObserved[route].sampleAllocatedBytes = null;
+            }
+        }
+
+        private void RunTiming(Report report)
+        {
+            ValidateNumericSettings();
+            m_activeScenario = report.scenarios[0];
+            for (int route = 0; route < 3; route++)
+            {
+                m_activeRoute = route;
+                PrepareBatch(1);
+                long start = Stopwatch.GetTimestamp();
+                MeasureBatch();
+                long elapsed = Stopwatch.GetTimestamp() - start;
+                FinishBatch();
+                report.firstObserved[route].sampleNanosecondsPerOperation =
+                    new[] { ToNanoseconds(elapsed) };
+            }
+
+            report.nativePendingGatePassed = m_nativeGateVerified;
+            for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+            {
+                m_activeScenario = report.scenarios[scenario];
+                for (int warmup = 0; warmup < k_warmupBatches; warmup++)
+                {
+                    for (int turn = 0; turn < 3; turn++)
+                    {
+                        m_activeRoute = (warmup + turn) % 3;
+                        PrepareBatch(k_operations);
+                        MeasureBatch();
+                        FinishBatch();
+                    }
+                }
+
+                int batches = m_activeScenario.outcome == 0
+                    ? k_successTimingBatches : k_failureTimingBatches;
+                for (int route = 0; route < 3; route++)
+                {
+                    m_activeScenario.results[route].sampleNanosecondsPerOperation =
+                        new double[k_samples];
+                }
+
+                for (int sample = 0; sample < k_samples; sample++)
+                {
+                    ValidateNumericSettings();
+                    for (int turn = 0; turn < 3; turn++)
+                    {
+                        m_activeRoute = (sample + turn) % 3;
+                        long totalTicks = 0;
+                        for (int batch = 0; batch < batches; batch++)
+                        {
+                            PrepareBatch(k_operations);
+                            long start = Stopwatch.GetTimestamp();
+                            MeasureBatch();
+                            totalTicks += Stopwatch.GetTimestamp() - start;
+                            FinishBatch();
+                        }
+
+                        m_activeScenario.results[m_activeRoute]
+                            .sampleNanosecondsPerOperation[sample] =
+                            ToNanoseconds(totalTicks) / (batches * k_operations);
+                    }
+                }
+
+                for (int route = 0; route < 3; route++)
+                {
+                    Metric metric = m_activeScenario.results[route];
+                    double[] sorted = (double[])metric.sampleNanosecondsPerOperation.Clone();
+                    Array.Sort(sorted);
+                    metric.medianNanosecondsPerOperation =
+                        (sorted[3] + sorted[4]) * 0.5d;
+                }
+            }
+        }
+
+        private static double ToNanoseconds(long ticks)
+        {
+            return ticks * (1000000000d / Stopwatch.Frequency);
+        }
+
+        private bool m_nativeGateVerified;
+
+        private void PrepareBatch(int count)
+        {
+            m_activeCount = count;
+            OnityTaskTracker.IsEnabled = m_activeScenario.trackerEnabled;
+            for (int i = 0; i < count; i++)
+            {
+                m_failures[i] = m_activeScenario.outcome == 1
+                    ? new InvalidOperationException("typed WhenAny benchmark fault") : null;
+                if (m_activeRoute == 1)
+                {
+                    m_uniFirst[i] = new UniTaskCompletionSource<int>();
+                    m_uniSecond[i] = new UniTaskCompletionSource<int>();
+                    if (m_activeScenario.mode == 2)
+                    {
+                        m_uniFirst[i].TrySetResult(FirstValue(i));
+                        m_uniSecond[i].TrySetResult(SecondValue(i));
+                    }
+                    else if (m_activeScenario.mode == 3)
+                    {
+                        m_uniSecond[i].TrySetResult(SecondValue(i));
+                    }
+                }
+                else
+                {
+                    m_onityFirst[i] = new OnityTaskCompletionSource<int>();
+                    m_onitySecond[i] = new OnityTaskCompletionSource<int>();
+                    if (m_activeScenario.mode == 2)
+                    {
+                        m_onityFirst[i].TrySetResult(FirstValue(i));
+                        m_onitySecond[i].TrySetResult(SecondValue(i));
+                    }
+                    else if (m_activeScenario.mode == 3)
+                    {
+                        m_onitySecond[i].TrySetResult(SecondValue(i));
+                    }
+                }
+            }
+        }
+
+        private static int FirstValue(int index) => 1000 + index;
+        private static int SecondValue(int index) => 2000 + index;
+
+        private void MeasureBatch()
+        {
+            for (int i = 0; i < m_activeCount; i++)
+            {
+                ScheduleOne(i);
+                if (m_activeScenario.mode == 0)
+                {
+                    continue;
+                }
+
+                int winner = m_activeScenario.mode == 2 ? 0 :
+                    m_activeScenario.mode == 3 ? 1 : i & 1;
+                if (m_activeScenario.mode == 1)
+                {
+                    CompleteInput(i, winner, true);
+                }
+
+                ObserveWinner(i, winner);
+                if (m_activeScenario.mode != 2)
+                {
+                    CompleteInput(i, 1 - winner, false);
+                }
+
+                ObserveLoser(i, 1 - winner);
+                ClearOperation(i);
+            }
+        }
+
+        private void ScheduleOne(int i)
+        {
+            if (m_activeRoute == 0)
+            {
+                m_nativeResults[i] = OnityTask.WhenAny<int>(
+                    m_onityFirst[i].Task, m_onitySecond[i].Task);
+            }
+            else if (m_activeRoute == 1)
+            {
+                m_uniResults[i] = UniTask.WhenAny<int>(new[]
+                {
+                    m_uniFirst[i].Task, m_uniSecond[i].Task
+                });
+            }
+            else
+            {
+                m_legacyFirst[i] = m_onityFirst[i].Task.AsTask();
+                m_legacySecond[i] = m_onitySecond[i].Task.AsTask();
+                m_legacyResults[i] = OnityAsync.WhenAny<int>(new[]
+                {
+                    m_legacyFirst[i], m_legacySecond[i]
+                });
+            }
+        }
+
+        private void FinishBatch()
+        {
+            if (m_activeScenario.mode != 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < m_activeCount; i++)
+            {
+                if (m_activeRoute == 0)
+                {
+                    if (m_nativeResults[i].IsCompleted)
+                    {
+                        throw new InvalidOperationException("Native result was not pending.");
+                    }
+
+                    if (!m_nativeGateVerified)
+                    {
+                        System.Reflection.FieldInfo stateField =
+                            typeof(OnityTask<(int winnerIndex, int result)>).GetField(
+                                "m_state", System.Reflection.BindingFlags.Instance |
+                                System.Reflection.BindingFlags.NonPublic);
+                        object state = stateField?.GetValue(m_nativeResults[i]);
+                        if (state == null || state.GetType().Name != "OnityWhenAnyTaskSource`1")
+                        {
+                            throw new InvalidOperationException(
+                                "Expected native OnityWhenAnyTaskSource<int>.");
+                        }
+
+                        m_nativeGateVerified = true;
+                    }
+                }
+                else if (m_activeRoute == 1)
+                {
+                    if (m_uniResults[i].Status != UniTaskStatus.Pending)
+                    {
+                        throw new InvalidOperationException("UniTask result was not pending.");
+                    }
+                }
+                else if (m_legacyResults[i].IsCompleted)
+                {
+                    throw new InvalidOperationException("Legacy result was not pending.");
+                }
+
+                int winner = i & 1;
+                CompleteInput(i, winner, true);
+                ObserveWinner(i, winner);
+                CompleteInput(i, 1 - winner, false);
+                ObserveLoser(i, 1 - winner);
+                ClearOperation(i);
+            }
+        }
+
+        private void ClearOperation(int i)
+        {
+            m_onityFirst[i] = null;
+            m_onitySecond[i] = null;
+            m_uniFirst[i] = null;
+            m_uniSecond[i] = null;
+            m_nativeResults[i] = default;
+            m_uniResults[i] = default;
+            m_legacyResults[i] = null;
+            m_legacyFirst[i] = null;
+            m_legacySecond[i] = null;
+            m_failures[i] = null;
+        }
+
+        private void CompleteInput(int i, int input, bool winner)
+        {
+            if (m_activeRoute == 1)
+            {
+                UniTaskCompletionSource<int> source = input == 0 ? m_uniFirst[i] : m_uniSecond[i];
+                bool completed = winner && m_activeScenario.outcome == 1
+                    ? source.TrySetException(m_failures[i])
+                    : winner && m_activeScenario.outcome == 2
+                        ? source.TrySetCanceled(s_canceledToken)
+                        : source.TrySetResult(input == 0 ? FirstValue(i) : SecondValue(i));
+                if (!completed)
+                {
+                    throw new InvalidOperationException("UniTask input completion failed.");
+                }
+            }
+            else
+            {
+                OnityTaskCompletionSource<int> source = input == 0
+                    ? m_onityFirst[i] : m_onitySecond[i];
+                bool completed = winner && m_activeScenario.outcome == 1
+                    ? source.TrySetException(m_failures[i])
+                    : winner && m_activeScenario.outcome == 2
+                        ? source.TrySetCanceled(s_canceledToken)
+                        : source.TrySetResult(input == 0 ? FirstValue(i) : SecondValue(i));
+                if (!completed)
+                {
+                    throw new InvalidOperationException("Onity input completion failed.");
+                }
+            }
+        }
+
+        private void ObserveWinner(int i, int winner)
+        {
+            Task<int> winningTask = null;
+            if (m_activeRoute == 2)
+            {
+                winningTask = m_legacyResults[i].GetAwaiter().GetResult();
+                if (!m_legacyResults[i].IsCompletedSuccessfully)
+                {
+                    throw new InvalidOperationException("Legacy WhenAny outer task did not succeed.");
+                }
+
+                Task<int> expectedTask = winner == 0 ? m_legacyFirst[i] : m_legacySecond[i];
+                if (!ReferenceEquals(winningTask, expectedTask))
+                {
+                    throw new InvalidOperationException("Legacy winner Task identity or index was wrong.");
+                }
+            }
+
+            int outcome = m_activeScenario.outcome;
+            bool statusMatches = m_activeRoute == 0
+                ? outcome == 0 ? m_nativeResults[i].IsCompletedSuccessfully :
+                    outcome == 1 ? m_nativeResults[i].IsFaulted : m_nativeResults[i].IsCanceled
+                : m_activeRoute == 1
+                    ? m_uniResults[i].Status == (outcome == 0 ? UniTaskStatus.Succeeded :
+                        outcome == 1 ? UniTaskStatus.Faulted : UniTaskStatus.Canceled)
+                    : outcome == 0 ? winningTask.IsCompletedSuccessfully :
+                        outcome == 1 ? winningTask.IsFaulted : winningTask.IsCanceled;
+            if (!statusMatches)
+            {
+                throw new InvalidOperationException("Winner terminal status was wrong.");
+            }
+
+            if (outcome == 0)
+            {
+                int actualIndex;
+                int actualValue;
+                if (m_activeRoute == 0)
+                {
+                    (actualIndex, actualValue) = m_nativeResults[i].GetAwaiter().GetResult();
+                }
+                else if (m_activeRoute == 1)
+                {
+                    (actualIndex, actualValue) = m_uniResults[i].GetAwaiter().GetResult();
+                }
+                else
+                {
+                    actualIndex = ReferenceEquals(winningTask, m_legacyFirst[i]) ? 0 : 1;
+                    actualValue = winningTask.GetAwaiter().GetResult();
+                }
+
+                if (actualIndex != winner ||
+                    actualValue != (winner == 0 ? FirstValue(i) : SecondValue(i)))
+                {
+                    throw new InvalidOperationException("Winner index or value was wrong.");
+                }
+
+                return;
+            }
+
+            Exception observed = null;
+            try
+            {
+                if (m_activeRoute == 0)
+                {
+                    m_nativeResults[i].GetAwaiter().GetResult();
+                }
+                else if (m_activeRoute == 1)
+                {
+                    m_uniResults[i].GetAwaiter().GetResult();
+                }
+                else
+                {
+                    winningTask.GetAwaiter().GetResult();
+                }
+            }
+            catch (Exception exception)
+            {
+                observed = exception;
+            }
+
+            if (outcome == 1 && !ReferenceEquals(observed, m_failures[i]))
+            {
+                throw new InvalidOperationException("Winner did not preserve prepared fault identity.");
+            }
+
+            if (outcome == 2 && !(observed is OperationCanceledException canceled &&
+                canceled.CancellationToken == s_canceledToken))
+            {
+                throw new InvalidOperationException("Winner cancellation token was wrong.");
+            }
+        }
+
+        private void ObserveLoser(int i, int loser)
+        {
+            int expected = loser == 0 ? FirstValue(i) : SecondValue(i);
+            int actual = m_activeRoute == 1
+                ? (loser == 0 ? m_uniFirst[i] : m_uniSecond[i]).Task.GetAwaiter().GetResult()
+                : m_activeRoute == 2
+                    ? (loser == 0 ? m_legacyFirst[i] : m_legacySecond[i]).GetAwaiter().GetResult()
+                    : (loser == 0 ? m_onityFirst[i] : m_onitySecond[i]).Task
+                        .GetAwaiter().GetResult();
+            if (actual != expected)
+            {
+                throw new InvalidOperationException("Losing input result was wrong.");
+            }
+        }
+
+        private static void AllocatePositiveControl()
+        {
+            byte[] bytes = new byte[65536];
+            GC.KeepAlive(bytes);
+        }
+
+        private void MeasureEmptyBatch()
+        {
+            int value = 0;
+            for (int i = 0; i < k_operations; i++)
+            {
+                value ^= i;
+            }
+
+            s_emptySink = value;
+        }
+
+#if UNITY_EDITOR
+        private IEnumerator RunAllocations(Report report)
+        {
+            ValidateNumericSettings();
+            ProfilerDriver.profileEditor = false;
+            ProfilerDriver.enabled = true;
+            Profiler.enabled = true;
+            int startup = k_profilerStartupFrames;
+            while (ProfilerDriver.lastFrameIndex < 2 && startup-- > 0)
+            {
+                yield return null;
+            }
+
+            yield return CaptureAllocation(m_positiveControl);
+            if (!m_lastCaptureValid || m_lastCaptureBytes != 65568)
+            {
+                throw new InvalidDataException("Profiler 64 KiB positive control was not 65,568 bytes.");
+            }
+
+            report.positiveControlBytes = m_lastCaptureBytes;
+            yield return CaptureAllocation(m_emptyBatch);
+            if (!m_lastCaptureValid || m_lastCaptureBytes != 0)
+            {
+                throw new InvalidDataException("Profiler empty control was not zero bytes.");
+            }
+
+            report.emptyControlBytes = 0;
+            report.emptyHarnessSampleAllocatedBytes = new long[k_samples];
+            for (int sample = 0; sample < k_samples; sample++)
+            {
+                yield return CaptureAllocation(m_emptyBatch);
+                if (!m_lastCaptureValid || m_lastCaptureBytes != 0)
+                {
+                    throw new InvalidDataException("Profiler empty-harness sample was not zero bytes.");
+                }
+
+                report.emptyHarnessSampleAllocatedBytes[sample] = 0;
+            }
+
+            m_activeScenario = report.scenarios[0];
+            for (int route = 0; route < 3; route++)
+            {
+                m_activeRoute = route;
+                PrepareBatch(1);
+                yield return CaptureAllocation(m_measureBatch);
+                RequireCapture();
+                FinishBatch();
+                report.firstObserved[route].sampleAllocatedBytes =
+                    new[] { m_lastCaptureBytes };
+                report.firstObserved[route].bytesPerOperation = m_lastCaptureBytes;
+            }
+
+            report.nativePendingGatePassed = m_nativeGateVerified;
+            if (!report.nativePendingGatePassed)
+            {
+                throw new InvalidDataException("Native pending source gate did not pass.");
+            }
+
+            for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
+            {
+                m_activeScenario = report.scenarios[scenario];
+                for (int warmup = 0; warmup < k_warmupBatches; warmup++)
+                {
+                    for (int turn = 0; turn < 3; turn++)
+                    {
+                        m_activeRoute = (warmup + turn) % 3;
+                        PrepareBatch(k_operations);
+                        MeasureBatch();
+                        FinishBatch();
+                    }
+                }
+
+                for (int route = 0; route < 3; route++)
+                {
+                    m_activeScenario.results[route].sampleAllocatedBytes = new long[k_samples];
+                }
+
+                for (int sample = 0; sample < k_samples; sample++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                    for (int turn = 0; turn < 3; turn++)
+                    {
+                        m_activeRoute = (sample + turn) % 3;
+                        PrepareBatch(k_operations);
+                        yield return CaptureAllocation(m_measureBatch);
+                        RequireCapture();
+                        FinishBatch();
+                        m_activeScenario.results[m_activeRoute]
+                            .sampleAllocatedBytes[sample] = m_lastCaptureBytes;
+                    }
+                }
+
+                for (int route = 0; route < 3; route++)
+                {
+                    Metric metric = m_activeScenario.results[route];
+                    long total = 0;
+                    for (int sample = 0; sample < k_samples; sample++)
+                    {
+                        total += metric.sampleAllocatedBytes[sample];
+                    }
+
+                    metric.bytesPerOperation = (double)total / (k_samples * k_operations);
+                }
+            }
+
+            report.allocationsAvailable = true;
+            report.allocationCounter =
+                "Unity Profiler main-thread GC.Alloc; exact 65,568/0 controls and eight zero harness samples.";
+            report.allocationGeneratedAtUtc =
+                DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        private void RequireCapture()
+        {
+            if (!m_lastCaptureValid)
+            {
+                throw new InvalidDataException("Profiler marker or sample was unavailable.");
+            }
+        }
+
+        private IEnumerator CaptureAllocation(Action operation)
+        {
+            ValidateNumericSettings();
+            m_lastCaptureValid = false;
+            m_lastCaptureBytes = 0;
+            string marker = k_markerPrefix +
+                (m_markerSequence++).ToString(CultureInfo.InvariantCulture);
+            Profiler.BeginSample(marker);
+            try
+            {
+                operation();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
+
+            ValidateNumericSettings();
+
+            for (int wait = 0; wait < k_profilerReadFrames; wait++)
+            {
+                yield return null;
+                if (TryReadAllocation(
+                    Math.Max(m_lastFrame, ProfilerDriver.firstFrameIndex),
+                    ProfilerDriver.lastFrameIndex, marker,
+                    out long bytes, out int foundFrame))
+                {
+                    m_lastCaptureBytes = bytes;
+                    m_lastFrame = foundFrame;
+                    m_lastCaptureValid = true;
+                    yield break;
+                }
+            }
+        }
+
+        private static bool TryReadAllocation(int firstFrame, int lastFrame,
+            string marker, out long bytes, out int foundFrame)
+        {
+            bytes = 0;
+            foundFrame = -1;
+            for (int frame = firstFrame; frame <= lastFrame; frame++)
+            {
+                using (RawFrameDataView data = ProfilerDriver.GetRawFrameDataView(frame, 0))
+                {
+                    if (!data.valid)
+                    {
+                        continue;
+                    }
+
+                    int markerId = data.GetMarkerId(marker);
+                    int allocationId = data.GetMarkerId("GC.Alloc");
+                    if (markerId == FrameDataView.invalidMarkerId)
+                    {
+                        continue;
+                    }
+
+                    for (int sample = 0; sample < data.sampleCount; sample++)
+                    {
+                        if (data.GetSampleMarkerId(sample) != markerId)
+                        {
+                            continue;
+                        }
+
+                        int end = sample + data.GetSampleChildrenCountRecursive(sample);
+                        if (end >= data.sampleCount)
+                        {
+                            throw new InvalidDataException("Profiler marker tree was truncated.");
+                        }
+
+                        for (int child = sample + 1; child <= end; child++)
+                        {
+                            if (data.GetSampleMarkerId(child) == allocationId)
+                            {
+                                bytes += data.GetSampleMetadataAsLong(child, 0);
+                            }
+                        }
+
+                        foundFrame = frame;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+#endif
+
+        [Serializable]
+        private sealed class Report
+        {
+            public int schemaVersion;
+            public int harnessVersion;
+            public string suite;
+            public string generatedAtUtc;
+            public string allocationGeneratedAtUtc;
+            public string unityVersion;
+            public string scriptingBackend;
+            public string uniTaskCommit;
+            public string productCommit;
+            public string onityAsyncSha256;
+            public string completionSourceSha256;
+            public string runnerSha256;
+            public string menuSha256;
+            public string runtimeAsmdefSha256;
+            public string editorAsmdefSha256;
+            public string manifestSha256;
+            public string lockSha256;
+            public string projectSettingsSha256;
+            public int operationsPerBatch;
+            public int samplesPerCase;
+            public int warmupBatches;
+            public int successTimingBatches;
+            public int failureTimingBatches;
+            public long stopwatchFrequency;
+            public string scope;
+            public bool timingTrackerStackTraceEnabled;
+            public bool timingDeepProfilingEnabled;
+            public bool timingCallstacksEnabled;
+            public bool allocationTrackerStackTraceEnabled;
+            public bool allocationDeepProfilingEnabled;
+            public bool allocationCallstacksEnabled;
+            public bool nativePendingGatePassed;
+            public bool allocationsAvailable;
+            public string allocationCounter;
+            public long positiveControlBytes;
+            public long emptyControlBytes;
+            public long[] emptyHarnessSampleAllocatedBytes;
+            public Metric[] firstObserved;
+            public Scenario[] scenarios;
+        }
+
+        [Serializable]
+        private sealed class Scenario
+        {
+            public string name;
+            public bool trackerEnabled;
+            public int mode;
+            public int outcome;
+            public Metric[] results;
+        }
+
+        [Serializable]
+        private sealed class Metric
+        {
+            public string library;
+            public double medianNanosecondsPerOperation;
+            public double bytesPerOperation;
+            public double[] sampleNanosecondsPerOperation;
             public long[] sampleAllocatedBytes;
         }
     }
