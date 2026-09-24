@@ -68,6 +68,32 @@ namespace Onity.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator WhenAllTyped_WorkerCompletedInputs_AwaitResumesOnMainThread()
+        {
+            int mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
+            OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
+            OnityTask<int[]> combined = OnityTask.WhenAll(first.Task, second.Task);
+            Task<int> awaited = AwaitTypedAndGetThreadId(combined, new[] { 11, 22 });
+
+            yield return null;
+            Task<int> producer = Task.Run(() =>
+            {
+                int workerThreadId = Thread.CurrentThread.ManagedThreadId;
+                second.TrySetResult(22);
+                first.TrySetResult(11);
+                return workerThreadId;
+            });
+            yield return WaitForFlag(() => producer.IsCompleted && awaited.IsCompleted);
+
+            Assert.That(producer.IsCompletedSuccessfully, Is.True);
+            Assert.That(awaited.IsCompletedSuccessfully, Is.True);
+            Assert.That(producer.Result, Is.Not.EqualTo(mainThreadId));
+            Assert.That(awaited.Result, Is.EqualTo(mainThreadId));
+            Assert.That(combined.IsCompletedSuccessfully, Is.True);
+        }
+
+        [UnityTest]
         public IEnumerator PooledTask_StaleCopyThrowsAfterSourceReuse()
         {
             bool completeFirst = false;
@@ -580,6 +606,14 @@ namespace Onity.Tests.PlayMode
         private static async Task<int> AwaitAndGetThreadId(OnityTask task)
         {
             await task;
+            return Thread.CurrentThread.ManagedThreadId;
+        }
+
+        private static async Task<int> AwaitTypedAndGetThreadId(
+            OnityTask<int[]> task, int[] expected)
+        {
+            int[] result = await task;
+            Assert.That(result, Is.EqualTo(expected));
             return Thread.CurrentThread.ManagedThreadId;
         }
 

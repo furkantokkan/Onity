@@ -340,6 +340,17 @@ namespace Onity.Unity.Async
             return status;
         }
 
+        internal OnityTaskSourceStatus ReadCompletedOutcome(
+            out T result,
+            out Exception fault,
+            out CancellationToken cancellationToken)
+        {
+            OnityTaskSourceStatus status = ReadCompletedOutcome(
+                out fault, out cancellationToken);
+            result = status == OnityTaskSourceStatus.Succeeded ? m_result : default;
+            return status;
+        }
+
         private Task<T> GetTaskBridge(int token)
         {
             lock (m_gate)
