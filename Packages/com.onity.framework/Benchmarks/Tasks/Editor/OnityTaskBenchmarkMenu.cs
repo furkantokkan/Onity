@@ -20,9 +20,13 @@ namespace Onity.Editor.Benchmarks
         private const string k_commandLineStartTicksSessionKey = "Onity.Benchmarks.OnityTaskCommandLineStartTicks";
         private const string k_typedWhenAnySessionKey = "Onity.Benchmarks.TypedWhenAny";
         private const string k_allocationOnlySessionKey = "Onity.Benchmarks.TaskAllocationOnly";
+        private const string k_collectorDiagnosticSessionKey =
+            "Onity.Benchmarks.TypedWhenAnyCollectorDiagnostic";
         private const string k_outputArgument = "-onityTaskBenchmarkOutput";
         private const string k_typedWhenAnyArgument = "-onityTypedWhenAnyBenchmark";
         private const string k_allocationOnlyArgument = "-onityTaskAllocationsOnly";
+        private const string k_collectorDiagnosticArgument =
+            "-onityTypedWhenAnyCollectorDiagnostic";
         private const double k_commandLineTimeoutSeconds = 900d;
 
         static OnityTaskBenchmarkMenu()
@@ -88,11 +92,13 @@ namespace Onity.Editor.Benchmarks
             bool commandLineRun = SessionState.GetBool(k_commandLineSessionKey, false);
             bool typedWhenAny = SessionState.GetBool(k_typedWhenAnySessionKey, false);
             bool allocationOnly = SessionState.GetBool(k_allocationOnlySessionKey, false);
+            bool collectorDiagnostic = SessionState.GetBool(k_collectorDiagnosticSessionKey, false);
             string latestJson = GetLatestJsonPath(typedWhenAny);
             if (!commandLineRun)
             {
                 SessionState.EraseBool(k_typedWhenAnySessionKey);
                 SessionState.EraseBool(k_allocationOnlySessionKey);
+                SessionState.EraseBool(k_collectorDiagnosticSessionKey);
             }
 
             if (typedWhenAny)
@@ -100,7 +106,7 @@ namespace Onity.Editor.Benchmarks
                 OnityTypedWhenAnyBenchmarkRunner.Run(
                     latestJson,
                     commandLineRun ? HandleCommandLineCompleted : null,
-                    allocationOnly);
+                    allocationOnly, collectorDiagnostic);
             }
             else
             {
@@ -121,16 +127,26 @@ namespace Onity.Editor.Benchmarks
             string latestJson = GetArgumentValue(k_outputArgument);
             bool typedWhenAny = HasArgument(k_typedWhenAnyArgument);
             bool allocationOnly = HasArgument(k_allocationOnlyArgument);
+            bool collectorDiagnostic = HasArgument(k_collectorDiagnosticArgument);
             if (allocationOnly && (!typedWhenAny || !HasArgument("-profiler-enable")))
             {
                 throw new ArgumentException(
                     "Typed WhenAny allocation pass requires its mode and -profiler-enable.");
             }
 
+            if (collectorDiagnostic && (!typedWhenAny || allocationOnly ||
+                !HasArgument("-profiler-enable")))
+            {
+                throw new ArgumentException(
+                    "Typed WhenAny collector diagnostic requires its mode and -profiler-enable "
+                    + "without -onityTaskAllocationsOnly.");
+            }
+
             if (string.IsNullOrEmpty(latestJson))
             {
                 string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
                 latestJson = Path.Combine(projectRoot, k_resultsDirectory,
+                    collectorDiagnostic ? "onity-typed-whenany-collector-diagnostic-latest.json" :
                     typedWhenAny ? "onity-typed-whenany-benchmark-latest.json" :
                         k_latestJsonFileName);
             }
@@ -154,6 +170,7 @@ namespace Onity.Editor.Benchmarks
             SessionState.SetBool(k_commandLineSessionKey, true);
             SessionState.SetBool(k_typedWhenAnySessionKey, typedWhenAny);
             SessionState.SetBool(k_allocationOnlySessionKey, allocationOnly);
+            SessionState.SetBool(k_collectorDiagnosticSessionKey, collectorDiagnostic);
             SessionState.SetString(k_commandLineStartTicksSessionKey, DateTime.UtcNow.Ticks.ToString());
             EditorApplication.update -= HandleCommandLineTimeout;
             EditorApplication.update += HandleCommandLineTimeout;
@@ -263,6 +280,7 @@ namespace Onity.Editor.Benchmarks
             SessionState.EraseBool(k_commandLineSessionKey);
             SessionState.EraseBool(k_typedWhenAnySessionKey);
             SessionState.EraseBool(k_allocationOnlySessionKey);
+            SessionState.EraseBool(k_collectorDiagnosticSessionKey);
             SessionState.EraseString(k_outputSessionKey);
             SessionState.EraseString(k_commandLineStartTicksSessionKey);
             EditorApplication.update -= HandleCommandLineTimeout;

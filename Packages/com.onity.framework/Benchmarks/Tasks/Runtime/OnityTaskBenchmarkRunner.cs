@@ -907,6 +907,7 @@ namespace Onity.Benchmarks
         private string m_outputPath;
         private Action<string, Exception> m_completed;
         private bool m_allocationOnly;
+        private bool m_collectorDiagnostic;
         private bool m_originalTracker;
         private bool m_trackerCaptured;
         private bool m_trackerStackTraceAtStart;
@@ -917,6 +918,12 @@ namespace Onity.Benchmarks
         private Action m_emptyBatch;
         private Action m_positiveControl;
 #if UNITY_EDITOR
+        private readonly System.Collections.Generic.List<CaptureDiagnostic> m_captureDiagnostics =
+            new System.Collections.Generic.List<CaptureDiagnostic>(16);
+        private string m_capturePhase;
+        private ulong m_mainProfilerThreadId;
+        private int m_mainManagedThreadId;
+        private bool m_mainThreadIdentified;
         private bool m_profilerCaptured;
         private bool m_profilerWasEnabled;
         private bool m_driverWasEnabled;
@@ -930,7 +937,7 @@ namespace Onity.Benchmarks
 #endif
 
         public static void Run(string outputPath, Action<string, Exception> completed,
-            bool allocationOnly)
+            bool allocationOnly, bool collectorDiagnostic)
         {
             if (s_isRunning)
             {
@@ -949,6 +956,7 @@ namespace Onity.Benchmarks
             runner.m_outputPath = Path.GetFullPath(outputPath);
             runner.m_completed = completed;
             runner.m_allocationOnly = allocationOnly;
+            runner.m_collectorDiagnostic = collectorDiagnostic;
             s_isRunning = true;
         }
 
@@ -979,14 +987,21 @@ namespace Onity.Benchmarks
             {
                 ValidateNumericSettings();
 #if UNITY_EDITOR
-                if (!m_allocationOnly)
+                if (!m_allocationOnly && !m_collectorDiagnostic)
                 {
                     Profiler.enabled = false;
                     ProfilerDriver.enabled = false;
                 }
 #endif
                 Report expected = CreateReport();
-                if (m_allocationOnly)
+                if (m_collectorDiagnostic)
+                {
+                    report = expected;
+                    report.collectorDiagnosticOnly = true;
+                    report.scope = "Collector diagnostic only. Positive/empty controls and three "
+                        + "first-observed pending scheduling routes; no numerical comparison.";
+                }
+                else if (m_allocationOnly)
                 {
                     report = JsonUtility.FromJson<Report>(File.ReadAllText(m_outputPath));
                     ValidateAllocationInput(report, expected);
@@ -1009,7 +1024,7 @@ namespace Onity.Benchmarks
             }
 
 #if UNITY_EDITOR
-            if (failure == null && m_allocationOnly)
+            if (failure == null && (m_allocationOnly || m_collectorDiagnostic))
             {
                 IEnumerator allocation = RunAllocations(report);
                 while (true)
@@ -1727,6 +1742,7 @@ namespace Onity.Benchmarks
                 yield return null;
             }
 
+            m_capturePhase = "positive-control";
             yield return CaptureAllocation(m_positiveControl);
             if (!m_lastCaptureValid || m_lastCaptureBytes != 65568)
             {
@@ -1734,6 +1750,7 @@ namespace Onity.Benchmarks
             }
 
             report.positiveControlBytes = m_lastCaptureBytes;
+            m_capturePhase = "empty-control";
             yield return CaptureAllocation(m_emptyBatch);
             if (!m_lastCaptureValid || m_lastCaptureBytes != 0)
             {
@@ -1744,6 +1761,7 @@ namespace Onity.Benchmarks
             report.emptyHarnessSampleAllocatedBytes = new long[k_samples];
             for (int sample = 0; sample < k_samples; sample++)
             {
+                m_capturePhase = "empty-harness-" + sample.ToString(CultureInfo.InvariantCulture);
                 yield return CaptureAllocation(m_emptyBatch);
                 if (!m_lastCaptureValid || m_lastCaptureBytes != 0)
                 {
@@ -1758,15 +1776,28 @@ namespace Onity.Benchmarks
             {
                 m_activeRoute = route;
                 PrepareBatch(1);
+                m_capturePhase = "first-observed";
                 yield return CaptureAllocation(m_measureBatch);
-                RequireCapture();
                 FinishBatch();
-                report.firstObserved[route].sampleAllocatedBytes =
-                    new[] { m_lastCaptureBytes };
-                report.firstObserved[route].bytesPerOperation = m_lastCaptureBytes;
+                if (!m_collectorDiagnostic)
+                {
+                    RequireCapture();
+                    report.firstObserved[route].sampleAllocatedBytes =
+                        new[] { m_lastCaptureBytes };
+                    report.firstObserved[route].bytesPerOperation = m_lastCaptureBytes;
+                }
             }
 
             report.nativePendingGatePassed = m_nativeGateVerified;
+            if (m_collectorDiagnostic)
+            {
+                report.collectorCaptures = m_captureDiagnostics.ToArray();
+                report.allocationCounter = "Unavailable: collector diagnostic only.";
+                report.allocationGeneratedAtUtc =
+                    DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+                yield break;
+            }
+
             if (!report.nativePendingGatePassed)
             {
                 throw new InvalidDataException("Native pending source gate did not pass.");
@@ -1800,6 +1831,7 @@ namespace Onity.Benchmarks
                     {
                         m_activeRoute = (sample + turn) % 3;
                         PrepareBatch(k_operations);
+                        m_capturePhase = "warm-sample-" + sample.ToString(CultureInfo.InvariantCulture);
                         yield return CaptureAllocation(m_measureBatch);
                         RequireCapture();
                         FinishBatch();
@@ -1843,6 +1875,23 @@ namespace Onity.Benchmarks
             m_lastCaptureBytes = 0;
             string marker = k_markerPrefix +
                 (m_markerSequence++).ToString(CultureInfo.InvariantCulture);
+            CaptureDiagnostic diagnostic = new CaptureDiagnostic
+            {
+                phase = m_capturePhase,
+                scenario = m_activeScenario == null ? "control" : m_activeScenario.name,
+                route = m_activeScenario == null ? "control" : RouteName(m_activeRoute),
+                marker = marker,
+                emittingManagedThread = Thread.CurrentThread.ManagedThreadId,
+                emissionFirstFrame = ProfilerDriver.firstFrameIndex,
+                emissionLastFrame = ProfilerDriver.lastFrameIndex,
+                previousSuccessFrame = m_lastFrame,
+                profilerEnabled = Profiler.enabled,
+                driverEnabled = ProfilerDriver.enabled,
+                profileEditor = ProfilerDriver.profileEditor,
+                deepProfiling = ProfilerDriver.deepProfiling,
+                allocationCallstacks = Profiler.enableAllocationCallstacks,
+                result = "marker absent"
+            };
             Profiler.BeginSample(marker);
             try
             {
@@ -1853,75 +1902,230 @@ namespace Onity.Benchmarks
                 Profiler.EndSample();
             }
 
+            diagnostic.postEmissionFirstFrame = ProfilerDriver.firstFrameIndex;
+            diagnostic.postEmissionLastFrame = ProfilerDriver.lastFrameIndex;
+            diagnostic.profilerEnabledAfter = Profiler.enabled;
+            diagnostic.driverEnabledAfter = ProfilerDriver.enabled;
+            diagnostic.profileEditorAfter = ProfilerDriver.profileEditor;
             ValidateNumericSettings();
 
             for (int wait = 0; wait < k_profilerReadFrames; wait++)
             {
                 yield return null;
-                if (TryReadAllocation(
-                    Math.Max(m_lastFrame, ProfilerDriver.firstFrameIndex),
-                    ProfilerDriver.lastFrameIndex, marker,
-                    out long bytes, out int foundFrame))
+                int first = Math.Max(m_lastFrame, ProfilerDriver.firstFrameIndex);
+                int last = ProfilerDriver.lastFrameIndex;
+                diagnostic.readFirstFrame = first;
+                diagnostic.readLastFrame = last;
+                MarkerProbe probe = FindMarker(first, last, marker);
+                if (probe.found)
                 {
-                    m_lastCaptureBytes = bytes;
-                    m_lastFrame = foundFrame;
-                    m_lastCaptureValid = true;
+                    SetProbe(diagnostic, probe);
+                    if (probe.truncated)
+                    {
+                        diagnostic.result = "marker tree truncated";
+                    }
+                    else if (probe.count != 1)
+                    {
+                        diagnostic.result = "duplicate unique marker";
+                    }
+                    else if (!m_mainThreadIdentified)
+                    {
+                        if (m_capturePhase == "positive-control" &&
+                            probe.threadName == "Main Thread")
+                        {
+                            m_mainProfilerThreadId = probe.threadId;
+                            m_mainManagedThreadId = diagnostic.emittingManagedThread;
+                            m_mainThreadIdentified = true;
+                        }
+                        else
+                        {
+                            diagnostic.result = "main-thread identity unavailable";
+                        }
+                    }
+
+                    if (diagnostic.result == "marker absent" && m_mainThreadIdentified)
+                    {
+                        if (probe.threadName != "Main Thread" ||
+                            probe.threadId != m_mainProfilerThreadId ||
+                            diagnostic.emittingManagedThread != m_mainManagedThreadId)
+                        {
+                            diagnostic.result = "marker on other thread";
+                        }
+                        else
+                        {
+                            m_lastCaptureBytes = probe.bytes;
+                            m_lastFrame = probe.frame;
+                            m_lastCaptureValid = true;
+                            diagnostic.result = "main-thread marker";
+                        }
+                    }
+
+                    RecordCapture(diagnostic);
                     yield break;
                 }
             }
+
+            MarkerProbe retained = FindMarker(
+                ProfilerDriver.firstFrameIndex, ProfilerDriver.lastFrameIndex, marker);
+            if (retained.found)
+            {
+                SetProbe(diagnostic, retained);
+                diagnostic.result = retained.truncated ? "marker tree truncated" :
+                    retained.frame < diagnostic.readFirstFrame ? "marker outside cursor" :
+                    "marker on other thread or unreadable in cursor";
+            }
+            else
+            {
+                diagnostic.result = retained.invalidStream
+                    ? "marker absent; invalid frame/thread stream observed"
+                    : "marker absent from retained frames";
+            }
+
+            RecordCapture(diagnostic);
         }
 
-        private static bool TryReadAllocation(int firstFrame, int lastFrame,
-            string marker, out long bytes, out int foundFrame)
+        private void RecordCapture(CaptureDiagnostic diagnostic)
         {
-            bytes = 0;
-            foundFrame = -1;
+            if (m_collectorDiagnostic)
+            {
+                m_captureDiagnostics.Add(diagnostic);
+            }
+
+            if (m_collectorDiagnostic || !m_lastCaptureValid)
+            {
+                Debug.Log("Typed WhenAny collector: " + JsonUtility.ToJson(diagnostic), this);
+            }
+        }
+
+        private static void SetProbe(CaptureDiagnostic diagnostic, MarkerProbe probe)
+        {
+            diagnostic.foundFrame = probe.frame;
+            diagnostic.threadIndex = probe.threadIndex;
+            diagnostic.threadName = probe.threadName;
+            diagnostic.threadGroupName = probe.threadGroupName;
+            diagnostic.threadId = probe.threadId.ToString(CultureInfo.InvariantCulture);
+            diagnostic.markerSample = probe.sample;
+            diagnostic.markerCount = probe.count;
+            diagnostic.markerAllocatedBytes = probe.bytes;
+        }
+
+        private static MarkerProbe FindMarker(int firstFrame, int lastFrame, string marker)
+        {
+            MarkerProbe result = new MarkerProbe { frame = -1, threadIndex = -1, sample = -1 };
             for (int frame = firstFrame; frame <= lastFrame; frame++)
             {
-                using (RawFrameDataView data = ProfilerDriver.GetRawFrameDataView(frame, 0))
+                for (int thread = 0; ; thread++)
                 {
-                    if (!data.valid)
+                    using (RawFrameDataView data = ProfilerDriver.GetRawFrameDataView(frame, thread))
                     {
-                        continue;
-                    }
+                        if (!data.valid)
+                        {
+                            if (thread == 0)
+                            {
+                                result.invalidStream = true;
+                            }
 
-                    int markerId = data.GetMarkerId(marker);
-                    int allocationId = data.GetMarkerId("GC.Alloc");
-                    if (markerId == FrameDataView.invalidMarkerId)
-                    {
-                        continue;
-                    }
+                            break;
+                        }
 
-                    for (int sample = 0; sample < data.sampleCount; sample++)
-                    {
-                        if (data.GetSampleMarkerId(sample) != markerId)
+                        int markerId = data.GetMarkerId(marker);
+                        if (markerId == FrameDataView.invalidMarkerId)
                         {
                             continue;
                         }
 
-                        int end = sample + data.GetSampleChildrenCountRecursive(sample);
-                        if (end >= data.sampleCount)
+                        int allocationId = data.GetMarkerId("GC.Alloc");
+                        for (int sample = 0; sample < data.sampleCount; sample++)
                         {
-                            throw new InvalidDataException("Profiler marker tree was truncated.");
-                        }
-
-                        for (int child = sample + 1; child <= end; child++)
-                        {
-                            if (data.GetSampleMarkerId(child) == allocationId)
+                            if (data.GetSampleMarkerId(sample) != markerId)
                             {
-                                bytes += data.GetSampleMetadataAsLong(child, 0);
+                                continue;
+                            }
+
+                            result.count++;
+                            if (result.count > 1)
+                            {
+                                continue;
+                            }
+
+                            result.found = true;
+                            result.frame = frame;
+                            result.threadIndex = thread;
+                            result.threadName = data.threadName;
+                            result.threadGroupName = data.threadGroupName;
+                            result.threadId = data.threadId;
+                            result.sample = sample;
+                            int end = sample + data.GetSampleChildrenCountRecursive(sample);
+                            if (end >= data.sampleCount)
+                            {
+                                result.truncated = true;
+                                continue;
+                            }
+
+                            for (int child = sample + 1; child <= end; child++)
+                            {
+                                if (data.GetSampleMarkerId(child) == allocationId)
+                                {
+                                    result.bytes += data.GetSampleMetadataAsLong(child, 0);
+                                }
                             }
                         }
-
-                        foundFrame = frame;
-                        return true;
                     }
                 }
             }
 
-            return false;
+            return result;
+        }
+
+        private struct MarkerProbe
+        {
+            public bool found;
+            public bool invalidStream;
+            public bool truncated;
+            public int count;
+            public int frame;
+            public int threadIndex;
+            public int sample;
+            public string threadName;
+            public string threadGroupName;
+            public ulong threadId;
+            public long bytes;
         }
 #endif
+
+        [Serializable]
+        private sealed class CaptureDiagnostic
+        {
+            public string phase;
+            public string scenario;
+            public string route;
+            public string marker;
+            public int emittingManagedThread;
+            public int emissionFirstFrame;
+            public int emissionLastFrame;
+            public int postEmissionFirstFrame;
+            public int postEmissionLastFrame;
+            public int previousSuccessFrame;
+            public int readFirstFrame;
+            public int readLastFrame;
+            public bool profilerEnabled;
+            public bool driverEnabled;
+            public bool profileEditor;
+            public bool deepProfiling;
+            public bool allocationCallstacks;
+            public bool profilerEnabledAfter;
+            public bool driverEnabledAfter;
+            public bool profileEditorAfter;
+            public string result;
+            public int foundFrame;
+            public int threadIndex;
+            public string threadName;
+            public string threadGroupName;
+            public string threadId;
+            public int markerSample;
+            public int markerCount;
+            public long markerAllocatedBytes;
+        }
 
         [Serializable]
         private sealed class Report
@@ -1951,6 +2155,8 @@ namespace Onity.Benchmarks
             public int failureTimingBatches;
             public long stopwatchFrequency;
             public string scope;
+            public bool collectorDiagnosticOnly;
+            public CaptureDiagnostic[] collectorCaptures;
             public bool timingTrackerStackTraceEnabled;
             public bool timingDeepProfilingEnabled;
             public bool timingCallstacksEnabled;
