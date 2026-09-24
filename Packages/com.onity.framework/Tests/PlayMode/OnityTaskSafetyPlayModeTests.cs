@@ -68,6 +68,125 @@ namespace Onity.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator WhenAnyTyped_WorkerCompletedInput_NativeAwaitResumesOnCompletionThread()
+        {
+            int mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
+            OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> typedRace =
+                OnityTask.WhenAny(first.Task, second.Task);
+            Task<(int winnerIndex, int result, int threadId,
+                SynchronizationContext context)> typedAwaited =
+                AwaitTypedRaceAndGetContext(typedRace);
+            OnityTaskCompletionSource untypedFirst = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource untypedSecond = new OnityTaskCompletionSource();
+            OnityTask<int> untypedRace =
+                OnityTask.WhenAny(untypedFirst.Task, untypedSecond.Task);
+            Task<(int winnerIndex, int threadId)> untypedAwaited =
+                AwaitUntypedRaceAndGetThreadId(untypedRace);
+
+            try
+            {
+                yield return null;
+                Task<int> producer = Task.Run(() =>
+                {
+                    int workerThreadId = Thread.CurrentThread.ManagedThreadId;
+                    second.TrySetResult(22);
+                    untypedSecond.TrySetResult();
+                    return workerThreadId;
+                });
+                yield return WaitForFlag(() => producer.IsCompleted
+                    && typedAwaited.IsCompleted && untypedAwaited.IsCompleted);
+
+                Assert.That(producer.IsCompletedSuccessfully, Is.True);
+                Assert.That(typedAwaited.IsCompletedSuccessfully, Is.True);
+                Assert.That(untypedAwaited.IsCompletedSuccessfully, Is.True);
+                Assert.That(producer.Result, Is.Not.EqualTo(mainThreadId));
+                Assert.That(typedAwaited.Result.winnerIndex, Is.EqualTo(1));
+                Assert.That(typedAwaited.Result.result, Is.EqualTo(22));
+                Assert.That(typedAwaited.Result.threadId, Is.EqualTo(producer.Result));
+                Assert.That(untypedAwaited.Result.winnerIndex, Is.EqualTo(1));
+                Assert.That(untypedAwaited.Result.threadId, Is.EqualTo(producer.Result));
+            }
+            finally
+            {
+                first.TrySetResult(11);
+                untypedFirst.TrySetResult();
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator WhenAnyTyped_AsTaskAwait_ResumesOnUnityContext()
+        {
+            int mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            SynchronizationContext unityContext = SynchronizationContext.Current;
+            Assert.That(unityContext, Is.Not.Null);
+            OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
+            OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> race =
+                OnityTask.WhenAny(first.Task, second.Task);
+            Task<(int winnerIndex, int result)> bridge = race.AsTask();
+            Task<(int winnerIndex, int result, int threadId,
+                SynchronizationContext context)> awaited =
+                AwaitTypedBridgeAndGetContext(bridge);
+
+            try
+            {
+                yield return null;
+                Task<int> producer = Task.Run(() =>
+                {
+                    int workerThreadId = Thread.CurrentThread.ManagedThreadId;
+                    second.TrySetResult(22);
+                    return workerThreadId;
+                });
+                yield return WaitForFlag(() => producer.IsCompleted && awaited.IsCompleted);
+
+                Assert.That(producer.IsCompletedSuccessfully, Is.True);
+                Assert.That(awaited.IsCompletedSuccessfully, Is.True);
+                Assert.That(producer.Result, Is.Not.EqualTo(mainThreadId));
+                Assert.That(awaited.Result.winnerIndex, Is.EqualTo(1));
+                Assert.That(awaited.Result.result, Is.EqualTo(22));
+                Assert.That(awaited.Result.threadId, Is.EqualTo(mainThreadId));
+                Assert.That(awaited.Result.context, Is.SameAs(unityContext));
+            }
+            finally
+            {
+                first.TrySetResult(11);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator WhenAnyTyped_MainThreadCompletion_NativeAwaitStaysOnUnityContext()
+        {
+            int mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            SynchronizationContext unityContext = SynchronizationContext.Current;
+            OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
+            OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> race =
+                OnityTask.WhenAny(first.Task, second.Task);
+            Task<(int winnerIndex, int result, int threadId,
+                SynchronizationContext context)> awaited =
+                AwaitTypedRaceAndGetContext(race);
+
+            try
+            {
+                yield return null;
+                second.TrySetResult(22);
+                yield return WaitForFlag(() => awaited.IsCompleted);
+
+                Assert.That(awaited.IsCompletedSuccessfully, Is.True);
+                Assert.That(awaited.Result.winnerIndex, Is.EqualTo(1));
+                Assert.That(awaited.Result.result, Is.EqualTo(22));
+                Assert.That(awaited.Result.threadId, Is.EqualTo(mainThreadId));
+                Assert.That(awaited.Result.context, Is.SameAs(unityContext));
+            }
+            finally
+            {
+                first.TrySetResult(11);
+            }
+        }
+
+        [UnityTest]
         public IEnumerator PooledTask_StaleCopyThrowsAfterSourceReuse()
         {
             bool completeFirst = false;
@@ -555,6 +674,31 @@ namespace Onity.Tests.PlayMode
         private static async Task ObservePreservedTask(OnityTask task)
         {
             await task;
+        }
+
+        private static async Task<(int winnerIndex, int result, int threadId,
+            SynchronizationContext context)> AwaitTypedRaceAndGetContext(
+            OnityTask<(int winnerIndex, int result)> task)
+        {
+            (int winnerIndex, int result) winner = await task;
+            return (winner.winnerIndex, winner.result,
+                Thread.CurrentThread.ManagedThreadId, SynchronizationContext.Current);
+        }
+
+        private static async Task<(int winnerIndex, int result, int threadId,
+            SynchronizationContext context)> AwaitTypedBridgeAndGetContext(
+            Task<(int winnerIndex, int result)> task)
+        {
+            (int winnerIndex, int result) winner = await task;
+            return (winner.winnerIndex, winner.result,
+                Thread.CurrentThread.ManagedThreadId, SynchronizationContext.Current);
+        }
+
+        private static async Task<(int winnerIndex, int threadId)> AwaitUntypedRaceAndGetThreadId(
+            OnityTask<int> task)
+        {
+            int winnerIndex = await task;
+            return (winnerIndex, Thread.CurrentThread.ManagedThreadId);
         }
 
         private static IEnumerator WaitForFlag(Func<bool> predicate)

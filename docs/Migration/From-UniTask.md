@@ -62,6 +62,7 @@ using Onity.Unity.Async;
 | `T[] values = await UniTask.WhenAll(typedTasks)` | `T[] values = await OnityTask.WhenAll(typedTasks)` |
 | `await UniTask.WhenAll(first, second)` for two untyped inputs | `await OnityTask.WhenAll(first, second)` |
 | `int winner = await UniTask.WhenAny(first, second)` for two untyped inputs | `int winner = await OnityTask.WhenAny(first, second)` |
+| First completed input from two `UniTask<T>` values | `(int winnerIndex, T result) = await OnityTask.WhenAny(first, second)` for two `OnityTask<T>` values |
 | `await observable.FirstAsync(ct)` | `await observable.FirstOnityTask(ct)` |
 | `await asyncPublisher.PublishAsync(message, ct).AsTask()` | `await asyncPublisher.PublishOnityTask(message, ct)` |
 
@@ -72,6 +73,16 @@ and keeps the output shareable. For pending calls, an input with a preexisting
 `AsTask()` bridge or another source type uses the existing Task-based composition.
 Preserve or bridge a pooled single-consumer operation when multiple consumers
 need its result; do not pass the same pooled value twice.
+
+Typed `WhenAny<T>` takes two inputs with the same result type and returns the
+winner's index and value. It consumes both inputs once and observes the loser
+without canceling it; duplicate single-consumer native inputs are rejected.
+The winning fault or cancellation propagates, and a faulted
+`OperationCanceledException` stays faulted. Its native continuation follows
+the completion thread rather than capturing Unity's `SynchronizationContext`.
+If the next step needs Unity's main thread, await its `AsTask()` bridge from the
+Unity context instead. The typed result source allocates; this mapping makes
+no performance equivalence claim with UniTask.
 
 ## Scene Loading
 

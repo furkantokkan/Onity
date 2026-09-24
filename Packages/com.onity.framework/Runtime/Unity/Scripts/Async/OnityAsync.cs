@@ -94,6 +94,38 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
+        /// Completes when either typed input completes and returns its argument index and result.
+        /// Both inputs are consumed; the loser continues running and is not canceled.
+        /// The winning failure or cancellation is propagated instead of a result.
+        /// </summary>
+        /// <remarks>
+        /// Native continuations do not capture SynchronizationContext at creation or await
+        /// registration; they run on the completing input's thread, including worker threads.
+        /// To resume on Unity's main thread, call and await AsTask() from the Unity context.
+        /// </remarks>
+        /// <typeparam name="T">Result type shared by both inputs.</typeparam>
+        /// <param name="first">Input at index zero.</param>
+        /// <param name="second">Input at index one.</param>
+        /// <returns>A single-consumer task with the first completed input's index and result.</returns>
+        /// <exception cref="ArgumentException">
+        /// Both inputs refer to the same single-consumer native operation.
+        /// </exception>
+        public static OnityTask<(int winnerIndex, T result)> WhenAny<T>(
+            OnityTask<T> first,
+            OnityTask<T> second)
+        {
+            if (first.SharesSingleConsumerSourceWith(second))
+            {
+                throw new ArgumentException(
+                    "A single-consumer OnityTask cannot be passed to WhenAny twice.",
+                    nameof(second));
+            }
+
+            return new OnityTask<(int winnerIndex, T result)>(
+                new OnityWhenAnyTaskSource<T>(first, second));
+        }
+
+        /// <summary>
         /// True when the wrapped task completed.
         /// </summary>
         public bool IsCompleted => m_state == null
@@ -1481,6 +1513,11 @@ namespace Onity.Unity.Async
                 ? source.GetStatus(m_token) != OnityTaskSourceStatus.Pending
                 : ((Task<T>)m_state).IsCompleted);
 
+        internal bool IsCanceled => m_state != null
+            && (m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Canceled
+                : ((Task<T>)m_state).IsCanceled);
+
         /// <summary>
         /// Completes the await and returns the result.
         /// </summary>
@@ -2587,6 +2624,130 @@ namespace Onity.Unity.Async
                 if (isWinner)
                 {
                     TrySetResult(index);
+                }
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (isWinner)
+                {
+                    if (isCanceled)
+                    {
+                        TrySetCanceled(exception);
+                    }
+                    else
+                    {
+                        TrySetException(exception);
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                if (isWinner)
+                {
+                    TrySetException(exception);
+                }
+            }
+        }
+
+        private void CompleteRegistrationFailure(int index, Exception exception)
+        {
+            if (Interlocked.CompareExchange(ref m_winner, index + 1, 0) == 0)
+            {
+                TrySetException(exception);
+            }
+        }
+    }
+
+    internal sealed class OnityWhenAnyTaskSource<T> : OnityTaskSourceBase<(int winnerIndex, T result)>
+    {
+        private readonly Action m_firstContinuation;
+        private readonly Action m_secondContinuation;
+
+        private OnityTaskAwaiter<T> m_firstAwaiter;
+        private OnityTaskAwaiter<T> m_secondAwaiter;
+        private int m_winner;
+
+        public OnityWhenAnyTaskSource(OnityTask<T> first, OnityTask<T> second)
+        {
+            m_firstContinuation = CompleteFirst;
+            m_secondContinuation = CompleteSecond;
+            Reset(default);
+            RegisterFirst(first);
+            RegisterSecond(second);
+        }
+
+        protected override void ReleaseSource()
+        {
+            // The losing input can complete after the result is consumed.
+        }
+
+        private void RegisterFirst(OnityTask<T> task)
+        {
+            m_firstAwaiter = task.GetAwaiter();
+            try
+            {
+                if (m_firstAwaiter.IsCompleted)
+                {
+                    CompleteFirst();
+                }
+                else
+                {
+                    m_firstAwaiter.UnsafeOnCompleted(m_firstContinuation);
+                }
+            }
+            catch (Exception exception)
+            {
+                m_firstAwaiter = default;
+                CompleteRegistrationFailure(0, exception);
+            }
+        }
+
+        private void RegisterSecond(OnityTask<T> task)
+        {
+            m_secondAwaiter = task.GetAwaiter();
+            try
+            {
+                if (m_secondAwaiter.IsCompleted)
+                {
+                    CompleteSecond();
+                }
+                else
+                {
+                    m_secondAwaiter.UnsafeOnCompleted(m_secondContinuation);
+                }
+            }
+            catch (Exception exception)
+            {
+                m_secondAwaiter = default;
+                CompleteRegistrationFailure(1, exception);
+            }
+        }
+
+        private void CompleteFirst()
+        {
+            OnityTaskAwaiter<T> awaiter = m_firstAwaiter;
+            m_firstAwaiter = default;
+            CompleteInput(0, awaiter);
+        }
+
+        private void CompleteSecond()
+        {
+            OnityTaskAwaiter<T> awaiter = m_secondAwaiter;
+            m_secondAwaiter = default;
+            CompleteInput(1, awaiter);
+        }
+
+        private void CompleteInput(int index, OnityTaskAwaiter<T> awaiter)
+        {
+            bool isWinner = Interlocked.CompareExchange(ref m_winner, index + 1, 0) == 0;
+            bool isCanceled = false;
+            try
+            {
+                isCanceled = awaiter.IsCanceled;
+                T result = awaiter.GetResult();
+                if (isWinner)
+                {
+                    TrySetResult((index, result));
                 }
             }
             catch (OperationCanceledException exception)

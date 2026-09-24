@@ -1211,6 +1211,389 @@ namespace Onity.Tests.EditMode
             Assert.CatchAsync<OperationCanceledException>(async () => await whenAllTask.AsTask());
         }
 
+        [TestCase(0, 11)]
+        [TestCase(1, 22)]
+        public void OnityTask_WhenAnyTyped_PendingWinner_ReturnsMatchingIndexAndValue(
+            int winnerIndex, int expectedValue)
+        {
+            OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
+            OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> race =
+                OnityTask.WhenAny(first.Task, second.Task);
+
+            Assert.That(race.IsCompleted, Is.False);
+            if (winnerIndex == 0)
+            {
+                first.TrySetResult(expectedValue);
+            }
+            else
+            {
+                second.TrySetResult(expectedValue);
+            }
+
+            Assert.That(race.IsCompletedSuccessfully, Is.True);
+            (int index, int value) result = race.GetAwaiter().GetResult();
+            Assert.That(result.index, Is.EqualTo(winnerIndex));
+            Assert.That(result.value, Is.EqualTo(expectedValue));
+
+            if (winnerIndex == 0)
+            {
+                second.TrySetResult(22);
+            }
+            else
+            {
+                first.TrySetResult(11);
+            }
+        }
+
+        [Test]
+        public void OnityTask_WhenAnyTyped_AlreadyCompletedInputs_FirstWinsTie()
+        {
+            OnityTask<(int winnerIndex, int result)> race = OnityTask.WhenAny(
+                OnityTask<int>.FromResult(11),
+                OnityTask<int>.FromResult(22));
+
+            Assert.That(race.IsCompletedSuccessfully, Is.True);
+            (int index, int value) result = race.GetAwaiter().GetResult();
+            Assert.That(result.index, Is.Zero);
+            Assert.That(result.value, Is.EqualTo(11));
+        }
+
+        [Test]
+        public void OnityTask_WhenAnyTyped_DefaultAndReferenceResults_PreserveWinnerValue()
+        {
+            OnityTask<(int winnerIndex, int result)> defaultRace = OnityTask.WhenAny(
+                OnityTask<int>.FromResult(0),
+                OnityTask<int>.FromResult(22));
+            object expected = new object();
+            OnityTask<(int winnerIndex, object result)> referenceRace = OnityTask.WhenAny(
+                OnityTask<object>.FromResult(null),
+                OnityTask<object>.FromResult(expected));
+
+            (int defaultIndex, int defaultValue) = defaultRace.GetAwaiter().GetResult();
+            (int referenceIndex, object referenceValue) = referenceRace.GetAwaiter().GetResult();
+            Assert.That(defaultIndex, Is.Zero);
+            Assert.That(defaultValue, Is.Zero);
+            Assert.That(referenceIndex, Is.Zero);
+            Assert.That(referenceValue, Is.Null);
+
+            OnityTaskCompletionSource<object> pending = new OnityTaskCompletionSource<object>();
+            OnityTask<(int winnerIndex, object result)> pendingReference = OnityTask.WhenAny(
+                pending.Task,
+                OnityTask<object>.FromResult(expected));
+            (int pendingIndex, object pendingValue) = pendingReference.GetAwaiter().GetResult();
+            Assert.That(pendingIndex, Is.EqualTo(1));
+            Assert.That(pendingValue, Is.SameAs(expected));
+            pending.TrySetResult(null);
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        public void OnityTask_WhenAnyTyped_WinnerFault_PreservesException(int winnerIndex)
+        {
+            OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
+            OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
+            InvalidOperationException failure = new InvalidOperationException("winner failed");
+            OnityTask<(int winnerIndex, int result)> race =
+                OnityTask.WhenAny(first.Task, second.Task);
+
+            if (winnerIndex == 0)
+            {
+                first.TrySetException(failure);
+            }
+            else
+            {
+                second.TrySetException(failure);
+            }
+
+            Assert.That(race.IsFaulted, Is.True);
+            Assert.That(race.IsCanceled, Is.False);
+            Assert.That(Assert.Throws<InvalidOperationException>(
+                () => race.GetAwaiter().GetResult()), Is.SameAs(failure));
+            (winnerIndex == 0 ? second : first).TrySetResult(99);
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        public void OnityTask_WhenAnyTyped_WinnerCancellation_PreservesToken(int winnerIndex)
+        {
+            using CancellationTokenSource cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
+            OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> race =
+                OnityTask.WhenAny(first.Task, second.Task);
+
+            (winnerIndex == 0 ? first : second).TrySetCanceled(cancellation.Token);
+
+            Assert.That(race.IsCanceled, Is.True);
+            Assert.That(race.IsFaulted, Is.False);
+            OperationCanceledException caught = Assert.Catch<OperationCanceledException>(
+                () => race.GetAwaiter().GetResult());
+            Assert.That(caught.CancellationToken, Is.EqualTo(cancellation.Token));
+            (winnerIndex == 0 ? second : first).TrySetResult(99);
+        }
+
+        [Test]
+        public void OnityTask_WhenAnyTyped_FaultedOperationCanceledException_RemainsFaulted()
+        {
+            OperationCanceledException failure =
+                new OperationCanceledException("faulted input");
+            OnityTask<(int winnerIndex, int result)> race = OnityTask.WhenAny(
+                OnityTask<int>.FromException(failure),
+                OnityTask<int>.FromResult(22));
+
+            Assert.That(race.IsFaulted, Is.True);
+            Assert.That(race.IsCanceled, Is.False);
+            Task<(int winnerIndex, int result)> bridge = race.AsTask();
+            Assert.That(bridge.IsFaulted, Is.True);
+            Assert.That(bridge.IsCanceled, Is.False);
+            Assert.That(bridge.Exception.InnerException, Is.SameAs(failure));
+        }
+
+        [Test]
+        public void OnityTask_WhenAnyTyped_LosingFaultAndCancellation_DoNotChangeWinner()
+        {
+            using CancellationTokenSource cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            OnityTaskCompletionSource<int> faultingLoser = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> faultRace = OnityTask.WhenAny(
+                OnityTask<int>.FromResult(11), faultingLoser.Task);
+            Task<(int winnerIndex, int result)> faultBridge = faultRace.AsTask();
+            Assert.That(faultBridge.GetAwaiter().GetResult(), Is.EqualTo((0, 11)));
+            faultingLoser.TrySetException(new InvalidOperationException("loser failed"));
+            Assert.That(faultBridge.IsCompletedSuccessfully, Is.True);
+            Assert.That(faultBridge.Result, Is.EqualTo((0, 11)));
+
+            OnityTaskCompletionSource<int> cancelingLoser = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> cancelRace = OnityTask.WhenAny(
+                OnityTask<int>.FromResult(33), cancelingLoser.Task);
+            Task<(int winnerIndex, int result)> cancelBridge = cancelRace.AsTask();
+            Assert.That(cancelBridge.GetAwaiter().GetResult(), Is.EqualTo((0, 33)));
+            cancelingLoser.TrySetCanceled(cancellation.Token);
+            Assert.That(cancelBridge.IsCompletedSuccessfully, Is.True);
+            Assert.That(cancelBridge.Result, Is.EqualTo((0, 33)));
+        }
+
+        [Test]
+        public void OnityTask_WhenAnyTyped_LosingFault_AfterNativeResultOrPreserve_IsHarmless()
+        {
+            OnityTaskCompletionSource<int> nativeLoser = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> nativeRace = OnityTask.WhenAny(
+                OnityTask<int>.FromResult(11), nativeLoser.Task);
+            Assert.That(nativeRace.GetAwaiter().GetResult(), Is.EqualTo((0, 11)));
+            Assert.That(nativeLoser.TrySetException(
+                new InvalidOperationException("late native loser")), Is.True);
+
+            OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
+            OnityTaskCompletionSource<int> preservedLoser = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> shared =
+                OnityTask.WhenAny(first.Task, preservedLoser.Task).Preserve();
+            first.TrySetResult(33);
+            Assert.That(shared.GetAwaiter().GetResult(), Is.EqualTo((0, 33)));
+            Assert.That(preservedLoser.TrySetException(
+                new InvalidOperationException("late preserved loser")), Is.True);
+            Assert.That(shared.GetAwaiter().GetResult(), Is.EqualTo((0, 33)));
+        }
+
+        [TestCase(false, false)]
+        [TestCase(false, true)]
+        [TestCase(true, false)]
+        [TestCase(true, true)]
+        public void OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(
+            bool materializeWinner, bool loserFaults)
+        {
+            OnityTaskCompletionSource innerFirst = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource innerSecond = new OnityTaskCompletionSource();
+            OnityTask<int> nativeLoser = OnityTask.WhenAny(
+                innerFirst.Task, innerSecond.Task);
+            OnityTaskCompletionSource<int> winner = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> outer =
+                OnityTask.WhenAny(winner.Task, nativeLoser);
+            Task<(int winnerIndex, int result)> bridge =
+                materializeWinner ? outer.AsTask() : null;
+
+            Assert.That(winner.TrySetResult(42), Is.True);
+            if (materializeWinner)
+            {
+                Assert.That(bridge.GetAwaiter().GetResult(), Is.EqualTo((0, 42)));
+            }
+            else
+            {
+                Assert.That(outer.GetAwaiter().GetResult(), Is.EqualTo((0, 42)));
+            }
+
+            if (loserFaults)
+            {
+                Assert.That(innerFirst.TrySetException(
+                    new InvalidOperationException("late native loser")), Is.True);
+            }
+            else
+            {
+                Assert.That(innerFirst.TrySetResult(), Is.True);
+            }
+
+            Assert.That(nativeLoser.IsCompleted, Is.True);
+            Assert.Throws<InvalidOperationException>(
+                () => nativeLoser.GetAwaiter().GetResult());
+            Assert.That(outer.IsCompletedSuccessfully, Is.True);
+            if (materializeWinner)
+            {
+                Assert.That(bridge.GetAwaiter().GetResult(), Is.EqualTo((0, 42)));
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(
+                    () => outer.GetAwaiter().GetResult());
+            }
+
+            Assert.That(innerSecond.TrySetResult(), Is.True);
+        }
+
+        [Test]
+        public void OnityTask_WhenAnyTyped_DuplicateNativeInput_IsRejectedWithoutConsumingIt()
+        {
+            OnityTask<int> native =
+                OnityTask.WhenAny(OnityTask.Completed, OnityTask.Completed);
+
+            Assert.Throws<ArgumentException>(() => OnityTask.WhenAny(native, native));
+            Assert.That(native.GetAwaiter().GetResult(), Is.Zero);
+        }
+
+        [Test]
+        public void OnityTask_WhenAnyTyped_DuplicateShareableInput_FirstWinsTie()
+        {
+            OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> race =
+                OnityTask.WhenAny(source.Task, source.Task);
+
+            source.TrySetResult(17);
+
+            Assert.That(race.GetAwaiter().GetResult(), Is.EqualTo((0, 17)));
+        }
+
+        [Test]
+        public async Task OnityTask_WhenAnyTyped_Preserve_SupportsPendingAndLateConsumers()
+        {
+            OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
+            OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> original =
+                OnityTask.WhenAny(first.Task, second.Task);
+            OnityTask<(int winnerIndex, int result)> shared = original.Preserve();
+            Task<(int winnerIndex, int result)> firstObserver = ObserveTypedRace(shared);
+            Task<(int winnerIndex, int result)> secondObserver = ObserveTypedRace(shared);
+            Task<(int winnerIndex, int result)> bridge = shared.AsTask();
+
+            Assert.That(firstObserver.IsCompleted, Is.False);
+            Assert.That(secondObserver.IsCompleted, Is.False);
+            Assert.That(shared.AsTask(), Is.SameAs(bridge));
+            Assert.Throws<InvalidOperationException>(() => original.AsTask());
+            second.TrySetResult(22);
+
+            (int winnerIndex, int result)[] observed = await Task.WhenAll(
+                firstObserver, secondObserver, bridge);
+            Assert.That(observed, Is.All.EqualTo((1, 22)));
+            Assert.That(await ObserveTypedRace(shared), Is.EqualTo((1, 22)));
+            Assert.That(shared.AsTask(), Is.SameAs(bridge));
+            first.TrySetResult(11);
+            Assert.That(shared.GetAwaiter().GetResult(), Is.EqualTo((1, 22)));
+        }
+
+        [Test]
+        public void OnityTask_WhenAnyTyped_AsTaskBridgeSurvivesLateLoser()
+        {
+            OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
+            OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
+            OnityTask<(int winnerIndex, int result)> race =
+                OnityTask.WhenAny(first.Task, second.Task);
+            Task<(int winnerIndex, int result)> bridge = race.AsTask();
+
+            Assert.That(race.AsTask(), Is.SameAs(bridge));
+            second.TrySetResult(22);
+            Assert.That(bridge.GetAwaiter().GetResult(), Is.EqualTo((1, 22)));
+            first.TrySetResult(11);
+            Assert.That(bridge.GetAwaiter().GetResult(), Is.EqualTo((1, 22)));
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        public void OnityTask_WhenAnyTyped_StaleInput_FaultsDuringRegistration(
+            int staleIndex)
+        {
+            OnityTask<int> stale =
+                OnityTask.WhenAny(OnityTask.Completed, OnityTask.Completed);
+            FieldInfo stateField = typeof(OnityTask<int>).GetField(
+                "m_state", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(stateField, Is.Not.Null);
+            object source = stateField.GetValue(stale);
+            MethodInfo reset = source.GetType().BaseType.GetMethod(
+                "Reset", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(reset, Is.Not.Null);
+            reset.Invoke(source, new object[] { CancellationToken.None });
+            OnityTaskCompletionSource otherFirst = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource otherSecond = new OnityTaskCompletionSource();
+            OnityTask<int> other = OnityTask.WhenAny(otherFirst.Task, otherSecond.Task);
+            OnityTask<(int winnerIndex, int result)> race = staleIndex == 0
+                ? OnityTask.WhenAny(stale, other)
+                : OnityTask.WhenAny(other, stale);
+
+            Assert.That(race.IsFaulted, Is.True);
+            Assert.Throws<InvalidOperationException>(() => race.GetAwaiter().GetResult());
+            Assert.That(otherFirst.TrySetResult(), Is.True);
+            Assert.Throws<InvalidOperationException>(() => other.GetAwaiter().GetResult());
+            Assert.That(otherSecond.TrySetResult(), Is.True);
+        }
+
+        [Test]
+        public async Task OnityTask_WhenAnyTyped_ConcurrentCompletions_KeepIndexAndValueTogether()
+        {
+            for (int i = 0; i < 32; i++)
+            {
+                TaskCompletionSource<int> first =
+                    new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource<int> second =
+                    new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+                OnityTask<(int winnerIndex, int result)> race = OnityTask.WhenAny(
+                    OnityTask<int>.FromTask(first.Task),
+                    OnityTask<int>.FromTask(second.Task));
+                Task<(int winnerIndex, int result)> bridge = race.AsTask();
+
+                await Task.WhenAll(
+                    Task.Run(() => first.SetResult(11)),
+                    Task.Run(() => second.SetResult(22)));
+                Assert.That(await Task.WhenAny(bridge, Task.Delay(5000)), Is.SameAs(bridge));
+                (int winnerIndex, int result) = await bridge;
+                Assert.That(winnerIndex, Is.InRange(0, 1));
+                Assert.That(result, Is.EqualTo(winnerIndex == 0 ? 11 : 22));
+            }
+        }
+
+        [Test]
+        public async Task OnityTask_WhenAnyTyped_CompletionDuringRegistration_ResolvesWinner()
+        {
+            for (int i = 0; i < 32; i++)
+            {
+                TaskCompletionSource<int> first =
+                    new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+                using ManualResetEventSlim start = new ManualResetEventSlim(false);
+                Task producer = Task.Run(() =>
+                {
+                    start.Wait();
+                    first.SetResult(11);
+                });
+                start.Set();
+                OnityTask<(int winnerIndex, int result)> race = OnityTask.WhenAny(
+                    OnityTask<int>.FromTask(first.Task),
+                    OnityTask<int>.FromResult(22));
+                Task<(int winnerIndex, int result)> bridge = race.AsTask();
+
+                Assert.That(await Task.WhenAny(bridge, Task.Delay(5000)), Is.SameAs(bridge));
+                (int winnerIndex, int result) = await bridge;
+                Assert.That(result, Is.EqualTo(winnerIndex == 0 ? 11 : 22));
+                await producer;
+            }
+        }
+
         [Test]
         public async Task PublishOnityTask_DeliversToOnityTaskSubscriber()
         {
@@ -1613,6 +1996,12 @@ namespace Onity.Tests.EditMode
             // Native Unity Mono and other .NET runtimes may differ; compare the adapter to
             // its corresponding native awaiter instead of assuming a particular runtime's flow.
             return observed.Task.GetAwaiter().GetResult();
+        }
+
+        private static async Task<(int winnerIndex, int result)> ObserveTypedRace(
+            OnityTask<(int winnerIndex, int result)> task)
+        {
+            return await task;
         }
 
         private readonly struct ThrowingEquatableResult : IEquatable<ThrowingEquatableResult>
