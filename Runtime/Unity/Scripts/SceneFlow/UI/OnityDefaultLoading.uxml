@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="OnityDefaultLoading.uss" />
+    <ui:VisualElement name="onity-loading" class="onity-loading">
+        <ui:VisualElement class="onity-loading__panel">
+            <ui:Label name="onity-loading__status" text="Loading... 0%" class="onity-loading__status" />
+            <ui:Slider name="onity-loading__progress" low-value="0" high-value="1" value="0" show-input-field="false" class="onity-loading__progress" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

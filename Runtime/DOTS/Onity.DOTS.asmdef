@@ -1,0 +1,27 @@
+{
+  "name": "Onity.DOTS",
+  "rootNamespace": "Onity.DOTS",
+  "references": [
+    "Onity.Core",
+    "Onity.Messaging",
+    "Unity.Burst",
+    "Unity.Collections",
+    "Unity.Entities",
+    "Unity.Mathematics"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [
+    {
+      "name": "com.unity.entities",
+      "expression": "1.0.0",
+      "define": "ONITY_ENTITIES"
+    }
+  ],
+  "noEngineReferences": false
+}

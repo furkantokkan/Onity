@@ -1,0 +1,1409 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using Onity.Editor.Contexts;
+using Onity.Unity.Contexts;
+using Onity.Unity.SceneFlow;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
+
+namespace Onity.Editor.SceneFlow
+{
+    /// <summary>
+    /// Editor window for managing grouped scene-flow profiles and build-scene ordering.
+    /// </summary>
+    public sealed class OnitySceneFlowManagerWindow : EditorWindow
+    {
+        private const string k_windowTitle = "Onity Scene Flow";
+        private const string k_lastProfilePathEditorPrefKey = "Onity.SceneFlow.LastProfilePath";
+        private const string k_readySceneFolderPath = "Assets/Scenes/OnitySceneFlow";
+        private const string k_generatedAssetFolderPath = "Assets/OnitySceneFlowGenerated";
+        private const string k_loadingPanelSettingsPath =
+            k_generatedAssetFolderPath + "/OnityDefaultLoadingPanelSettings.asset";
+        private const string k_projectContextPrefabPath =
+            k_generatedAssetFolderPath + "/Resources/Onity/ProjectContext.prefab";
+        private const string k_loadingVisualTreePath =
+            "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/UI/OnityDefaultLoading.uxml";
+        private const string k_defaultLoadingSceneName = "LoadingScene";
+        private const string k_defaultMainMenuSceneName = "MainMenuHub";
+        private const string k_defaultHubSceneName = "Hub";
+        private const string k_defaultGameplaySceneName = "GameModeOrGameScene";
+        private const string k_defaultSingleSceneName = "GameScene";
+
+        private readonly List<SceneAsset> m_mainMenuScenes = new List<SceneAsset>();
+        private readonly List<SceneAsset> m_hubScenes = new List<SceneAsset>();
+        private readonly List<SceneAsset> m_gameplayScenes = new List<SceneAsset>();
+
+        private OnitySceneFlowProfile m_profile;
+        private bool m_routeViaLoadingScene = true;
+        private SceneAsset m_bootstrapScene;
+        private SceneAsset m_loadingScene;
+        private int m_defaultMainMenuSceneIndex = -1;
+        private int m_defaultHubSceneIndex = -1;
+        private int m_defaultGameplaySceneIndex = -1;
+
+        private enum ReadyProfilePreset
+        {
+            LoadingToGame,
+            LoadingToMenuToGame,
+            LoadingToMenuToHubToGame,
+            SingleScene
+        }
+
+        [MenuItem("Onity/Tools/Scene Flow Manager", false, 122)]
+        private static void OpenWindow()
+        {
+            OnitySceneFlowManagerWindow window = GetWindow<OnitySceneFlowManagerWindow>();
+            window.titleContent = new GUIContent(k_windowTitle);
+            window.minSize = new Vector2(640f, 420f);
+            window.Show();
+        }
+
+        private void OnEnable()
+        {
+            LoadLastProfile();
+            LoadProfileIntoWindow();
+        }
+
+        private void OnGUI()
+        {
+            DrawHeader();
+            EditorGUILayout.Space(4f);
+            DrawProfileSection();
+            EditorGUILayout.Space(8f);
+            DrawFlowSection();
+            EditorGUILayout.Space(10f);
+            DrawActionSection();
+        }
+
+        private static void DrawHeader()
+        {
+            EditorGUILayout.LabelField("Onity Scene Flow Manager", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Configure optional Bootstrap/Loading scenes plus grouped Menu, Hub, and Gameplay scenes. "
+                + "Bootstrap and Loading are singletons; other groups can contain as many scenes as you want.",
+                MessageType.Info);
+        }
+
+        private void DrawProfileSection()
+        {
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("Profile", EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            OnitySceneFlowProfile nextProfile =
+                (OnitySceneFlowProfile)EditorGUILayout.ObjectField(
+                    "Scene Flow Profile",
+                    m_profile,
+                    typeof(OnitySceneFlowProfile),
+                    false);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                m_profile = nextProfile;
+                SaveLastProfilePath();
+                LoadProfileIntoWindow();
+            }
+
+            EditorGUILayout.LabelField("Create Ready Profile", EditorStyles.miniBoldLabel);
+            EditorGUILayout.BeginHorizontal();
+
+            if (GUILayout.Button("2 Scene Flow: Loading -> Game"))
+            {
+                CreateReadyProfile(ReadyProfilePreset.LoadingToGame);
+            }
+
+            if (GUILayout.Button("3 Scene Flow: Loading -> Menu -> Game"))
+            {
+                CreateReadyProfile(ReadyProfilePreset.LoadingToMenuToGame);
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+
+            if (GUILayout.Button("4 Scene Flow: Loading -> Menu -> Hub -> Game"))
+            {
+                CreateReadyProfile(ReadyProfilePreset.LoadingToMenuToHubToGame);
+            }
+
+            if (GUILayout.Button("Blank Template"))
+            {
+                CreateBlankProfile();
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            if (GUILayout.Button("Single Scene Setup"))
+            {
+                CreateReadyProfile(ReadyProfilePreset.SingleScene);
+            }
+
+            EditorGUILayout.HelpBox(
+                "Select an existing Scene Flow Profile asset or create a ready preset. "
+                + "Blank Template creates only an empty profile asset. "
+                + "Single Scene Setup creates one gameplay scene with SceneContext, "
+                + "prepares the ProjectContext prefab, and applies Build Settings. "
+                + "Scene Flow presets create missing scenes under Assets/Scenes/OnitySceneFlow.",
+                MessageType.None);
+            EditorGUILayout.EndVertical();
+        }
+
+        private void DrawFlowSection()
+        {
+            if (m_profile == null)
+            {
+                EditorGUILayout.HelpBox(
+                    "Select an OnitySceneFlowProfile asset to configure grouped scenes.",
+                    MessageType.Warning);
+                return;
+            }
+
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("Flow Configuration", EditorStyles.boldLabel);
+
+            m_routeViaLoadingScene =
+                EditorGUILayout.Toggle("Route Via Loading Scene", m_routeViaLoadingScene);
+
+            EditorGUILayout.Space(4f);
+            m_bootstrapScene = DrawSceneField("Bootstrap Scene (Optional)", m_bootstrapScene);
+            m_loadingScene = DrawSceneField("Loading Scene (Optional)", m_loadingScene);
+
+            EditorGUILayout.Space(8f);
+            DrawGroupedSceneList(
+                "Menu Scenes",
+                "Add Menu Scene",
+                m_mainMenuScenes,
+                ref m_defaultMainMenuSceneIndex);
+
+            EditorGUILayout.Space(8f);
+            DrawGroupedSceneList(
+                "Hub Scenes",
+                "Add Hub Scene",
+                m_hubScenes,
+                ref m_defaultHubSceneIndex);
+
+            EditorGUILayout.Space(8f);
+            DrawGroupedSceneList(
+                "Gameplay Scenes",
+                "Add Gameplay Scene",
+                m_gameplayScenes,
+                ref m_defaultGameplaySceneIndex);
+
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.BeginHorizontal();
+
+            if (GUILayout.Button("Load Profile"))
+            {
+                LoadProfileIntoWindow();
+            }
+
+            if (GUILayout.Button("Save Profile"))
+            {
+                SaveWindowToProfile();
+            }
+
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.HelpBox(
+                "Profile only stores and restores the window values. Edit here, then save or load when needed.",
+                MessageType.None);
+            EditorGUILayout.EndVertical();
+        }
+
+        private void DrawActionSection()
+        {
+            if (m_profile == null)
+            {
+                return;
+            }
+
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("Actions", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Use one Apply button after editing the window. It saves the current window state to the profile, updates Build Settings, sets the Play Mode start scene, and adds missing basic scene-flow scaffolding when supported.",
+                MessageType.None);
+
+            if (GUILayout.Button("Apply Scene Flow"))
+            {
+                ApplySceneFlow();
+            }
+
+            EditorGUILayout.EndVertical();
+        }
+
+        private static SceneAsset DrawSceneField(string label, SceneAsset current)
+        {
+            return (SceneAsset)EditorGUILayout.ObjectField(
+                label,
+                current,
+                typeof(SceneAsset),
+                false);
+        }
+
+        private static void DrawGroupedSceneList(
+            string label,
+            string addButtonLabel,
+            List<SceneAsset> scenes,
+            ref int defaultIndex)
+        {
+            EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Order is preserved in Build Settings. Mark one scene as default for direct transitions to this group.",
+                MessageType.None);
+
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                EditorGUILayout.BeginHorizontal();
+                scenes[i] = DrawSceneField($"Scene {i + 1}", scenes[i]);
+
+                bool isDefault = i == defaultIndex;
+                bool nextIsDefault = GUILayout.Toggle(isDefault, "Default", GUILayout.Width(70f));
+
+                if (nextIsDefault && isDefault == false)
+                {
+                    defaultIndex = i;
+                }
+
+                using (new EditorGUI.DisabledScope(i <= 0))
+                {
+                    if (GUILayout.Button("Up", GUILayout.Width(42f)))
+                    {
+                        Swap(scenes, i, i - 1);
+                        RemapDefaultIndexAfterSwap(ref defaultIndex, i, i - 1);
+                    }
+                }
+
+                using (new EditorGUI.DisabledScope(i >= scenes.Count - 1))
+                {
+                    if (GUILayout.Button("Down", GUILayout.Width(52f)))
+                    {
+                        Swap(scenes, i, i + 1);
+                        RemapDefaultIndexAfterSwap(ref defaultIndex, i, i + 1);
+                    }
+                }
+
+                if (GUILayout.Button("Remove", GUILayout.Width(68f)))
+                {
+                    scenes.RemoveAt(i);
+                    RemapDefaultIndexAfterRemove(ref defaultIndex, i, scenes.Count);
+                    EditorGUILayout.EndHorizontal();
+                    break;
+                }
+
+                EditorGUILayout.EndHorizontal();
+            }
+
+            if (GUILayout.Button(addButtonLabel))
+            {
+                scenes.Add(null);
+
+                if (defaultIndex < 0)
+                {
+                    defaultIndex = scenes.Count - 1;
+                }
+            }
+
+            if (scenes.Count <= 0)
+            {
+                defaultIndex = -1;
+            }
+            else if (defaultIndex >= scenes.Count)
+            {
+                defaultIndex = scenes.Count - 1;
+            }
+        }
+
+        private void LoadProfileIntoWindow()
+        {
+            m_mainMenuScenes.Clear();
+            m_hubScenes.Clear();
+            m_gameplayScenes.Clear();
+
+            if (m_profile == null)
+            {
+                m_routeViaLoadingScene = true;
+                m_bootstrapScene = null;
+                m_loadingScene = null;
+                m_defaultMainMenuSceneIndex = -1;
+                m_defaultHubSceneIndex = -1;
+                m_defaultGameplaySceneIndex = -1;
+                return;
+            }
+
+            m_routeViaLoadingScene = m_profile.RouteTransitionsThroughLoadingScene;
+            m_bootstrapScene = ResolveSceneAsset(OnitySceneFlowStateId.Bootstrap);
+            m_loadingScene = ResolveSceneAsset(OnitySceneFlowStateId.Loading);
+
+            SyncGroupedSceneAssets(
+                OnitySceneFlowStateId.MainMenuHub,
+                m_mainMenuScenes,
+                out m_defaultMainMenuSceneIndex);
+            SyncGroupedSceneAssets(
+                OnitySceneFlowStateId.Hub,
+                m_hubScenes,
+                out m_defaultHubSceneIndex);
+            SyncGroupedSceneAssets(
+                OnitySceneFlowStateId.Gameplay,
+                m_gameplayScenes,
+                out m_defaultGameplaySceneIndex);
+        }
+
+        private SceneAsset ResolveSceneAsset(OnitySceneFlowStateId stateId)
+        {
+            if (m_profile.TryGetSceneName(stateId, out string sceneName) == false)
+            {
+                return null;
+            }
+
+            return FindSceneAssetByName(sceneName);
+        }
+
+        private void SyncGroupedSceneAssets(
+            OnitySceneFlowStateId stateId,
+            List<SceneAsset> targetScenes,
+            out int defaultSceneIndex)
+        {
+            List<string> sceneNames = new List<string>(8);
+            m_profile.CopySceneNames(stateId, sceneNames);
+
+            for (int i = 0; i < sceneNames.Count; i++)
+            {
+                targetScenes.Add(FindSceneAssetByName(sceneNames[i]));
+            }
+
+            defaultSceneIndex = ResolveDefaultSceneIndex(
+                targetScenes,
+                m_profile.GetSceneName(stateId));
+        }
+
+        private static int ResolveDefaultSceneIndex(List<SceneAsset> scenes, string defaultSceneName)
+        {
+            if (string.IsNullOrWhiteSpace(defaultSceneName))
+            {
+                return scenes.Count > 0 ? 0 : -1;
+            }
+
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                SceneAsset scene = scenes[i];
+
+                if (scene != null && string.Equals(scene.name, defaultSceneName))
+                {
+                    return i;
+                }
+            }
+
+            return scenes.Count > 0 ? 0 : -1;
+        }
+
+        private static SceneAsset FindSceneAssetByName(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                return null;
+            }
+
+            string[] sceneGuids = AssetDatabase.FindAssets("t:Scene");
+
+            for (int i = 0; i < sceneGuids.Length; i++)
+            {
+                string scenePath = AssetDatabase.GUIDToAssetPath(sceneGuids[i]);
+                string fileName = Path.GetFileNameWithoutExtension(scenePath);
+
+                if (string.Equals(fileName, sceneName, System.StringComparison.Ordinal) == false)
+                {
+                    continue;
+                }
+
+                return AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath);
+            }
+
+            return null;
+        }
+
+        private void CreateReadyProfile(ReadyProfilePreset preset)
+        {
+            if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo() == false)
+            {
+                return;
+            }
+
+            string returnScenePath = SceneManager.GetActiveScene().path;
+            OnitySceneFlowProfile profile = null;
+
+            try
+            {
+                if (preset == ReadyProfilePreset.SingleScene
+                    && OnityProjectContextPrefabMenu.EnsureProjectContextPrefab() == null)
+                {
+                    return;
+                }
+
+                profile = ResolveOrCreateReadyProfileAsset(preset);
+
+                if (profile == null)
+                {
+                    return;
+                }
+
+                PopulateReadyProfile(profile, preset);
+                EditorUtility.SetDirty(profile);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
+            finally
+            {
+                RestoreScene(returnScenePath);
+            }
+
+            m_profile = profile;
+            SaveLastProfilePath();
+            LoadProfileIntoWindow();
+
+            if (preset == ReadyProfilePreset.SingleScene)
+            {
+                ApplySceneFlow();
+            }
+
+            Selection.activeObject = profile;
+            EditorGUIUtility.PingObject(profile);
+
+            Debug.Log($"Created Onity {GetReadyProfilePresetLabel(preset)} profile.");
+        }
+
+        private void CreateBlankProfile()
+        {
+            string profilePath = EditorUtility.SaveFilePanelInProject(
+                "Create Blank Onity Scene Flow Profile",
+                "OnityBlankSceneFlowProfile",
+                "asset",
+                "Choose where to create the empty scene-flow profile.");
+
+            if (string.IsNullOrWhiteSpace(profilePath))
+            {
+                return;
+            }
+
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(profilePath) != null)
+            {
+                EditorUtility.DisplayDialog(
+                    "Create Blank Scene Flow Profile",
+                    "Blank Template requires a new asset path and does not overwrite existing profiles.",
+                    "OK");
+                return;
+            }
+
+            OnitySceneFlowProfile profile = ScriptableObject.CreateInstance<OnitySceneFlowProfile>();
+            profile.SetRouteTransitionsThroughLoadingScene(true);
+            profile.SetSceneName(OnitySceneFlowStateId.Bootstrap, string.Empty);
+            profile.SetSceneName(OnitySceneFlowStateId.Loading, string.Empty);
+            profile.SetSceneNames(OnitySceneFlowStateId.MainMenuHub, Array.Empty<string>());
+            profile.SetSceneNames(OnitySceneFlowStateId.Hub, Array.Empty<string>());
+            profile.SetSceneNames(OnitySceneFlowStateId.Gameplay, Array.Empty<string>());
+            AssetDatabase.CreateAsset(profile, profilePath);
+            AssetDatabase.SaveAssets();
+
+            m_profile = profile;
+            SaveLastProfilePath();
+            LoadProfileIntoWindow();
+            Selection.activeObject = profile;
+            EditorGUIUtility.PingObject(profile);
+            Debug.Log("Created blank Onity Scene Flow profile without changing scenes or Build Settings.");
+        }
+
+        private OnitySceneFlowProfile ResolveOrCreateReadyProfileAsset(ReadyProfilePreset preset)
+        {
+            if (m_profile != null)
+            {
+                int option = EditorUtility.DisplayDialogComplex(
+                    "Create Ready Profile",
+                    $"Apply {GetReadyProfilePresetLabel(preset)} preset to selected profile '{m_profile.name}', or create a new profile asset?",
+                    "Apply Selected",
+                    "Create New",
+                    "Cancel");
+
+                if (option == 0)
+                {
+                    return m_profile;
+                }
+
+                if (option == 2)
+                {
+                    return null;
+                }
+            }
+
+            string profilePath = EditorUtility.SaveFilePanelInProject(
+                "Create Onity Scene Flow Profile",
+                GetDefaultReadyProfileAssetName(preset),
+                "asset",
+                "Choose where to create the ready scene-flow profile.");
+
+            if (string.IsNullOrWhiteSpace(profilePath))
+            {
+                return null;
+            }
+
+            UnityEngine.Object existingAsset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(profilePath);
+
+            if (existingAsset != null && (existingAsset is OnitySceneFlowProfile) == false)
+            {
+                EditorUtility.DisplayDialog(
+                    "Create Scene Flow Profile",
+                    "The selected asset path already contains a different asset type.",
+                    "OK");
+                return null;
+            }
+
+            OnitySceneFlowProfile profile = existingAsset as OnitySceneFlowProfile;
+
+            if (profile == null)
+            {
+                profile = ScriptableObject.CreateInstance<OnitySceneFlowProfile>();
+                AssetDatabase.CreateAsset(profile, profilePath);
+            }
+
+            return profile;
+        }
+
+        private static void PopulateReadyProfile(
+            OnitySceneFlowProfile profile,
+            ReadyProfilePreset preset)
+        {
+            List<SceneAsset> mainMenuScenes = new List<SceneAsset>(1);
+            List<SceneAsset> hubScenes = new List<SceneAsset>(1);
+            List<SceneAsset> gameplayScenes = new List<SceneAsset>(1);
+            SceneAsset loadingScene = null;
+            string gameplaySceneName = preset == ReadyProfilePreset.SingleScene
+                ? k_defaultSingleSceneName
+                : k_defaultGameplaySceneName;
+            string gameplayRootObjectName = preset == ReadyProfilePreset.SingleScene
+                ? "OnitySingleScene"
+                : "OnityGameplayScene";
+
+            if (preset != ReadyProfilePreset.SingleScene)
+            {
+                loadingScene = ResolveOrCreateReadyScene(
+                    k_defaultLoadingSceneName,
+                    "OnityLoadingScene");
+            }
+
+            SceneAsset gameplayScene = ResolveOrCreateReadyScene(
+                gameplaySceneName,
+                gameplayRootObjectName);
+
+            if (preset == ReadyProfilePreset.LoadingToMenuToGame
+                || preset == ReadyProfilePreset.LoadingToMenuToHubToGame)
+            {
+                SceneAsset mainMenuScene = ResolveOrCreateReadyScene(
+                    k_defaultMainMenuSceneName,
+                    "OnityMainMenuScene");
+                AddUniqueSceneAssetByPath(mainMenuScene, mainMenuScenes);
+            }
+
+            if (preset == ReadyProfilePreset.LoadingToMenuToHubToGame)
+            {
+                SceneAsset hubScene = ResolveOrCreateReadyScene(
+                    k_defaultHubSceneName,
+                    "OnityHubScene");
+                AddUniqueSceneAssetByPath(hubScene, hubScenes);
+            }
+
+            AddUniqueSceneAssetByPath(gameplayScene, gameplayScenes);
+
+            profile.SetRouteTransitionsThroughLoadingScene(preset != ReadyProfilePreset.SingleScene);
+            profile.SetSceneName(OnitySceneFlowStateId.Bootstrap, string.Empty);
+            profile.SetSceneName(OnitySceneFlowStateId.Loading, GetSceneName(loadingScene));
+            profile.SetSceneNames(OnitySceneFlowStateId.MainMenuHub, GetSceneNames(mainMenuScenes));
+            profile.SetDefaultSceneName(
+                OnitySceneFlowStateId.MainMenuHub,
+                GetSceneName(ResolveGroupedDefaultScene(mainMenuScenes, 0)));
+            profile.SetSceneNames(OnitySceneFlowStateId.Hub, GetSceneNames(hubScenes));
+            profile.SetDefaultSceneName(
+                OnitySceneFlowStateId.Hub,
+                GetSceneName(ResolveGroupedDefaultScene(hubScenes, 0)));
+            profile.SetSceneNames(OnitySceneFlowStateId.Gameplay, GetSceneNames(gameplayScenes));
+            profile.SetDefaultSceneName(
+                OnitySceneFlowStateId.Gameplay,
+                GetSceneName(ResolveGroupedDefaultScene(gameplayScenes, 0)));
+        }
+
+        private static SceneAsset ResolveOrCreateReadyScene(
+            string sceneName,
+            string rootObjectName)
+        {
+            SceneAsset existingScene = FindSceneAssetByName(sceneName);
+
+            if (existingScene != null)
+            {
+                return existingScene;
+            }
+
+            EnsureAssetFolder(k_readySceneFolderPath);
+            string scenePath = $"{k_readySceneFolderPath}/{sceneName}.unity";
+            SceneAsset sceneAtPath = AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath);
+
+            if (sceneAtPath != null)
+            {
+                return sceneAtPath;
+            }
+
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+            EnsureRootGameObject(scene, rootObjectName);
+            GameObject contextRoot = EnsureRootGameObject(scene, "OnitySceneContext");
+
+            if (contextRoot.GetComponent<SceneContext>() == null)
+            {
+                contextRoot.AddComponent<SceneContext>();
+            }
+
+            if (EditorSceneManager.SaveScene(scene, scenePath) == false)
+            {
+                throw new InvalidOperationException($"Failed to save ready scene at '{scenePath}'.");
+            }
+
+            AssetDatabase.ImportAsset(scenePath);
+            return AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath);
+        }
+
+        private static void EnsureAssetFolder(string folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath))
+            {
+                return;
+            }
+
+            string[] parts = folderPath.Split('/');
+            string currentPath = parts[0];
+
+            for (int i = 1; i < parts.Length; i++)
+            {
+                string nextPath = $"{currentPath}/{parts[i]}";
+
+                if (AssetDatabase.IsValidFolder(nextPath) == false)
+                {
+                    AssetDatabase.CreateFolder(currentPath, parts[i]);
+                }
+
+                currentPath = nextPath;
+            }
+        }
+
+        private static void RestoreScene(string scenePath)
+        {
+            if (string.IsNullOrWhiteSpace(scenePath)
+                || AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath) == null)
+            {
+                return;
+            }
+
+            EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+        }
+
+        private static string GetDefaultReadyProfileAssetName(ReadyProfilePreset preset)
+        {
+            switch (preset)
+            {
+                case ReadyProfilePreset.LoadingToGame:
+                    return "Onity2SceneFlowProfile";
+
+                case ReadyProfilePreset.LoadingToMenuToGame:
+                    return "Onity3SceneFlowProfile";
+
+                case ReadyProfilePreset.LoadingToMenuToHubToGame:
+                    return "Onity4SceneFlowProfile";
+
+                case ReadyProfilePreset.SingleScene:
+                    return "OnitySingleSceneProfile";
+
+                default:
+                    return "OnitySceneFlowProfile";
+            }
+        }
+
+        private static string GetReadyProfilePresetLabel(ReadyProfilePreset preset)
+        {
+            switch (preset)
+            {
+                case ReadyProfilePreset.LoadingToGame:
+                    return "2 Scene Flow (Loading -> Game)";
+
+                case ReadyProfilePreset.LoadingToMenuToGame:
+                    return "3 Scene Flow (Loading -> Menu -> Game)";
+
+                case ReadyProfilePreset.LoadingToMenuToHubToGame:
+                    return "4 Scene Flow (Loading -> Menu -> Hub -> Game)";
+
+                case ReadyProfilePreset.SingleScene:
+                    return "Single Scene Setup";
+
+                default:
+                    return "Scene Flow";
+            }
+        }
+
+        private static void AddUniqueSceneAssetByPath(SceneAsset scene, List<SceneAsset> targetScenes)
+        {
+            if (scene == null)
+            {
+                return;
+            }
+
+            string scenePath = AssetDatabase.GetAssetPath(scene);
+
+            for (int i = 0; i < targetScenes.Count; i++)
+            {
+                if (string.Equals(AssetDatabase.GetAssetPath(targetScenes[i]), scenePath, StringComparison.Ordinal))
+                {
+                    return;
+                }
+            }
+
+            targetScenes.Add(scene);
+        }
+
+        private static List<string> GetSceneNames(List<SceneAsset> sceneAssets)
+        {
+            List<string> sceneNames = new List<string>(sceneAssets.Count);
+
+            for (int i = 0; i < sceneAssets.Count; i++)
+            {
+                string sceneName = GetSceneName(sceneAssets[i]);
+
+                if (string.IsNullOrWhiteSpace(sceneName) == false)
+                {
+                    sceneNames.Add(sceneName);
+                }
+            }
+
+            return sceneNames;
+        }
+
+        private void SaveWindowToProfile()
+        {
+            if (m_profile == null)
+            {
+                return;
+            }
+
+            m_profile.SetRouteTransitionsThroughLoadingScene(m_routeViaLoadingScene);
+            m_profile.SetSceneName(OnitySceneFlowStateId.Bootstrap, GetSceneName(m_bootstrapScene));
+            m_profile.SetSceneName(OnitySceneFlowStateId.Loading, GetSceneName(m_loadingScene));
+
+            SaveGroupedScenes(
+                OnitySceneFlowStateId.MainMenuHub,
+                m_mainMenuScenes,
+                m_defaultMainMenuSceneIndex);
+            SaveGroupedScenes(
+                OnitySceneFlowStateId.Hub,
+                m_hubScenes,
+                m_defaultHubSceneIndex);
+            SaveGroupedScenes(
+                OnitySceneFlowStateId.Gameplay,
+                m_gameplayScenes,
+                m_defaultGameplaySceneIndex);
+
+            EditorUtility.SetDirty(m_profile);
+            AssetDatabase.SaveAssets();
+        }
+
+        private void SaveGroupedScenes(
+            OnitySceneFlowStateId stateId,
+            List<SceneAsset> scenes,
+            int defaultSceneIndex)
+        {
+            List<string> sceneNames = new List<string>(scenes.Count);
+            string defaultSceneName = string.Empty;
+            HashSet<string> seenNames = new HashSet<string>(System.StringComparer.Ordinal);
+
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                SceneAsset scene = scenes[i];
+
+                if (scene == null || seenNames.Add(scene.name) == false)
+                {
+                    continue;
+                }
+
+                sceneNames.Add(scene.name);
+
+                if (i == defaultSceneIndex)
+                {
+                    defaultSceneName = scene.name;
+                }
+            }
+
+            m_profile.SetSceneNames(stateId, sceneNames);
+            m_profile.SetDefaultSceneName(stateId, defaultSceneName);
+        }
+
+        private static string GetSceneName(SceneAsset sceneAsset)
+        {
+            return sceneAsset != null ? sceneAsset.name : string.Empty;
+        }
+
+        private void ApplySceneFlowToBuildSettings()
+        {
+            List<EditorBuildSettingsScene> buildScenes = BuildSettingsSceneList();
+            EditorBuildSettings.scenes = buildScenes.ToArray();
+            Debug.Log($"Applied {buildScenes.Count} grouped scene(s) from Onity scene-flow profile.");
+        }
+
+        private void ApplySceneFlow()
+        {
+            SaveWindowToProfile();
+
+            if (m_bootstrapScene != null && EnsureGeneratedProjectContextPrefab() == null)
+            {
+                return;
+            }
+
+            if (EnsureProfileSceneSupport() == false)
+            {
+                return;
+            }
+
+            ApplySceneFlowToBuildSettings();
+            SetPlayModeStartScene();
+        }
+
+        private static GameObject EnsureGeneratedProjectContextPrefab()
+        {
+            ProjectContext loadedContext =
+                Resources.Load<ProjectContext>(ProjectContextBootstrap.ResourcePath);
+
+            if (loadedContext != null)
+            {
+                return loadedContext.gameObject;
+            }
+
+            string parentFolder = Path.GetDirectoryName(k_projectContextPrefabPath);
+
+            if (string.IsNullOrWhiteSpace(parentFolder))
+            {
+                return null;
+            }
+
+            EnsureAssetFolder(parentFolder.Replace('\\', '/'));
+            GameObject existingPrefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(k_projectContextPrefabPath);
+
+            if (existingPrefab != null && existingPrefab.GetComponent<ProjectContext>() != null)
+            {
+                return existingPrefab;
+            }
+
+            GameObject root = new GameObject("ProjectContext");
+
+            try
+            {
+                root.AddComponent<ProjectContext>();
+                PrefabUtility.SaveAsPrefabAsset(root, k_projectContextPrefabPath);
+            }
+            finally
+            {
+                DestroyImmediate(root);
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.ImportAsset(
+                k_projectContextPrefabPath,
+                ImportAssetOptions.ForceUpdate);
+
+            GameObject generatedPrefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(k_projectContextPrefabPath);
+
+            if (generatedPrefab == null
+                || generatedPrefab.GetComponent<ProjectContext>() == null)
+            {
+                Debug.LogError(
+                    $"Failed to create Onity ProjectContext prefab at "
+                    + $"'{k_projectContextPrefabPath}'.");
+                return null;
+            }
+
+            Debug.Log(
+                $"Created Onity ProjectContext prefab at '{k_projectContextPrefabPath}'.");
+            return generatedPrefab;
+        }
+
+        private bool EnsureProfileSceneSupport()
+        {
+            if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo() == false)
+            {
+                return false;
+            }
+
+            string returnScenePath = SceneManager.GetActiveScene().path;
+
+            try
+            {
+                EnsureSupportOnProfileScenes();
+            }
+            finally
+            {
+                if (string.IsNullOrWhiteSpace(returnScenePath) == false
+                    && AssetDatabase.LoadAssetAtPath<SceneAsset>(returnScenePath) != null)
+                {
+                    EditorSceneManager.OpenScene(returnScenePath, OpenSceneMode.Single);
+                }
+            }
+
+            return true;
+        }
+
+        private List<EditorBuildSettingsScene> BuildSettingsSceneList()
+        {
+            List<EditorBuildSettingsScene> buildScenes = new List<EditorBuildSettingsScene>(16);
+            HashSet<string> seenPaths = new HashSet<string>();
+
+            AddBuildScene(m_bootstrapScene, buildScenes, seenPaths);
+            AddBuildScene(m_loadingScene, buildScenes, seenPaths);
+            AddBuildScenes(m_mainMenuScenes, buildScenes, seenPaths);
+            AddBuildScenes(m_hubScenes, buildScenes, seenPaths);
+            AddBuildScenes(m_gameplayScenes, buildScenes, seenPaths);
+
+            return buildScenes;
+        }
+
+        private void EnsureSupportOnProfileScenes()
+        {
+            List<SceneAsset> sceneAssets = CollectProfileSceneAssets();
+
+            for (int i = 0; i < sceneAssets.Count; i++)
+            {
+                SceneAsset sceneAsset = sceneAssets[i];
+
+                if (sceneAsset == null)
+                {
+                    continue;
+                }
+
+                string scenePath = AssetDatabase.GetAssetPath(sceneAsset);
+
+                if (string.IsNullOrWhiteSpace(scenePath))
+                {
+                    continue;
+                }
+
+                Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+
+                if (m_profile.TryGetStateId(scene.name, out OnitySceneFlowStateId stateId) == false)
+                {
+                    continue;
+                }
+
+                bool changed = false;
+
+                if (stateId == OnitySceneFlowStateId.Bootstrap)
+                {
+                    changed |= AddBootstrapSupport(scene);
+                }
+                else
+                {
+                    changed |= AddSceneContext(scene);
+                }
+
+                if (stateId == OnitySceneFlowStateId.Loading)
+                {
+                    changed |= AddLoadingSupport(scene);
+                }
+
+                if (changed)
+                {
+                    EditorSceneManager.MarkSceneDirty(scene);
+                    EditorSceneManager.SaveScene(scene);
+                }
+            }
+        }
+
+        private bool AddBootstrapSupport(Scene scene)
+        {
+            bool changed = false;
+            OnityBootstrapSceneInitiator initiator =
+                FindFirstComponentInScene<OnityBootstrapSceneInitiator>(scene);
+
+            if (initiator == null)
+            {
+                GameObject root = EnsureRootGameObject(scene, "OnityBootstrap");
+                initiator = root.AddComponent<OnityBootstrapSceneInitiator>();
+                changed = true;
+            }
+
+            changed |= SetObjectReference(initiator, "m_profile", m_profile);
+            return changed;
+        }
+
+        private static bool AddSceneContext(Scene scene)
+        {
+            if (FindFirstComponentInScene<SceneContext>(scene) != null)
+            {
+                return false;
+            }
+
+            GameObject contextRoot = EnsureRootGameObject(scene, "OnitySceneContext");
+            contextRoot.AddComponent<SceneContext>();
+            return true;
+        }
+
+        private bool AddLoadingSupport(Scene scene)
+        {
+            VisualTreeAsset visualTree =
+                AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(k_loadingVisualTreePath);
+
+            if (visualTree == null)
+            {
+                throw new InvalidOperationException(
+                    $"Default loading UI was not found at '{k_loadingVisualTreePath}'.");
+            }
+
+            PanelSettings panelSettings = ResolveOrCreateLoadingPanelSettings();
+            GameObject root = EnsureRootGameObject(scene, "OnityLoading");
+            bool changed = false;
+            UIDocument document = root.GetComponent<UIDocument>();
+
+            if (document == null)
+            {
+                document = root.AddComponent<UIDocument>();
+                changed = true;
+            }
+
+            if (document.visualTreeAsset != visualTree)
+            {
+                document.visualTreeAsset = visualTree;
+                changed = true;
+            }
+
+            if (document.panelSettings != panelSettings)
+            {
+                document.panelSettings = panelSettings;
+                changed = true;
+            }
+
+            OnityLoadingView view = root.GetComponent<OnityLoadingView>();
+
+            if (view == null)
+            {
+                view = root.AddComponent<OnityLoadingView>();
+                changed = true;
+            }
+
+            OnityLoadingSceneInitiator initiator =
+                root.GetComponent<OnityLoadingSceneInitiator>();
+
+            if (initiator == null)
+            {
+                initiator = root.AddComponent<OnityLoadingSceneInitiator>();
+                changed = true;
+            }
+
+            changed |= SetObjectReference(initiator, "m_profile", m_profile);
+            changed |= SetObjectReference(initiator, "m_view", view);
+
+            if (changed)
+            {
+                EditorUtility.SetDirty(document);
+                EditorUtility.SetDirty(view);
+                EditorUtility.SetDirty(initiator);
+            }
+
+            return changed;
+        }
+
+        private static PanelSettings ResolveOrCreateLoadingPanelSettings()
+        {
+            PanelSettings panelSettings =
+                AssetDatabase.LoadAssetAtPath<PanelSettings>(k_loadingPanelSettingsPath);
+
+            if (panelSettings != null)
+            {
+                return panelSettings;
+            }
+
+            EnsureAssetFolder(k_generatedAssetFolderPath);
+            panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+            panelSettings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
+            panelSettings.referenceResolution = new Vector2Int(1920, 1080);
+            panelSettings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
+            panelSettings.match = 0.5f;
+            AssetDatabase.CreateAsset(panelSettings, k_loadingPanelSettingsPath);
+            AssetDatabase.SaveAssets();
+            return panelSettings;
+        }
+
+        private static bool SetObjectReference(
+            UnityEngine.Object target,
+            string propertyName,
+            UnityEngine.Object value)
+        {
+            SerializedObject serializedObject = new SerializedObject(target);
+            SerializedProperty property = serializedObject.FindProperty(propertyName);
+
+            if (property == null)
+            {
+                throw new InvalidOperationException(
+                    $"Serialized property '{propertyName}' was not found on '{target.GetType().Name}'.");
+            }
+
+            if (property.objectReferenceValue == value)
+            {
+                return false;
+            }
+
+            property.objectReferenceValue = value;
+            serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(target);
+            return true;
+        }
+
+        private List<SceneAsset> CollectProfileSceneAssets()
+        {
+            List<SceneAsset> sceneAssets = new List<SceneAsset>(16);
+            HashSet<SceneAsset> seenScenes = new HashSet<SceneAsset>();
+
+            AddUniqueSceneAsset(m_bootstrapScene, sceneAssets, seenScenes);
+            AddUniqueSceneAsset(m_loadingScene, sceneAssets, seenScenes);
+
+            for (int i = 0; i < m_mainMenuScenes.Count; i++)
+            {
+                AddUniqueSceneAsset(m_mainMenuScenes[i], sceneAssets, seenScenes);
+            }
+
+            for (int i = 0; i < m_hubScenes.Count; i++)
+            {
+                AddUniqueSceneAsset(m_hubScenes[i], sceneAssets, seenScenes);
+            }
+
+            for (int i = 0; i < m_gameplayScenes.Count; i++)
+            {
+                AddUniqueSceneAsset(m_gameplayScenes[i], sceneAssets, seenScenes);
+            }
+
+            return sceneAssets;
+        }
+
+        private static void AddBuildScenes(
+            List<SceneAsset> scenes,
+            List<EditorBuildSettingsScene> buildScenes,
+            HashSet<string> seenPaths)
+        {
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                AddBuildScene(scenes[i], buildScenes, seenPaths);
+            }
+        }
+
+        private static void AddUniqueSceneAsset(
+            SceneAsset sceneAsset,
+            List<SceneAsset> sceneAssets,
+            HashSet<SceneAsset> seenScenes)
+        {
+            if (sceneAsset == null || seenScenes.Add(sceneAsset) == false)
+            {
+                return;
+            }
+
+            sceneAssets.Add(sceneAsset);
+        }
+
+        private static void AddBuildScene(
+            SceneAsset sceneAsset,
+            List<EditorBuildSettingsScene> buildScenes,
+            HashSet<string> seenPaths)
+        {
+            if (sceneAsset == null)
+            {
+                return;
+            }
+
+            string scenePath = AssetDatabase.GetAssetPath(sceneAsset);
+
+            if (string.IsNullOrWhiteSpace(scenePath) || seenPaths.Contains(scenePath))
+            {
+                return;
+            }
+
+            seenPaths.Add(scenePath);
+            buildScenes.Add(new EditorBuildSettingsScene(scenePath, true));
+        }
+
+        private void SetPlayModeStartScene()
+        {
+            SceneAsset startupScene = ResolveStartupSceneAsset();
+
+            if (startupScene == null)
+            {
+                Debug.LogWarning(
+                    "Cannot set play mode start scene. Assign Bootstrap or at least one default Menu, Hub, or Gameplay scene.");
+                return;
+            }
+
+            EditorSceneManager.playModeStartScene = startupScene;
+            Debug.Log($"Play Mode start scene set to '{startupScene.name}'.");
+        }
+
+        private void OpenStartupScene()
+        {
+            SceneAsset startupScene = ResolveStartupSceneAsset();
+
+            if (startupScene == null)
+            {
+                return;
+            }
+
+            string scenePath = AssetDatabase.GetAssetPath(startupScene);
+            EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+        }
+
+        private SceneAsset ResolveStartupSceneAsset()
+        {
+            if (m_bootstrapScene != null)
+            {
+                return m_bootstrapScene;
+            }
+
+            SceneAsset groupedStartup = ResolveGroupedDefaultScene(m_mainMenuScenes, m_defaultMainMenuSceneIndex);
+
+            if (groupedStartup != null)
+            {
+                return groupedStartup;
+            }
+
+            groupedStartup = ResolveGroupedDefaultScene(m_hubScenes, m_defaultHubSceneIndex);
+
+            if (groupedStartup != null)
+            {
+                return groupedStartup;
+            }
+
+            groupedStartup = ResolveGroupedDefaultScene(m_gameplayScenes, m_defaultGameplaySceneIndex);
+
+            if (groupedStartup != null)
+            {
+                return groupedStartup;
+            }
+
+            return m_loadingScene;
+        }
+
+        private static SceneAsset ResolveGroupedDefaultScene(List<SceneAsset> scenes, int defaultIndex)
+        {
+            if (defaultIndex >= 0 && defaultIndex < scenes.Count && scenes[defaultIndex] != null)
+            {
+                return scenes[defaultIndex];
+            }
+
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                if (scenes[i] != null)
+                {
+                    return scenes[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static TComponent FindFirstComponentInScene<TComponent>(Scene scene)
+            where TComponent : Component
+        {
+            GameObject[] rootGameObjects = scene.GetRootGameObjects();
+
+            for (int i = 0; i < rootGameObjects.Length; i++)
+            {
+                TComponent component = rootGameObjects[i].GetComponentInChildren<TComponent>(true);
+
+                if (component != null)
+                {
+                    return component;
+                }
+            }
+
+            return null;
+        }
+
+        private static GameObject EnsureRootGameObject(Scene scene, string objectName)
+        {
+            GameObject[] rootGameObjects = scene.GetRootGameObjects();
+
+            for (int i = 0; i < rootGameObjects.Length; i++)
+            {
+                if (string.Equals(rootGameObjects[i].name, objectName, StringComparison.Ordinal))
+                {
+                    return rootGameObjects[i];
+                }
+            }
+
+            GameObject root = new GameObject(objectName);
+            SceneManager.MoveGameObjectToScene(root, scene);
+            return root;
+        }
+
+        private void LoadLastProfile()
+        {
+            string profilePath = EditorPrefs.GetString(k_lastProfilePathEditorPrefKey, string.Empty);
+
+            if (string.IsNullOrWhiteSpace(profilePath))
+            {
+                return;
+            }
+
+            m_profile = AssetDatabase.LoadAssetAtPath<OnitySceneFlowProfile>(profilePath);
+        }
+
+        private void SaveLastProfilePath()
+        {
+            if (m_profile == null)
+            {
+                EditorPrefs.DeleteKey(k_lastProfilePathEditorPrefKey);
+                return;
+            }
+
+            string profilePath = AssetDatabase.GetAssetPath(m_profile);
+            EditorPrefs.SetString(k_lastProfilePathEditorPrefKey, profilePath);
+        }
+
+        private static void Swap(List<SceneAsset> scenes, int firstIndex, int secondIndex)
+        {
+            SceneAsset temporary = scenes[firstIndex];
+            scenes[firstIndex] = scenes[secondIndex];
+            scenes[secondIndex] = temporary;
+        }
+
+        private static void RemapDefaultIndexAfterSwap(ref int defaultIndex, int firstIndex, int secondIndex)
+        {
+            if (defaultIndex == firstIndex)
+            {
+                defaultIndex = secondIndex;
+                return;
+            }
+
+            if (defaultIndex == secondIndex)
+            {
+                defaultIndex = firstIndex;
+            }
+        }
+
+        private static void RemapDefaultIndexAfterRemove(ref int defaultIndex, int removedIndex, int newCount)
+        {
+            if (newCount <= 0)
+            {
+                defaultIndex = -1;
+                return;
+            }
+
+            if (defaultIndex == removedIndex)
+            {
+                defaultIndex = Mathf.Clamp(removedIndex, 0, newCount - 1);
+                return;
+            }
+
+            if (defaultIndex > removedIndex)
+            {
+                defaultIndex--;
+            }
+        }
+    }
+}
