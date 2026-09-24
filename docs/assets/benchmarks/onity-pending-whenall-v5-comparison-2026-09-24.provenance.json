@@ -1,0 +1,85 @@
+{
+  "suite": "Corrected pending two-input OnityTask.WhenAll lifecycle, first call, and 384-outstanding burst",
+  "date": "2026-09-24",
+  "editor": "Unity 2022.3.62f3 Editor/Mono",
+  "baselineProductCommit": "6f32e15e8acee5458c0b5a9a22dde45818a0eb72",
+  "candidateProductCommit": "824b2f72000d48ec21b80e3ae51548d10038b019",
+  "benchmarkBranch": "benchmark/onitytask-pending-coordinator",
+  "benchmarkHarnessCommit": "f75e018",
+  "harnessVersion": 5,
+  "runnerGitBlobBothHosts": "b4d3bcfccc149f97424bec4750bb1246a927156e",
+  "menuGitBlobBothHosts": "6cb9d93b70f4517675805a23a41816597170efaa",
+  "runtimeAsmdefGitBlobBothHosts": "f894d09e50e45c866aeffc81ed8a4af87c335e3e",
+  "editorAsmdefGitBlobBothHosts": "75aed1480fcc588c876d2d60dd6eaf93ed60fd9b",
+  "manifestGitBlobBothHosts": "b4f180c450b59597db2a96a70ff552ca35909799",
+  "packageLockGitBlobBothHosts": "2f863e6d228ea9fd67dbf0d9ab62a805993dd220",
+  "baselineOnityAsyncGitBlob": "58af6e385dcdc4a9b376a7f2f87daadcc13b6547",
+  "candidateOnityAsyncGitBlob": "a1ffde1102feb09eea1649147f2a890fd773b5f4",
+  "baselineOnityAsyncWorkingSha256": "971222c94b83220e9225a3a9696a4a21c496ed26647236f54f12c00ae183d465",
+  "candidateOnityAsyncWorkingSha256": "00fe9203a9b32e389525873f649841c44671fcc87134b5984eb4d9c6aa9d0007",
+  "runnerWorkingSha256Baseline": "57434edc0d21f4385f5ccba1d72a0753b34287684cd4814dab09d614c425aef1",
+  "runnerWorkingSha256Candidate": "a696143fd85b99a51653a8fb67e603e07f04a5ea5c38efa19f67cf95a99a754d",
+  "workingFileNote": "The runner and configuration Git blobs match across hosts. Working-file SHA-256 differs because checkout line endings differ; each host used its unchanged working file for timing and allocation processes.",
+  "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "entryPoint": "Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine",
+  "processes": {
+    "timingPerHost": 2,
+    "allocationPerHost": 2,
+    "timingSuccessOperationsPerSample": 2048,
+    "timingFaultCancelOperationsPerSample": 256,
+    "mainProfilerOperationsPerSample": 128,
+    "burstOperationsPerSample": 384,
+    "samplesPerCasePerProcess": 8,
+    "warmupBatchesPerScenarioAndLibrary": 10,
+    "firstCallSamplesPerHost": 2,
+    "profilerStartupFrames": 120,
+    "timingArguments": "-batchmode -nographics -projectPath <exact-host> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskBenchmarkOutput <external-json> -logFile <external-log>",
+    "allocationArguments": "-batchmode -nographics -profiler-enable -projectPath <exact-host> -executeMethod <entryPoint> -onityWhenAllBenchmark -onityTaskAllocationsOnly -onityTaskBenchmarkOutput <same-external-json> -logFile <external-log>",
+    "reportStaging": "Output written outside both Unity project roots; generated JSON/CSV/Markdown copied unchanged to docs/assets/benchmarks."
+  },
+  "faultCorrection": "PrepareBatch constructs one new InvalidOperationException per operation and per library before the measured slice. No exception instance is reused across operations, batches, or processes.",
+  "scope": {
+    "lifecycle": "WhenAll scheduling, pending input completion, output GetResult, cleanup; input source and exception construction excluded.",
+    "mainProfiler": "Nested GC.Alloc samples under the main-thread marker only; worker tracker continuations excluded.",
+    "allThreadDiagnostic": "Time-bounded GC.Alloc window across Profiler threads, including a tracked-batch completion barrier. Raw totals include harness barrier and any unrelated allocations inside the window; exclusive tracker attribution is not established.",
+    "firstCall": "One first observed pending call after warmed Editor startup and Profiler calibration, before harness WhenAll warmup; one sample per allocation process.",
+    "burst": "384 pending outputs scheduled before any input completion, tracker off; input construction and completion outside marker. Candidate coordinator pool cap is 256."
+  },
+  "controls": {
+    "mainProfilerPositiveBytesAllFourReports": 65568,
+    "mainProfilerEmptyBytesAllFourReports": 0,
+    "emptyHarnessEightSamplesAllFourReports": 0,
+    "allThreadValidReports": ["baseline", "candidate", "candidate-repeat"],
+    "allThreadValidMainPositiveBytes": 65568,
+    "allThreadValidEmptyMainAndOtherBytes": 0,
+    "allThreadValidThreadPoolOtherPositiveBytes": 65568,
+    "baselineRepeatAllThreadStatus": "UNAVAILABLE: ThreadPool positive control captured 65,602 B on other threads and 88 B on main; all its all-thread samples were discarded.",
+    "directWorkerPositiveBytesAllFourReports": 0,
+    "directWorkerStatus": "UNAVAILABLE: GC.GetAllocatedBytesForCurrentThread failed its 64 KiB positive control; never interpret zero as measured worker allocation."
+  },
+  "historicalV4Data": "The four v4 reports retain valid pending scheduling and completed-input controls. Their fault rows are invalid because one exception was reused and are not combined with v5 data.",
+  "discardedOrLimitedRuns": [
+    "First v5 baseline timing process completed but Unity cleaned JSON/CSV written under its project Temp directory; only its log/Markdown survived. Repeated outside-project timing process is the accepted first baseline report.",
+    "Baseline repeat all-thread Profiler window rejected by its ThreadPool positive control. Its main-thread, first-call, burst, timing, and raw fault rows remain valid.",
+    "Three unrelated Unity 6000.5.6f1 Coin processes persisted. No Unity 2022.3.62f3 Editor or Player overlap occurred during retained processes."
+  ],
+  "reports": [
+    {
+      "path": "docs/assets/benchmarks/onity-pending-whenall-v5-baseline-6f32e15-2026-09-24.json",
+      "sha256": "50bd6c09111ffea59127bc433d549a6355e0c893419fc4f761f5ffb6543a3c2f"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-pending-whenall-v5-candidate-824b2f7-2026-09-24.json",
+      "sha256": "e1376b595ab28a74982acc5cead1a6a56463536e6726082d6ddfdf3e86d41d2a"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-pending-whenall-v5-baseline-6f32e15-repeat-2026-09-24.json",
+      "sha256": "5d6a65fe5224d175e760d28e4dd15c9f616f9599886848afde6f7fd905ca1f29"
+    },
+    {
+      "path": "docs/assets/benchmarks/onity-pending-whenall-v5-candidate-824b2f7-repeat-2026-09-24.json",
+      "sha256": "cab2d759190365f101d42e03e5a56101c5324136db227fcbf414b574c568054d"
+    }
+  ],
+  "limitations": "Editor/Mono microbenchmark only; no Player/IL2CPP, frame-time, device, or whole-scene result. First-call has two process samples per host, not eight independently cold processes. Accepted all-thread windows are diagnostics with one valid baseline process and two candidate processes."
+}
