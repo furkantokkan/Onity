@@ -866,8 +866,6 @@ namespace Onity.Benchmarks
         private const int k_profilerReadFrames = 60;
         private const string k_uniTaskCommit =
             "2e993ff18f28c931602a07292df0b0804eebef99";
-        private const string k_productCommit =
-            "37c309a950b2142c91eeb62ad12f0a8a585b1d76";
         private const string k_markerPrefix = "Onity.TypedWhenAny.Allocation.";
         private const string k_runtimePath =
             "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs";
@@ -905,6 +903,7 @@ namespace Onity.Benchmarks
         private readonly Exception[] m_failures = new Exception[k_operations];
 
         private string m_outputPath;
+        private string m_productCommit;
         private Action<string, Exception> m_completed;
         private bool m_allocationOnly;
         private bool m_collectorDiagnostic;
@@ -936,8 +935,11 @@ namespace Onity.Benchmarks
         private long m_lastCaptureBytes;
 #endif
 
+        /// <summary>
+        /// Runs the typed benchmark using the supplied product commit in every report mode.
+        /// </summary>
         public static void Run(string outputPath, Action<string, Exception> completed,
-            bool allocationOnly, bool collectorDiagnostic)
+            bool allocationOnly, bool collectorDiagnostic, string productCommit)
         {
             if (s_isRunning)
             {
@@ -949,11 +951,14 @@ namespace Onity.Benchmarks
                 throw new ArgumentException("Output path is required.", nameof(outputPath));
             }
 
+            ValidateProductCommit(productCommit);
+
             GameObject runnerObject = new GameObject("Typed WhenAny Benchmark Runner");
             DontDestroyOnLoad(runnerObject);
             OnityTypedWhenAnyBenchmarkRunner runner =
                 runnerObject.AddComponent<OnityTypedWhenAnyBenchmarkRunner>();
             runner.m_outputPath = Path.GetFullPath(outputPath);
+            runner.m_productCommit = productCommit.ToLowerInvariant();
             runner.m_completed = completed;
             runner.m_allocationOnly = allocationOnly;
             runner.m_collectorDiagnostic = collectorDiagnostic;
@@ -993,7 +998,7 @@ namespace Onity.Benchmarks
                     ProfilerDriver.enabled = false;
                 }
 #endif
-                Report expected = CreateReport();
+                Report expected = CreateReport(m_productCommit);
                 if (m_collectorDiagnostic)
                 {
                     report = expected;
@@ -1123,7 +1128,33 @@ namespace Onity.Benchmarks
 #endif
         }
 
-        private static Report CreateReport()
+        /// <summary>
+        /// Requires a full hexadecimal commit ID for typed WhenAny benchmark provenance.
+        /// </summary>
+        public static void ValidateProductCommit(string productCommit)
+        {
+            if (productCommit == null || productCommit.Length != 40)
+            {
+                throw new ArgumentException(
+                    "Typed WhenAny benchmark requires -onityTaskProductCommit with a full 40-hex SHA.",
+                    nameof(productCommit));
+            }
+
+            for (int i = 0; i < productCommit.Length; i++)
+            {
+                char digit = productCommit[i];
+                if (!((digit >= '0' && digit <= '9') ||
+                    (digit >= 'a' && digit <= 'f') ||
+                    (digit >= 'A' && digit <= 'F')))
+                {
+                    throw new ArgumentException(
+                        "Typed WhenAny benchmark requires -onityTaskProductCommit with a full 40-hex SHA.",
+                        nameof(productCommit));
+                }
+            }
+        }
+
+        private static Report CreateReport(string productCommit)
         {
             string root = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
             Report report = new Report
@@ -1135,7 +1166,7 @@ namespace Onity.Benchmarks
                 unityVersion = Application.unityVersion,
                 scriptingBackend = "Editor Mono",
                 uniTaskCommit = k_uniTaskCommit,
-                productCommit = k_productCommit,
+                productCommit = productCommit,
                 onityAsyncSha256 = HashFile(root, k_runtimePath),
                 completionSourceSha256 = HashFile(root, k_completionPath),
                 runnerSha256 = HashFile(root, k_runnerPath),

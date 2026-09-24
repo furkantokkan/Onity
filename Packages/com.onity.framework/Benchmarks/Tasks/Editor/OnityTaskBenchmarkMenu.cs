@@ -23,6 +23,7 @@ namespace Onity.Editor.Benchmarks
         private const string k_collectorDiagnosticSessionKey =
             "Onity.Benchmarks.TypedWhenAnyCollectorDiagnostic";
         private const string k_outputArgument = "-onityTaskBenchmarkOutput";
+        private const string k_productCommitArgument = "-onityTaskProductCommit";
         private const string k_typedWhenAnyArgument = "-onityTypedWhenAnyBenchmark";
         private const string k_allocationOnlyArgument = "-onityTaskAllocationsOnly";
         private const string k_collectorDiagnosticArgument =
@@ -62,6 +63,17 @@ namespace Onity.Editor.Benchmarks
         [MenuItem("Onity/Benchmarks/Run Typed WhenAny Benchmarks (Play Mode)")]
         private static void RunTypedWhenAnyFromMenu()
         {
+            string productCommit = GetArgumentValue(k_productCommitArgument);
+            try
+            {
+                OnityTypedWhenAnyBenchmarkRunner.ValidateProductCommit(productCommit);
+            }
+            catch (ArgumentException exception)
+            {
+                Debug.LogError(exception.Message);
+                return;
+            }
+
             SessionState.SetBool(k_typedWhenAnySessionKey, true);
             RunFromMenu();
         }
@@ -106,7 +118,8 @@ namespace Onity.Editor.Benchmarks
                 OnityTypedWhenAnyBenchmarkRunner.Run(
                     latestJson,
                     commandLineRun ? HandleCommandLineCompleted : null,
-                    allocationOnly, collectorDiagnostic);
+                    allocationOnly, collectorDiagnostic,
+                    GetArgumentValue(k_productCommitArgument));
             }
             else
             {
@@ -128,6 +141,12 @@ namespace Onity.Editor.Benchmarks
             bool typedWhenAny = HasArgument(k_typedWhenAnyArgument);
             bool allocationOnly = HasArgument(k_allocationOnlyArgument);
             bool collectorDiagnostic = HasArgument(k_collectorDiagnosticArgument);
+            if (typedWhenAny)
+            {
+                OnityTypedWhenAnyBenchmarkRunner.ValidateProductCommit(
+                    GetArgumentValue(k_productCommitArgument));
+            }
+
             if (allocationOnly && (!typedWhenAny || !HasArgument("-profiler-enable")))
             {
                 throw new ArgumentException(
