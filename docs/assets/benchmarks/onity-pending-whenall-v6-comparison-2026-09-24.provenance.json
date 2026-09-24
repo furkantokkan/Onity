@@ -1,0 +1,68 @@
+{
+  "date": "2026-09-24",
+  "status": "candidate-no-go-bridge-present-fault-allocation-regression",
+  "environment": {
+    "unity": "2022.3.62f3",
+    "backend": "Editor/Mono",
+    "uniTaskVersion": "2.5.11",
+    "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+    "operationsPerBatch": 128,
+    "samplesPerCasePerProcess": 8,
+    "independentTimingProcessesPerRevision": 2,
+    "independentProfilerProcessesPerRevision": 2,
+    "concurrency": "One Unity 2022 Editor process at a time; Unity 6.5 Coin processes were ambient."
+  },
+  "revisions": {
+    "baseline": {
+      "productCommit": "6f32e15e8acee5458c0b5a9a22dde45818a0eb72",
+      "onityAsyncSha256": "971222c94b83220e9225a3a9696a4a21c496ed26647236f54f12c00ae183d465",
+      "rawRunnerSha256": "850a70c7f4e9f9dfd48f6466585c54bc63760861a2ae30d45bc07b9df05ed446",
+      "runnerLineEndings": "mixed CRLF/LF"
+    },
+    "candidate": {
+      "productCommit": "855dce279d5628613cff3d0abf61a92b1c3ea860",
+      "onityAsyncSha256": "96b6791f16c3e0d1b5dce2c93c1f243b564eed84809321f9aea67817377ff2ed",
+      "rawRunnerSha256": "e3ca1626a7789be20ddfe5e1995c35c3271adaa73a67648bd0f777fdb962f2a9",
+      "runnerLineEndings": "CRLF"
+    }
+  },
+  "matchingGitBlobs": {
+    "Packages/com.onity.framework/Benchmarks/Tasks/Editor/Onity.TaskBenchmarks.Editor.asmdef": "75aed1480fcc588c876d2d60dd6eaf93ed60fd9b",
+    "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkMenu.cs": "6cb9d93b70f4517675805a23a41816597170efaa",
+    "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/Onity.TaskBenchmarks.asmdef": "f894d09e50e45c866aeffc81ed8a4af87c335e3e",
+    "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs": "6fd82090e04f7fd17aedc445ccaff4d481807bbc",
+    "Packages/manifest.json": "b4f180c450b59597db2a96a70ff552ca35909799",
+    "Packages/packages-lock.json": "2f863e6d228ea9fd67dbf0d9ab62a805993dd220"
+  },
+  "rawReports": {
+    "onity-pending-whenall-v6-baseline-pass1-2026-09-24.json": "6d341b03b3e7e16ca5428667f9dd6633166ca60fe2594f906b1e16626fe1041b",
+    "onity-pending-whenall-v6-baseline-pass2-2026-09-24.json": "7c433f123ed55785eb31aa83e963204d16819f1b3569e01622ac1440ed1e001a",
+    "onity-pending-whenall-v6-candidate-pass1-2026-09-24.json": "6315179b584ca9ff63a4ee83aad64480ee2cbaf91f3159b4ea1783b653f09136",
+    "onity-pending-whenall-v6-candidate-pass2-2026-09-24.json": "35f5d819582d9a963e2b9f768a91a80df04e9955d71ec05e0390416f56ed459c"
+  },
+  "calibration": {
+    "mainThreadProfilerPositiveBytes": [65568, 65568, 65568, 65568],
+    "mainThreadProfilerEmptyBytes": [0, 0, 0, 0],
+    "emptyHarnessSamplesAllZero": true,
+    "directWorkerCounter": "unavailable; positive/empty controls failed",
+    "allThreadWindow": {
+      "baselinePass1": "invalid; ThreadPool positive control 65602 B instead of 65568 B",
+      "baselinePass2": "valid",
+      "candidatePass1": "valid",
+      "candidatePass2": "valid"
+    }
+  },
+  "bridgePresentFaultRawMainThreadBytesPer128Operations": {
+    "baselinePass1": [119880, 119880, 119880, 119880, 119880, 119880, 119880, 119880],
+    "baselinePass2": [119880, 119880, 119880, 119880, 119880, 119880, 119880, 119880],
+    "candidatePass1": [177152, 177152, 177152, 177152, 177152, 177152, 177152, 177152],
+    "candidatePass2": [177152, 177152, 177152, 177152, 177152, 177152, 177152, 177152]
+  },
+  "notes": [
+    "AsTask input bridges and fresh exceptions are prepared outside the measured slice; input bridge Exception properties are never read.",
+    "The single-library bridge diagnostic has no claimed UniTask-equivalent row.",
+    "The normalized runner Git blob is identical across hosts; raw SHA-256 differs only because of line endings.",
+    "Unity 2022 Editor processes were sequential and exited before evidence analysis; logs are retained under C:/Users/e-fur/.codex/bench-output/pending-v6-855dce2.",
+    "No candidate product source was modified by this benchmark task."
+  ]
+}
