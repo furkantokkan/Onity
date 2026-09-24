@@ -7,6 +7,113 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.13] - 2026-09-24
+
+### Added
+
+- Added typed homogeneous two-input `OnityTask.WhenAny<T>(first, second)`,
+  returning the winner index and value. It consumes both inputs, observes the
+  loser, and rejects duplicate single-consumer native inputs.
+- Added typed and untyped `OnityTask.Preserve()` for sharing one pooled native
+  operation with multiple pending or late consumers. The original task is
+  claimed once; completed, Task-backed, and completion-source tasks are returned
+  without a new retained source.
+- Added a two-input untyped `OnityTask.WhenAll(first, second)` overload. Two
+  already successful inputs are consumed immediately. Eligible pending
+  completion-source inputs use a pooled coordinator; other states retain the
+  existing `Task.WhenAll` behavior.
+
+### Fixed
+
+- Kept the task tracker dictionary and display order consistent when a fault's
+  custom `Exception.Message` clears or clears and retracks during completion.
+  Error text is read outside the tracker lock; an already completed replacement
+  entry retains its own completion time.
+- Marked an input `AsTask()` fault bridge observed when the pending two-input
+  coordinator consumes its fault, including bridges created during or after
+  completion. Pending calls with an existing input bridge use the prior
+  `Task.WhenAll` path.
+
+### Improved
+
+- Deferred typed `WhenAny` callbacks until inputs are pending, reducing
+  completed-input allocation from 424 to 152 B/op in Unity 2022 Editor/Mono.
+- Read completed multi-consumer results without taking the completion-source
+  lock, while preserving the bridge/status publication order for concurrent
+  completion.
+- Removed the separate lock-object allocation from internal `Preserve()`
+  sources. The measured pending native conversion fell from 264 to 248 B/task
+  in the Unity 2022 Editor/Mono benchmark.
+- Stored the `Preserve()` adapter directly in the native source's task-bridge
+  slot, removing its bound callback allocation. Pending conversion fell from
+  248 to 120 B/task; ordinary native awaiting stayed at 656 B/task in the
+  calibrated lifecycle benchmark. The original task cannot consume the result
+  while the adapter owns it.
+- Returned the pending completion-source status without taking its gate when
+  no .NET task bridge exists. A published bridge still uses the gate to keep
+  terminal status ordered after bridge completion; all measured status reads
+  remained at 0 B/op.
+- Removed Task bridges from the already successful two-input `WhenAll` path.
+  Calibrated Unity 2022 Editor/Mono scheduling allocation fell from 276 to
+  0 B/op; the pinned UniTask comparison used 128 B/op. Pending calls saved
+  64 B/op by avoiding the `params` input array. Already-completed calls do not
+  add a tracker entry.
+- Collected eligible already successful typed `WhenAll<T>` results directly in
+  input order, without a .NET Task bridge or tracker entry. Duplicate
+  single-consumer native inputs retain the previous conversion behavior, and
+  native duplicate scans are bounded to 16 inputs before falling back. In the
+  calibrated Unity 2022 Editor/Mono scheduling slice, completed two-input
+  allocation fell from 392 to 40 B/op and four-input allocation from 592 to
+  48 B/op; the pinned UniTask controls were 112 and 120 B/op respectively.
+  Pending two-input Onity allocation remained at 1,408 B/op.
+- Reused a static task tracker completion callback instead of allocating a
+  capture and delegate per pending task. In the two-input `WhenAll` scheduling
+  comparison with tracking enabled, allocation fell from 1,556 to 1,408 B/op;
+  tracking-disabled allocation stayed at 544 B/op. ExecutionContext flow and
+  the tracker result behavior were preserved.
+- Reused a bounded internal coordinator for eligible pending untyped two-input
+  completion-source `WhenAll` calls. The output remains Task-backed and
+  shareable; faults retain argument order and dominate cancellation. In two
+  calibrated Unity 2022 Editor/Mono passes, main-thread full-lifecycle
+  allocation fell from 624.56 to 176 B/op for tracker-off success, 1,288.56
+  to 880 B/op for fault, and 1,040.56 to 592 B/op for cancellation. Tracker-on
+  allocation also fell in all three cases, but remains above pinned UniTask in
+  the measured pass. The first observed pending schedule increased by 434 B;
+  completed two-input scheduling stayed at 0 B/op. The
+  [full report](https://github.com/furkantokkan/Onity/blob/b6233dd84533c517890ecb3705b7f285269b42ca/docs/assets/benchmarks/onity-pending-whenall-v6-bridge-fallback-2026-09-24.md)
+  records first-call, bridge-present, saturation, timing, and worker limits.
+
+### Tested
+
+- At the previous `6f32e15` product revision, Unity `2022.3.62f3` EditMode
+  `549/549` and PlayMode `23/23` passed, including
+  native sharing, fault/cancellation propagation, source reuse, and main-thread
+  continuation tests. The final bridge-publication adjustment passed `36/36`
+  focused completion-source EditMode tests; the two-input `WhenAll` subset
+  passed `7/7`. Both reentrant tracker regressions failed before their fixes
+  and passed after them. Typed `WhenAll` covered completed and pending inputs,
+  duplicate native sources, source consumption, faults, cancellation, and large
+  result sets. The Release `Onity.Unity` build passed with no errors.
+- At the integrated pending-pair revision `556602a`, independent Unity
+  `2022.3.62f3` verification passed EditMode `579/579` and PlayMode `25/25`.
+  `Onity.Unity` Release built with zero errors and 16 preexisting Unity
+  reference warnings. The new coverage includes pending success, ordered
+  faults, cancellation, preexisting and concurrent `AsTask()` bridges, worker
+  completion, tracker context, and coordinator reuse.
+- At the accepted typed `WhenAny` revision `8fa63ac`, local Unity
+  `2022.3.62f3` verification passed EditMode `602/602` and PlayMode `28/28`.
+  The Release `Onity.Unity` build had zero errors and 16 preexisting MSB3277
+  reference warnings. The engine-free core Release build had zero warnings and
+  errors, and analyzer/source-generator tests passed `26/26`. GitHub docs and
+  core checks passed on PR #14; Unity CI was skipped because `UNITY_LICENSE`
+  is not configured.
+- A test-only Unity `2022.3.62f3` StandaloneWindows64 IL2CPP Player build
+  succeeded with the accepted runtime (`OnityAsync` blob `1a7fdd8`). The
+  `OnityTaskSafetyPlayModeTests` local XML recorded `20/20` passed with no
+  failures, skips, or inconclusive results; the Player callback recorded 20
+  starts and 20 finishes, and the Editor exited with code 0. This focused
+  Player result is not a Player performance benchmark.
+
 ## [0.3.12] - 2026-09-23
 
 ### Added
@@ -483,6 +590,7 @@ allocation. The core uses no `System.Linq`.
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.3.13]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.13
 [0.3.12]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.12
 [0.3.11]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.11
 [0.3.10]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.10

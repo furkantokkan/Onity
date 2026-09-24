@@ -61,7 +61,7 @@ Core assemblies in this package:
   - `OnityTask` / `OnityTask<T>` for allocation-aware Unity async flows
   - `OnityTask.NextFrame`, `DelayFrames`, `Delay`, `WaitUntil`, scene/web/`AsyncOperation` bridges
   - `OnityTask.WhenAll` for both untyped operations and ordered typed results
-  - `OnityTask.WhenAny` for two untyped, single-consumer operations
+  - `OnityTask.WhenAny` for two untyped or same-type typed operations
   - `OnityTaskCompletionSource` / `OnityTaskCompletionSource<T>` for
     callback-owned, multi-consumer completion
   - `OnityAsync.DelayAsync`, `NextFrameAsync`, `NextFixedFrameAsync`
@@ -72,15 +72,19 @@ Core assemblies in this package:
 
 Pooled `OnityTask` values returned by frame, delay, predicate, and Unity
 operation helpers are single-consumer. Await each value once. If several
-consumers must share an operation, call `AsTask()` once and share the returned
-`Task` instead of copying the pooled `OnityTask` value.
+consumers must share an operation, call `Preserve()` once and share its returned
+`OnityTask`, or call `AsTask()` once and share the returned `Task`. Do not copy
+the original pooled value.
 For an operation completed by a callback, use `OnityTaskCompletionSource<T>`
 or its untyped variant to expose an OnityTask that supports multiple consumers.
 
-Suspended `async OnityTask` methods and `WhenAll` currently use .NET `Task`
-internally. A synchronously successful `async OnityTask<T>` stores its result
-inline. Pooled Unity waits avoid a `Task` until explicitly converted; do not
-assume all OnityTask paths are allocation-free.
+Suspended `async OnityTask` methods and many `WhenAll` paths use .NET `Task`
+internally. Completed inputs can take direct paths; eligible pending untyped
+completion-source pairs use a pooled coordinator with a Task-backed output.
+Typed `WhenAny` uses an allocating result source. A synchronously
+successful `async OnityTask<T>` stores its result inline. Pooled Unity waits
+avoid a `Task` until explicitly converted; do not assume all OnityTask paths
+are allocation-free.
 
 See the [Async with OnityTask guide](https://furkantokkan.github.io/Onity/guide/onitytask.html)
 for cancellation, scene/web operations, interop, and diagnostics.
@@ -201,9 +205,9 @@ What is already covered in Onity:
 - Task tracking window for long-running/leaking tasks.
 - Reusable timeout flow with `CancelAfterSlim` and `OnityTimeoutController`.
 
-Current gaps include Task-backed suspended async methods and `WhenAll`, three
-runner phases rather than selectable PlayerLoop phases, next-tick cancellation,
-and no async-enumerable or public completion-source API. The
+Current gaps include Task-backed suspended async methods and many `WhenAll`
+paths, three runner phases rather than selectable PlayerLoop phases, next-tick
+cancellation, and no async-enumerable API. The
 [measured OnityTask comparison](https://furkantokkan.github.io/Onity/guide/onitytask-comparison.html)
 records the Unity 2022 timing boundaries and feature status. It does not claim
 that OnityTask is universally faster or functionally equivalent to UniTask.

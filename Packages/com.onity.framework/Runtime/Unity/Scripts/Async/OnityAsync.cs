@@ -94,6 +94,38 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
+        /// Completes when either typed input completes and returns its argument index and result.
+        /// Both inputs are consumed; the loser continues running and is not canceled.
+        /// The winning failure or cancellation is propagated instead of a result.
+        /// </summary>
+        /// <remarks>
+        /// Native continuations do not capture SynchronizationContext at creation or await
+        /// registration; they run on the completing input's thread, including worker threads.
+        /// To resume on Unity's main thread, call and await AsTask() from the Unity context.
+        /// </remarks>
+        /// <typeparam name="T">Result type shared by both inputs.</typeparam>
+        /// <param name="first">Input at index zero.</param>
+        /// <param name="second">Input at index one.</param>
+        /// <returns>A single-consumer task with the first completed input's index and result.</returns>
+        /// <exception cref="ArgumentException">
+        /// Both inputs refer to the same single-consumer native operation.
+        /// </exception>
+        public static OnityTask<(int winnerIndex, T result)> WhenAny<T>(
+            OnityTask<T> first,
+            OnityTask<T> second)
+        {
+            if (first.SharesSingleConsumerSourceWith(second))
+            {
+                throw new ArgumentException(
+                    "A single-consumer OnityTask cannot be passed to WhenAny twice.",
+                    nameof(second));
+            }
+
+            return new OnityTask<(int winnerIndex, T result)>(
+                new OnityWhenAnyTaskSource<T>(first, second));
+        }
+
+        /// <summary>
         /// True when the wrapped task completed.
         /// </summary>
         public bool IsCompleted => m_state == null
@@ -168,6 +200,24 @@ namespace Onity.Unity.Async
             }
 
             return m_state is IOnityTaskSource source ? source.AsTask(m_token) : (Task)m_state;
+        }
+
+        /// <summary>
+        /// Shares a single-consumer native task with multiple pending or later awaiters.
+        /// The original native task is claimed by this call and must not be consumed again.
+        /// Already shareable and Task-backed tasks are returned without allocation.
+        /// </summary>
+        /// <returns>A task that retains the completion result for multiple consumers.</returns>
+        public OnityTask Preserve()
+        {
+            if (!(m_state is IOnityTaskSource source)
+                || m_state is IOnityMultiConsumerTaskSource)
+            {
+                return this;
+            }
+
+            OnityPreservedTaskSource preserved = new OnityPreservedTaskSource(source, m_token);
+            return preserved.Task;
         }
 
         /// <summary>
@@ -410,6 +460,11 @@ namespace Onity.Unity.Async
                 throw new ArgumentNullException(nameof(tasks));
             }
 
+            if (tasks.Length == 2)
+            {
+                return WhenAll(tasks[0], tasks[1]);
+            }
+
             Task[] taskArray = new Task[tasks.Length];
 
             for (int i = 0; i < tasks.Length; i++)
@@ -421,7 +476,66 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
+        /// Completes after both inputs complete. Already successful inputs are
+        /// consumed immediately without creating a .NET task bridge.
+        /// </summary>
+        /// <param name="first">First input task.</param>
+        /// <param name="second">Second input task.</param>
+        /// <returns>A task that completes after both inputs.</returns>
+        public static OnityTask WhenAll(OnityTask first, OnityTask second)
+        {
+            bool duplicateSingleConsumer =
+                ReferenceEquals(first.m_state, second.m_state)
+                && first.m_state is IOnityTaskSource
+                && !(first.m_state is IOnityMultiConsumerTaskSource);
+
+            if (duplicateSingleConsumer == false
+                && first.IsCompletedSuccessfully
+                && second.IsCompletedSuccessfully)
+            {
+                first.GetAwaiter().GetResult();
+                second.GetAwaiter().GetResult();
+                return Completed;
+            }
+
+            OnityTaskCompletionSource firstSource =
+                first.m_state as OnityTaskCompletionSource;
+            OnityTaskCompletionSource secondSource =
+                second.m_state as OnityTaskCompletionSource;
+            if ((first.m_state == null || firstSource != null)
+                && (second.m_state == null || secondSource != null)
+                && (firstSource == null || !firstSource.HasTaskBridge)
+                && (secondSource == null || !secondSource.HasTaskBridge)
+                && (first.IsCompleted == false || second.IsCompleted == false))
+            {
+                TaskCompletionSource<bool> completion =
+                    OnityTaskCompletionSource<bool>.CreateTaskBridge();
+                OnityWhenAllPairCoordinator.Rent(first, second, completion).Start();
+                return FromTask(OnityTaskTracker.Track(
+                    (Task)completion.Task, "OnityAsync.WhenAll"));
+            }
+
+            return FromTask(OnityAsync.WhenAll(first.AsTask(), second.AsTask()));
+        }
+
+        internal OnityTaskSourceStatus ReadCompletedSourceOutcome(
+            out Exception fault,
+            out CancellationToken cancellationToken)
+        {
+            if (m_state == null)
+            {
+                fault = null;
+                cancellationToken = default;
+                return OnityTaskSourceStatus.Succeeded;
+            }
+
+            return ((OnityTaskCompletionSource)m_state).ReadCompletedOutcome(
+                out fault, out cancellationToken);
+        }
+
+        /// <summary>
         /// Awaits all typed Onity tasks and returns results in input order.
+        /// Eligible already successful inputs are consumed without .NET task bridges.
         /// Each input task is consumed once.
         /// </summary>
         /// <typeparam name="T">Result type.</typeparam>
@@ -432,6 +546,54 @@ namespace Onity.Unity.Async
             if (tasks == null)
             {
                 throw new ArgumentNullException(nameof(tasks));
+            }
+
+            const int k_maxNativeDuplicateScanLength = 16;
+            bool allCompletedSuccessfully = true;
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                if (tasks[i].IsCompletedSuccessfully == false)
+                {
+                    allCompletedSuccessfully = false;
+                    break;
+                }
+            }
+
+            if (allCompletedSuccessfully)
+            {
+                for (int i = 0; i < tasks.Length && allCompletedSuccessfully; i++)
+                {
+                    if (tasks[i].HasSingleConsumerSource == false)
+                    {
+                        continue;
+                    }
+
+                    if (tasks.Length > k_maxNativeDuplicateScanLength)
+                    {
+                        allCompletedSuccessfully = false;
+                        break;
+                    }
+
+                    for (int j = i + 1; j < tasks.Length; j++)
+                    {
+                        if (tasks[i].SharesSingleConsumerSourceWith(tasks[j]))
+                        {
+                            allCompletedSuccessfully = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (allCompletedSuccessfully)
+            {
+                T[] results = tasks.Length == 0 ? Array.Empty<T>() : new T[tasks.Length];
+                for (int i = 0; i < tasks.Length; i++)
+                {
+                    results[i] = tasks[i].GetAwaiter().GetResult();
+                }
+
+                return OnityTask<T[]>.FromResult(results);
             }
 
             Task<T>[] taskArray = new Task<T>[tasks.Length];
@@ -958,6 +1120,36 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
+        /// Shares a single-consumer native task with multiple pending or later awaiters.
+        /// The original native task is claimed by this call and must not be consumed again.
+        /// Already shareable and Task-backed tasks are returned without allocation.
+        /// </summary>
+        /// <returns>A task that retains the completion result for multiple consumers.</returns>
+        public OnityTask<T> Preserve()
+        {
+            if (!(m_state is IOnityTaskSource<T> source)
+                || m_state is IOnityMultiConsumerTaskSource)
+            {
+                return this;
+            }
+
+            OnityPreservedTaskSource<T> preserved =
+                new OnityPreservedTaskSource<T>(source, m_token);
+            return preserved.Task;
+        }
+
+        internal bool SharesSingleConsumerSourceWith(OnityTask<T> other)
+        {
+            return HasSingleConsumerSource
+                && ReferenceEquals(m_state, other.m_state)
+                && m_token == other.m_token;
+        }
+
+        internal bool HasSingleConsumerSource =>
+            m_state is IOnityTaskSource<T>
+            && !(m_state is IOnityMultiConsumerTaskSource);
+
+        /// <summary>
         /// Returns the task awaiter.
         /// </summary>
         /// <returns>Task awaiter.</returns>
@@ -976,6 +1168,222 @@ namespace Onity.Unity.Async
             AsTask().Forget(exceptionHandler);
         }
 
+    }
+
+    internal sealed class OnityWhenAllPairCoordinator
+    {
+        private const int k_maxPoolSize = 256;
+
+        private static readonly Stack<OnityWhenAllPairCoordinator> s_pool =
+            new Stack<OnityWhenAllPairCoordinator>(32);
+
+        private readonly Action m_completeFirst;
+        private readonly Action m_completeSecond;
+
+        private OnityTask m_first;
+        private OnityTask m_second;
+        private TaskCompletionSource<bool> m_completion;
+        private Exception m_firstFault;
+        private Exception m_secondFault;
+        private CancellationToken m_firstCancellationToken;
+        private CancellationToken m_secondCancellationToken;
+        private bool m_firstCanceled;
+        private bool m_secondCanceled;
+        private bool m_registrationPinned;
+        private bool m_returned;
+        private int m_remaining;
+        private int m_activeCallbacks;
+
+        private OnityWhenAllPairCoordinator()
+        {
+            m_completeFirst = CompleteFirst;
+            m_completeSecond = CompleteSecond;
+        }
+
+        public static OnityWhenAllPairCoordinator Rent(
+            OnityTask first,
+            OnityTask second,
+            TaskCompletionSource<bool> completion)
+        {
+            OnityWhenAllPairCoordinator coordinator;
+            lock (s_pool)
+            {
+                coordinator = s_pool.Count == 0
+                    ? new OnityWhenAllPairCoordinator()
+                    : s_pool.Pop();
+            }
+
+            lock (coordinator)
+            {
+                coordinator.m_first = first;
+                coordinator.m_second = second;
+                coordinator.m_completion = completion;
+                coordinator.m_registrationPinned = true;
+                coordinator.m_returned = false;
+                coordinator.m_remaining = 2;
+                coordinator.m_activeCallbacks = 0;
+            }
+
+            return coordinator;
+        }
+
+        public void Start()
+        {
+            try
+            {
+                Register(m_first, m_completeFirst);
+                Register(m_second, m_completeSecond);
+            }
+            finally
+            {
+                lock (this)
+                {
+                    m_registrationPinned = false;
+                    ReturnIfReady();
+                }
+            }
+        }
+
+        private static void Register(OnityTask task, Action continuation)
+        {
+            OnityTaskAwaiter awaiter = task.GetAwaiter();
+            if (awaiter.IsCompleted)
+            {
+                continuation();
+                return;
+            }
+
+            awaiter.UnsafeOnCompleted(continuation);
+        }
+
+        private void CompleteFirst()
+        {
+            CompleteInput(true);
+        }
+
+        private void CompleteSecond()
+        {
+            CompleteInput(false);
+        }
+
+        private void CompleteInput(bool isFirst)
+        {
+            OnityTask input;
+            lock (this)
+            {
+                m_activeCallbacks++;
+                input = isFirst ? m_first : m_second;
+            }
+
+            Exception fault = null;
+            bool canceled = false;
+            CancellationToken cancellationToken = default;
+            OnityTaskSourceStatus status = input.ReadCompletedSourceOutcome(
+                out fault, out cancellationToken);
+            if (status == OnityTaskSourceStatus.Pending)
+            {
+                fault = new InvalidOperationException("OnityTask is not completed.");
+            }
+
+            canceled = status == OnityTaskSourceStatus.Canceled;
+
+            TaskCompletionSource<bool> completion = null;
+            Exception firstFault = null;
+            Exception secondFault = null;
+            bool firstCanceled = false;
+            bool secondCanceled = false;
+            CancellationToken firstCancellationToken = default;
+            CancellationToken secondCancellationToken = default;
+
+            lock (this)
+            {
+                if (isFirst)
+                {
+                    m_firstFault = fault;
+                    m_firstCanceled = canceled;
+                    m_firstCancellationToken = cancellationToken;
+                }
+                else
+                {
+                    m_secondFault = fault;
+                    m_secondCanceled = canceled;
+                    m_secondCancellationToken = cancellationToken;
+                }
+
+                if (--m_remaining == 0)
+                {
+                    completion = m_completion;
+                    firstFault = m_firstFault;
+                    secondFault = m_secondFault;
+                    firstCanceled = m_firstCanceled;
+                    secondCanceled = m_secondCanceled;
+                    firstCancellationToken = m_firstCancellationToken;
+                    secondCancellationToken = m_secondCancellationToken;
+                }
+            }
+
+            try
+            {
+                if (completion != null)
+                {
+                    if (firstFault != null && secondFault != null)
+                    {
+                        completion.TrySetException(new[] { firstFault, secondFault });
+                    }
+                    else if (firstFault != null || secondFault != null)
+                    {
+                        completion.TrySetException(firstFault ?? secondFault);
+                    }
+                    else if (firstCanceled || secondCanceled)
+                    {
+                        completion.TrySetCanceled(firstCanceled
+                            ? firstCancellationToken
+                            : secondCancellationToken);
+                    }
+                    else
+                    {
+                        completion.TrySetResult(true);
+                    }
+                }
+            }
+            finally
+            {
+                lock (this)
+                {
+                    m_activeCallbacks--;
+                    ReturnIfReady();
+                }
+            }
+        }
+
+        private void ReturnIfReady()
+        {
+            // Both callers hold this lock until the pool push is complete.
+            if (m_returned || m_registrationPinned
+                || m_remaining != 0 || m_activeCallbacks != 0)
+            {
+                return;
+            }
+
+            m_returned = true;
+            m_first = default;
+            m_second = default;
+            m_completion = null;
+            m_firstFault = null;
+            m_secondFault = null;
+            m_firstCancellationToken = default;
+            m_secondCancellationToken = default;
+            m_firstCanceled = false;
+            m_secondCanceled = false;
+
+            lock (s_pool)
+            {
+                if (s_pool.Count < k_maxPoolSize)
+                {
+                    s_pool.Push(this);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -1105,6 +1513,11 @@ namespace Onity.Unity.Async
                 ? source.GetStatus(m_token) != OnityTaskSourceStatus.Pending
                 : ((Task<T>)m_state).IsCompleted);
 
+        internal bool IsCanceled => m_state != null
+            && (m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Canceled
+                : ((Task<T>)m_state).IsCanceled);
+
         /// <summary>
         /// Completes the await and returns the result.
         /// </summary>
@@ -1216,6 +1629,16 @@ namespace Onity.Unity.Async
         T GetResult(int token);
     }
 
+    internal interface IOnityPreservedTaskContinuation
+    {
+        void Complete();
+    }
+
+    internal interface IOnityPreservedTaskSource
+    {
+        void OnCompleted(IOnityPreservedTaskContinuation continuation, int token);
+    }
+
     internal interface IOnityTaskTickSource
     {
         int Version { get; }
@@ -1245,18 +1668,36 @@ namespace Onity.Unity.Async
                 Debug.LogException(exception);
             }
         }
+
+        public static void Invoke(IOnityPreservedTaskContinuation continuation)
+        {
+            if (continuation == null)
+            {
+                return;
+            }
+
+            try
+            {
+                continuation.Complete();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+        }
     }
 
-    internal abstract class OnityTaskSourceBase : IOnityTaskSource
+    internal abstract class OnityTaskSourceBase : IOnityTaskSource, IOnityPreservedTaskSource
     {
         private const int k_noConsumption = 0;
         private const int k_nativeConsumption = 1;
         private const int k_taskConsumption = 2;
+        private const int k_preservedConsumption = 3;
 
         private static readonly Action<object> s_cancelCallback = CancelFromToken;
 
         private Action m_continuation;
-        private TaskCompletionSource<bool> m_taskCompletionSource;
+        private object m_completionState;
         private CancellationTokenRegistration m_cancellationRegistration;
         private CancellationToken m_cancellationToken;
         private Exception m_exception;
@@ -1310,7 +1751,8 @@ namespace Onity.Unity.Async
                     throw new InvalidOperationException("OnityTask has already been materialized and released.");
                 }
 
-                if (m_consumptionMode == k_nativeConsumption)
+                if (m_consumptionMode == k_nativeConsumption ||
+                    m_consumptionMode == k_preservedConsumption)
                 {
                     throw new InvalidOperationException(
                         "OnityTask is already being consumed by its native awaiter.");
@@ -1319,14 +1761,17 @@ namespace Onity.Unity.Async
                 m_consumptionMode = k_taskConsumption;
                 Volatile.Write(ref m_taskMaterialized, 1);
 
-                if (m_taskCompletionSource == null)
+                TaskCompletionSource<bool> taskCompletionSource =
+                    m_completionState as TaskCompletionSource<bool>;
+                if (taskCompletionSource == null)
                 {
-                    m_taskCompletionSource =
+                    taskCompletionSource =
                         new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    ApplyStatusToTask(m_taskCompletionSource);
+                    m_completionState = taskCompletionSource;
+                    ApplyStatusToTask(taskCompletionSource);
                 }
 
-                task = m_taskCompletionSource.Task;
+                task = taskCompletionSource.Task;
                 releaseSource = m_status != (int)OnityTaskSourceStatus.Pending
                     && TryClaimTaskReleaseUnsafe();
 
@@ -1380,7 +1825,54 @@ namespace Onity.Unity.Async
             }
         }
 
+        public void OnCompleted(IOnityPreservedTaskContinuation continuation, int token)
+        {
+            if (continuation == null)
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
+
+            bool invokeNow;
+            lock (this)
+            {
+                ValidateToken(token);
+
+                if (m_consumed != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (m_consumptionMode != k_noConsumption)
+                {
+                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
+                }
+
+                m_consumptionMode = k_preservedConsumption;
+                invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
+                m_completionState = continuation;
+            }
+
+            if (invokeNow)
+            {
+                continuation.Complete();
+            }
+        }
+
         public void GetResult(int token)
+        {
+            GetResultCore(token, null);
+        }
+
+        internal void GetPreservedResult(
+            int token,
+            IOnityPreservedTaskContinuation continuation)
+        {
+            GetResultCore(token, continuation);
+        }
+
+        private void GetResultCore(
+            int token,
+            IOnityPreservedTaskContinuation continuation)
         {
             Exception exception;
 
@@ -1393,7 +1885,15 @@ namespace Onity.Unity.Async
                     throw new InvalidOperationException("OnityTask has already been consumed.");
                 }
 
-                if (m_consumptionMode == k_taskConsumption)
+                if (m_consumptionMode == k_preservedConsumption)
+                {
+                    if (!ReferenceEquals(m_completionState, continuation))
+                    {
+                        throw new InvalidOperationException(
+                            "OnityTask is already being consumed through Preserve().");
+                    }
+                }
+                else if (continuation != null || m_consumptionMode == k_taskConsumption)
                 {
                     throw new InvalidOperationException(
                         "OnityTask is already being consumed through AsTask().");
@@ -1430,7 +1930,7 @@ namespace Onity.Unity.Async
             lock (this)
             {
                 m_continuation = null;
-                m_taskCompletionSource = null;
+                m_completionState = null;
                 m_cancellationToken = cancellationToken;
                 m_exception = null;
                 int nextVersion = unchecked(m_version + 1);
@@ -1482,6 +1982,7 @@ namespace Onity.Unity.Async
         private bool TrySetStatus(OnityTaskSourceStatus status, Exception exception)
         {
             Action continuation;
+            IOnityPreservedTaskContinuation preservedContinuation;
             TaskCompletionSource<bool> taskCompletionSource;
             bool releaseSource;
 
@@ -1494,7 +1995,11 @@ namespace Onity.Unity.Async
 
                 m_exception = exception;
                 continuation = m_continuation;
-                taskCompletionSource = m_taskCompletionSource;
+                object completionState = m_completionState;
+                preservedContinuation = m_consumptionMode == k_preservedConsumption
+                    ? (IOnityPreservedTaskContinuation)completionState : null;
+                taskCompletionSource = m_consumptionMode == k_taskConsumption
+                    ? (TaskCompletionSource<bool>)completionState : null;
                 m_continuation = null;
                 m_cancellationRegistration.Dispose();
                 m_cancellationRegistration = default;
@@ -1513,7 +2018,14 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
 
-            OnityTaskContinuation.Invoke(continuation);
+            if (preservedContinuation == null)
+            {
+                OnityTaskContinuation.Invoke(continuation);
+            }
+            else
+            {
+                OnityTaskContinuation.Invoke(preservedContinuation);
+            }
             return true;
         }
 
@@ -1586,23 +2098,24 @@ namespace Onity.Unity.Async
 
         private void ClearCompletionReferencesUnsafe()
         {
-            m_taskCompletionSource = null;
+            m_completionState = null;
             m_cancellationRegistration = default;
             m_cancellationToken = default;
             m_exception = null;
         }
     }
 
-    internal abstract class OnityTaskSourceBase<T> : IOnityTaskSource<T>
+    internal abstract class OnityTaskSourceBase<T> : IOnityTaskSource<T>, IOnityPreservedTaskSource
     {
         private const int k_noConsumption = 0;
         private const int k_nativeConsumption = 1;
         private const int k_taskConsumption = 2;
+        private const int k_preservedConsumption = 3;
 
         private static readonly Action<object> s_cancelCallback = CancelFromToken;
 
         private Action m_continuation;
-        private TaskCompletionSource<T> m_taskCompletionSource;
+        private object m_completionState;
         private CancellationTokenRegistration m_cancellationRegistration;
         private CancellationToken m_cancellationToken;
         private Exception m_exception;
@@ -1657,7 +2170,8 @@ namespace Onity.Unity.Async
                     throw new InvalidOperationException("OnityTask has already been materialized and released.");
                 }
 
-                if (m_consumptionMode == k_nativeConsumption)
+                if (m_consumptionMode == k_nativeConsumption ||
+                    m_consumptionMode == k_preservedConsumption)
                 {
                     throw new InvalidOperationException(
                         "OnityTask is already being consumed by its native awaiter.");
@@ -1666,14 +2180,17 @@ namespace Onity.Unity.Async
                 m_consumptionMode = k_taskConsumption;
                 Volatile.Write(ref m_taskMaterialized, 1);
 
-                if (m_taskCompletionSource == null)
+                TaskCompletionSource<T> taskCompletionSource =
+                    m_completionState as TaskCompletionSource<T>;
+                if (taskCompletionSource == null)
                 {
-                    m_taskCompletionSource =
+                    taskCompletionSource =
                         new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    ApplyStatusToTask(m_taskCompletionSource);
+                    m_completionState = taskCompletionSource;
+                    ApplyStatusToTask(taskCompletionSource);
                 }
 
-                task = m_taskCompletionSource.Task;
+                task = taskCompletionSource.Task;
                 releaseSource = m_status != (int)OnityTaskSourceStatus.Pending
                     && TryClaimTaskReleaseUnsafe();
 
@@ -1727,7 +2244,54 @@ namespace Onity.Unity.Async
             }
         }
 
+        public void OnCompleted(IOnityPreservedTaskContinuation continuation, int token)
+        {
+            if (continuation == null)
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
+
+            bool invokeNow;
+            lock (this)
+            {
+                ValidateToken(token);
+
+                if (m_consumed != 0)
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (m_consumptionMode != k_noConsumption)
+                {
+                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
+                }
+
+                m_consumptionMode = k_preservedConsumption;
+                invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
+                m_completionState = continuation;
+            }
+
+            if (invokeNow)
+            {
+                continuation.Complete();
+            }
+        }
+
         public T GetResult(int token)
+        {
+            return GetResultCore(token, null);
+        }
+
+        internal T GetPreservedResult(
+            int token,
+            IOnityPreservedTaskContinuation continuation)
+        {
+            return GetResultCore(token, continuation);
+        }
+
+        private T GetResultCore(
+            int token,
+            IOnityPreservedTaskContinuation continuation)
         {
             Exception exception;
             T result;
@@ -1741,7 +2305,15 @@ namespace Onity.Unity.Async
                     throw new InvalidOperationException("OnityTask has already been consumed.");
                 }
 
-                if (m_consumptionMode == k_taskConsumption)
+                if (m_consumptionMode == k_preservedConsumption)
+                {
+                    if (!ReferenceEquals(m_completionState, continuation))
+                    {
+                        throw new InvalidOperationException(
+                            "OnityTask is already being consumed through Preserve().");
+                    }
+                }
+                else if (continuation != null || m_consumptionMode == k_taskConsumption)
                 {
                     throw new InvalidOperationException(
                         "OnityTask is already being consumed through AsTask().");
@@ -1786,7 +2358,7 @@ namespace Onity.Unity.Async
             lock (this)
             {
                 m_continuation = null;
-                m_taskCompletionSource = null;
+                m_completionState = null;
                 m_cancellationToken = cancellationToken;
                 m_exception = null;
                 m_result = default;
@@ -1845,6 +2417,7 @@ namespace Onity.Unity.Async
         private bool TrySetStatus(OnityTaskSourceStatus status, T result, Exception exception)
         {
             Action continuation;
+            IOnityPreservedTaskContinuation preservedContinuation;
             TaskCompletionSource<T> taskCompletionSource;
             bool releaseSource;
 
@@ -1858,7 +2431,11 @@ namespace Onity.Unity.Async
                 m_result = result;
                 m_exception = exception;
                 continuation = m_continuation;
-                taskCompletionSource = m_taskCompletionSource;
+                object completionState = m_completionState;
+                preservedContinuation = m_consumptionMode == k_preservedConsumption
+                    ? (IOnityPreservedTaskContinuation)completionState : null;
+                taskCompletionSource = m_consumptionMode == k_taskConsumption
+                    ? (TaskCompletionSource<T>)completionState : null;
                 m_continuation = null;
                 m_cancellationRegistration.Dispose();
                 m_cancellationRegistration = default;
@@ -1877,7 +2454,14 @@ namespace Onity.Unity.Async
                 ReleaseSource();
             }
 
-            OnityTaskContinuation.Invoke(continuation);
+            if (preservedContinuation == null)
+            {
+                OnityTaskContinuation.Invoke(continuation);
+            }
+            else
+            {
+                OnityTaskContinuation.Invoke(preservedContinuation);
+            }
             return true;
         }
 
@@ -1942,7 +2526,7 @@ namespace Onity.Unity.Async
 
         private void ClearCompletionReferencesUnsafe()
         {
-            m_taskCompletionSource = null;
+            m_completionState = null;
             m_cancellationRegistration = default;
             m_cancellationToken = default;
             m_exception = null;
@@ -2040,6 +2624,127 @@ namespace Onity.Unity.Async
                 if (isWinner)
                 {
                     TrySetResult(index);
+                }
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (isWinner)
+                {
+                    if (isCanceled)
+                    {
+                        TrySetCanceled(exception);
+                    }
+                    else
+                    {
+                        TrySetException(exception);
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                if (isWinner)
+                {
+                    TrySetException(exception);
+                }
+            }
+        }
+
+        private void CompleteRegistrationFailure(int index, Exception exception)
+        {
+            if (Interlocked.CompareExchange(ref m_winner, index + 1, 0) == 0)
+            {
+                TrySetException(exception);
+            }
+        }
+    }
+
+    internal sealed class OnityWhenAnyTaskSource<T> : OnityTaskSourceBase<(int winnerIndex, T result)>
+    {
+        private OnityTaskAwaiter<T> m_firstAwaiter;
+        private OnityTaskAwaiter<T> m_secondAwaiter;
+        private int m_winner;
+
+        public OnityWhenAnyTaskSource(OnityTask<T> first, OnityTask<T> second)
+        {
+            Reset(default);
+            RegisterFirst(first);
+            RegisterSecond(second);
+        }
+
+        protected override void ReleaseSource()
+        {
+            // The losing input can complete after the result is consumed.
+        }
+
+        private void RegisterFirst(OnityTask<T> task)
+        {
+            m_firstAwaiter = task.GetAwaiter();
+            try
+            {
+                if (m_firstAwaiter.IsCompleted)
+                {
+                    CompleteFirst();
+                }
+                else
+                {
+                    Action continuation = CompleteFirst;
+                    m_firstAwaiter.UnsafeOnCompleted(continuation);
+                }
+            }
+            catch (Exception exception)
+            {
+                m_firstAwaiter = default;
+                CompleteRegistrationFailure(0, exception);
+            }
+        }
+
+        private void RegisterSecond(OnityTask<T> task)
+        {
+            m_secondAwaiter = task.GetAwaiter();
+            try
+            {
+                if (m_secondAwaiter.IsCompleted)
+                {
+                    CompleteSecond();
+                }
+                else
+                {
+                    Action continuation = CompleteSecond;
+                    m_secondAwaiter.UnsafeOnCompleted(continuation);
+                }
+            }
+            catch (Exception exception)
+            {
+                m_secondAwaiter = default;
+                CompleteRegistrationFailure(1, exception);
+            }
+        }
+
+        private void CompleteFirst()
+        {
+            OnityTaskAwaiter<T> awaiter = m_firstAwaiter;
+            m_firstAwaiter = default;
+            CompleteInput(0, awaiter);
+        }
+
+        private void CompleteSecond()
+        {
+            OnityTaskAwaiter<T> awaiter = m_secondAwaiter;
+            m_secondAwaiter = default;
+            CompleteInput(1, awaiter);
+        }
+
+        private void CompleteInput(int index, OnityTaskAwaiter<T> awaiter)
+        {
+            bool isWinner = Interlocked.CompareExchange(ref m_winner, index + 1, 0) == 0;
+            bool isCanceled = false;
+            try
+            {
+                isCanceled = awaiter.IsCanceled;
+                T result = awaiter.GetResult();
+                if (isWinner)
+                {
+                    TrySetResult((index, result));
                 }
             }
             catch (OperationCanceledException exception)

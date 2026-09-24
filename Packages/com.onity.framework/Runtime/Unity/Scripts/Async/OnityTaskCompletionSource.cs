@@ -139,7 +139,7 @@ namespace Onity.Unity.Async
 
         private readonly SynchronizationContext m_reportingContext = SynchronizationContext.Current;
         private readonly int m_reportingThreadId = Thread.CurrentThread.ManagedThreadId;
-        private readonly object m_gate = new object();
+        private readonly object m_gate;
 
         private Action m_firstContinuation;
         private Action m_secondContinuation;
@@ -150,18 +150,27 @@ namespace Onity.Unity.Async
         private CancellationToken m_cancellationToken;
         private T m_result;
         private int m_status;
+        private bool m_coordinatorObservedFault;
 
         /// <summary>
         /// Initializes an incomplete source.
         /// </summary>
         public OnityTaskCompletionSource()
         {
+            m_gate = new object();
+        }
+
+        internal OnityTaskCompletionSource(bool lockOnSelf)
+        {
+            m_gate = lockOnSelf ? this : new object();
         }
 
         /// <summary>
         /// Gets the task completed by this source.
         /// </summary>
         public OnityTask<T> Task => new OnityTask<T>((IOnityTaskSource<T>)this);
+
+        internal bool HasTaskBridge => Volatile.Read(ref m_taskBridge) != null;
 
         /// <summary>
         /// Completes the task with a result if it is still pending.
@@ -191,6 +200,13 @@ namespace Onity.Unity.Async
                 return TrySetCanceled(canceledException.CancellationToken);
             }
 
+            return TryComplete(OnityTaskSourceStatus.Faulted, default, exception, default);
+        }
+
+        internal bool TrySetFault(Exception exception)
+        {
+            // A native source can fault with OperationCanceledException.
+            // Keep its fault status instead of applying the public cancellation rule.
             return TryComplete(OnityTaskSourceStatus.Faulted, default, exception, default);
         }
 
@@ -258,8 +274,13 @@ namespace Onity.Unity.Async
                 return status;
             }
 
+            if (Volatile.Read(ref m_taskBridge) == null)
+            {
+                return OnityTaskSourceStatus.Pending;
+            }
+
             // The task bridge completes under this gate before status is
-            // published. A pending read must wait for that publication.
+            // published. A pending read with a bridge waits for that publication.
             lock (m_gate)
             {
                 return (OnityTaskSourceStatus)m_status;
@@ -268,19 +289,9 @@ namespace Onity.Unity.Async
 
         private T GetResult(int token)
         {
-            OnityTaskSourceStatus status;
-            T result;
-            ExceptionDispatchInfo exception;
-            CancellationToken cancellationToken;
-
-            lock (m_gate)
-            {
-                ValidateToken(token);
-                status = (OnityTaskSourceStatus)m_status;
-                result = m_result;
-                exception = m_exception;
-                cancellationToken = m_cancellationToken;
-            }
+            // Completion publishes every outcome field before the terminal status.
+            // GetStatus acquires that publication and waits for an in-flight bridge.
+            OnityTaskSourceStatus status = GetStatus(token);
 
             if (status == OnityTaskSourceStatus.Pending)
             {
@@ -289,16 +300,44 @@ namespace Onity.Unity.Async
 
             if (status == OnityTaskSourceStatus.Canceled)
             {
-                throw new OperationCanceledException(cancellationToken);
+                throw new OperationCanceledException(m_cancellationToken);
             }
 
             if (status == OnityTaskSourceStatus.Faulted)
             {
                 m_unobservedFault?.Observe();
-                exception.Throw();
+                m_exception.Throw();
             }
 
-            return result;
+            return m_result;
+        }
+
+        internal OnityTaskSourceStatus ReadCompletedOutcome(
+            out Exception fault,
+            out CancellationToken cancellationToken)
+        {
+            OnityTaskSourceStatus status = GetStatus(k_version);
+            fault = null;
+            cancellationToken = status == OnityTaskSourceStatus.Canceled
+                ? m_cancellationToken
+                : default;
+            if (status == OnityTaskSourceStatus.Faulted)
+            {
+                // The gate serializes fault observation with bridge creation.
+                // A later AsTask bridge inherits this observation.
+                lock (m_gate)
+                {
+                    fault = m_exception.SourceException;
+                    m_coordinatorObservedFault = true;
+                    m_unobservedFault?.Observe();
+                    if (m_taskBridge != null)
+                    {
+                        _ = m_taskBridge.Task.Exception;
+                    }
+                }
+            }
+
+            return status;
         }
 
         private Task<T> GetTaskBridge(int token)
@@ -308,13 +347,18 @@ namespace Onity.Unity.Async
                 ValidateToken(token);
                 if (m_taskBridge == null)
                 {
-                    m_taskBridge = CreateTaskBridge();
+                    Volatile.Write(ref m_taskBridge, CreateTaskBridge());
                     OnityTaskSourceStatus status = (OnityTaskSourceStatus)m_status;
                     if (status != OnityTaskSourceStatus.Pending)
                     {
                         m_unobservedFault?.Observe();
                         CompleteTaskBridge(
                             m_taskBridge, status, m_result, m_exception, m_cancellationToken);
+                        if (status == OnityTaskSourceStatus.Faulted
+                            && m_coordinatorObservedFault)
+                        {
+                            _ = m_taskBridge.Task.Exception;
+                        }
                     }
                 }
 
@@ -322,7 +366,7 @@ namespace Onity.Unity.Async
             }
         }
 
-        private static TaskCompletionSource<T> CreateTaskBridge()
+        internal static TaskCompletionSource<T> CreateTaskBridge()
         {
             if (ExecutionContext.IsFlowSuppressed())
             {
@@ -478,6 +522,108 @@ namespace Onity.Unity.Async
             if (token != k_version)
             {
                 throw new InvalidOperationException("The OnityTask source token is invalid.");
+            }
+        }
+    }
+
+    internal sealed class OnityPreservedTaskSource : OnityTaskCompletionSource<bool>,
+        IOnityPreservedTaskContinuation
+    {
+        private IOnityTaskSource m_source;
+        private readonly int m_token;
+
+        public OnityPreservedTaskSource(IOnityTaskSource source, int token)
+            : base(true)
+        {
+            m_source = source;
+            m_token = token;
+            ((IOnityPreservedTaskSource)source).OnCompleted(this, token);
+        }
+
+        public new OnityTask Task => new OnityTask((IOnityTaskSource)this);
+
+        void IOnityPreservedTaskContinuation.Complete()
+        {
+            Complete();
+        }
+
+        private void Complete()
+        {
+            IOnityTaskSource source = m_source;
+            m_source = null;
+            int token = m_token;
+            OnityTaskSourceStatus status = OnityTaskSourceStatus.Pending;
+
+            try
+            {
+                status = source.GetStatus(token);
+                ((OnityTaskSourceBase)source).GetPreservedResult(token, this);
+                TrySetResult(true);
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (status != OnityTaskSourceStatus.Canceled)
+                {
+                    TrySetFault(exception);
+                }
+                else
+                {
+                    TrySetCanceled(exception.CancellationToken);
+                }
+            }
+            catch (Exception exception)
+            {
+                TrySetFault(exception);
+            }
+        }
+    }
+
+    internal sealed class OnityPreservedTaskSource<T> : OnityTaskCompletionSource<T>,
+        IOnityPreservedTaskContinuation
+    {
+        private IOnityTaskSource<T> m_source;
+        private readonly int m_token;
+
+        public OnityPreservedTaskSource(IOnityTaskSource<T> source, int token)
+            : base(true)
+        {
+            m_source = source;
+            m_token = token;
+            ((IOnityPreservedTaskSource)source).OnCompleted(this, token);
+        }
+
+        void IOnityPreservedTaskContinuation.Complete()
+        {
+            Complete();
+        }
+
+        private void Complete()
+        {
+            IOnityTaskSource<T> source = m_source;
+            m_source = null;
+            int token = m_token;
+            OnityTaskSourceStatus status = OnityTaskSourceStatus.Pending;
+
+            try
+            {
+                status = source.GetStatus(token);
+                T result = ((OnityTaskSourceBase<T>)source).GetPreservedResult(token, this);
+                TrySetResult(result);
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (status != OnityTaskSourceStatus.Canceled)
+                {
+                    TrySetFault(exception);
+                }
+                else
+                {
+                    TrySetCanceled(exception.CancellationToken);
+                }
+            }
+            catch (Exception exception)
+            {
+                TrySetFault(exception);
             }
         }
     }

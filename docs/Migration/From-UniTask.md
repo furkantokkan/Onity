@@ -18,8 +18,11 @@ sources directly; `Task` remains available through `AsTask()` and legacy interop
 helpers.
 
 OnityTask covers the common Unity flows below; it is not a drop-in replacement
-for UniTask's full API. `async OnityTask` methods and `WhenAll` currently use
-.NET `Task` internally, so equivalent allocation behavior is not guaranteed.
+for UniTask's full API. Suspended `async OnityTask` methods and many `WhenAll`
+cases use .NET `Task` internally, so equivalent allocation behavior is not
+guaranteed. Two already successful untyped inputs complete directly; eligible
+pending callback-owned inputs use a pooled coordinator with a Task-backed
+output.
 
 For a task-oriented introduction, read [Async with OnityTask](../guide/onitytask.html).
 For measured Unity 2022 workloads and the current feature gaps, read
@@ -27,13 +30,16 @@ For measured Unity 2022 workloads and the current feature gaps, read
 
 > **Pooled-task safety:** frame, delay, predicate, and
 > `AsyncOperation.AsOnityTask()` values are single-consumer. Await each value
-> once. If several consumers must share the operation, call `AsTask()` once and
-> share the returned `Task`; do not copy or re-await the pooled `OnityTask`.
+> once. If several consumers must share the operation, call `Preserve()` once
+> before sharing its returned `OnityTask`, or call `AsTask()` once and share the
+> returned `Task`. Do not copy or re-await the original pooled value.
 
 For local timing evidence, run `Onity/Benchmarks/Run OnityTask Benchmarks (Play Mode)`.
 It writes `Packages/com.onity.framework/Benchmarks/Results/onity-task-benchmark-latest.*`.
-Treat that local output as machine-specific evidence; no OnityTask-vs-UniTask
-result artifact is currently published with the package.
+Treat that local output as machine-specific evidence. Published, scoped
+Editor/Mono comparison reports and raw samples are linked from the
+[OnityTask and UniTask comparison](../guide/onitytask-comparison.html); they
+do not establish overall UniTask parity or superiority.
 
 ## Namespace
 
@@ -57,9 +63,29 @@ using Onity.Unity.Async;
 | `await request.SendWebRequest().ToUniTask(...)` | `await OnityTask.Send(request, onProgress, ct)` |
 | `task.Forget()` | `task.Forget()` |
 | `T[] values = await UniTask.WhenAll(typedTasks)` | `T[] values = await OnityTask.WhenAll(typedTasks)` |
+| `await UniTask.WhenAll(first, second)` for two untyped inputs | `await OnityTask.WhenAll(first, second)` |
 | `int winner = await UniTask.WhenAny(first, second)` for two untyped inputs | `int winner = await OnityTask.WhenAny(first, second)` |
+| First completed input from two `UniTask<T>` values | `(int winnerIndex, T result) = await OnityTask.WhenAny(first, second)` for two `OnityTask<T>` values |
 | `await observable.FirstAsync(ct)` | `await observable.FirstOnityTask(ct)` |
 | `await asyncPublisher.PublishAsync(message, ct).AsTask()` | `await asyncPublisher.PublishOnityTask(message, ct)` |
+
+For two untyped `OnityTaskCompletionSource` inputs, `WhenAll` can observe
+pending completion without converting either input to a .NET Task first. It
+waits for both inputs, reports faults in argument order ahead of cancellation,
+and keeps the output shareable. For pending calls, an input with a preexisting
+`AsTask()` bridge or another source type uses the existing Task-based composition.
+Preserve or bridge a pooled single-consumer operation when multiple consumers
+need its result; do not pass the same pooled value twice.
+
+Typed `WhenAny<T>` takes two inputs with the same result type and returns the
+winner's index and value. It consumes both inputs once and observes the loser
+without canceling it; duplicate single-consumer native inputs are rejected.
+The winning fault or cancellation propagates, and a faulted
+`OperationCanceledException` stays faulted. Its native continuation follows
+the completion thread rather than capturing Unity's `SynchronizationContext`.
+If the next step needs Unity's main thread, await its `AsTask()` bridge from the
+Unity context instead. The typed result source allocates; this mapping makes
+no performance equivalence claim with UniTask.
 
 ## Scene Loading
 

@@ -89,6 +89,7 @@ fixed-frame wait also completes while `Time.timeScale` is zero.
 | Wait for several operations | `await OnityTask.WhenAll(tasks)` |
 | Collect typed results in input order | `T[] results = await OnityTask.WhenAll(typedTasks)` |
 | First of two untyped operations | `int winner = await OnityTask.WhenAny(first, second)` |
+| First of two typed operations | `(int winnerIndex, T result) = await OnityTask.WhenAny(first, second)` |
 | Completed typed result | `await OnityTask.FromResult(value)` |
 
 ## Single-consumer rule for pooled tasks
@@ -102,32 +103,81 @@ sources. Each returned `OnityTask` value is **single-consumer**:
 - `WhenAll` and `WhenAny` consume their input task values; do not await those
   inputs separately. `WhenAny` does not cancel the loser, which is consumed
   when it eventually completes.
+- Call `Preserve()` once before sharing a pooled task with multiple consumers.
+  Consume only the returned task; the original is claimed by `Preserve()`.
+
+For two inputs with the same result type, `WhenAny<T>` returns the winner's
+argument index (zero or one) and value:
+
+```csharp
+using Onity.Unity.Async;
+
+OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
+OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
+OnityTask<(int winnerIndex, int result)> race =
+    OnityTask.WhenAny(first.Task, second.Task);
+
+second.TrySetResult(20);
+(int winnerIndex, int result) = await race; // (1, 20)
+first.TrySetResult(10); // The loser is still observed.
+```
+
+The pair consumes each input once and observes the loser without canceling it.
+Passing the same single-consumer native input twice throws `ArgumentException`.
+A winning fault or cancellation propagates; an `OperationCanceledException`
+reported as a fault remains a fault. The result source is single-consumer and
+allocates rather than using a pool. Native awaits follow the input's completion
+thread; creation and native await registration do not capture Unity's
+`SynchronizationContext`. When a Unity main-thread continuation is required,
+await `race.AsTask()` instead of `race` from the Unity context so the .NET Task
+await captures it.
 
 `NextFrame` and `DelayFrames(1)` resume no earlier than the following rendered
 frame in Play Mode. `DelayFrames(0)` completes immediately. Negative frame
 counts throw `ArgumentOutOfRangeException`. Positive `Delay` and `DelayUnscaled`
 waits also skip the frame in which they are scheduled in Play Mode.
 
-`WhenAll` currently materializes its inputs as .NET `Task` values. Likewise,
-methods declared `async OnityTask` use .NET's async method builder internally.
-The two-input `WhenAny` uses a native result source, but currently allocates
-that source and two continuation delegates per call.
+Two successful, already completed inputs to the untyped
+`WhenAll(first, second)` are consumed immediately and return the completed
+task without .NET task bridges or a tracker entry. Eligible pending untyped
+completion-source pairs use a pooled coordinator with a Task-backed output;
+other input combinations use the .NET `Task.WhenAll` path. Typed `WhenAll` also
+collects eligible already successful results directly in input order, without
+.NET task bridges or a tracker entry. Repeated single-consumer native inputs,
+large native input sets, and pending, faulted, or canceled typed inputs retain
+the .NET path. Typed calls still need a result array and callers using inline
+`params` arguments create an input array. Untyped calls with other input counts
+also materialize their inputs as .NET `Task` values. Methods declared
+`async OnityTask` use .NET's async method builder internally. The two-input
+untyped `WhenAny` uses a native result source, but currently allocates that
+source and two continuation delegates per call. The typed pair also uses a
+nonpooled source that allocates.
 Use the pooled frame, delay, predicate, and `AsyncOperation` waits directly in
 hot paths; do not assume every OnityTask composition is allocation-free.
 
-When several consumers must observe one operation, materialize one independent
-`Task` and share that instead:
+When several consumers must observe one operation, preserve it before the first
+consumer starts. Both pending and later consumers can await the retained result:
 
 ```csharp
-using System.Threading.Tasks;
 using Onity.Unity.Async;
 
-OnityTask wait = OnityTask.NextFrame();
-Task shared = wait.AsTask();
+OnityTask shared = OnityTask.NextFrame().Preserve();
+OnityTask first = ObserveAsync(shared);
+OnityTask second = ObserveAsync(shared);
+await OnityTask.WhenAll(first, second);
 
-await shared;
-// Other consumers may await the same Task instance.
+static async OnityTask ObserveAsync(OnityTask task)
+{
+    await task;
+}
 ```
+
+`Preserve()` returns completed, Task-backed, and completion-source tasks without
+an additional allocation. For a pooled native task it allocates one retained
+source and registers one native continuation. Use it only when sharing is needed;
+directly awaiting a pooled task remains cheaper. The retained result, fault, or
+cancellation can be observed repeatedly. Use `AsTask()` once when a .NET API
+requires a `Task`; the returned `Task` can also be shared.
 
 ## Complete a task from a callback
 
