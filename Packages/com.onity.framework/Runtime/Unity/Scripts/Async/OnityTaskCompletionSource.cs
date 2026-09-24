@@ -150,6 +150,7 @@ namespace Onity.Unity.Async
         private CancellationToken m_cancellationToken;
         private T m_result;
         private int m_status;
+        private bool m_coordinatorObservedFault;
 
         /// <summary>
         /// Initializes an incomplete source.
@@ -168,6 +169,8 @@ namespace Onity.Unity.Async
         /// Gets the task completed by this source.
         /// </summary>
         public OnityTask<T> Task => new OnityTask<T>((IOnityTaskSource<T>)this);
+
+        internal bool HasTaskBridge => Volatile.Read(ref m_taskBridge) != null;
 
         /// <summary>
         /// Completes the task with a result if it is still pending.
@@ -309,6 +312,34 @@ namespace Onity.Unity.Async
             return m_result;
         }
 
+        internal OnityTaskSourceStatus ReadCompletedOutcome(
+            out Exception fault,
+            out CancellationToken cancellationToken)
+        {
+            OnityTaskSourceStatus status = GetStatus(k_version);
+            fault = null;
+            cancellationToken = status == OnityTaskSourceStatus.Canceled
+                ? m_cancellationToken
+                : default;
+            if (status == OnityTaskSourceStatus.Faulted)
+            {
+                // The gate serializes fault observation with bridge creation.
+                // A later AsTask bridge inherits this observation.
+                lock (m_gate)
+                {
+                    fault = m_exception.SourceException;
+                    m_coordinatorObservedFault = true;
+                    m_unobservedFault?.Observe();
+                    if (m_taskBridge != null)
+                    {
+                        _ = m_taskBridge.Task.Exception;
+                    }
+                }
+            }
+
+            return status;
+        }
+
         private Task<T> GetTaskBridge(int token)
         {
             lock (m_gate)
@@ -323,6 +354,11 @@ namespace Onity.Unity.Async
                         m_unobservedFault?.Observe();
                         CompleteTaskBridge(
                             m_taskBridge, status, m_result, m_exception, m_cancellationToken);
+                        if (status == OnityTaskSourceStatus.Faulted
+                            && m_coordinatorObservedFault)
+                        {
+                            _ = m_taskBridge.Task.Exception;
+                        }
                     }
                 }
 
@@ -330,7 +366,7 @@ namespace Onity.Unity.Async
             }
         }
 
-        private static TaskCompletionSource<T> CreateTaskBridge()
+        internal static TaskCompletionSource<T> CreateTaskBridge()
         {
             if (ExecutionContext.IsFlowSuppressed())
             {

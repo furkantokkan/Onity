@@ -466,7 +466,39 @@ namespace Onity.Unity.Async
                 return Completed;
             }
 
+            OnityTaskCompletionSource firstSource =
+                first.m_state as OnityTaskCompletionSource;
+            OnityTaskCompletionSource secondSource =
+                second.m_state as OnityTaskCompletionSource;
+            if ((first.m_state == null || firstSource != null)
+                && (second.m_state == null || secondSource != null)
+                && (firstSource == null || !firstSource.HasTaskBridge)
+                && (secondSource == null || !secondSource.HasTaskBridge)
+                && (first.IsCompleted == false || second.IsCompleted == false))
+            {
+                TaskCompletionSource<bool> completion =
+                    OnityTaskCompletionSource<bool>.CreateTaskBridge();
+                OnityWhenAllPairCoordinator.Rent(first, second, completion).Start();
+                return FromTask(OnityTaskTracker.Track(
+                    (Task)completion.Task, "OnityAsync.WhenAll"));
+            }
+
             return FromTask(OnityAsync.WhenAll(first.AsTask(), second.AsTask()));
+        }
+
+        internal OnityTaskSourceStatus ReadCompletedSourceOutcome(
+            out Exception fault,
+            out CancellationToken cancellationToken)
+        {
+            if (m_state == null)
+            {
+                fault = null;
+                cancellationToken = default;
+                return OnityTaskSourceStatus.Succeeded;
+            }
+
+            return ((OnityTaskCompletionSource)m_state).ReadCompletedOutcome(
+                out fault, out cancellationToken);
         }
 
         /// <summary>
@@ -1104,6 +1136,222 @@ namespace Onity.Unity.Async
             AsTask().Forget(exceptionHandler);
         }
 
+    }
+
+    internal sealed class OnityWhenAllPairCoordinator
+    {
+        private const int k_maxPoolSize = 256;
+
+        private static readonly Stack<OnityWhenAllPairCoordinator> s_pool =
+            new Stack<OnityWhenAllPairCoordinator>(32);
+
+        private readonly Action m_completeFirst;
+        private readonly Action m_completeSecond;
+
+        private OnityTask m_first;
+        private OnityTask m_second;
+        private TaskCompletionSource<bool> m_completion;
+        private Exception m_firstFault;
+        private Exception m_secondFault;
+        private CancellationToken m_firstCancellationToken;
+        private CancellationToken m_secondCancellationToken;
+        private bool m_firstCanceled;
+        private bool m_secondCanceled;
+        private bool m_registrationPinned;
+        private bool m_returned;
+        private int m_remaining;
+        private int m_activeCallbacks;
+
+        private OnityWhenAllPairCoordinator()
+        {
+            m_completeFirst = CompleteFirst;
+            m_completeSecond = CompleteSecond;
+        }
+
+        public static OnityWhenAllPairCoordinator Rent(
+            OnityTask first,
+            OnityTask second,
+            TaskCompletionSource<bool> completion)
+        {
+            OnityWhenAllPairCoordinator coordinator;
+            lock (s_pool)
+            {
+                coordinator = s_pool.Count == 0
+                    ? new OnityWhenAllPairCoordinator()
+                    : s_pool.Pop();
+            }
+
+            lock (coordinator)
+            {
+                coordinator.m_first = first;
+                coordinator.m_second = second;
+                coordinator.m_completion = completion;
+                coordinator.m_registrationPinned = true;
+                coordinator.m_returned = false;
+                coordinator.m_remaining = 2;
+                coordinator.m_activeCallbacks = 0;
+            }
+
+            return coordinator;
+        }
+
+        public void Start()
+        {
+            try
+            {
+                Register(m_first, m_completeFirst);
+                Register(m_second, m_completeSecond);
+            }
+            finally
+            {
+                lock (this)
+                {
+                    m_registrationPinned = false;
+                    ReturnIfReady();
+                }
+            }
+        }
+
+        private static void Register(OnityTask task, Action continuation)
+        {
+            OnityTaskAwaiter awaiter = task.GetAwaiter();
+            if (awaiter.IsCompleted)
+            {
+                continuation();
+                return;
+            }
+
+            awaiter.UnsafeOnCompleted(continuation);
+        }
+
+        private void CompleteFirst()
+        {
+            CompleteInput(true);
+        }
+
+        private void CompleteSecond()
+        {
+            CompleteInput(false);
+        }
+
+        private void CompleteInput(bool isFirst)
+        {
+            OnityTask input;
+            lock (this)
+            {
+                m_activeCallbacks++;
+                input = isFirst ? m_first : m_second;
+            }
+
+            Exception fault = null;
+            bool canceled = false;
+            CancellationToken cancellationToken = default;
+            OnityTaskSourceStatus status = input.ReadCompletedSourceOutcome(
+                out fault, out cancellationToken);
+            if (status == OnityTaskSourceStatus.Pending)
+            {
+                fault = new InvalidOperationException("OnityTask is not completed.");
+            }
+
+            canceled = status == OnityTaskSourceStatus.Canceled;
+
+            TaskCompletionSource<bool> completion = null;
+            Exception firstFault = null;
+            Exception secondFault = null;
+            bool firstCanceled = false;
+            bool secondCanceled = false;
+            CancellationToken firstCancellationToken = default;
+            CancellationToken secondCancellationToken = default;
+
+            lock (this)
+            {
+                if (isFirst)
+                {
+                    m_firstFault = fault;
+                    m_firstCanceled = canceled;
+                    m_firstCancellationToken = cancellationToken;
+                }
+                else
+                {
+                    m_secondFault = fault;
+                    m_secondCanceled = canceled;
+                    m_secondCancellationToken = cancellationToken;
+                }
+
+                if (--m_remaining == 0)
+                {
+                    completion = m_completion;
+                    firstFault = m_firstFault;
+                    secondFault = m_secondFault;
+                    firstCanceled = m_firstCanceled;
+                    secondCanceled = m_secondCanceled;
+                    firstCancellationToken = m_firstCancellationToken;
+                    secondCancellationToken = m_secondCancellationToken;
+                }
+            }
+
+            try
+            {
+                if (completion != null)
+                {
+                    if (firstFault != null && secondFault != null)
+                    {
+                        completion.TrySetException(new[] { firstFault, secondFault });
+                    }
+                    else if (firstFault != null || secondFault != null)
+                    {
+                        completion.TrySetException(firstFault ?? secondFault);
+                    }
+                    else if (firstCanceled || secondCanceled)
+                    {
+                        completion.TrySetCanceled(firstCanceled
+                            ? firstCancellationToken
+                            : secondCancellationToken);
+                    }
+                    else
+                    {
+                        completion.TrySetResult(true);
+                    }
+                }
+            }
+            finally
+            {
+                lock (this)
+                {
+                    m_activeCallbacks--;
+                    ReturnIfReady();
+                }
+            }
+        }
+
+        private void ReturnIfReady()
+        {
+            // Both callers hold this lock until the pool push is complete.
+            if (m_returned || m_registrationPinned
+                || m_remaining != 0 || m_activeCallbacks != 0)
+            {
+                return;
+            }
+
+            m_returned = true;
+            m_first = default;
+            m_second = default;
+            m_completion = null;
+            m_firstFault = null;
+            m_secondFault = null;
+            m_firstCancellationToken = default;
+            m_secondCancellationToken = default;
+            m_firstCanceled = false;
+            m_secondCanceled = false;
+
+            lock (s_pool)
+            {
+                if (s_pool.Count < k_maxPoolSize)
+                {
+                    s_pool.Push(this);
+                }
+            }
+        }
     }
 
     /// <summary>

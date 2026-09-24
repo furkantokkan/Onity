@@ -18,8 +18,11 @@ sources directly; `Task` remains available through `AsTask()` and legacy interop
 helpers.
 
 OnityTask covers the common Unity flows below; it is not a drop-in replacement
-for UniTask's full API. `async OnityTask` methods and `WhenAll` currently use
-.NET `Task` internally, so equivalent allocation behavior is not guaranteed.
+for UniTask's full API. Suspended `async OnityTask` methods and many `WhenAll`
+cases use .NET `Task` internally, so equivalent allocation behavior is not
+guaranteed. Two already successful untyped inputs complete directly; eligible
+pending callback-owned inputs use a pooled coordinator with a Task-backed
+output.
 
 For a task-oriented introduction, read [Async with OnityTask](../guide/onitytask.html).
 For measured Unity 2022 workloads and the current feature gaps, read
@@ -57,9 +60,18 @@ using Onity.Unity.Async;
 | `await request.SendWebRequest().ToUniTask(...)` | `await OnityTask.Send(request, onProgress, ct)` |
 | `task.Forget()` | `task.Forget()` |
 | `T[] values = await UniTask.WhenAll(typedTasks)` | `T[] values = await OnityTask.WhenAll(typedTasks)` |
+| `await UniTask.WhenAll(first, second)` for two untyped inputs | `await OnityTask.WhenAll(first, second)` |
 | `int winner = await UniTask.WhenAny(first, second)` for two untyped inputs | `int winner = await OnityTask.WhenAny(first, second)` |
 | `await observable.FirstAsync(ct)` | `await observable.FirstOnityTask(ct)` |
 | `await asyncPublisher.PublishAsync(message, ct).AsTask()` | `await asyncPublisher.PublishOnityTask(message, ct)` |
+
+For two untyped `OnityTaskCompletionSource` inputs, `WhenAll` can observe
+pending completion without converting either input to a .NET Task first. It
+waits for both inputs, reports faults in argument order ahead of cancellation,
+and keeps the output shareable. For pending calls, an input with a preexisting
+`AsTask()` bridge or another source type uses the existing Task-based composition.
+Preserve or bridge a pooled single-consumer operation when multiple consumers
+need its result; do not pass the same pooled value twice.
 
 ## Scene Loading
 

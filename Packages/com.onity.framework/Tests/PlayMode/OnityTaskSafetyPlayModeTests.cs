@@ -16,6 +16,58 @@ namespace Onity.Tests.PlayMode
         private const int k_timeoutFrames = 120;
 
         [UnityTest]
+        public IEnumerator WhenAll_NativePendingOutput_ResumesOnMainThread()
+        {
+            int mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+            int continuationThreadId = 0;
+            bool continuationCompleted = false;
+
+            combined.GetAwaiter().OnCompleted(() =>
+            {
+                continuationThreadId = Thread.CurrentThread.ManagedThreadId;
+                continuationCompleted = true;
+            });
+
+            yield return null;
+            first.TrySetResult();
+            Assert.That(combined.IsCompleted, Is.False);
+            second.TrySetResult();
+            yield return WaitForFlag(() => continuationCompleted);
+
+            Assert.That(combined.IsCompletedSuccessfully, Is.True);
+            Assert.That(continuationThreadId, Is.EqualTo(mainThreadId));
+        }
+
+        [UnityTest]
+        public IEnumerator WhenAll_WorkerCompletedInputs_AwaitResumesOnMainThread()
+        {
+            int mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+            Task<int> awaited = AwaitAndGetThreadId(combined);
+
+            yield return null;
+            Task<int> producer = Task.Run(() =>
+            {
+                int workerThreadId = Thread.CurrentThread.ManagedThreadId;
+                first.TrySetResult();
+                second.TrySetResult();
+                return workerThreadId;
+            });
+            yield return WaitForFlag(() => producer.IsCompleted && awaited.IsCompleted);
+
+            Assert.That(producer.IsCompletedSuccessfully, Is.True);
+            Assert.That(awaited.IsCompletedSuccessfully, Is.True);
+            Assert.That(producer.Result, Is.Not.EqualTo(mainThreadId));
+            Assert.That(awaited.Result, Is.EqualTo(mainThreadId));
+            Assert.That(combined.IsCompletedSuccessfully, Is.True);
+        }
+
+        [UnityTest]
         public IEnumerator PooledTask_StaleCopyThrowsAfterSourceReuse()
         {
             bool completeFirst = false;
@@ -523,6 +575,12 @@ namespace Onity.Tests.PlayMode
         {
             await OnityTask.WaitUntil(firstPredicate);
             await OnityTask.WaitUntil(secondPredicate);
+        }
+
+        private static async Task<int> AwaitAndGetThreadId(OnityTask task)
+        {
+            await task;
+            return Thread.CurrentThread.ManagedThreadId;
         }
 
         private static async OnityTask AwaitNativeThenMaterialized(

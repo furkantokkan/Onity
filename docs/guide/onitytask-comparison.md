@@ -370,6 +370,53 @@ The [raw comparison](https://github.com/furkantokkan/Onity/blob/d3495f2/docs/ass
 and [provenance](https://github.com/furkantokkan/Onity/blob/d3495f2/docs/assets/benchmarks/onity-typed-whenall-comparison-2026-09-24.provenance.json)
 record the measured samples and source pins.
 
+### Pending two-input `WhenAll` completion-source path
+
+For two untyped inputs, `WhenAll` now reuses an internal coordinator when each
+input is either the default completed task or an `OnityTaskCompletionSource`
+without an existing `AsTask()` bridge, and at least one input is pending. The
+output stays Task-backed and can be awaited repeatedly. The coordinator
+observes both inputs, retains faults in argument order, lets faults take precedence over
+cancellation, and preserves the first canceled input's token. A pending call
+with an existing input `AsTask()` bridge uses the prior `Task.WhenAll` path.
+Other input types, including pooled native operations, continue to use that
+path. A bridge created after the coordinator starts remains supported.
+
+The calibrated [Unity 2022 Editor/Mono comparison](https://github.com/furkantokkan/Onity/blob/b6233dd84533c517890ecb3705b7f285269b42ca/docs/assets/benchmarks/onity-pending-whenall-v6-bridge-fallback-2026-09-24.md)
+compared product baseline `6f32e15` with candidate `bc4e469` using the same
+normalized runner and pinned UniTask 2.5.11. Each revision had two independent
+timing and Profiler sessions with eight samples per case. The measured lifecycle
+includes scheduling, input completion, output observation, and cleanup;
+input creation and fresh fault exception creation occur outside the marker.
+
+| Pending lifecycle, main-thread GC allocation | Baseline B/op | Candidate B/op |
+| --- | ---: | ---: |
+| Success, tracker on | 1,488.56–1,488.93 | 1,048.28 |
+| Success, tracker off | 624.56 | 176 |
+| Fault, tracker on | 2,152.56 | 1,752.28 |
+| Fault, tracker off | 1,288.56 | 880 |
+| Cancel, tracker on | 1,904.56 | 1,464.28 |
+| Cancel, tracker off | 1,040.56 | 592 |
+
+An already bridged faulted input stayed at **936.56 B/op** in both revisions
+and both calibrated passes. The already successful two-input scheduling path
+stayed at **0 B/op**. Its median timing was 119/117 ns/op before and 119/130
+ns/op afterward, which does not support a speed claim. The first observed
+pending schedule in a warmed Editor process increased from **792 to 1,226 B**;
+this 434 B first-call cost is separate from steady lifecycle results. With 384
+outstanding outputs, warmed scheduling totals fell from **208,896 to 115,712
+B** per burst, while the UniTask companion used **61,440 B**.
+
+These are main-thread `GC.Alloc` markers: later worker tracker and continuation
+allocations are outside their byte totals. Direct worker-thread allocation
+could not be calibrated. Only the first all-thread Profiler pass had a valid
+ThreadPool positive control. In the candidate's second pass, UniTask used 160,
+1,666, and 600 B/op for pending success, fault, and cancellation respectively;
+tracker-on Onity remained above those values. The results cover Editor/Mono,
+not Player, IL2CPP, device frame time, or battery use. The
+[provenance record](https://github.com/furkantokkan/Onity/blob/b6233dd84533c517890ecb3705b7f285269b42ca/docs/assets/benchmarks/onity-pending-whenall-v6-bridge-fallback-2026-09-24.provenance.json)
+and four adjacent raw JSON reports retain the controls and sample values.
+
 ### Pending task tracker registration
 
 The `dcdcb51` change replaces the task tracker's per-operation capturing
@@ -396,7 +443,7 @@ retain the exact source and runner hashes.
 | Frame, fixed-frame, and late-frame waits; scaled and unscaled delays; predicate waits | Available with cancellation and single-consumer pooled sources. |
 | Scene, `AsyncOperation`, and web-request bridges | Available. Deferred scene loads require the caller to activate a started operation, even after cancellation. |
 | `async OnityTask<T>` with synchronous success | Stores the result inline. Suspended and exceptional methods still use .NET `Task` internals. |
-| `WhenAll` | Available, including typed ordered results. Already successful two-input untyped and eligible typed calls avoid Task bridges. Pending/faulted/canceled inputs, duplicate single-consumer native inputs, and larger native typed sets use the Task bridge path. |
+| `WhenAll` | Available, including typed ordered results. Already successful two-input untyped and eligible typed calls avoid Task bridges. Eligible pending two-input untyped completion-source calls use a pooled coordinator and a Task-backed output. Pending calls with existing input `AsTask()` bridges, other pending input types, duplicate single-consumer native inputs, and larger native typed sets use the Task bridge path. |
 | Native `WhenAny` | Available for two untyped inputs; consumes both without canceling the loser. Its source and two delegates allocate per call. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
 | Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. Pending typed conversion measured 120 B/task in Editor/Mono at `c2f9358`; see the follow-up above. |

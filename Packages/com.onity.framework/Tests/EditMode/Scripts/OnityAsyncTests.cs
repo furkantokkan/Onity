@@ -398,6 +398,601 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void OnityTask_WhenAll_PendingNativeInputs_DoNotCreateInputTaskBridges()
+        {
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            FieldInfo bridgeField = typeof(OnityTaskCompletionSource<bool>).GetField(
+                "m_taskBridge", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(bridgeField, Is.Not.Null);
+
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+
+            Assert.That(bridgeField.GetValue(first), Is.Null);
+            Assert.That(bridgeField.GetValue(second), Is.Null);
+            first.TrySetResult();
+            second.TrySetResult();
+            Assert.That(combined.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_PendingShareableDuplicate_ObservesBothInputs()
+        {
+            OnityTaskCompletionSource source = new OnityTaskCompletionSource();
+            OnityTask combined = OnityTask.WhenAll(source.Task, source.Task);
+
+            source.TrySetResult();
+
+            Assert.That(combined.IsCompletedSuccessfully, Is.True);
+            Assert.DoesNotThrow(() => combined.GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_ReentrantCompletion_ReusesCoordinatorSafely()
+        {
+            for (int i = 0; i < 64; i++)
+            {
+                OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+                OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+                first.Task.GetAwaiter().OnCompleted(() => second.TrySetResult());
+                OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+
+                first.TrySetResult();
+
+                Assert.That(combined.IsCompletedSuccessfully, Is.True);
+            }
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_CompletionContinuation_CanStartNestedPair()
+        {
+            for (int i = 0; i < 64; i++)
+            {
+                OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+                OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+                OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+                Task continuation = combined.AsTask().ContinueWith(completed =>
+                {
+                    completed.GetAwaiter().GetResult();
+                    OnityTaskCompletionSource nestedFirst = new OnityTaskCompletionSource();
+                    OnityTaskCompletionSource nestedSecond = new OnityTaskCompletionSource();
+                    OnityTask nested = OnityTask.WhenAll(nestedFirst.Task, nestedSecond.Task);
+                    nestedFirst.TrySetResult();
+                    nestedSecond.TrySetResult();
+                    nested.GetAwaiter().GetResult();
+                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
+
+                first.TrySetResult();
+                second.TrySetResult();
+
+                Assert.That(continuation.Wait(TimeSpan.FromSeconds(5)), Is.True);
+                Assert.That(continuation.IsCompletedSuccessfully, Is.True);
+            }
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_ConcurrentNativeCompletions_CompleteOnce()
+        {
+            for (int i = 0; i < 32; i++)
+            {
+                OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+                OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+                OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+                Task firstCompletion = Task.Run(() => first.TrySetResult());
+                Task secondCompletion = Task.Run(() => second.TrySetResult());
+
+                Assert.That(
+                    Task.WaitAll(new[] { firstCompletion, secondCompletion },
+                        TimeSpan.FromSeconds(5)),
+                    Is.True);
+                Assert.That(combined.AsTask().Wait(TimeSpan.FromSeconds(5)), Is.True);
+                Assert.That(combined.IsCompletedSuccessfully, Is.True);
+            }
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_CompletionDuringRegistration_ResolvesEveryOutput()
+        {
+            for (int i = 0; i < 128; i++)
+            {
+                using ManualResetEventSlim start = new ManualResetEventSlim(false);
+                OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+                OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+                Task producer = Task.Run(() =>
+                {
+                    start.Wait();
+                    first.TrySetResult();
+                    second.TrySetResult();
+                });
+
+                start.Set();
+                OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+
+                Assert.That(producer.Wait(TimeSpan.FromSeconds(5)), Is.True);
+                Assert.That(combined.AsTask().Wait(TimeSpan.FromSeconds(5)), Is.True);
+                Assert.That(combined.IsCompletedSuccessfully, Is.True);
+            }
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_OutputRemainsShareableAfterCoordinatorReuse()
+        {
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+            Task output = combined.AsTask();
+
+            first.TrySetResult();
+            second.TrySetResult();
+            for (int i = 0; i < 64; i++)
+            {
+                OnityTaskCompletionSource next = new OnityTaskCompletionSource();
+                OnityTask another = OnityTask.WhenAll(next.Task, OnityTask.Completed);
+                next.TrySetResult();
+                Assert.That(another.IsCompletedSuccessfully, Is.True);
+            }
+
+            Assert.That(combined.AsTask(), Is.SameAs(output));
+            Assert.DoesNotThrow(() => combined.GetAwaiter().GetResult());
+            Assert.DoesNotThrow(() => combined.GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_AbovePoolLimit_KeepsOutstandingOutputsSeparate()
+        {
+            const int k_operationCount = 300;
+            OnityTaskCompletionSource[] first = new OnityTaskCompletionSource[k_operationCount];
+            OnityTaskCompletionSource[] second = new OnityTaskCompletionSource[k_operationCount];
+            OnityTask[] outputs = new OnityTask[k_operationCount];
+
+            for (int i = 0; i < k_operationCount; i++)
+            {
+                first[i] = new OnityTaskCompletionSource();
+                second[i] = new OnityTaskCompletionSource();
+                outputs[i] = OnityTask.WhenAll(first[i].Task, second[i].Task);
+            }
+
+            for (int i = k_operationCount - 1; i >= 0; i--)
+            {
+                first[i].TrySetResult();
+                second[i].TrySetResult();
+                Assert.That(outputs[i].IsCompletedSuccessfully, Is.True);
+            }
+
+            for (int i = 0; i < k_operationCount; i++)
+            {
+                Assert.DoesNotThrow(() => outputs[i].GetAwaiter().GetResult());
+            }
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_FaultedOperationCanceledException_RemainsFaulted()
+        {
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            OperationCanceledException failure =
+                new OperationCanceledException("faulted cancellation exception");
+            MethodInfo setFault = typeof(OnityTaskCompletionSource<bool>).GetMethod(
+                "TrySetFault", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(setFault, Is.Not.Null);
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+
+            setFault.Invoke(first, new object[] { failure });
+            second.TrySetResult();
+
+            Assert.That(first.Task.IsFaulted, Is.True);
+            Assert.That(combined.IsFaulted, Is.True);
+            Assert.That(combined.AsTask().Exception.InnerException, Is.SameAs(failure));
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_PendingNativeFaults_AggregateInInputOrder()
+        {
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            Exception firstFailure = new InvalidOperationException("first failure");
+            Exception secondFailure = new ArgumentException("second failure");
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+
+            second.TrySetException(secondFailure);
+            first.TrySetException(firstFailure);
+
+            Assert.That(combined.IsFaulted, Is.True);
+            Assert.That(combined.AsTask().Exception.InnerExceptions.Count, Is.EqualTo(2));
+            Assert.That(combined.AsTask().Exception.InnerExceptions[0], Is.SameAs(firstFailure));
+            Assert.That(combined.AsTask().Exception.InnerExceptions[1], Is.SameAs(secondFailure));
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_PendingNativeFault_PreservesOriginAndObservesInput()
+        {
+            OnityTaskCompletionSource source = new OnityTaskCompletionSource();
+            OnityTask combined = OnityTask.WhenAll(source.Task, OnityTask.Completed);
+            Exception failure = CreateWhenAllFaultAtOrigin();
+
+            source.TrySetException(failure);
+
+            Exception observed = Assert.Throws<InvalidOperationException>(
+                () => combined.GetAwaiter().GetResult());
+            Assert.That(observed, Is.SameAs(failure));
+            Assert.That(observed.StackTrace, Does.Contain(nameof(CreateWhenAllFaultAtOrigin)));
+            FieldInfo faultField = typeof(OnityTaskCompletionSource<bool>).GetField(
+                "m_unobservedFault", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(faultField, Is.Not.Null);
+            object unobservedFault = faultField.GetValue(source);
+            Assert.That(unobservedFault, Is.Not.Null);
+            FieldInfo observedField = unobservedFault.GetType().GetField(
+                "m_observed", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(observedField, Is.Not.Null);
+            Assert.That(observedField.GetValue(unobservedFault), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_MaterializedInputFault_ObservesTaskBridgeLikeTaskWhenAll()
+        {
+            OnityTaskCompletionSource source = new OnityTaskCompletionSource();
+            Task bridge = source.Task.AsTask();
+            OnityTask combined = OnityTask.WhenAll(source.Task, OnityTask.Completed);
+            TaskCompletionSource<bool> referenceSource = new TaskCompletionSource<bool>();
+            Task reference = Task.WhenAll(referenceSource.Task, Task.CompletedTask);
+
+            source.TrySetException(new InvalidOperationException("Onity bridge fault"));
+            referenceSource.TrySetException(new InvalidOperationException("reference fault"));
+
+            Assert.That(SpinWait.SpinUntil(() => combined.IsCompleted,
+                TimeSpan.FromSeconds(5)), Is.True);
+            Assert.That(SpinWait.SpinUntil(() => reference.IsCompleted,
+                TimeSpan.FromSeconds(5)), Is.True);
+            Assert.That(combined.IsFaulted, Is.True);
+            Assert.That(reference.IsFaulted, Is.True);
+            bool bridgeObserved = IsTaskFaultObserved(bridge);
+            bool referenceObserved = IsTaskFaultObserved(referenceSource.Task);
+            TestContext.WriteLine(
+                "Materialized input fault observed: Onity={0}, Task.WhenAll={1}",
+                bridgeObserved, referenceObserved);
+            Assert.That(bridgeObserved, Is.EqualTo(referenceObserved));
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_ConcurrentMaterialization_ObservesSharedTaskBridge()
+        {
+            const int k_readerCount = 16;
+            using ManualResetEventSlim start = new ManualResetEventSlim(false);
+            OnityTaskCompletionSource source = new OnityTaskCompletionSource();
+            OnityTask combined = OnityTask.WhenAll(source.Task, OnityTask.Completed);
+            Task[] bridges = new Task[k_readerCount];
+            Task[] readers = new Task[k_readerCount];
+
+            for (int i = 0; i < k_readerCount; i++)
+            {
+                int index = i;
+                readers[i] = Task.Run(() =>
+                {
+                    start.Wait();
+                    bridges[index] = source.Task.AsTask();
+                });
+            }
+
+            start.Set();
+            Assert.That(Task.WaitAll(readers, TimeSpan.FromSeconds(5)), Is.True);
+            for (int i = 1; i < bridges.Length; i++)
+            {
+                Assert.That(bridges[i], Is.SameAs(bridges[0]));
+            }
+
+            source.TrySetException(new InvalidOperationException("shared bridge fault"));
+
+            Assert.That(combined.IsFaulted, Is.True);
+            Assert.That(IsTaskFaultObserved(bridges[0]), Is.True);
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_LateMaterializedFault_ObservesTaskBridge()
+        {
+            OnityTaskCompletionSource source = new OnityTaskCompletionSource();
+            OnityTask combined = OnityTask.WhenAll(source.Task, OnityTask.Completed);
+            source.TrySetException(new InvalidOperationException("late bridge fault"));
+            Assert.That(combined.IsFaulted, Is.True);
+
+            Task bridge = source.Task.AsTask();
+            Assert.That(bridge.IsFaulted, Is.True);
+            Assert.That(IsTaskFaultObserved(bridge), Is.True);
+            Assert.Throws<InvalidOperationException>(() => combined.GetAwaiter().GetResult());
+
+            OnityTaskCompletionSource bareSource = new OnityTaskCompletionSource();
+            bareSource.TrySetException(new InvalidOperationException("bare bridge fault"));
+            Task bareBridge = bareSource.Task.AsTask();
+            Assert.That(bareBridge.IsFaulted, Is.True);
+            Assert.That(IsTaskFaultObserved(bareBridge), Is.False,
+                "An AsTask bridge without WhenAll still belongs to its own consumer.");
+            Assert.Throws<InvalidOperationException>(() => bareSource.Task.GetAwaiter().GetResult());
+            _ = bareBridge.Exception;
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_PendingNestedAggregateFaults_KeepInputOrder()
+        {
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            AggregateException firstFailure = new AggregateException(
+                new InvalidOperationException("inner first"));
+            AggregateException secondFailure = new AggregateException(
+                new ArgumentException("inner second"));
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+
+            second.TrySetException(secondFailure);
+            first.TrySetException(firstFailure);
+
+            AggregateException output = combined.AsTask().Exception;
+            Assert.That(output.InnerExceptions.Count, Is.EqualTo(2));
+            Assert.That(output.InnerExceptions[0], Is.SameAs(firstFailure));
+            Assert.That(output.InnerExceptions[1], Is.SameAs(secondFailure));
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_PendingNativeCancellation_PreservesFirstInputToken()
+        {
+            using CancellationTokenSource firstCancellation = new CancellationTokenSource();
+            using CancellationTokenSource secondCancellation = new CancellationTokenSource();
+            firstCancellation.Cancel();
+            secondCancellation.Cancel();
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+
+            second.TrySetCanceled(secondCancellation.Token);
+            first.TrySetCanceled(firstCancellation.Token);
+
+            Assert.That(combined.IsCanceled, Is.True);
+            OperationCanceledException observed = Assert.Catch<OperationCanceledException>(
+                () => combined.GetAwaiter().GetResult());
+            TaskCompletionSource<bool> firstReference =
+                new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> secondReference =
+                new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Task reference = Task.WhenAll(firstReference.Task, secondReference.Task);
+            secondReference.TrySetCanceled(secondCancellation.Token);
+            firstReference.TrySetCanceled(firstCancellation.Token);
+            OperationCanceledException referenceObserved =
+                Assert.Catch<OperationCanceledException>(
+                    () => reference.GetAwaiter().GetResult());
+
+            Assert.That(observed.GetType(), Is.EqualTo(referenceObserved.GetType()));
+            Assert.That(observed.CancellationToken, Is.EqualTo(referenceObserved.CancellationToken));
+            Assert.That(observed.CancellationToken, Is.EqualTo(firstCancellation.Token));
+            TestContext.WriteLine(
+                "Cancellation type: Onity={0}, Task.WhenAll={1}",
+                observed.GetType().Name,
+                referenceObserved.GetType().Name);
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_TaskBackedInput_KeepsExistingBridgeFallback()
+        {
+            OnityTaskCompletionSource native = new OnityTaskCompletionSource();
+            TaskCompletionSource<bool> dotNet = new TaskCompletionSource<bool>();
+            FieldInfo bridgeField = typeof(OnityTaskCompletionSource<bool>).GetField(
+                "m_taskBridge", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(bridgeField, Is.Not.Null);
+
+            OnityTask combined = OnityTask.WhenAll(native.Task, OnityTask.FromTask(dotNet.Task));
+
+            Assert.That(bridgeField.GetValue(native), Is.Not.Null);
+            native.TrySetResult();
+            dotNet.TrySetResult(true);
+            Assert.That(combined.AsTask().Wait(TimeSpan.FromSeconds(5)), Is.True);
+        }
+
+        [TestCase(PrebridgedInputs.First, PairOutcome.Success)]
+        [TestCase(PrebridgedInputs.Second, PairOutcome.Success)]
+        [TestCase(PrebridgedInputs.Both, PairOutcome.Success)]
+        [TestCase(PrebridgedInputs.First, PairOutcome.Fault)]
+        [TestCase(PrebridgedInputs.Second, PairOutcome.Fault)]
+        [TestCase(PrebridgedInputs.Both, PairOutcome.Fault)]
+        [TestCase(PrebridgedInputs.First, PairOutcome.Cancellation)]
+        [TestCase(PrebridgedInputs.Second, PairOutcome.Cancellation)]
+        [TestCase(PrebridgedInputs.Both, PairOutcome.Cancellation)]
+        public void OnityTask_WhenAll_PrebridgedInputs_UseTaskFallback(
+            PrebridgedInputs prebridged, PairOutcome outcome)
+        {
+            using CancellationTokenSource firstCancellation = new CancellationTokenSource();
+            using CancellationTokenSource secondCancellation = new CancellationTokenSource();
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            Task firstPrebridge = (prebridged & PrebridgedInputs.First) != 0
+                ? first.Task.AsTask()
+                : null;
+            Task secondPrebridge = (prebridged & PrebridgedInputs.Second) != 0
+                ? second.Task.AsTask()
+                : null;
+
+            OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+            Task output = combined.AsTask();
+            Task firstBridge = first.Task.AsTask();
+            Task secondBridge = second.Task.AsTask();
+            Assert.That(output, Is.Not.InstanceOf<Task<bool>>(),
+                "A preexisting input bridge must select the Task.WhenAll fallback.");
+            Assert.That(output.IsCompleted, Is.False);
+            if (firstPrebridge != null)
+            {
+                Assert.That(firstBridge, Is.SameAs(firstPrebridge));
+            }
+
+            if (secondPrebridge != null)
+            {
+                Assert.That(secondBridge, Is.SameAs(secondPrebridge));
+            }
+
+            if (outcome == PairOutcome.Success)
+            {
+                second.TrySetResult();
+                Assert.That(output.IsCompleted, Is.False);
+                first.TrySetResult();
+                Assert.That(SpinWait.SpinUntil(() => output.IsCompleted,
+                    TimeSpan.FromSeconds(5)), Is.True);
+                Assert.That(output.IsCompletedSuccessfully, Is.True);
+                Assert.DoesNotThrow(() => combined.GetAwaiter().GetResult());
+                Assert.DoesNotThrow(() => combined.GetAwaiter().GetResult());
+            }
+            else if (outcome == PairOutcome.Fault)
+            {
+                Exception firstFailure = new InvalidOperationException("first bridge fault");
+                Exception secondFailure = new ArgumentException("second bridge fault");
+                second.TrySetException(secondFailure);
+                first.TrySetException(firstFailure);
+
+                Assert.That(SpinWait.SpinUntil(() => output.IsCompleted,
+                    TimeSpan.FromSeconds(5)), Is.True);
+                Assert.That(output.IsFaulted, Is.True);
+                Assert.That(IsTaskFaultObserved(firstBridge), Is.True);
+                Assert.That(IsTaskFaultObserved(secondBridge), Is.True);
+                Assert.That(output.Exception.InnerExceptions.Count, Is.EqualTo(2));
+                Assert.That(output.Exception.InnerExceptions[0], Is.SameAs(firstFailure));
+                Assert.That(output.Exception.InnerExceptions[1], Is.SameAs(secondFailure));
+                Assert.That(Assert.Throws<InvalidOperationException>(
+                    () => combined.GetAwaiter().GetResult()), Is.SameAs(firstFailure));
+                Assert.That(Assert.Throws<InvalidOperationException>(
+                    () => combined.GetAwaiter().GetResult()), Is.SameAs(firstFailure));
+            }
+            else
+            {
+                firstCancellation.Cancel();
+                secondCancellation.Cancel();
+                second.TrySetCanceled(secondCancellation.Token);
+                first.TrySetCanceled(firstCancellation.Token);
+
+                Assert.That(SpinWait.SpinUntil(() => output.IsCompleted,
+                    TimeSpan.FromSeconds(5)), Is.True);
+                Assert.That(output.IsCanceled, Is.True);
+                OperationCanceledException observed = Assert.Catch<OperationCanceledException>(
+                    () => combined.GetAwaiter().GetResult());
+                Assert.That(observed.CancellationToken, Is.EqualTo(firstCancellation.Token));
+                Assert.That(Assert.Catch<OperationCanceledException>(
+                    () => combined.GetAwaiter().GetResult()).CancellationToken,
+                    Is.EqualTo(firstCancellation.Token));
+            }
+
+            Assert.That(combined.AsTask(), Is.SameAs(output));
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_BridgeCreationDuringRouteSelection_PreservesFaultObservation()
+        {
+            for (int i = 0; i < 64; i++)
+            {
+                using ManualResetEventSlim start = new ManualResetEventSlim(false);
+                OnityTaskCompletionSource source = new OnityTaskCompletionSource();
+                Task bridge = null;
+                Task creator = Task.Run(() =>
+                {
+                    start.Wait();
+                    bridge = source.Task.AsTask();
+                });
+
+                start.Set();
+                OnityTask combined = OnityTask.WhenAll(source.Task, OnityTask.Completed);
+                Assert.That(creator.Wait(TimeSpan.FromSeconds(5)), Is.True);
+                Exception failure = new InvalidOperationException("route selection fault");
+                source.TrySetException(failure);
+
+                Assert.That(SpinWait.SpinUntil(() => combined.IsCompleted,
+                    TimeSpan.FromSeconds(5)), Is.True);
+                Assert.That(combined.IsFaulted, Is.True);
+                Assert.That(IsTaskFaultObserved(bridge), Is.True);
+                Assert.That(Assert.Throws<InvalidOperationException>(
+                    () => combined.GetAwaiter().GetResult()), Is.SameAs(failure));
+            }
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_PendingNativeOutput_PreservesAwaiterExecutionContext()
+        {
+            OnityTaskCompletionSource source = new OnityTaskCompletionSource();
+            OnityTask combined = OnityTask.WhenAll(source.Task, OnityTask.Completed);
+            TaskCompletionSource<bool> referenceSource =
+                new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Task reference = Task.WhenAll(referenceSource.Task, Task.CompletedTask);
+
+            string onityObserved = ObserveExecutionContext(
+                combined.AsTask().GetAwaiter(), () => source.TrySetResult(), true);
+            string referenceObserved = ObserveExecutionContext(
+                reference.GetAwaiter(), () => referenceSource.TrySetResult(true), true);
+
+            Assert.That(onityObserved, Is.EqualTo(referenceObserved));
+            TestContext.WriteLine(
+                "Awaiter context: Onity={0}, Task.WhenAll={1}",
+                onityObserved ?? "<null>",
+                referenceObserved ?? "<null>");
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_PendingFault_TrackerPreservesRegistrationContext()
+        {
+            bool previousTrackingEnabled = OnityTaskTracker.IsEnabled;
+            bool previousStackTraceEnabled = OnityTaskTracker.EnableStackTrace;
+            AsyncLocal<string> context = new AsyncLocal<string>();
+
+            try
+            {
+                OnityTaskTracker.IsEnabled = true;
+                OnityTaskTracker.EnableStackTrace = false;
+                OnityTaskTracker.ClearAll();
+                context.Value = "registration";
+
+                OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+                OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+                OnityTask combined = OnityTask.WhenAll(first.Task, second.Task);
+
+                context.Value = "completion";
+                first.TrySetException(new ContextMessageException(context));
+                second.TrySetResult();
+
+                List<OnityTrackedTaskInfo> rows = new List<OnityTrackedTaskInfo>(1);
+                Assert.That(SpinWait.SpinUntil(() =>
+                {
+                    OnityTaskTracker.GetSnapshot(rows);
+                    return rows.Count == 1 && rows[0].IsCompleted;
+                }, TimeSpan.FromSeconds(5)), Is.True);
+                Assert.That(combined.IsFaulted, Is.True);
+                Assert.That(rows[0].Source, Is.EqualTo("OnityAsync.WhenAll"));
+                Assert.That(rows[0].ErrorMessage, Is.EqualTo("registration"));
+                Assert.That(context.Value, Is.EqualTo("completion"));
+            }
+            finally
+            {
+                context.Value = null;
+                OnityTaskTracker.ClearAll();
+                OnityTaskTracker.IsEnabled = previousTrackingEnabled;
+                OnityTaskTracker.EnableStackTrace = previousStackTraceEnabled;
+            }
+        }
+
+        [Test]
+        public void OnityTask_WhenAll_AlreadySuppressedFlow_RemainsSuppressedDuringCreation()
+        {
+            Assert.That(ExecutionContext.IsFlowSuppressed(), Is.False);
+            OnityTaskCompletionSource first = new OnityTaskCompletionSource();
+            OnityTaskCompletionSource second = new OnityTaskCompletionSource();
+            OnityTask combined;
+            AsyncFlowControl flowControl = ExecutionContext.SuppressFlow();
+            try
+            {
+                combined = OnityTask.WhenAll(first.Task, second.Task);
+                Assert.That(ExecutionContext.IsFlowSuppressed(), Is.True);
+            }
+            finally
+            {
+                flowControl.Undo();
+            }
+
+            Assert.That(ExecutionContext.IsFlowSuppressed(), Is.False);
+            first.TrySetResult();
+            second.TrySetResult();
+            Assert.That(combined.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
         public async Task OnityTask_WhenAll_FaultedInputWinsOverCancellation()
         {
             OnityTaskCompletionSource first = new OnityTaskCompletionSource();
@@ -1033,6 +1628,52 @@ namespace Onity.Tests.EditMode
             {
                 throw new InvalidOperationException("Result equality must not run during AsTask conversion.");
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateWhenAllFaultAtOrigin()
+        {
+            try
+            {
+                throw new InvalidOperationException("original fault");
+            }
+            catch (InvalidOperationException exception)
+            {
+                return exception;
+            }
+        }
+
+        private static bool IsTaskFaultObserved(Task task)
+        {
+            const BindingFlags k_privateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+            FieldInfo contingentField = typeof(Task).GetField(
+                "m_contingentProperties", k_privateInstance);
+            Assert.That(contingentField, Is.Not.Null);
+            object contingent = contingentField.GetValue(task);
+            Assert.That(contingent, Is.Not.Null);
+            FieldInfo holderField = contingent.GetType().GetField(
+                "m_exceptionsHolder", k_privateInstance);
+            Assert.That(holderField, Is.Not.Null);
+            object holder = holderField.GetValue(contingent);
+            Assert.That(holder, Is.Not.Null);
+            FieldInfo handledField = holder.GetType().GetField(
+                "m_isHandled", k_privateInstance);
+            Assert.That(handledField, Is.Not.Null);
+            return (bool)handledField.GetValue(holder);
+        }
+
+        public enum PrebridgedInputs
+        {
+            First = 1,
+            Second = 2,
+            Both = First | Second
+        }
+
+        public enum PairOutcome
+        {
+            Success,
+            Fault,
+            Cancellation
         }
 
         private sealed class ContextMessageException : Exception

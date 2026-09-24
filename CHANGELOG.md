@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   claimed once; completed, Task-backed, and completion-source tasks are returned
   without a new retained source.
 - Added a two-input untyped `OnityTask.WhenAll(first, second)` overload. Two
-  already successful inputs are consumed immediately; other states retain the
+  already successful inputs are consumed immediately. Eligible pending
+  completion-source inputs use a pooled coordinator; other states retain the
   existing `Task.WhenAll` behavior.
 
 ### Fixed
@@ -23,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   custom `Exception.Message` clears or clears and retracks during completion.
   Error text is read outside the tracker lock; an already completed replacement
   entry retains its own completion time.
+- Marked an input `AsTask()` fault bridge observed when the pending two-input
+  coordinator consumes its fault, including bridges created during or after
+  completion. Pending calls with an existing input bridge use the prior
+  `Task.WhenAll` path.
 
 ### Improved
 
@@ -59,10 +64,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   comparison with tracking enabled, allocation fell from 1,556 to 1,408 B/op;
   tracking-disabled allocation stayed at 544 B/op. ExecutionContext flow and
   the tracker result behavior were preserved.
+- Reused a bounded internal coordinator for eligible pending untyped two-input
+  completion-source `WhenAll` calls. The output remains Task-backed and
+  shareable; faults retain argument order and dominate cancellation. In two
+  calibrated Unity 2022 Editor/Mono passes, main-thread full-lifecycle
+  allocation fell from 624.56 to 176 B/op for tracker-off success, 1,288.56
+  to 880 B/op for fault, and 1,040.56 to 592 B/op for cancellation. Tracker-on
+  allocation also fell in all three cases, but remains above pinned UniTask in
+  the measured pass. The first observed pending schedule increased by 434 B;
+  completed two-input scheduling stayed at 0 B/op. The
+  [full report](https://github.com/furkantokkan/Onity/blob/b6233dd84533c517890ecb3705b7f285269b42ca/docs/assets/benchmarks/onity-pending-whenall-v6-bridge-fallback-2026-09-24.md)
+  records first-call, bridge-present, saturation, timing, and worker limits.
 
 ### Tested
 
-- Unity `2022.3.62f3`: EditMode `549/549` and PlayMode `23/23` passed, including
+- At the previous `6f32e15` product revision, Unity `2022.3.62f3` EditMode
+  `549/549` and PlayMode `23/23` passed, including
   native sharing, fault/cancellation propagation, source reuse, and main-thread
   continuation tests. The final bridge-publication adjustment passed `36/36`
   focused completion-source EditMode tests; the two-input `WhenAll` subset
