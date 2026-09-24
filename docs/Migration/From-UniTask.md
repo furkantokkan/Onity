@@ -36,8 +36,10 @@ For measured Unity 2022 workloads and the current feature gaps, read
 
 For local timing evidence, run `Onity/Benchmarks/Run OnityTask Benchmarks (Play Mode)`.
 It writes `Packages/com.onity.framework/Benchmarks/Results/onity-task-benchmark-latest.*`.
-Treat that local output as machine-specific evidence; no OnityTask-vs-UniTask
-result artifact is currently published with the package.
+Treat that local output as machine-specific evidence. Published, scoped
+Editor/Mono comparison reports and raw samples are linked from the
+[OnityTask and UniTask comparison](../guide/onitytask-comparison.html); they
+do not establish overall UniTask parity or superiority.
 
 ## Namespace
 
