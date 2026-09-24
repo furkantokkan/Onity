@@ -106,7 +106,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reference warnings. The engine-free core Release build had zero warnings and
   errors, and analyzer/source-generator tests passed `26/26`. GitHub docs and
   core checks passed on PR #14; Unity CI was skipped because `UNITY_LICENSE`
-  is not configured. These checks do not establish IL2CPP or Player behavior.
+  is not configured.
+- A test-only Unity `2022.3.62f3` StandaloneWindows64 IL2CPP Player build
+  succeeded with the accepted runtime (`OnityAsync` blob `1a7fdd8`). The
+  `OnityTaskSafetyPlayModeTests` local XML recorded `20/20` passed with no
+  failures, skips, or inconclusive results; the Player callback recorded 20
+  starts and 20 finishes, and the Editor exited with code 0. This focused
+  Player result is not a Player performance benchmark.
 
 ## [0.3.12] - 2026-09-23
 
