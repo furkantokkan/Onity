@@ -14,11 +14,16 @@ namespace Onity.Editor.Benchmarks
     {
         private const string k_resultsDirectory = "Packages/com.onity.framework/Benchmarks/Results";
         private const string k_latestJsonFileName = "onity-task-benchmark-latest.json";
+        private const string k_typedWhenAllJsonFileName = "onity-typed-whenall-benchmark-latest.json";
         private const string k_pendingSessionKey = "Onity.Benchmarks.PendingOnityTaskRun";
         private const string k_outputSessionKey = "Onity.Benchmarks.OnityTaskOutput";
         private const string k_commandLineSessionKey = "Onity.Benchmarks.OnityTaskCommandLine";
+        private const string k_typedWhenAllSessionKey = "Onity.Benchmarks.TypedWhenAll";
+        private const string k_allocationOnlySessionKey = "Onity.Benchmarks.TypedWhenAllAllocationsOnly";
         private const string k_commandLineStartTicksSessionKey = "Onity.Benchmarks.OnityTaskCommandLineStartTicks";
         private const string k_outputArgument = "-onityTaskBenchmarkOutput";
+        private const string k_typedWhenAllArgument = "-onityTypedWhenAllBenchmark";
+        private const string k_allocationOnlyArgument = "-onityTaskAllocationsOnly";
         private const double k_commandLineTimeoutSeconds = 900d;
 
         static OnityTaskBenchmarkMenu()
@@ -76,9 +81,18 @@ namespace Onity.Editor.Benchmarks
 
             string latestJson = GetLatestJsonPath();
             bool commandLineRun = SessionState.GetBool(k_commandLineSessionKey, false);
-            OnityTaskBenchmarkRunner.Run(
-                latestJson,
-                commandLineRun ? HandleCommandLineCompleted : null);
+            if (SessionState.GetBool(k_typedWhenAllSessionKey, false))
+            {
+                OnityTypedWhenAllBenchmarkRunner.Run(latestJson,
+                    commandLineRun ? HandleCommandLineCompleted : null,
+                    SessionState.GetBool(k_allocationOnlySessionKey, false));
+            }
+            else
+            {
+                OnityTaskBenchmarkRunner.Run(
+                    latestJson,
+                    commandLineRun ? HandleCommandLineCompleted : null);
+            }
 
             Debug.Log("Queued OnityTask benchmark for the next Play Mode frame.");
         }
@@ -89,19 +103,39 @@ namespace Onity.Editor.Benchmarks
         /// </summary>
         public static void RunFromCommandLine()
         {
+            bool typedWhenAll = HasArgument(k_typedWhenAllArgument);
+            bool allocationOnly = HasArgument(k_allocationOnlyArgument);
+            if (allocationOnly && !typedWhenAll)
+            {
+                throw new ArgumentException("Allocation-only mode requires typed WhenAll mode.");
+            }
+
+            if (allocationOnly && !HasArgument("-profiler-enable"))
+            {
+                throw new ArgumentException("Allocation pass requires -profiler-enable.");
+            }
+
             string latestJson = GetArgumentValue(k_outputArgument);
             if (string.IsNullOrEmpty(latestJson))
             {
                 string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-                latestJson = Path.Combine(projectRoot, k_resultsDirectory, k_latestJsonFileName);
+                latestJson = Path.Combine(projectRoot, k_resultsDirectory,
+                    typedWhenAll ? k_typedWhenAllJsonFileName : k_latestJsonFileName);
             }
 
             latestJson = Path.GetFullPath(latestJson);
+            if (allocationOnly && !File.Exists(latestJson))
+            {
+                throw new FileNotFoundException(
+                    "Allocation pass requires an existing timing report.", latestJson);
+            }
             Directory.CreateDirectory(Path.GetDirectoryName(latestJson));
 
             SessionState.SetBool(k_pendingSessionKey, true);
             SessionState.SetString(k_outputSessionKey, latestJson);
             SessionState.SetBool(k_commandLineSessionKey, true);
+            SessionState.SetBool(k_typedWhenAllSessionKey, typedWhenAll);
+            SessionState.SetBool(k_allocationOnlySessionKey, allocationOnly);
             SessionState.SetString(k_commandLineStartTicksSessionKey, DateTime.UtcNow.Ticks.ToString());
             EditorApplication.update -= HandleCommandLineTimeout;
             EditorApplication.update += HandleCommandLineTimeout;
@@ -129,6 +163,20 @@ namespace Onity.Editor.Benchmarks
             }
 
             return null;
+        }
+
+        private static bool HasArgument(string argumentName)
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (string.Equals(args[i], argumentName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string GetLatestJsonPath()
@@ -194,6 +242,8 @@ namespace Onity.Editor.Benchmarks
         private static void ClearCommandLineSession()
         {
             SessionState.EraseBool(k_commandLineSessionKey);
+            SessionState.EraseBool(k_typedWhenAllSessionKey);
+            SessionState.EraseBool(k_allocationOnlySessionKey);
             SessionState.EraseString(k_outputSessionKey);
             SessionState.EraseString(k_commandLineStartTicksSessionKey);
             EditorApplication.update -= HandleCommandLineTimeout;
