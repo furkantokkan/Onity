@@ -100,6 +100,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reference warnings. The new coverage includes pending success, ordered
   faults, cancellation, preexisting and concurrent `AsTask()` bridges, worker
   completion, tracker context, and coordinator reuse.
+- At the accepted typed `WhenAny` revision `8fa63ac`, local Unity
+  `2022.3.62f3` verification passed EditMode `602/602` and PlayMode `28/28`.
+  The Release `Onity.Unity` build had zero errors and 16 preexisting MSB3277
+  reference warnings. The engine-free core Release build had zero warnings and
+  errors, and analyzer/source-generator tests passed `26/26`. GitHub docs and
+  core checks passed on PR #14; Unity CI was skipped because `UNITY_LICENSE`
+  is not configured. These checks do not establish IL2CPP or Player behavior.
 
 ## [0.3.12] - 2026-09-23
 
