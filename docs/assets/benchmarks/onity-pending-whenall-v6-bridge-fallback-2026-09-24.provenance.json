@@ -1,0 +1,69 @@
+{
+  "date": "2026-09-24",
+  "scope": "Eight-case pending two-input WhenAll v6 harness, prebridged-input fallback candidate",
+  "environment": {
+    "unity": "2022.3.62f3",
+    "backend": "Editor/Mono",
+    "uniTaskVersion": "2.5.11",
+    "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+    "operationsPerBatch": 128,
+    "samplesPerCasePerProcess": 8,
+    "independentTimingProcessesPerRevision": 2,
+    "independentProfilerProcessesPerRevision": 2,
+    "concurrency": "One Unity 2022 Editor process at a time; Unity 6.5 Coin processes were ambient."
+  },
+  "revisions": {
+    "baseline": {
+      "productCommit": "6f32e15e8acee5458c0b5a9a22dde45818a0eb72",
+      "onityAsyncSha256": "971222c94b83220e9225a3a9696a4a21c496ed26647236f54f12c00ae183d465",
+      "rawRunnerSha256": "850a70c7f4e9f9dfd48f6466585c54bc63760861a2ae30d45bc07b9df05ed446",
+      "runnerLineEndings": "mixed CRLF/LF"
+    },
+    "candidate": {
+      "productCommit": "bc4e469f611d792a45f386a6483021d9d797c573",
+      "onityAsyncSha256": "5d0466c4edd9d99c10cf2858a42db3d8c6cced7841cab920c0056c37022b6e1c",
+      "rawRunnerSha256": "e3ca1626a7789be20ddfe5e1995c35c3271adaa73a67648bd0f777fdb962f2a9",
+      "runnerLineEndings": "CRLF"
+    }
+  },
+  "matchingGitBlobs": {
+    "Packages/com.onity.framework/Benchmarks/Tasks/Editor/Onity.TaskBenchmarks.Editor.asmdef": "75aed1480fcc588c876d2d60dd6eaf93ed60fd9b",
+    "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkMenu.cs": "6cb9d93b70f4517675805a23a41816597170efaa",
+    "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/Onity.TaskBenchmarks.asmdef": "f894d09e50e45c866aeffc81ed8a4af87c335e3e",
+    "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs": "6fd82090e04f7fd17aedc445ccaff4d481807bbc",
+    "Packages/manifest.json": "b4f180c450b59597db2a96a70ff552ca35909799",
+    "Packages/packages-lock.json": "2f863e6d228ea9fd67dbf0d9ab62a805993dd220"
+  },
+  "rawReports": {
+    "onity-pending-whenall-v6-bridge-fallback-baseline-pass1-2026-09-24.json": "67c1bd3208fda7d3d49b30b0655565f724fa442c608f6efe44973a9872bd003d",
+    "onity-pending-whenall-v6-bridge-fallback-baseline-pass2-2026-09-24.json": "6baf01d07ac2f8ea962a810633a5c0faec113ea95916caa62bd635c7b68d26ae",
+    "onity-pending-whenall-v6-bridge-fallback-candidate-pass1-2026-09-24.json": "9de3ec5fe196cdec60cc7dfe249d8dfc754a231ec24fb1b50aa51cce7b147693",
+    "onity-pending-whenall-v6-bridge-fallback-candidate-pass2-2026-09-24.json": "da07cadad223476a99e515f93ad7c670c8275dfed43a01829d7b59c252bed27c"
+  },
+  "calibration": {
+    "mainThreadProfilerPositiveBytes": [65568, 65568, 65568, 65568],
+    "mainThreadProfilerEmptyBytes": [0, 0, 0, 0],
+    "emptyHarnessSamplesAllZero": true,
+    "directWorkerCounter": "unavailable; positive control returned 0 B",
+    "allThreadWindow": {
+      "baselinePass1": "valid",
+      "baselinePass2": "invalid; ThreadPool positive control 65602 B instead of 65568 B",
+      "candidatePass1": "valid",
+      "candidatePass2": "invalid; ThreadPool positive control 65602 B instead of 65568 B"
+    }
+  },
+  "bridgePresentFaultRawMainThreadBytesPer128Operations": {
+    "baselinePass1": [119880, 119880, 119880, 119880, 119880, 119880, 119880, 119880],
+    "baselinePass2": [119880, 119880, 119880, 119880, 119880, 119880, 119880, 119880],
+    "candidatePass1": [119880, 119880, 119880, 119880, 119880, 119880, 119880, 119880],
+    "candidatePass2": [119880, 119880, 119880, 119880, 119880, 119880, 119880, 119880]
+  },
+  "notes": [
+    "Both AsTask input bridges and a fresh exception per operation are prepared before the measured slice; input bridge Exception properties are never read.",
+    "The bridge diagnostic is Onity-only and has no claimed UniTask-equivalent row.",
+    "The normalized runner Git blob is identical; raw runner SHA-256 differs only because of line endings.",
+    "The earlier 855dce2 no-go reports remain separate and unchanged.",
+    "Logs are retained under C:/Users/e-fur/.codex/bench-output/pending-v6-bc4e469.",
+    "No candidate product source was modified by this benchmark task."
+  ]
+}
