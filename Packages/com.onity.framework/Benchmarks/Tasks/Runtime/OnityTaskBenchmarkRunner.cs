@@ -858,6 +858,7 @@ namespace Onity.Benchmarks
     public sealed class OnityTypedWhenAnyBenchmarkRunner : MonoBehaviour
     {
         private const int k_operations = 128;
+        private const int k_outstandingOperations = 384;
         private const int k_samples = 8;
         private const int k_warmupBatches = 10;
         private const int k_successTimingBatches = 16;
@@ -879,28 +880,33 @@ namespace Onity.Benchmarks
             "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/Onity.TaskBenchmarks.asmdef";
         private const string k_editorAsmdefPath =
             "Packages/com.onity.framework/Benchmarks/Tasks/Editor/Onity.TaskBenchmarks.Editor.asmdef";
+        private const string k_nativeSourceType =
+            "Onity.Unity.Async.OnityWhenAnyTaskSource`1";
+        private const string k_pooledNativeSourceType =
+            "Onity.Unity.Async.OnityWhenAnyPooledTaskSource`1";
+        private const string k_intSourceArgument = "<System.Int32>";
 
         private static bool s_isRunning;
         private static int s_emptySink;
         private static readonly CancellationToken s_canceledToken = new CancellationToken(true);
 
         private readonly OnityTaskCompletionSource<int>[] m_onityFirst =
-            new OnityTaskCompletionSource<int>[k_operations];
+            new OnityTaskCompletionSource<int>[k_outstandingOperations];
         private readonly OnityTaskCompletionSource<int>[] m_onitySecond =
-            new OnityTaskCompletionSource<int>[k_operations];
+            new OnityTaskCompletionSource<int>[k_outstandingOperations];
         private readonly UniTaskCompletionSource<int>[] m_uniFirst =
-            new UniTaskCompletionSource<int>[k_operations];
+            new UniTaskCompletionSource<int>[k_outstandingOperations];
         private readonly UniTaskCompletionSource<int>[] m_uniSecond =
-            new UniTaskCompletionSource<int>[k_operations];
+            new UniTaskCompletionSource<int>[k_outstandingOperations];
         private readonly OnityTask<(int winnerIndex, int result)>[] m_nativeResults =
-            new OnityTask<(int winnerIndex, int result)>[k_operations];
+            new OnityTask<(int winnerIndex, int result)>[k_outstandingOperations];
         private readonly UniTask<(int winArgumentIndex, int result)>[] m_uniResults =
-            new UniTask<(int winArgumentIndex, int result)>[k_operations];
+            new UniTask<(int winArgumentIndex, int result)>[k_outstandingOperations];
         private readonly Task<Task<int>>[] m_legacyResults =
-            new Task<Task<int>>[k_operations];
-        private readonly Task<int>[] m_legacyFirst = new Task<int>[k_operations];
-        private readonly Task<int>[] m_legacySecond = new Task<int>[k_operations];
-        private readonly Exception[] m_failures = new Exception[k_operations];
+            new Task<Task<int>>[k_outstandingOperations];
+        private readonly Task<int>[] m_legacyFirst = new Task<int>[k_outstandingOperations];
+        private readonly Task<int>[] m_legacySecond = new Task<int>[k_outstandingOperations];
+        private readonly Exception[] m_failures = new Exception[k_outstandingOperations];
 
         private string m_outputPath;
         private string m_productCommit;
@@ -915,7 +921,9 @@ namespace Onity.Benchmarks
         private int m_activeCount;
         private Action m_measureBatch;
         private Action m_emptyBatch;
+        private Action m_emptyOutstandingBatch;
         private Action m_positiveControl;
+        private string m_nativePendingSourceType;
 #if UNITY_EDITOR
         private readonly System.Collections.Generic.List<CaptureDiagnostic> m_captureDiagnostics =
             new System.Collections.Generic.List<CaptureDiagnostic>(16);
@@ -969,6 +977,7 @@ namespace Onity.Benchmarks
         {
             m_measureBatch = MeasureBatch;
             m_emptyBatch = MeasureEmptyBatch;
+            m_emptyOutstandingBatch = MeasureEmptyOutstandingBatch;
             m_positiveControl = AllocatePositiveControl;
         }
 
@@ -1159,8 +1168,8 @@ namespace Onity.Benchmarks
             string root = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
             Report report = new Report
             {
-                schemaVersion = 1,
-                harnessVersion = 1,
+                schemaVersion = 2,
+                harnessVersion = 2,
                 suite = "Typed int two-input WhenAny native, UniTask, and legacy migration routes",
                 generatedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
                 unityVersion = Application.unityVersion,
@@ -1177,6 +1186,8 @@ namespace Onity.Benchmarks
                 lockSha256 = HashFile(root, "Packages/packages-lock.json"),
                 projectSettingsSha256 = HashFile(root, "ProjectSettings/ProjectSettings.asset"),
                 operationsPerBatch = k_operations,
+                outstandingBurstOperations = k_outstandingOperations,
+                outstandingBurstWarmupBatches = 1,
                 samplesPerCase = k_samples,
                 warmupBatches = k_warmupBatches,
                 successTimingBatches = k_successTimingBatches,
@@ -1190,6 +1201,7 @@ namespace Onity.Benchmarks
                 allocationCounter = "Unavailable: independent Profiler calibration pending.",
                 positiveControlBytes = -1,
                 emptyControlBytes = -1,
+                outstandingEmptyControlBytes = -1,
                 scope = "Main-thread Editor/Mono. Native Onity versus UniTask params is the "
                     + "primary comparison. Same-revision OnityAsync Task bridge is a migration "
                     + "route, not a product baseline. UniTask's two-element params array and "
@@ -1208,8 +1220,17 @@ namespace Onity.Benchmarks
                     + "but are sequential per route, not three process-cold measurements. "
                     + "Tracker ON/OFF changes only Onity; UniTask retains its default "
                     + "task tracking. Worker allocations and Player performance are unavailable.",
+                outstandingBurstScope = "384 pending outputs are scheduled before any input "
+                    + "completes. Source preparation is outside the marker; winner and loser "
+                    + "completion, output observation, and cleanup follow outside the marker. "
+                    + "One unmeasured 384-operation warm-saturation burst per route primes "
+                    + "state before eight separate scheduling samples. A bounded pool may "
+                    + "still allocate when the outstanding count exceeds its capacity. "
+                    + "This is a main-thread "
+                    + "Editor/Mono scheduling slice, not a complete task lifecycle.",
                 scenarios = new Scenario[12],
-                firstObserved = new Metric[3]
+                firstObserved = new Metric[3],
+                outstandingBurst = new Scenario[2]
             };
 
             int index = 0;
@@ -1227,6 +1248,11 @@ namespace Onity.Benchmarks
             {
                 report.firstObserved[route] = NewMetric(RouteName(route));
             }
+
+            report.outstandingBurst[0] = NewScenario(
+                "384 outstanding pending schedule", true, 0, 0);
+            report.outstandingBurst[1] = NewScenario(
+                "384 outstanding pending schedule", false, 0, 0);
 
             return report;
         }
@@ -1251,13 +1277,49 @@ namespace Onity.Benchmarks
 
         private static Metric NewMetric(string library)
         {
-            return new Metric { library = library, bytesPerOperation = -1 };
+            return new Metric
+            {
+                library = library,
+                bytesPerOperation = -1,
+                totalAllocatedBytes = -1
+            };
         }
 
         private static string RouteName(int route)
         {
             return route == 0 ? "OnityTask native" :
                 route == 1 ? "UniTask params" : "OnityAsync Task bridge migration";
+        }
+
+        private static bool IsNativePendingSourceType(string sourceType)
+        {
+            return sourceType == k_nativeSourceType + k_intSourceArgument ||
+                sourceType == k_pooledNativeSourceType + k_intSourceArgument;
+        }
+
+        private static string GetNativePendingSourceType(object state)
+        {
+            Type concreteType = state?.GetType();
+            if (concreteType == null || !concreteType.IsGenericType ||
+                concreteType.Assembly != typeof(OnityTask<>).Assembly)
+            {
+                return null;
+            }
+
+            Type[] arguments = concreteType.GetGenericArguments();
+            if (arguments.Length != 1 || arguments[0] != typeof(int))
+            {
+                return null;
+            }
+
+            string definition = concreteType.GetGenericTypeDefinition().FullName;
+            if (definition != k_nativeSourceType &&
+                definition != k_pooledNativeSourceType)
+            {
+                return null;
+            }
+
+            return definition + k_intSourceArgument;
         }
 
         private static string HashFile(string root, string relativePath)
@@ -1272,7 +1334,7 @@ namespace Onity.Benchmarks
 
         private static void ValidateAllocationInput(Report report, Report expected)
         {
-            if (report == null || report.schemaVersion != 1 || report.harnessVersion != 1 ||
+            if (report == null || report.schemaVersion != 2 || report.harnessVersion != 2 ||
                 report.suite != expected.suite ||
                 report.unityVersion != expected.unityVersion ||
                 report.scriptingBackend != expected.scriptingBackend ||
@@ -1288,17 +1350,22 @@ namespace Onity.Benchmarks
                 report.lockSha256 != expected.lockSha256 ||
                 report.projectSettingsSha256 != expected.projectSettingsSha256 ||
                 report.operationsPerBatch != k_operations ||
+                report.outstandingBurstOperations != k_outstandingOperations ||
+                report.outstandingBurstWarmupBatches != 1 ||
                 report.samplesPerCase != k_samples ||
                 report.warmupBatches != k_warmupBatches ||
                 report.successTimingBatches != k_successTimingBatches ||
                 report.failureTimingBatches != k_failureTimingBatches ||
                 report.scope != expected.scope ||
+                report.outstandingBurstScope != expected.outstandingBurstScope ||
                 report.timingTrackerStackTraceEnabled ||
                 report.timingDeepProfilingEnabled ||
                 report.timingCallstacksEnabled ||
                 !report.nativePendingGatePassed ||
+                !IsNativePendingSourceType(report.nativePendingSourceType) ||
                 report.scenarios == null || report.scenarios.Length != 12 ||
-                report.firstObserved == null || report.firstObserved.Length != 3)
+                report.firstObserved == null || report.firstObserved.Length != 3 ||
+                report.outstandingBurst == null || report.outstandingBurst.Length != 2)
             {
                 throw new InvalidDataException(
                     "Allocation pass requires timing from identical product, harness, and config.");
@@ -1338,6 +1405,32 @@ namespace Onity.Benchmarks
                     }
                 }
             }
+
+            for (int i = 0; i < report.outstandingBurst.Length; i++)
+            {
+                Scenario actual = report.outstandingBurst[i];
+                Scenario wanted = expected.outstandingBurst[i];
+                if (actual == null || actual.name != wanted.name ||
+                    actual.trackerEnabled != wanted.trackerEnabled ||
+                    actual.mode != wanted.mode || actual.outcome != wanted.outcome ||
+                    actual.results == null || actual.results.Length != 3)
+                {
+                    throw new InvalidDataException("Outstanding burst definitions changed.");
+                }
+
+                for (int route = 0; route < 3; route++)
+                {
+                    Metric metric = actual.results[route];
+                    if (metric == null || metric.library != RouteName(route) ||
+                        metric.sampleNanosecondsPerOperation == null ||
+                        metric.sampleNanosecondsPerOperation.Length != k_samples ||
+                        metric.sampleElapsedTicks == null ||
+                        metric.sampleElapsedTicks.Length != k_samples)
+                    {
+                        throw new InvalidDataException("Outstanding burst timing is incomplete.");
+                    }
+                }
+            }
         }
 
         private static void ClearAllocations(Report report)
@@ -1347,12 +1440,15 @@ namespace Onity.Benchmarks
             report.positiveControlBytes = -1;
             report.emptyControlBytes = -1;
             report.emptyHarnessSampleAllocatedBytes = null;
+            report.outstandingEmptyControlBytes = -1;
+            report.outstandingEmptyHarnessSampleAllocatedBytes = null;
             for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
             {
                 for (int route = 0; route < 3; route++)
                 {
                     Metric metric = report.scenarios[scenario].results[route];
                     metric.bytesPerOperation = -1;
+                    metric.totalAllocatedBytes = -1;
                     metric.sampleAllocatedBytes = null;
                 }
             }
@@ -1360,7 +1456,19 @@ namespace Onity.Benchmarks
             for (int route = 0; route < 3; route++)
             {
                 report.firstObserved[route].bytesPerOperation = -1;
+                report.firstObserved[route].totalAllocatedBytes = -1;
                 report.firstObserved[route].sampleAllocatedBytes = null;
+            }
+
+            for (int scenario = 0; scenario < report.outstandingBurst.Length; scenario++)
+            {
+                for (int route = 0; route < 3; route++)
+                {
+                    Metric metric = report.outstandingBurst[scenario].results[route];
+                    metric.bytesPerOperation = -1;
+                    metric.totalAllocatedBytes = -1;
+                    metric.sampleAllocatedBytes = null;
+                }
             }
         }
 
@@ -1381,6 +1489,7 @@ namespace Onity.Benchmarks
             }
 
             report.nativePendingGatePassed = m_nativeGateVerified;
+            report.nativePendingSourceType = m_nativePendingSourceType;
             for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
             {
                 m_activeScenario = report.scenarios[scenario];
@@ -1422,6 +1531,55 @@ namespace Onity.Benchmarks
                         m_activeScenario.results[m_activeRoute]
                             .sampleNanosecondsPerOperation[sample] =
                             ToNanoseconds(totalTicks) / (batches * k_operations);
+                    }
+                }
+
+                for (int route = 0; route < 3; route++)
+                {
+                    Metric metric = m_activeScenario.results[route];
+                    double[] sorted = (double[])metric.sampleNanosecondsPerOperation.Clone();
+                    Array.Sort(sorted);
+                    metric.medianNanosecondsPerOperation =
+                        (sorted[3] + sorted[4]) * 0.5d;
+                }
+            }
+
+            RunOutstandingBurstTiming(report);
+        }
+
+        private void RunOutstandingBurstTiming(Report report)
+        {
+            for (int scenario = 0; scenario < report.outstandingBurst.Length; scenario++)
+            {
+                m_activeScenario = report.outstandingBurst[scenario];
+                for (int route = 0; route < 3; route++)
+                {
+                    m_activeRoute = route;
+                    PrepareBatch(k_outstandingOperations);
+                    MeasureBatch();
+                    FinishBatch();
+                    m_activeScenario.results[route].sampleNanosecondsPerOperation =
+                        new double[k_samples];
+                    m_activeScenario.results[route].sampleElapsedTicks =
+                        new long[k_samples];
+                }
+
+                for (int sample = 0; sample < k_samples; sample++)
+                {
+                    ValidateNumericSettings();
+                    for (int turn = 0; turn < 3; turn++)
+                    {
+                        m_activeRoute = (sample + turn) % 3;
+                        PrepareBatch(k_outstandingOperations);
+                        long start = Stopwatch.GetTimestamp();
+                        MeasureBatch();
+                        long elapsed = Stopwatch.GetTimestamp() - start;
+                        FinishBatch();
+                        m_activeScenario.results[m_activeRoute]
+                            .sampleElapsedTicks[sample] = elapsed;
+                        m_activeScenario.results[m_activeRoute]
+                            .sampleNanosecondsPerOperation[sample] =
+                            ToNanoseconds(elapsed) / k_outstandingOperations;
                     }
                 }
 
@@ -1561,12 +1719,14 @@ namespace Onity.Benchmarks
                                 "m_state", System.Reflection.BindingFlags.Instance |
                                 System.Reflection.BindingFlags.NonPublic);
                         object state = stateField?.GetValue(m_nativeResults[i]);
-                        if (state == null || state.GetType().Name != "OnityWhenAnyTaskSource`1")
+                        string sourceType = GetNativePendingSourceType(state);
+                        if (sourceType == null)
                         {
                             throw new InvalidOperationException(
-                                "Expected native OnityWhenAnyTaskSource<int>.");
+                                "Expected a native typed WhenAny source, not a Task bridge.");
                         }
 
+                        m_nativePendingSourceType = sourceType;
                         m_nativeGateVerified = true;
                     }
                 }
@@ -1760,6 +1920,17 @@ namespace Onity.Benchmarks
             s_emptySink = value;
         }
 
+        private void MeasureEmptyOutstandingBatch()
+        {
+            int value = 0;
+            for (int i = 0; i < k_outstandingOperations; i++)
+            {
+                value ^= i;
+            }
+
+            s_emptySink = value;
+        }
+
 #if UNITY_EDITOR
         private IEnumerator RunAllocations(Report report)
         {
@@ -1816,12 +1987,14 @@ namespace Onity.Benchmarks
                     report.firstObserved[route].sampleAllocatedBytes =
                         new[] { m_lastCaptureBytes };
                     report.firstObserved[route].bytesPerOperation = m_lastCaptureBytes;
+                    report.firstObserved[route].totalAllocatedBytes = m_lastCaptureBytes;
                 }
             }
 
             report.nativePendingGatePassed = m_nativeGateVerified;
             if (m_collectorDiagnostic)
             {
+                report.nativePendingSourceType = m_nativePendingSourceType;
                 report.collectorCaptures = m_captureDiagnostics.ToArray();
                 report.allocationCounter = "Unavailable: collector diagnostic only.";
                 report.allocationGeneratedAtUtc =
@@ -1832,6 +2005,12 @@ namespace Onity.Benchmarks
             if (!report.nativePendingGatePassed)
             {
                 throw new InvalidDataException("Native pending source gate did not pass.");
+            }
+
+            if (report.nativePendingSourceType != m_nativePendingSourceType)
+            {
+                throw new InvalidDataException(
+                    "Native pending source changed between timing and allocation passes.");
             }
 
             for (int scenario = 0; scenario < report.scenarios.Length; scenario++)
@@ -1880,15 +2059,97 @@ namespace Onity.Benchmarks
                         total += metric.sampleAllocatedBytes[sample];
                     }
 
+                    metric.totalAllocatedBytes = total;
                     metric.bytesPerOperation = (double)total / (k_samples * k_operations);
                 }
             }
 
+            IEnumerator outstanding = RunOutstandingBurstAllocations(report);
+            while (outstanding.MoveNext())
+            {
+                yield return outstanding.Current;
+            }
+
             report.allocationsAvailable = true;
             report.allocationCounter =
-                "Unity Profiler main-thread GC.Alloc; exact 65,568/0 controls and eight zero harness samples.";
+                "Unity Profiler main-thread GC.Alloc; exact 65,568/0 controls, "
+                + "eight zero 128-operation samples, and eight zero 384-operation samples.";
             report.allocationGeneratedAtUtc =
                 DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        private IEnumerator RunOutstandingBurstAllocations(Report report)
+        {
+            m_activeScenario = null;
+            m_capturePhase = "outstanding-empty-control";
+            yield return CaptureAllocation(m_emptyOutstandingBatch);
+            if (!m_lastCaptureValid || m_lastCaptureBytes != 0)
+            {
+                throw new InvalidDataException("Profiler 384-operation empty control was not zero bytes.");
+            }
+
+            report.outstandingEmptyControlBytes = 0;
+            report.outstandingEmptyHarnessSampleAllocatedBytes = new long[k_samples];
+            for (int sample = 0; sample < k_samples; sample++)
+            {
+                m_capturePhase = "outstanding-empty-harness-"
+                    + sample.ToString(CultureInfo.InvariantCulture);
+                yield return CaptureAllocation(m_emptyOutstandingBatch);
+                if (!m_lastCaptureValid || m_lastCaptureBytes != 0)
+                {
+                    throw new InvalidDataException(
+                        "Profiler 384-operation empty-harness sample was not zero bytes.");
+                }
+
+                report.outstandingEmptyHarnessSampleAllocatedBytes[sample] = 0;
+            }
+
+            for (int scenario = 0; scenario < report.outstandingBurst.Length; scenario++)
+            {
+                m_activeScenario = report.outstandingBurst[scenario];
+                for (int route = 0; route < 3; route++)
+                {
+                    m_activeRoute = route;
+                    PrepareBatch(k_outstandingOperations);
+                    MeasureBatch();
+                    FinishBatch();
+                    m_activeScenario.results[route].sampleAllocatedBytes =
+                        new long[k_samples];
+                }
+
+                for (int sample = 0; sample < k_samples; sample++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                    for (int turn = 0; turn < 3; turn++)
+                    {
+                        m_activeRoute = (sample + turn) % 3;
+                        PrepareBatch(k_outstandingOperations);
+                        m_capturePhase = "outstanding-warm-sample-"
+                            + sample.ToString(CultureInfo.InvariantCulture);
+                        yield return CaptureAllocation(m_measureBatch);
+                        RequireCapture();
+                        FinishBatch();
+                        m_activeScenario.results[m_activeRoute]
+                            .sampleAllocatedBytes[sample] = m_lastCaptureBytes;
+                    }
+                }
+
+                for (int route = 0; route < 3; route++)
+                {
+                    Metric metric = m_activeScenario.results[route];
+                    long total = 0;
+                    for (int sample = 0; sample < k_samples; sample++)
+                    {
+                        total += metric.sampleAllocatedBytes[sample];
+                    }
+
+                    metric.totalAllocatedBytes = total;
+                    metric.bytesPerOperation =
+                        (double)total / (k_samples * k_outstandingOperations);
+                }
+            }
         }
 
         private void RequireCapture()
@@ -2180,12 +2441,15 @@ namespace Onity.Benchmarks
             public string lockSha256;
             public string projectSettingsSha256;
             public int operationsPerBatch;
+            public int outstandingBurstOperations;
+            public int outstandingBurstWarmupBatches;
             public int samplesPerCase;
             public int warmupBatches;
             public int successTimingBatches;
             public int failureTimingBatches;
             public long stopwatchFrequency;
             public string scope;
+            public string outstandingBurstScope;
             public bool collectorDiagnosticOnly;
             public CaptureDiagnostic[] collectorCaptures;
             public bool timingTrackerStackTraceEnabled;
@@ -2195,13 +2459,17 @@ namespace Onity.Benchmarks
             public bool allocationDeepProfilingEnabled;
             public bool allocationCallstacksEnabled;
             public bool nativePendingGatePassed;
+            public string nativePendingSourceType;
             public bool allocationsAvailable;
             public string allocationCounter;
             public long positiveControlBytes;
             public long emptyControlBytes;
             public long[] emptyHarnessSampleAllocatedBytes;
+            public long outstandingEmptyControlBytes;
+            public long[] outstandingEmptyHarnessSampleAllocatedBytes;
             public Metric[] firstObserved;
             public Scenario[] scenarios;
+            public Scenario[] outstandingBurst;
         }
 
         [Serializable]
@@ -2220,7 +2488,9 @@ namespace Onity.Benchmarks
             public string library;
             public double medianNanosecondsPerOperation;
             public double bytesPerOperation;
+            public long totalAllocatedBytes;
             public double[] sampleNanosecondsPerOperation;
+            public long[] sampleElapsedTicks;
             public long[] sampleAllocatedBytes;
         }
     }
