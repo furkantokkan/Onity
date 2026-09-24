@@ -2660,17 +2660,12 @@ namespace Onity.Unity.Async
 
     internal sealed class OnityWhenAnyTaskSource<T> : OnityTaskSourceBase<(int winnerIndex, T result)>
     {
-        private readonly Action m_firstContinuation;
-        private readonly Action m_secondContinuation;
-
         private OnityTaskAwaiter<T> m_firstAwaiter;
         private OnityTaskAwaiter<T> m_secondAwaiter;
         private int m_winner;
 
         public OnityWhenAnyTaskSource(OnityTask<T> first, OnityTask<T> second)
         {
-            m_firstContinuation = CompleteFirst;
-            m_secondContinuation = CompleteSecond;
             Reset(default);
             RegisterFirst(first);
             RegisterSecond(second);
@@ -2692,7 +2687,8 @@ namespace Onity.Unity.Async
                 }
                 else
                 {
-                    m_firstAwaiter.UnsafeOnCompleted(m_firstContinuation);
+                    Action continuation = CompleteFirst;
+                    m_firstAwaiter.UnsafeOnCompleted(continuation);
                 }
             }
             catch (Exception exception)
@@ -2713,7 +2709,8 @@ namespace Onity.Unity.Async
                 }
                 else
                 {
-                    m_secondAwaiter.UnsafeOnCompleted(m_secondContinuation);
+                    Action continuation = CompleteSecond;
+                    m_secondAwaiter.UnsafeOnCompleted(continuation);
                 }
             }
             catch (Exception exception)
