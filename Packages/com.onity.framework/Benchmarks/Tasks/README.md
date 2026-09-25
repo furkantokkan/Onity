@@ -34,6 +34,30 @@ Unity.exe -batchmode -nographics -releaseCodeOptimization -projectPath <benchmar
 is what players run; without it the Editor's Debug code optimization compiles
 them as classes and the builder measurements do not represent a player.
 
+Editor timings still come from the Editor's own script runtime. A desktop
+Mono 6.8 micro-benchmark of the builder wrapper alone (one suspended
+`async` method on a manual awaitable, no PlayerLoop) measured about 50 to 120
+ns per operation for Onity and about 40 ns for UniTask, while the Editor
+attributes 800 ns or more to the same wrapper for both libraries; call-heavy
+paths are inflated there, so ratios taken in the Editor are not the ratios a
+player sees. Run the player build for any performance claim:
+
+- `Onity/Benchmarks/Build and Run OnityTask Benchmarks (Mono Player)` and
+  `... (IL2CPP Player)` build a non-development Standalone Windows player
+  with that backend into `Temp/OnityBenchmarks`, run it headless, write
+  `Results/onity-task-benchmark-player-latest.json` (plus `.csv`, `.md`, and
+  a `.player.log`), and restore the project's build target, backend, and
+  defines. `... Thread Switch Benchmarks (IL2CPP Player)` does the same for the
+  thread-switch suite.
+- The command-line entry point is
+  `Onity.Editor.Benchmarks.OnityTaskBenchmarkPlayerBuildRunner.BuildAndRunFromCommandLine`
+  with `-onityTaskBenchmarkBackend Mono|IL2CPP` (default IL2CPP),
+  `-onityTaskBenchmarkSuite primary|threadswitch` (default primary),
+  `-onityTaskBenchmarkBuildPath <exe>`, and `-onityTaskBenchmarkOutput <json>`;
+  it may be combined with `-quit`. The player itself accepts
+  `-onityRunTaskBenchmark`, the same suite and output arguments, and writes
+  the report with `isEditor` false and the backend it was built with.
+
 ## Measurement contract
 
 - Two synchronous primitives: completed `GetResult`, and `FromResult<int>` plus

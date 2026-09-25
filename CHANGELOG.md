@@ -79,6 +79,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which compiles the same reference-source `ExecutionContext`, a
   capture-and-run pair read 0 B/op without stored `AsyncLocal` values against
   72 B/op on the public path.
+- Runner pools use one compare-and-swap gate and an intrusive list instead of
+  a locked `Stack<T>`, runners are reused without the source lock after their
+  token was retired, and `InvalidateVersion` no longer takes the lock, which
+  removes four of the seven monitor acquisitions a suspended method paid per
+  cycle. `OnityTask.RunnerPoolCapacity` (default 128) caps the runners kept
+  per method. On desktop Mono 6.8 with a manual awaitable, one suspended
+  method fell from about 320 to about 225 ns per cycle with flow on and from
+  about 265 to about 165 ns with flow off, against about 90 ns for UniTask;
+  not a Unity measurement.
 - Native single-consumer sources rethrow faults and cancellations through
   `ExceptionDispatchInfo` and keep the thrown `OperationCanceledException`
   instance, and runner-backed sources retire their token when they return to
@@ -104,7 +113,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ` (flow off)`, for 24 scenarios, and records the setting's default and the
   task tracker state. The benchmark README no longer describes a separate
   `-onityTaskAllocationsOnly` Profiler pass, which never shipped in the
-  package.
+  package. New menu items and a command-line entry point build a
+  non-development Mono or IL2CPP Standalone player, run either suite headless
+  in it, and restore the build settings; Editor timings inflate call-heavy
+  paths and a player run is the source for any performance claim.
 
 ### Improved
 

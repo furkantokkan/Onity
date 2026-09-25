@@ -22,12 +22,14 @@ namespace Onity.Tests.EditMode
     {
         private bool m_previousFlow;
         private bool m_previousTracking;
+        private int m_previousPoolCapacity;
 
         [SetUp]
         public void SaveSettings()
         {
             m_previousFlow = OnityTask.FlowExecutionContext;
             m_previousTracking = OnityTaskTracker.IsEnabled;
+            m_previousPoolCapacity = OnityTask.RunnerPoolCapacity;
         }
 
         [TearDown]
@@ -35,6 +37,7 @@ namespace Onity.Tests.EditMode
         {
             OnityTask.FlowExecutionContext = m_previousFlow;
             OnityTaskTracker.IsEnabled = m_previousTracking;
+            OnityTask.RunnerPoolCapacity = m_previousPoolCapacity;
             OnityTaskTracker.ClearAll();
         }
 
@@ -253,6 +256,24 @@ namespace Onity.Tests.EditMode
 
             secondGate.Complete();
             Assert.That(second.GetAwaiter().GetResult(), Is.EqualTo(2));
+        }
+
+        [Test]
+        public void RunnerPoolCapacityZero_ReleasesRunnersInsteadOfPoolingThem()
+        {
+            OnityTask.RunnerPoolCapacity = 0;
+            ManualAwaitable firstGate = new ManualAwaitable();
+            OnityTask<int> first = ReturnAfterAsync(firstGate, 1);
+            object firstRunner = GetState(first);
+            firstGate.Complete();
+            first.GetAwaiter().GetResult();
+            DrainDeferredPoolReturns();
+
+            OnityTask<int> second = ReturnAfterAsync(new ManualAwaitable(), 2);
+
+            Assert.That(GetState(second), Is.Not.SameAs(firstRunner),
+                "With a zero capacity a released runner must not be rented again.");
+            Assert.Throws<InvalidOperationException>(() => _ = first.IsCompleted);
         }
 
         [Test]
