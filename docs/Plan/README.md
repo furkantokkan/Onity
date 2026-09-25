@@ -25,6 +25,9 @@ Read these in order on first contact:
    keep Onity ahead of VContainer across speed, scope, and proof.
 10. [`09-OnityTask-Integration-Plan.md`](09-OnityTask-Integration-Plan.md) -
     target and phased plan for replacing UniTask usage with OnityTask.
+11. [`10-OnityTask-MainThreadSwitch.md`](10-OnityTask-MainThreadSwitch.md) -
+    Editor lifecycle, hook ownership, and verification contract for
+    `OnityTask.SwitchToMainThread`.
 
 ## Scope discipline
 
@@ -48,6 +51,7 @@ revisit `00-Overview.md` Section "Non-Goals".
 | 07-Competitive-And-AI-Roadmap | Draft v1 | - |
 | 08-Surpass-VContainer | Draft v1 | - |
 | 09-OnityTask-Integration-Plan | Draft v1 | - |
+| 10-OnityTask-MainThreadSwitch | Draft v1, Unity verification pending | - |
 
 Draft v1 = first complete pass, not yet validated against running benchmarks.
 

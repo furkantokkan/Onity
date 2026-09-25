@@ -101,6 +101,42 @@ results are bundled inside the package; the [calibrated baseline and candidate
 reports](https://furkantokkan.github.io/Onity/guide/onitytask-comparison.html)
 are published with the comparison guide.
 
+## Thread-switch harness
+
+`Onity/Benchmarks/Run OnityTask Thread Switch Benchmarks (Play Mode)` runs
+`OnityThreadSwitchBenchmarkRunner` and writes
+`Packages/com.onity.framework/Benchmarks/Results/onity-thread-switch-benchmark-latest.*`.
+The command-line entry point is
+`Onity.Editor.Benchmarks.OnityThreadSwitchBenchmarkMenu.RunFromCommandLine`
+with `-onityThreadSwitchBenchmarkOutput <absolute-json-path>`; do not pass
+`-quit`. It compares `OnityTask.SwitchToMainThread` with
+`UniTask.SwitchToMainThread` in seven scenarios, eight samples each, with
+library order alternating:
+
+- Two main-thread synchronous cases: a successful switch (1,000,000 calls per
+  sample) and a switch with a pre-canceled token whose `GetResult` throws
+  (20,000 calls per sample). Both include the delegate call, awaiter creation,
+  `IsCompleted`, and `GetResult`. The main-thread allocation counter is
+  calibrated with the same 64 KiB positive and empty controls as the primary
+  harness.
+- Worker scheduling at 128 (warm) and 4,096 (burst) continuations per batch,
+  eight batches per sample. A dedicated worker thread calibrates its own
+  allocation counter with the same controls, then times awaitable creation,
+  `IsCompleted`, and `UnsafeOnCompleted` for the batch. Every scheduling job
+  must pass both controls or the worker allocation values are reported as
+  unavailable.
+- Main-thread dispatch for the same batches, measured from the first to the
+  last continuation executed inside one drain. The value therefore covers
+  N-1 continuations, and the main-thread counter is read at both ends.
+- A round trip of 128 concurrent `async Task` methods that hop to the thread
+  pool and switch back, from starting the batch on the main thread until the
+  last method resumes. Thread-pool latency and frame waits are included, so
+  this is a wall-clock workflow, not a library slice.
+
+No thread-switch result has been published yet. As with the primary harness,
+Unity 2022 Mono may fail the `GC.GetAllocatedBytesForCurrentThread` controls;
+in that case use the separate calibrated Profiler pass from the isolated host.
+
 ## Change note
 
 - Split comparison assemblies and preserved the moved scripts' `.meta` GUIDs.
@@ -113,3 +149,5 @@ are published with the comparison guide.
 - Validated the two-process harness in Unity 2022.3.62f3 Editor/Mono with a
   65,568-byte positive and zero-byte empty control. Player/IL2CPP results remain
   unmeasured.
+- Added the thread-switch harness with per-thread calibrated allocation
+  controls; it has not been run yet.

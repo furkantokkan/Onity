@@ -91,6 +91,7 @@ fixed-frame wait also completes while `Time.timeScale` is zero.
 | First of two untyped operations | `int winner = await OnityTask.WhenAny(first, second)` |
 | First of two typed operations | `(int winnerIndex, T result) = await OnityTask.WhenAny(first, second)` |
 | Completed typed result | `await OnityTask.FromResult(value)` |
+| Resume on Unity's main thread | `await OnityTask.SwitchToMainThread(ct)` |
 
 ## Single-consumer rule for pooled tasks
 
@@ -178,6 +179,47 @@ source and registers one native continuation. Use it only when sharing is needed
 directly awaiting a pooled task remains cheaper. The retained result, fault, or
 cancellation can be observed repeatedly. Use `AsTask()` once when a .NET API
 requires a `Task`; the returned `Task` can also be shared.
+
+## Switch to the main thread
+
+`OnityTask.SwitchToMainThread` returns an awaitable that resumes on Unity's main
+thread. Awaiting it on the main thread completes synchronously without an
+allocation or a frame delay. Awaiting it on a worker thread queues the
+continuation, which resumes during the Update phase of a following frame.
+
+```csharp
+using System.Threading;
+using System.Threading.Tasks;
+using Onity.Unity.Async;
+using UnityEngine;
+
+private static async OnityTask LoadAndApplyAsync(string path, CancellationToken cancellationToken)
+{
+    byte[] bytes = await Task.Run(() => System.IO.File.ReadAllBytes(path), cancellationToken);
+
+    await OnityTask.SwitchToMainThread(cancellationToken);
+
+    // Unity API is safe again here.
+    Debug.Log($"Loaded {bytes.Length} bytes on the main thread.");
+}
+```
+
+Cancellation is observed when the switch completes: `GetResult` throws
+`OperationCanceledException` with the token on the destination thread, even
+when the token was already canceled. A continuation canceled while it is
+queued still resumes on the main thread before it throws, so cleanup code
+never runs on the canceling thread.
+
+Outside Play Mode the Editor resumes queued continuations from its update loop
+while it is not compiling or importing assets. Entering or exiting Play Mode,
+and quitting the player, ends the current session: continuations queued in an
+earlier session are discarded rather than resumed in the next one. Compiler
+generated `async Task` and `async OnityTask` methods flow `AsyncLocal` values
+across the switch through their builders and keep Unity's synchronization
+context; `OnityTaskThreadSwitchAwaiter.OnCompleted` itself does not capture an
+execution context, like the other native Onity awaiters. There is no
+thread-pool switch yet; use `Task.Run` or the reactive `ObserveOnThreadPool`
+operator for worker work.
 
 ## Complete a task from a callback
 
