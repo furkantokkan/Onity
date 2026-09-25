@@ -511,7 +511,8 @@ comparisons, not significance tests.
 The synchronous main-thread switch is close in both runs. Enqueueing 4,096
 continuations from a worker favored Onity in both runs, while the 128-operation
 enqueue changed direction between runs and has no winner. Main-thread callback
-dispatch favored UniTask in both runs by 25 to 36 percent. Dispatch measures
+dispatch favored UniTask in both runs by about 25 to 36 percent (24.7 to 36.1
+percent). Dispatch measures
 the interval between the first and last callback of one batch divided by N-1;
 queue setup, buffer swapping, and teardown are outside it. The round trip uses
 `async Task` for both libraries, so it compares neither native builder, and its
@@ -523,7 +524,14 @@ non-inlined helper with its own null check and exception guard. The pinned
 UniTask `ContinuationQueue` runs a raw `Action[]` with an inline exception
 guard. The drain was rewritten afterwards to array-backed double buffers with
 one session read per batch and an inline exception guard; **that change is not
-yet measured**, so the table above remains the current evidence.
+yet measured**, so the table above remains the current evidence. The runs did
+not record the Editor's code optimization mode. In the default Debug mode the
+Mono JIT disables inlining and register allocation, which penalizes helper
+calls such as the old drain's indexer and invoke helper more than a Release
+build would, and identical code varied by 25 percent between the two runs
+(Onity 4,096 dispatch: 102.58 versus 76.00 ns/op). Later runs record the mode
+and the incremental GC setting in the report and should treat differences
+below about 5 ns/op as noise.
 
 Allocation values are unavailable for these runs: the main-thread and
 worker-thread `GC.GetAllocatedBytesForCurrentThread` counters reported zero for
@@ -562,9 +570,9 @@ unchanged by that pass.
 | Async method NextFrame<int> GetResult | 4096 | 66.71 | 116.52 |
 
 Starting a native `async OnityTask` method that suspends once is roughly 1.8 to
-2.2 times slower than the UniTask equivalent, and consuming a synchronously
-completed async method is about 2.2 times slower, while consuming the suspended
-method's result is faster. The
+1.9 times slower than the UniTask equivalent, and consuming a synchronously
+completed async method is about 1.9 to 2.2 times slower (untyped 2.19x, typed
+1.85x), while consuming the suspended method's result is faster. The
 [async builder gap analysis](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/11-OnityTask-AsyncBuilderGap.md)
 traces this to the wrapped `AsyncTaskMethodBuilder` and records the decision
 the product owner has to make before that gap can close. Raw run reports were

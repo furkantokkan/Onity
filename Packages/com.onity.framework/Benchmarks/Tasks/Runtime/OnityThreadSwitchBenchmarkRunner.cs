@@ -49,6 +49,7 @@ namespace Onity.Benchmarks
 
         private string m_latestJson;
         private Action<string, Exception> m_completed;
+        private string m_codeOptimization;
         private bool m_workerAllocationAvailable = true;
         private string m_workerAllocationCounter = "Not measured";
 
@@ -57,7 +58,14 @@ namespace Onity.Benchmarks
         /// </summary>
         /// <param name="latestJson">Output JSON path.</param>
         /// <param name="completed">Optional completion callback.</param>
-        public static void Run(string latestJson, Action<string, Exception> completed = null)
+        /// <param name="codeOptimization">
+        /// Editor code optimization mode recorded with the report, because the Debug mode disables
+        /// JIT inlining and register allocation and changes per-item dispatch cost.
+        /// </param>
+        public static void Run(
+            string latestJson,
+            Action<string, Exception> completed = null,
+            string codeOptimization = null)
         {
             if (string.IsNullOrWhiteSpace(latestJson))
             {
@@ -74,6 +82,7 @@ namespace Onity.Benchmarks
             OnityThreadSwitchBenchmarkRunner runner = runnerObject.AddComponent<OnityThreadSwitchBenchmarkRunner>();
             runner.m_latestJson = Path.GetFullPath(latestJson);
             runner.m_completed = completed;
+            runner.m_codeOptimization = string.IsNullOrEmpty(codeOptimization) ? "Unknown" : codeOptimization;
             s_isRunning = true;
         }
 
@@ -165,6 +174,8 @@ namespace Onity.Benchmarks
                 platform = Application.platform.ToString(),
                 isEditor = Application.isEditor,
                 scriptingBackend = GetScriptingBackendLabel(),
+                codeOptimization = m_codeOptimization,
+                gcIncremental = UnityEngine.Scripting.GarbageCollector.isIncremental,
                 uniTaskAssembly = typeof(UniTask).Assembly.FullName,
                 stopwatchFrequency = Stopwatch.Frequency,
                 timerResolutionNanoseconds = 1000000000d / Stopwatch.Frequency,
@@ -803,6 +814,7 @@ namespace Onity.Benchmarks
             builder.AppendLine();
             builder.AppendLine($"- Generated (UTC): {report.generatedAtUtc}");
             builder.AppendLine($"- Unity: {report.unityVersion} ({report.platform}, {report.scriptingBackend})");
+            builder.AppendLine($"- Editor code optimization: {report.codeOptimization}; incremental GC: {report.gcIncremental}");
             builder.AppendLine($"- UniTask: {report.uniTaskAssembly}");
             builder.AppendLine($"- Main-thread allocation counter: {report.mainThreadAllocationCounter}");
             builder.AppendLine($"- Worker allocation counter: {report.workerAllocationCounter}");
@@ -889,6 +901,8 @@ namespace Onity.Benchmarks
             public string platform;
             public bool isEditor;
             public string scriptingBackend;
+            public string codeOptimization;
+            public bool gcIncremental;
             public string uniTaskAssembly;
             public long stopwatchFrequency;
             public double timerResolutionNanoseconds;

@@ -133,9 +133,17 @@ library order alternating:
   last method resumes. Thread-pool latency and frame waits are included, so
   this is a wall-clock workflow, not a library slice.
 
-No thread-switch result has been published yet. As with the primary harness,
-Unity 2022 Mono may fail the `GC.GetAllocatedBytesForCurrentThread` controls;
-in that case use the separate calibrated Profiler pass from the isolated host.
+The report records the Editor code optimization mode and the incremental GC
+setting. Run the comparison with the Editor in Release code optimization, and
+repeat it in Mono and IL2CPP players, because Debug mode disables JIT inlining
+and register allocation and incremental GC changes the cost of reference
+stores. Treat differences below about 5 ns/op as noise; identical code varied
+by 25 percent between two Editor/Mono runs on 2026-09-25.
+
+The first two runs are recorded in the comparison guide with allocation
+values unavailable: Unity 2022 Mono failed the
+`GC.GetAllocatedBytesForCurrentThread` controls on both threads. In that case
+use the separate calibrated Profiler pass from the isolated host.
 
 ## Change note
 

@@ -78,7 +78,8 @@ namespace Onity.Editor.Benchmarks
             bool commandLineRun = SessionState.GetBool(k_commandLineSessionKey, false);
             OnityThreadSwitchBenchmarkRunner.Run(
                 latestJson,
-                commandLineRun ? HandleCommandLineCompleted : null);
+                commandLineRun ? HandleCommandLineCompleted : null,
+                UnityEditor.Compilation.CompilationPipeline.codeOptimization.ToString());
 
             Debug.Log("Queued OnityTask thread-switch benchmark for the next Play Mode frame.");
         }

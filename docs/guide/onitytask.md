@@ -183,9 +183,11 @@ requires a `Task`; the returned `Task` can also be shared.
 ## Switch to the main thread
 
 `OnityTask.SwitchToMainThread` returns an awaitable that resumes on Unity's main
-thread. Awaiting it on the main thread completes synchronously without an
-allocation or a frame delay. Awaiting it on a worker thread queues the
-continuation, which resumes during the Update phase of a following frame.
+thread. Awaiting it on the main thread completes synchronously without a frame
+delay, on a path designed not to allocate; that target is not yet measured, see
+the [comparison](onitytask-comparison.html). Awaiting it on a worker thread
+queues the continuation, which resumes during the Update phase of a following
+frame.
 
 ```csharp
 using System.Threading;
