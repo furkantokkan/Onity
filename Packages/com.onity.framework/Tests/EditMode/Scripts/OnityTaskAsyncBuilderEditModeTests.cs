@@ -35,6 +35,7 @@ namespace Onity.Tests.EditMode
         {
             OnityTask.FlowExecutionContext = m_previousFlow;
             OnityTaskTracker.IsEnabled = m_previousTracking;
+            OnityTaskTracker.ClearAll();
         }
 
         [Test]
@@ -153,11 +154,66 @@ namespace Onity.Tests.EditMode
             Task<int> bridge = task.AsTask();
 
             Assert.That(bridge.IsCompleted, Is.False);
+            Assert.Throws<InvalidOperationException>(() => task.GetAwaiter().OnCompleted(() => { }),
+                "A bridged task must reject a native awaiter while pending.");
+            Assert.Throws<InvalidOperationException>(() => task.GetAwaiter().GetResult(),
+                "A bridged task must reject native consumption while pending.");
+            Assert.Throws<InvalidOperationException>(() => task.Preserve());
+            Assert.That(task.AsTask(), Is.SameAs(bridge), "A second AsTask must return the same bridge.");
 
             gate.Complete();
 
             Assert.That(await bridge, Is.EqualTo(23));
             Assert.Throws<InvalidOperationException>(() => task.GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public void SuspendedMethod_NativeAwaitThenAsTask_Throws()
+        {
+            ManualAwaitable gate = new ManualAwaitable();
+            OnityTask<int> task = ReturnAfterAsync(gate, 7);
+            int observed = 0;
+            task.GetAwaiter().OnCompleted(() => observed = task.GetAwaiter().GetResult());
+
+            Assert.Throws<InvalidOperationException>(() => task.AsTask());
+            Assert.Throws<InvalidOperationException>(() => task.Preserve());
+
+            gate.Complete();
+            Assert.That(observed, Is.EqualTo(7));
+        }
+
+        [Test]
+        public void SuspendedMethod_BridgedCompletion_ReturnsTheRunnerToThePool()
+        {
+            ManualAwaitable firstGate = new ManualAwaitable();
+            OnityTask<int> first = ReturnAfterAsync(firstGate, 1);
+            object runner = GetState(first);
+            Task<int> bridge = first.AsTask();
+            firstGate.Complete();
+            DrainDeferredPoolReturns();
+
+            OnityTask<int> second = ReturnAfterAsync(new ManualAwaitable(), 2);
+
+            Assert.That(GetState(second), Is.SameAs(runner),
+                "Completion with a materialized bridge must release the runner.");
+            Assert.That(bridge.Result, Is.EqualTo(1));
+            Assert.Throws<InvalidOperationException>(() => _ = first.IsCompleted);
+        }
+
+        [Test]
+        public void SuspendedMethod_AwaiterRegistrationThrows_FaultsTheTask()
+        {
+            ManualAwaitable gate = new ManualAwaitable();
+            OnityTask<int> claimed = ReturnAfterAsync(gate, 1);
+            claimed.GetAwaiter().OnCompleted(() => { });
+
+            // Awaiting a task that already has a native awaiter throws inside the builder's
+            // registration; the generated catch must fault the outer method instead of hanging it.
+            OnityTask<int> task = AwaitAsync(claimed);
+
+            Assert.That(task.IsFaulted, Is.True);
+            Assert.Throws<InvalidOperationException>(() => task.GetAwaiter().GetResult());
+            gate.Complete();
         }
 
         [Test]
@@ -296,19 +352,63 @@ namespace Onity.Tests.EditMode
             Assert.That(unityContext, Is.Not.Null);
             AsyncLocal<string> local = new AsyncLocal<string>();
             ManualAwaitable gate = new ManualAwaitable();
-            local.Value = "before";
-            OnityTask<ResumeObservation> task = WriteAfterAsync(gate, local, "inner");
+            try
+            {
+                local.Value = "before";
+                OnityTask<ResumeObservation> task = WriteAfterAsync(gate, local, "inner");
 
-            gate.Complete();
+                gate.Complete();
+
+                ResumeObservation observation = task.GetAwaiter().GetResult();
+                Assert.That(observation.ThreadId, Is.EqualTo(Thread.CurrentThread.ManagedThreadId));
+                Assert.That(observation.LocalValue, Is.EqualTo("before"));
+                Assert.That(observation.Context, Is.SameAs(unityContext),
+                    "The resumed method must observe the resuming thread's synchronization context.");
+                Assert.That(SynchronizationContext.Current, Is.SameAs(unityContext));
+                Assert.That(local.Value, Is.EqualTo("before"),
+                    "A write made after the await leaked into the resuming thread's context.");
+            }
+            finally
+            {
+                local.Value = null;
+            }
+        }
+
+        [Test]
+        public void SynchronousPartAsyncLocalWrite_ReachesTheCaller()
+        {
+            AsyncLocal<string> local = new AsyncLocal<string>();
+            ManualAwaitable gate = new ManualAwaitable();
+            try
+            {
+                OnityTask task = WriteBeforeAwaitAsync(gate, local, "sync");
+
+                Assert.That(local.Value, Is.EqualTo("sync"),
+                    "Unlike the .NET builder, writes before the first await are not isolated from the caller.");
+                gate.Complete();
+                task.GetAwaiter().GetResult();
+            }
+            finally
+            {
+                local.Value = null;
+            }
+        }
+
+        [Test]
+        public void SafeAwaiterSuspension_FlowsAsyncLocal_WhenFlowIsEnabled()
+        {
+            OnityTask.FlowExecutionContext = true;
+            AsyncLocal<string> local = new AsyncLocal<string>();
+            SafeManualAwaitable gate = new SafeManualAwaitable();
+            local.Value = "main";
+            OnityTask<ResumeObservation> task = ObserveAfterSafeAsync(gate, local);
+            local.Value = null;
+
+            Task.Run(() => gate.Complete()).GetAwaiter().GetResult();
 
             ResumeObservation observation = task.GetAwaiter().GetResult();
-            Assert.That(observation.ThreadId, Is.EqualTo(Thread.CurrentThread.ManagedThreadId));
-            Assert.That(observation.LocalValue, Is.EqualTo("before"));
-            Assert.That(observation.Context, Is.SameAs(unityContext),
-                "The resumed method must observe the resuming thread's synchronization context.");
-            Assert.That(SynchronizationContext.Current, Is.SameAs(unityContext));
-            Assert.That(local.Value, Is.EqualTo("before"),
-                "A write made after the await leaked into the resuming thread's context.");
+            Assert.That(observation.ThreadId, Is.Not.EqualTo(Thread.CurrentThread.ManagedThreadId));
+            Assert.That(observation.LocalValue, Is.EqualTo("main"));
         }
 
         [Test]
@@ -401,14 +501,34 @@ namespace Onity.Tests.EditMode
             OnityTaskTracker.ClearAll();
             ManualAwaitable gate = new ManualAwaitable();
 
-            CompleteAfterAsync(gate).Forget();
+            try
+            {
+                CompleteAfterAsync(gate).Forget();
 
-            List<OnityTrackedTaskInfo> snapshot = new List<OnityTrackedTaskInfo>();
-            OnityTaskTracker.GetSnapshot(snapshot, true);
-            Assert.That(snapshot.Count, Is.GreaterThan(0), "A forgotten task must stay visible while tracking is on.");
+                List<OnityTrackedTaskInfo> snapshot = new List<OnityTrackedTaskInfo>();
+                OnityTaskTracker.GetSnapshot(snapshot, true);
+                Assert.That(snapshot.Count, Is.EqualTo(1), "A forgotten task must stay visible while tracking is on.");
+                Assert.That(snapshot[0].Source, Is.EqualTo("OnityTaskExtensions.Forget"));
+                Assert.That(snapshot[0].IsCompleted, Is.False);
+            }
+            finally
+            {
+                gate.Complete();
+                OnityTaskTracker.ClearAll();
+            }
+        }
 
+        [Test]
+        public void Forget_NativeTask_ReportsCancellationToTheHandler()
+        {
+            OnityTaskTracker.IsEnabled = false;
+            ManualAwaitable gate = new ManualAwaitable();
+            Exception reported = null;
+
+            ThrowAfterAsync(gate, new OperationCanceledException()).Forget(exception => reported = exception);
             gate.Complete();
-            OnityTaskTracker.ClearAll();
+
+            Assert.That(reported, Is.InstanceOf<OperationCanceledException>());
         }
 
         [Test]
@@ -492,7 +612,7 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
-        public void WhenAll_ConsumedInput_ThrowsInsteadOfHanging()
+        public void WhenAll_ConsumedInput_ThrowsOnTheStaleToken()
         {
             ManualAwaitable firstGate = new ManualAwaitable();
             ManualAwaitable secondGate = new ManualAwaitable();
@@ -505,6 +625,160 @@ namespace Onity.Tests.EditMode
 
             secondGate.Complete();
             Assert.DoesNotThrow(() => second.GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public void WhenAllTyped_TwoPendingSuspendedMethods_ReturnsResultsInOrder_AndConsumesTheInputs()
+        {
+            ManualAwaitable firstGate = new ManualAwaitable();
+            ManualAwaitable secondGate = new ManualAwaitable();
+            OnityTask<int> first = ReturnAfterAsync(firstGate, 1);
+            OnityTask<int> second = ReturnAfterAsync(secondGate, 2);
+
+            OnityTask<int[]> combined = OnityTask.WhenAll(first, second);
+
+            Assert.That(GetState(combined), Is.InstanceOf<Task<int[]>>(),
+                "Pending typed inputs bridge through AsTask().");
+            Assert.Throws<InvalidOperationException>(() => first.GetAwaiter().OnCompleted(() => { }),
+                "AsTask() claimed the input.");
+            secondGate.Complete();
+            firstGate.Complete();
+
+            Task<int[]> combinedTask = combined.AsTask();
+            Assert.That(combinedTask.Wait(TimeSpan.FromSeconds(5)), Is.True, "Typed WhenAll did not complete.");
+            Assert.That(combinedTask.Result, Is.EqualTo(new[] { 1, 2 }));
+            Assert.Throws<InvalidOperationException>(() => _ = first.IsCompleted,
+                "The runner was released when its bridge completed.");
+        }
+
+        [Test]
+        public void WhenAllTyped_FaultedSuspendedInput_RethrowsTheSameInstance()
+        {
+            ManualAwaitable firstGate = new ManualAwaitable();
+            ManualAwaitable secondGate = new ManualAwaitable();
+            InvalidOperationException failure = new InvalidOperationException("typed failure");
+            OnityTask<int[]> combined = OnityTask.WhenAll(
+                ThrowAfterAsync(firstGate, failure), ReturnAfterAsync(secondGate, 2));
+
+            firstGate.Complete();
+            secondGate.Complete();
+
+            Task<int[]> combinedTask = combined.AsTask();
+            Assert.That(combinedTask.ContinueWith(_ => { }).Wait(TimeSpan.FromSeconds(5)), Is.True);
+            Assert.That(Assert.Throws<InvalidOperationException>(() => combined.GetAwaiter().GetResult()),
+                Is.SameAs(failure));
+        }
+
+        [Test]
+        public void WhenAny_TwoPendingSuspendedMethods_ReturnsTheWinner_AndConsumesTheLoserWhenItCompletes()
+        {
+            ManualAwaitable firstGate = new ManualAwaitable();
+            ManualAwaitable secondGate = new ManualAwaitable();
+            OnityTask first = CompleteAfterAsync(firstGate);
+            OnityTask second = CompleteAfterAsync(secondGate);
+            OnityTask<int> race = OnityTask.WhenAny(first, second);
+
+            secondGate.Complete();
+
+            Assert.That(race.GetAwaiter().GetResult(), Is.EqualTo(1));
+            Assert.Throws<InvalidOperationException>(() => _ = second.IsCompleted,
+                "The winner was consumed by the race.");
+            Assert.Throws<InvalidOperationException>(() => first.GetAwaiter().OnCompleted(() => { }),
+                "The loser is still claimed by the race.");
+            firstGate.Complete();
+            Assert.Throws<InvalidOperationException>(() => _ = first.IsCompleted,
+                "The loser is consumed when it completes.");
+        }
+
+        [Test]
+        public void Preserve_FaultedSuspendedMethod_RethrowsTheSameInstanceToEveryConsumer()
+        {
+            ManualAwaitable gate = new ManualAwaitable();
+            InvalidOperationException failure = new InvalidOperationException("preserved failure");
+            OnityTask<int> original = ThrowAfterAsync(gate, failure);
+            OnityTask<int> shared = original.Preserve();
+            Exception observed = null;
+            shared.GetAwaiter().OnCompleted(() =>
+            {
+                try
+                {
+                    shared.GetAwaiter().GetResult();
+                }
+                catch (Exception exception)
+                {
+                    observed = exception;
+                }
+            });
+
+            gate.Complete();
+
+            Assert.That(shared.IsFaulted, Is.True);
+            Assert.That(observed, Is.SameAs(failure));
+            Assert.That(Assert.Throws<InvalidOperationException>(() => shared.GetAwaiter().GetResult()),
+                Is.SameAs(failure));
+            Assert.Throws<InvalidOperationException>(() => _ = original.IsCompleted,
+                "Preserve must consume and release the runner.");
+        }
+
+        [Test]
+        public void Preserve_CanceledSuspendedMethod_ReportsCancellationWithTheToken()
+        {
+            using CancellationTokenSource cancellation = new CancellationTokenSource();
+            ManualAwaitable gate = new ManualAwaitable();
+            OnityTask original = ThrowAfterAsync(gate, new CustomCanceledException(cancellation.Token));
+            OnityTask shared = original.Preserve();
+
+            gate.Complete();
+
+            Assert.That(shared.IsCanceled, Is.True);
+            OperationCanceledException thrown =
+                Assert.Catch<OperationCanceledException>(() => shared.GetAwaiter().GetResult());
+            Assert.That(thrown.CancellationToken, Is.EqualTo(cancellation.Token));
+            // The preserved source re-creates the exception; only the native await keeps the instance.
+            Assert.That(thrown, Is.TypeOf<OperationCanceledException>());
+            Assert.Throws<InvalidOperationException>(() => _ = original.IsCompleted);
+        }
+
+        [Test]
+        public void SuspendedCancellation_WithCanceledToken_CancelsTheTaskAndTheBridge()
+        {
+            using CancellationTokenSource cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            ManualAwaitable nativeGate = new ManualAwaitable();
+            ManualAwaitable bridgedGate = new ManualAwaitable();
+            OperationCanceledException canceled = new OperationCanceledException(cancellation.Token);
+            OnityTask native = ThrowAfterAsync(nativeGate, canceled);
+            OnityTask bridged = ThrowAfterAsync(bridgedGate, new OperationCanceledException(cancellation.Token));
+            Task bridge = bridged.AsTask();
+
+            nativeGate.Complete();
+            bridgedGate.Complete();
+
+            Assert.That(native.IsCanceled, Is.True);
+            Assert.That(Assert.Catch<OperationCanceledException>(() => native.GetAwaiter().GetResult()),
+                Is.SameAs(canceled));
+            Assert.That(bridge.IsCanceled, Is.True);
+            Assert.Catch<OperationCanceledException>(() => bridge.GetAwaiter().GetResult());
+            Assert.Throws<InvalidOperationException>(() => _ = bridged.IsCompleted);
+        }
+
+        [Test]
+        public void SynchronousCancellation_KeepsTheThrownInstance_IncludingSubclasses()
+        {
+            using CancellationTokenSource cancellation = new CancellationTokenSource();
+            OperationCanceledException plain = new OperationCanceledException(cancellation.Token);
+            CustomCanceledException custom = new CustomCanceledException(cancellation.Token);
+
+            OnityTask<int> plainTask = CancelSynchronouslyAsync(plain);
+            OnityTask<int> customTask = CancelSynchronouslyAsync(custom);
+
+            Assert.That(plainTask.IsCanceled, Is.True);
+            Assert.That(GetState(plainTask), Is.InstanceOf<Task<int>>());
+            Assert.That(Assert.Catch<OperationCanceledException>(() => plainTask.GetAwaiter().GetResult()),
+                Is.SameAs(plain));
+            Assert.That(customTask.IsCanceled, Is.True);
+            Assert.That(Assert.Catch<OperationCanceledException>(() => customTask.GetAwaiter().GetResult()),
+                Is.SameAs(custom));
         }
 
         /// <summary>
@@ -557,6 +831,31 @@ namespace Onity.Tests.EditMode
         {
             await OnityTask.Completed;
             throw new OperationCanceledException();
+        }
+
+        private static async OnityTask<int> CancelSynchronouslyAsync(OperationCanceledException exception)
+        {
+            await OnityTask.Completed;
+            throw exception;
+        }
+
+        private static async OnityTask<int> AwaitAsync(OnityTask<int> inner)
+        {
+            return await inner;
+        }
+
+        private static async OnityTask WriteBeforeAwaitAsync(ManualAwaitable gate, AsyncLocal<string> local, string value)
+        {
+            local.Value = value;
+            await gate;
+        }
+
+        private static async OnityTask<ResumeObservation> ObserveAfterSafeAsync(
+            SafeManualAwaitable gate,
+            AsyncLocal<string> local)
+        {
+            await gate;
+            return new ResumeObservation(Thread.CurrentThread.ManagedThreadId, local.Value, SynchronizationContext.Current);
         }
 
         private static async OnityTask<int> ThrowAfterAsync(ManualAwaitable gate, Exception exception)

@@ -30,6 +30,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   26 analyzer passes whose counts match the suites at `3260c40`, and the
   harness ran in two Editor/Mono processes. The drain rewrite below and the
   tests added after `3260c40` have not run in Unity.
+- Added `OnityTaskAsyncBuilderEditModeTests` and
+  `OnityTaskAsyncBuilderPlayModeTests` for the pooled builder: representation,
+  single-consumer rules, fault and cancellation instance mapping on the native,
+  bridged, and preserved paths, pool reuse on both return sites including the
+  deferred IL2CPP return, execution-context flow under both switch settings
+  and a flip while suspended, `Forget`, `WhenAll`, and `WhenAny` with runner
+  inputs. Compile-checked only; they have not run in Unity.
 
 ### Changed
 
