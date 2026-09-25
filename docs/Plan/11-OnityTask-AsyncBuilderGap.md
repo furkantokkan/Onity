@@ -3,8 +3,22 @@
 This memo traces the measured `async OnityTask` overhead against pinned UniTask
 `2.5.11` (`2e993ff`) to its code-level causes, corrects an earlier assumption
 about execution-context capture, and lays out the options the product owner
-has to choose between before the gap can close. It is a decision document; no
-builder change is implemented yet.
+chose between.
+
+**Status:** option C is implemented on this branch after the owner asked to
+finish the remaining work: `OnityAsyncStateMachineRunner.cs` holds the pooled
+runners, the builders in `OnityAsync.cs` bind to them on the first suspension,
+`OnityTask.FlowExecutionContext` defaults to true and uses the null-window
+capture described below, native sources rethrow through
+`ExceptionDispatchInfo` and keep the thrown cancellation instance, `Forget`
+observes single-consumer tasks directly while tracking is off, and the
+two-input untyped `WhenAll` coordinator accepts single-consumer native inputs.
+Deviations from the plan: the typed `WhenAll<T>` and `params` overloads still
+bridge pending runner inputs through `AsTask()`; tracked `Forget` keeps the
+bridge so the tracker stays informed; IL2CPP pool return is deferred through
+the thread-switch dispatcher; and unobserved faults of never-consumed methods
+remain unreported, as they were with the .NET builder. Nothing below is
+measured yet; the acceptance gates still apply before release.
 
 The class-library facts below were checked against the sources Unity 2022.3
 compiles: the Unity-Technologies/mono `unity-2022.3-mbe` branch, whose

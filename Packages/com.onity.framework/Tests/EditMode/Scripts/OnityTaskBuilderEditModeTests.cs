@@ -57,39 +57,37 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
-        public async Task SuspensionAfterCompletedAwait_RemainsTaskBacked()
+        public async Task SuspensionAfterCompletedAwait_IsRunnerBacked_AndBridgesThroughAsTask()
         {
             TaskCompletionSource<bool> gate = new TaskCompletionSource<bool>();
             OnityTask<LargeResult> task = ReturnAfterSuspensionAsync(gate.Task);
-            Task<LargeResult> converted = task.AsTask();
 
             Assert.That(task.IsCompleted, Is.False);
-            Assert.That(GetState(task), Is.SameAs(converted));
+            Assert.That(GetState(task), Is.Not.InstanceOf<Task>());
 
+            // The bridge claims the single-consumer task; await the bridge, not the original value.
+            Task<LargeResult> converted = task.AsTask();
             gate.SetResult(true);
 
-            LargeResult result = await task;
+            LargeResult result = await converted;
             Assert.That(result.Number, Is.EqualTo(29));
             Assert.That(result.Text, Is.EqualTo("resumed"));
-            Assert.That(converted.IsCompletedSuccessfully, Is.True);
         }
 
         [Test]
-        public async Task SafeAwaiterSuspension_RemainsTaskBacked()
+        public async Task SafeAwaiterSuspension_IsRunnerBacked_AndAwaitsNatively()
         {
             SafeAwaitable gate = new SafeAwaitable();
             OnityTask<LargeResult> task = ReturnAfterSafeSuspensionAsync(gate);
-            Task<LargeResult> converted = task.AsTask();
 
             Assert.That(task.IsCompleted, Is.False);
-            Assert.That(GetState(task), Is.SameAs(converted));
+            Assert.That(GetState(task), Is.Not.InstanceOf<Task>());
 
             gate.Complete();
 
             LargeResult result = await task;
             Assert.That(result.Number, Is.EqualTo(41));
             Assert.That(result.Text, Is.EqualTo("safe"));
-            Assert.That(converted.IsCompletedSuccessfully, Is.True);
         }
 
         private static object GetState<T>(OnityTask<T> task)

@@ -31,6 +31,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   harness ran in two Editor/Mono processes. The drain rewrite below and the
   tests added after `3260c40` have not run in Unity.
 
+### Changed
+
+- Replaced the wrapped `AsyncTaskMethodBuilder` in `OnityTaskMethodBuilder` and
+  `OnityTaskMethodBuilder<T>` with pooled native runners. A suspended
+  `async OnityTask` or `async OnityTask<T>` method now returns a
+  single-consumer native task backed by a runner that holds the state machine
+  by value and resumes through one cached delegate; await it once, or call
+  `Preserve()` to share it, and expect `InvalidOperationException` from status
+  reads after it was consumed. Synchronous success still stores the result
+  inline; a synchronous fault or cancellation is Task-backed with the thrown
+  instance preserved. A fault or `OperationCanceledException` thrown after a
+  suspension is rethrown as the same instance. `AsyncLocal<T>` values flow
+  across awaits by default through the new `OnityTask.FlowExecutionContext`
+  switch, which uses a public sync-context-free capture; disabling it gives
+  UniTask's no-flow semantics. Writes made before the first await are no
+  longer isolated from the caller. Measured in the Editor as compile-checked
+  only; the 2026-09-25 builder timings and the 2026-09-23 allocation figures
+  describe the previous implementation.
+- Native single-consumer sources rethrow faults and cancellations through
+  `ExceptionDispatchInfo`, keep the thrown `OperationCanceledException`
+  instance, and retire their token when they return to the pool. Their
+  `AsTask()` bridges are created without capturing the caller's execution
+  context. `Forget()` on such a task observes it directly while task tracking
+  is disabled, and the two-input untyped `WhenAll` accepts pending
+  single-consumer native inputs, including suspended async methods, on the
+  pooled coordinator path.
+- Both task benchmark runners fall back to a `GC.GetTotalMemory` delta with the
+  collector disabled inside each measured slice when the per-thread counter
+  fails its controls, and record which counter produced the values.
+
 ### Improved
 
 - Rewrote the main-thread switch drain to array-backed double buffers with one

@@ -140,10 +140,19 @@ and register allocation and incremental GC changes the cost of reference
 stores. Treat differences below about 5 ns/op as noise; identical code varied
 by 25 percent between two Editor/Mono runs on 2026-09-25.
 
-The first two runs are recorded in the comparison guide with allocation
-values unavailable: Unity 2022 Mono failed the
-`GC.GetAllocatedBytesForCurrentThread` controls on both threads. In that case
-use the separate calibrated Profiler pass from the isolated host.
+The first runs are recorded in the comparison guide with allocation values
+unavailable: Unity 2022 Mono failed the `GC.GetAllocatedBytesForCurrentThread`
+controls on both threads. When that counter fails its controls, both runners
+now fall back to a `GC.GetTotalMemory` delta taken with
+`GarbageCollector.GCMode` disabled inside each measured slice, calibrated with
+the same 64 KiB and empty controls; the report's `allocationCounterKind` says
+which counter produced the values (`PerThread`, `HeapDelta`, or `None`). The
+heap delta is process-wide and has block granularity, so read it as an
+average over many operations: the synchronous cases and the 4,096-operation
+cohorts are meaningful, a 128-operation batch can be off by tens of bytes per
+operation, and the worker-side value can include allocations from other
+threads. The separate calibrated Profiler pass from the isolated host remains
+the reference.
 
 ## Change note
 
