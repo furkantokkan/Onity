@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `OnityTask.SwitchToMainThread(cancellationToken)`, returning the
   `OnityTaskThreadSwitch` awaitable. Awaiting it on Unity's main thread
-  completes synchronously without allocation or a frame delay; awaiting it on
+  completes synchronously without a frame delay (the 0 B/op design target for
+  that path is not yet measured; see the comparison guide); awaiting it on
   another thread queues the continuation and resumes it during the Update phase
   through the task runner. Cancellation is observed at `GetResult` on the
   destination thread, including tokens that were already canceled. Outside
@@ -24,17 +25,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selection are not included.
 - Added focused EditMode, PlayMode, and Editor lifecycle tests for the thread
   switch, plus the `Onity/Benchmarks/Run OnityTask Thread Switch Benchmarks
-  (Play Mode)` comparison harness. These were compile-checked outside Unity;
-  the Unity test suites have not yet run on this change.
+  (Play Mode)` comparison harness. The tests were compile-checked outside
+  Unity; the 2026-09-25 benchmark report cites 614 EditMode, 37 PlayMode, and
+  26 analyzer passes whose counts match the suites at `3260c40`, and the
+  harness ran in two Editor/Mono processes. The drain rewrite below and the
+  tests added after `3260c40` have not run in Unity.
 
 ### Improved
 
 - Rewrote the main-thread switch drain to array-backed double buffers with one
   session read per batch and an inline exception guard. Two Editor/Mono runs of
-  the earlier `List<T>` drain measured main-thread dispatch 25 to 36 percent
-  slower than pinned UniTask while worker enqueue of 4,096 continuations was 10
-  to 22 percent faster; the rewrite is not yet measured, and allocation
-  counters were unavailable in those runs.
+  the earlier `List<T>` drain measured main-thread dispatch about 25 to 36
+  percent (24.7 to 36.1) slower than pinned UniTask while worker enqueue of
+  4,096 continuations was 10.5 to 22 percent faster; the rewrite is not yet
+  measured, and allocation counters were unavailable in those runs. A runner
+  destroyed while continuations are queued now requests its replacement at
+  once, and a fresh player domain keeps its first session so awaits requested
+  before Onity's load hook still resume.
 
 ## [0.3.13] - 2026-09-24
 

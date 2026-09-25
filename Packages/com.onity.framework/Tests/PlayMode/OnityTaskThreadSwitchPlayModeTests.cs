@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -260,6 +262,109 @@ namespace Onity.Tests.PlayMode
             Assert.That(resumed.IsCompletedSuccessfully, Is.True);
             Assert.That(resumed.Result, Is.EqualTo(mainThreadId));
             Assert.That(FindRunner(), Is.Not.Null, "The worker switch did not recreate the runner.");
+        }
+
+        [UnityTest]
+        public IEnumerator SwitchToMainThread_ThrowingContinuation_RestOfBatchRunsInTheSameFrame()
+        {
+            OnityTaskThreadSwitchAwaiter awaiter = OnityTask.SwitchToMainThread().GetAwaiter();
+            int throwCount = 0;
+            int throwFrame = -1;
+            int secondFrame = -1;
+
+            LogAssert.Expect(LogType.Exception,
+                new Regex("InvalidOperationException: Thread switch continuation failure\\."));
+            awaiter.UnsafeOnCompleted(() =>
+            {
+                throwCount++;
+                throwFrame = Time.frameCount;
+                throw new InvalidOperationException("Thread switch continuation failure.");
+            });
+            awaiter.UnsafeOnCompleted(() => secondFrame = Time.frameCount);
+
+            yield return WaitForFlag(() => secondFrame >= 0, k_timeoutFrames);
+            yield return null;
+            yield return null;
+
+            Assert.That(throwCount, Is.EqualTo(1), "The throwing continuation ran more than once.");
+            Assert.That(secondFrame, Is.EqualTo(throwFrame), "The rest of the batch ran in a later drain.");
+        }
+
+        [UnityTest]
+        public IEnumerator SwitchToMainThread_WorkerRegistrationsBeyondInitialCapacity_RunInOrderInOneFrame()
+        {
+            const int continuationCount = 200;
+            OnityTaskThreadSwitchAwaiter awaiter = OnityTask.SwitchToMainThread().GetAwaiter();
+            using ManualResetEventSlim registered = new ManualResetEventSlim(false);
+            List<int> observedIndices = new List<int>(continuationCount);
+            List<int> observedFrames = new List<int>(continuationCount);
+
+            Task producer = Task.Run(() =>
+            {
+                for (int i = 0; i < continuationCount; i++)
+                {
+                    int index = i;
+                    awaiter.UnsafeOnCompleted(() =>
+                    {
+                        observedIndices.Add(index);
+                        observedFrames.Add(Time.frameCount);
+                    });
+                }
+
+                registered.Set();
+            });
+
+            // The main thread is blocked here, so no drain can split the worker's registrations.
+            Assert.That(registered.Wait(TimeSpan.FromSeconds(5d)), Is.True);
+            Assert.That(observedIndices.Count, Is.EqualTo(0));
+
+            yield return WaitForFlag(() => observedIndices.Count == continuationCount, k_timeoutFrames);
+
+            Assert.That(producer.IsCompletedSuccessfully, Is.True);
+            for (int i = 0; i < continuationCount; i++)
+            {
+                Assert.That(observedIndices[i], Is.EqualTo(i), "Worker registrations ran out of order.");
+                Assert.That(observedFrames[i], Is.EqualTo(observedFrames[0]), "One batch was split across frames.");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator SwitchToMainThread_ReentrantRegistrationsBeyondInitialCapacity_RunInOrderInLaterFrame()
+        {
+            const int continuationCount = 100;
+            int registrationFrame = -1;
+            List<int> observedIndices = new List<int>(continuationCount);
+            List<int> observedFrames = new List<int>(continuationCount);
+
+            Task chain = Task.Run(async () =>
+            {
+                await OnityTask.SwitchToMainThread();
+                registrationFrame = Time.frameCount;
+
+                OnityTaskThreadSwitchAwaiter awaiter = OnityTask.SwitchToMainThread().GetAwaiter();
+                for (int i = 0; i < continuationCount; i++)
+                {
+                    int index = i;
+                    awaiter.UnsafeOnCompleted(() =>
+                    {
+                        observedIndices.Add(index);
+                        observedFrames.Add(Time.frameCount);
+                    });
+                }
+            });
+
+            yield return WaitForFlag(
+                () => chain.IsCompleted && observedIndices.Count == continuationCount, k_timeoutFrames);
+
+            Assert.That(chain.IsCompletedSuccessfully, Is.True);
+            Assert.That(registrationFrame, Is.GreaterThanOrEqualTo(0));
+            for (int i = 0; i < continuationCount; i++)
+            {
+                Assert.That(observedIndices[i], Is.EqualTo(i), "Reentrant registrations ran out of order.");
+                Assert.That(observedFrames[i], Is.GreaterThan(registrationFrame),
+                    "A continuation registered during a drain ran in the same drain.");
+                Assert.That(observedFrames[i], Is.EqualTo(observedFrames[0]), "One batch was split across frames.");
+            }
         }
 
         private static GameObject FindRunner()

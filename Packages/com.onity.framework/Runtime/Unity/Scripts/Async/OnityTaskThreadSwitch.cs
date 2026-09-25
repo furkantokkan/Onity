@@ -7,9 +7,9 @@ namespace Onity.Unity.Async
 {
     /// <summary>
     /// Awaitable returned by <see cref="OnityTask.SwitchToMainThread(CancellationToken)"/>.
-    /// Awaiting it on Unity's main thread completes synchronously, without allocation or a frame
-    /// delay. Awaiting it on another thread queues the continuation for Unity's main thread, where
-    /// it resumes during the Update phase of a following player-loop frame.
+    /// Awaiting it on Unity's main thread completes synchronously without a frame delay, on a path
+    /// designed not to allocate. Awaiting it on another thread queues the continuation for Unity's
+    /// main thread, where it resumes during the Update phase of a following player-loop frame.
     /// </summary>
     /// <remarks>
     /// The value can be awaited any number of times. Cancellation is observed when the await
@@ -138,7 +138,8 @@ namespace Onity.Unity.Async
         private static int s_isShutDown;
         private static int s_runnerMissing;
         private static int s_runnerRequestPending;
-        private static bool s_isDraining;
+        private static int s_initialized;
+        private static int s_drainState;
 
         /// <summary>
         /// Session number stamped on new switch awaitables.
@@ -212,12 +213,11 @@ namespace Onity.Unity.Async
         /// </summary>
         public static void Drain()
         {
-            if (s_isDraining)
+            if (Interlocked.CompareExchange(ref s_drainState, 1, 0) != 0)
             {
                 return;
             }
 
-            s_isDraining = true;
             try
             {
                 QueuedContinuation[] batch;
@@ -255,7 +255,7 @@ namespace Onity.Unity.Async
                     }
                     catch (Exception exception)
                     {
-                        Debug.LogException(exception);
+                        ReportContinuationFailure(exception);
                     }
                 }
 
@@ -263,7 +263,19 @@ namespace Onity.Unity.Async
             }
             finally
             {
-                s_isDraining = false;
+                Volatile.Write(ref s_drainState, 0);
+            }
+        }
+
+        private static void ReportContinuationFailure(Exception exception)
+        {
+            try
+            {
+                Debug.LogException(exception);
+            }
+            catch (Exception)
+            {
+                // A failing exception message must not drop the rest of the batch.
             }
         }
 
@@ -282,6 +294,17 @@ namespace Onity.Unity.Async
         public static void NotifyRunnerDestroyed()
         {
             Volatile.Write(ref s_runnerMissing, 1);
+            RequestRunnerForPendingContinuations();
+        }
+
+        private static void RequestRunnerForPendingContinuations()
+        {
+            if (Volatile.Read(ref s_isPlaying) != 0
+                && Volatile.Read(ref s_isShutDown) == 0
+                && PendingCount > 0)
+            {
+                RequestRunner();
+            }
         }
 
         private static void RequestRunner()
@@ -368,13 +391,24 @@ namespace Onity.Unity.Async
         private static void InitializeRuntime()
         {
             CaptureMainThread();
-            BeginSession();
-            Volatile.Write(ref s_runnerMissing, OnityTaskRunner.IsAlive ? 0 : 1);
+            if (Interlocked.Exchange(ref s_initialized, 1) != 0)
+            {
+                // A session already ran in this domain: Edit Mode, or an earlier Play Mode session
+                // with domain reload disabled. Its queued continuations are stale. A fresh player
+                // domain keeps session 1 so awaits requested before this hook still resume.
+                BeginSession();
+            }
+
             Volatile.Write(ref s_isPlaying, 1);
+            Volatile.Write(ref s_runnerMissing, OnityTaskRunner.IsAlive ? 0 : 1);
 #if !UNITY_EDITOR
             Application.quitting -= HandleApplicationQuitting;
             Application.quitting += HandleApplicationQuitting;
 #endif
+            if (Volatile.Read(ref s_runnerMissing) != 0)
+            {
+                RequestRunnerForPendingContinuations();
+            }
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -400,6 +434,7 @@ namespace Onity.Unity.Async
         private static void InitializeEditor()
         {
             CaptureMainThread();
+            Volatile.Write(ref s_initialized, 1);
             UnityEditor.EditorApplication.update -= DrainFromEditor;
             UnityEditor.EditorApplication.update += DrainFromEditor;
             UnityEditor.EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;

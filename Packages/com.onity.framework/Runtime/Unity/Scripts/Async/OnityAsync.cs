@@ -437,8 +437,8 @@ namespace Onity.Unity.Async
 
         /// <summary>
         /// Returns an awaitable that resumes on Unity's main thread. Awaiting it on the main thread
-        /// completes synchronously without allocation or a frame delay; awaiting it on another thread
-        /// resumes the continuation during the Update phase of a following frame.
+        /// completes synchronously without a frame delay, on a path designed not to allocate; awaiting
+        /// it on another thread resumes the continuation during the Update phase of a following frame.
         /// </summary>
         /// <remarks>
         /// Cancellation is observed when the await completes: <c>GetResult</c> throws

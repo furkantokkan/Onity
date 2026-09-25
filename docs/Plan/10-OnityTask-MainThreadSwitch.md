@@ -11,8 +11,10 @@ released `0.3.13` source (`ad0bfd5`).
 
 - `OnityTask.SwitchToMainThread(CancellationToken)` returns the
   `OnityTaskThreadSwitch` awaitable. Awaiting it on Unity's main thread completes
-  synchronously without allocation or a frame delay. Awaiting it on any other
-  thread queues the continuation and resumes it on Unity's main thread.
+  synchronously without a frame delay; the 0 B/op target for this path is
+  listed under "Allocation and performance targets" and is not yet measured.
+  Awaiting it on any other thread queues the continuation and resumes it on
+  Unity's main thread.
 - The destination phase in Play Mode and players is the script `Update` phase,
   because the queue is drained at the end of `OnityTaskRunner.Update()`, after
   the frame, delay, and predicate sources tick. A native wait scheduled from a
@@ -31,10 +33,10 @@ released `0.3.13` source (`ad0bfd5`).
 
 | Situation | Behavior |
 | --- | --- |
-| Player start | `RuntimeInitializeOnLoadMethod(SubsystemRegistration)` captures the main thread and Unity synchronization context and starts session 2. No runner object is created until the first main-thread OnityTask call or the first worker-thread switch. |
+| Player start | `RuntimeInitializeOnLoadMethod(SubsystemRegistration)` captures the main thread and Unity synchronization context. The first initialization of a domain keeps session 1, so a switch requested before the hook (a static constructor or an earlier `SubsystemRegistration` method) still resumes; a later initialization in the same domain starts a new session. No runner object is created until the first main-thread OnityTask call or the first worker-thread switch, except that continuations already queued at initialization request one immediately. |
 | Worker switch before any runner exists | The dispatcher posts one runner-creation request through the captured Unity synchronization context. The request creates `OnityTaskRunner` on the main thread; its next `Update` drains the queue. Without a synchronization context, `BeforeSceneLoad` creates the runner eagerly instead. |
-| Runner destroyed during a session | `OnDestroy` marks the pump missing. The next worker enqueue posts a new creation request, so the switch still resumes. Main-thread OnityTask calls recreate the runner directly. |
-| Editor domain load | `InitializeOnLoadMethod` captures the main thread, subscribes `EditorApplication.update`, and subscribes `playModeStateChanged`. Session numbering restarts at 1 with fresh statics. |
+| Runner destroyed during a session | `OnDestroy` marks the pump missing and, when continuations are already queued, posts the creation request itself. The next worker enqueue also posts one, so the switch still resumes. Main-thread OnityTask calls recreate the runner directly. |
+| Editor domain load | `InitializeOnLoadMethod` captures the main thread, subscribes `EditorApplication.update`, and subscribes `playModeStateChanged`. Session numbering restarts at 1 with fresh statics, and the following Play Mode initialization starts session 2, so worker switches requested by `[InitializeOnLoad]` code between the two hooks are discarded. |
 | Edit Mode | `EditorApplication.update` drains the queue while the Editor is not playing, not about to change Play Mode, not compiling, and not importing assets. The `[ExecuteAlways]` runner may also drain from its sporadic Edit Mode `Update`; both run on the main thread and share the reentrancy guard. |
 | Compilation or asset import | Draining pauses. Continuations queued during compilation are lost with the domain reload that follows, exactly like every other managed continuation. |
 | Entering Play Mode | Continuations queued in Edit Mode are discarded when `SubsystemRegistration` starts the Play Mode session. With domain reload enabled the reload already dropped them; with domain reload disabled the session bump discards them explicitly. |
@@ -93,21 +95,25 @@ released `0.3.13` source (`ad0bfd5`).
 
 | Behavior | Coverage | Status |
 | --- | --- | --- |
-| Main-thread fast path completes synchronously; canceled token throws at `GetResult`; null continuation rejected | EditMode `OnityTaskThreadSwitchEditModeTests`, PlayMode `OnityTaskThreadSwitchPlayModeTests` | Written, not yet run in Unity |
-| Worker switch resumes on the main thread during `Update`, before `LateUpdate`, outside fixed steps | PlayMode `OnityTaskThreadSwitchPlayModeTests` probe test | Written, not yet run in Unity |
-| Cancellation while queued throws on the main thread with the original token | PlayMode and EditMode | Written, not yet run in Unity |
-| Concurrent producers, reentrant registration during a drain, runner destruction and recreation | PlayMode `OnityTaskThreadSwitchPlayModeTests` | Written, not yet run in Unity |
-| `AsyncLocal` flow and suppressed flow through `async Task` and `async OnityTask` | PlayMode `OnityTaskThreadSwitchPlayModeTests` | Written, not yet run in Unity |
-| Edit Mode dispatch through `EditorApplication.update`, including manual main-thread registration | EditMode `OnityTaskThreadSwitchEditModeTests` | Written, not yet run in Unity |
-| A throwing continuation does not stop the rest of a batch; registration order survives buffer growth past the initial 64 entries | EditMode `OnityTaskThreadSwitchEditModeTests` | Written, not yet run in Unity |
-| Session isolation across Play Mode entry and exit, domain reload enabled and disabled | EditMode `OnityTaskThreadSwitchEditorLifecycleTests` with `EnterPlayMode`/`ExitPlayMode` | Written, not yet run in Unity |
-| Compile check of the changed runtime, tests, and benchmark files | Roslyn 4.10 against .NET Standard 2.1 references with Unity, Editor, Test Framework, and UniTask stubs | See the change record in the pull request or commit message |
+| Main-thread fast path completes synchronously; canceled token throws at `GetResult`; null continuation rejected | EditMode `OnityTaskThreadSwitchEditModeTests`, PlayMode `OnityTaskThreadSwitchPlayModeTests` | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
+| Worker switch resumes on the main thread during `Update`, before `LateUpdate`, outside fixed steps | PlayMode `OnityTaskThreadSwitchPlayModeTests` probe test | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
+| Cancellation while queued throws on the main thread with the original token | PlayMode and EditMode | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
+| Concurrent producers, reentrant registration during a drain, runner destruction and recreation | PlayMode `OnityTaskThreadSwitchPlayModeTests` | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
+| `AsyncLocal` flow and suppressed flow through `async Task` and `async OnityTask` | PlayMode `OnityTaskThreadSwitchPlayModeTests` | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
+| Edit Mode dispatch through `EditorApplication.update`, including manual main-thread registration | EditMode `OnityTaskThreadSwitchEditModeTests` | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
+| Session isolation across Play Mode entry and exit, domain reload enabled and disabled | EditMode `OnityTaskThreadSwitchEditorLifecycleTests` with `EnterPlayMode`/`ExitPlayMode` | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
+| A throwing continuation does not stop the rest of a batch, in the same drain, exactly once; registration order survives buffer growth past the initial 64 entries from the main thread, from a worker, and from a reentrant registration | EditMode `OnityTaskThreadSwitchEditModeTests` (including a synchronous drain through reflection), PlayMode `OnityTaskThreadSwitchPlayModeTests` | Written after `3260c40`, not yet run in Unity |
+| Compile check of the changed runtime, tests, and benchmark files | Roslyn 4.10 against .NET Standard 2.1 references with Unity, Editor, Test Framework, and UniTask stubs | Passed for every revision on this branch |
 
-All Unity-dependent rows require the pinned Unity 2022.3.62f3 Editor. The
-Linux container used for this increment has no Unity installation, so every
-row marked "not yet run in Unity" is unverified behavior until the EditMode and
-PlayMode suites run there. Do not publish a release or a comparison claim from
-this state.
+The 2026-09-25 benchmark report cites 614 EditMode, 37 PlayMode, and 26
+analyzer passes as separate correctness evidence. Those counts equal the
+suites at `3260c40` (602 plus the 12 EditMode tests and 28 plus the 9 PlayMode
+tests added there), which is why the rows above record a pass at that commit;
+the report does not name the commit, so confirm it against the run logs. The
+array-backed drain, the runner re-request on destruction, the first-session
+rule, and the tests added afterwards are compile-checked only. Do not publish
+a release from this state; the thread-switch comparison below is timing
+evidence for `3260c40` and does not verify the later changes.
 
 ## Benchmark protocol
 
@@ -134,16 +140,26 @@ separate run.
 Two Editor/Mono runs of `3260c40` on 2026-09-25 are recorded in the
 [comparison guide](../guide/onitytask-comparison.md#thread-switch-comparison).
 The synchronous main-thread switch was within 1.5 percent of UniTask, worker
-enqueue of 4,096 continuations favored Onity by 10 to 22 percent, the
+enqueue of 4,096 continuations favored Onity by 10.5 to 22 percent, the
 128-continuation enqueue had no consistent winner, and main-thread dispatch
-favored UniTask by 25 to 36 percent in both runs. Both per-thread allocation
-counters failed the 64 KiB positive control, so no allocation value is
-available and the 0 B/op targets above are unverified.
+favored UniTask by about 25 to 36 percent (24.7 to 36.1) in both runs. Both
+per-thread allocation counters failed the 64 KiB positive control, so no
+allocation value is available and the 0 B/op targets above are unverified.
+The runs did not record the Editor code optimization mode or the incremental
+GC setting; both change per-item dispatch cost (Debug mode disables JIT
+inlining, and incremental GC turns UniTask's per-item null store into a write
+barrier call), so the harness now records them and later runs should compare
+Release mode and Mono and IL2CPP players.
 
 The drain was then rewritten to array-backed double buffers with one session
 read per batch and an inline exception guard, matching the shape of UniTask's
-`ContinuationQueue`. That rewrite is compile-checked only; it needs a new
-two-process run before the dispatch row can be reassessed.
+`ContinuationQueue`. A source-level review found the new loop at or below
+UniTask's per-item cost on Mono x64 and IL2CPP, with the old gap explained by
+the non-inlined `List<T>` indexer and invoke helper. That rewrite is
+compile-checked only; it needs a new two-process run before the dispatch row
+can be reassessed. An optional IL2CPP-only follow-up is to disable null and
+bounds checks on `Drain` through `Il2CppSetOption`, which needs the attribute
+source added to the runtime assembly.
 
 ## Remaining scope from the continuation plan
 

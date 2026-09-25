@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -172,12 +173,53 @@ namespace Onity.Tests.EditMode
             OnityTaskThreadSwitchAwaiter awaiter = OnityTask.SwitchToMainThread().GetAwaiter();
             bool secondRan = false;
 
-            awaiter.UnsafeOnCompleted(() => throw new InvalidOperationException("Thread switch continuation failure."));
-            awaiter.UnsafeOnCompleted(() => secondRan = true);
             LogAssert.Expect(LogType.Exception,
                 new Regex("InvalidOperationException: Thread switch continuation failure\\."));
+            awaiter.UnsafeOnCompleted(() => throw new InvalidOperationException("Thread switch continuation failure."));
+            awaiter.UnsafeOnCompleted(() => secondRan = true);
 
             yield return WaitForFlag(() => secondRan);
+        }
+
+        [Test]
+        public void SwitchToMainThread_SynchronousDrain_RunsRestOfBatchOnceAfterThrowingContinuation()
+        {
+            Type dispatcherType = typeof(OnityTask).Assembly.GetType(
+                "Onity.Unity.Async.OnityTaskMainThreadDispatcher", true);
+            MethodInfo drain = dispatcherType.GetMethod("Drain", BindingFlags.Static | BindingFlags.Public);
+            PropertyInfo pendingCount = dispatcherType.GetProperty("PendingCount", BindingFlags.Static | BindingFlags.Public);
+            Assert.That(drain, Is.Not.Null);
+            Assert.That(pendingCount, Is.Not.Null);
+
+            // Consume anything another test left queued so the counts below belong to this test.
+            drain.Invoke(null, null);
+
+            OnityTaskThreadSwitchAwaiter awaiter = OnityTask.SwitchToMainThread().GetAwaiter();
+            int throwCount = 0;
+            bool secondRan = false;
+            bool thirdRan = false;
+
+            LogAssert.Expect(LogType.Exception,
+                new Regex("InvalidOperationException: Synchronous drain failure\\."));
+            awaiter.UnsafeOnCompleted(() =>
+            {
+                throwCount++;
+                throw new InvalidOperationException("Synchronous drain failure.");
+            });
+            awaiter.UnsafeOnCompleted(() => secondRan = true);
+            awaiter.UnsafeOnCompleted(() => thirdRan = true);
+            Assert.That((int)pendingCount.GetValue(null), Is.EqualTo(3));
+
+            drain.Invoke(null, null);
+
+            Assert.That(throwCount, Is.EqualTo(1));
+            Assert.That(secondRan, Is.True, "A throwing continuation stopped the rest of its batch.");
+            Assert.That(thirdRan, Is.True, "A throwing continuation stopped the rest of its batch.");
+            Assert.That((int)pendingCount.GetValue(null), Is.EqualTo(0));
+
+            drain.Invoke(null, null);
+
+            Assert.That(throwCount, Is.EqualTo(1), "A drained continuation ran twice.");
         }
 
         [UnityTest]
