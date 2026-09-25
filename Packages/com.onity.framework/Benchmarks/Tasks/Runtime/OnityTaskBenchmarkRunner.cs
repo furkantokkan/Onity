@@ -35,8 +35,7 @@ namespace Onity.Benchmarks
             new UniTask<int>.Awaiter[k_burstConcurrency];
         private string m_latestJson;
         private Action<string, Exception> m_completed;
-        private bool m_allocationCounterAvailable;
-        private bool m_useHeapDelta;
+        private OnityBenchmarkAllocationCounter m_allocationCounter;
         private bool m_flowExecutionContextDefault;
 
         /// <summary>
@@ -124,6 +123,7 @@ namespace Onity.Benchmarks
             }
 
             OnityTask.FlowExecutionContext = m_flowExecutionContextDefault;
+            m_allocationCounter?.Dispose();
             try
             {
                 m_completed?.Invoke(m_latestJson, failure);
@@ -144,7 +144,7 @@ namespace Onity.Benchmarks
         {
             TaskBenchmarkReport report = new TaskBenchmarkReport
             {
-                schemaVersion = 4,
+                schemaVersion = 5,
                 generatedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
                 unityVersion = Application.unityVersion,
                 platform = Application.platform.ToString(),
@@ -175,116 +175,38 @@ namespace Onity.Benchmarks
 
         private void CalibrateAllocationCounter(TaskBenchmarkReport report)
         {
-#if ENABLE_IL2CPP
-            report.allocationCounter = "Unavailable: Unity 2022 IL2CPP managed allocation counter is disabled "
-                + "because the existing DI harness observed crashes. Use a profiler capture for allocations.";
-#else
-            try
-            {
-                GC.GetAllocatedBytesForCurrentThread();
-                long before = GC.GetAllocatedBytesForCurrentThread();
-                byte[] calibration = new byte[65536];
-                long after = GC.GetAllocatedBytesForCurrentThread();
-                GC.KeepAlive(calibration);
-                report.allocationCalibrationBytes = after - before;
-                before = GC.GetAllocatedBytesForCurrentThread();
-                after = GC.GetAllocatedBytesForCurrentThread();
-                report.emptyAllocationDeltaBytes = after - before;
-                m_allocationCounterAvailable = report.allocationCalibrationBytes >= 65536
-                    && report.emptyAllocationDeltaBytes == 0;
-                report.allocationCounter = m_allocationCounterAvailable
-                    ? "GC.GetAllocatedBytesForCurrentThread; 64 KiB positive control and empty control passed."
-                    : "Unavailable: allocation counter calibration failed.";
-
-                if (!m_allocationCounterAvailable)
-                {
-                    // Unity 2022 Mono reports zero for the per-thread counter. Fall back to the
-                    // process heap delta with the collector disabled inside each measured slice.
-                    m_useHeapDelta = CalibrateHeapDeltaCounter(
-                        out report.allocationCalibrationBytes, out report.emptyAllocationDeltaBytes);
-                    m_allocationCounterAvailable = m_useHeapDelta;
-                    report.allocationCounter = m_useHeapDelta
-                        ? "GC.GetTotalMemory delta with GarbageCollector.GCMode disabled inside each measured "
-                          + "slice; 64 KiB positive control and empty control passed. Process-wide, block "
-                          + "granularity: read averages over many operations only."
-                        : "Unavailable: per-thread counter and heap-delta fallback both failed calibration.";
-                }
-            }
-            catch (Exception exception)
-            {
-                m_allocationCounterAvailable = false;
-                m_useHeapDelta = false;
-                report.allocationCounter = "Unavailable: " + exception.GetType().Name;
-            }
-#endif
-            report.allocationCounterKind = m_useHeapDelta
-                ? "HeapDelta"
-                : m_allocationCounterAvailable ? "PerThread" : "None";
-            report.allocationsAvailable = m_allocationCounterAvailable;
-        }
-
-        private static bool CalibrateHeapDeltaCounter(out long calibrationBytes, out long emptyDeltaBytes)
-        {
-            UnityEngine.Scripting.GarbageCollector.GCMode = UnityEngine.Scripting.GarbageCollector.Mode.Disabled;
-            try
-            {
-                long before = GC.GetTotalMemory(false);
-                byte[] calibration = new byte[65536];
-                long after = GC.GetTotalMemory(false);
-                GC.KeepAlive(calibration);
-                calibrationBytes = after - before;
-                before = GC.GetTotalMemory(false);
-                after = GC.GetTotalMemory(false);
-                emptyDeltaBytes = after - before;
-            }
-            finally
-            {
-                UnityEngine.Scripting.GarbageCollector.GCMode = UnityEngine.Scripting.GarbageCollector.Mode.Enabled;
-            }
-
-            return calibrationBytes >= 65536 && emptyDeltaBytes == 0;
+            // Candidates are calibrated in order on the main thread; the Editor does not support
+            // changing the collector mode, so its heap delta discards slices that saw a collection.
+            m_allocationCounter = OnityBenchmarkAllocationCounter.Create(
+                allowProfilerCounter: true,
+                allowCollectorModeSwitch: !Application.isEditor);
+            report.allocationCounterKind = m_allocationCounter.Kind;
+            report.allocationsAvailable = m_allocationCounter.IsAvailable;
+            report.allocationCounter = m_allocationCounter.Description;
+            report.allocationCalibrationBytes = m_allocationCounter.CalibrationBytes;
+            report.emptyAllocationDeltaBytes = m_allocationCounter.EmptyDeltaBytes;
         }
 
         /// <summary>
-        /// Opens a measured slice and returns the starting allocation reading. With the heap-delta
-        /// counter the collector is disabled until <see cref="EndAllocationSlice"/>.
+        /// Opens a measured slice and returns its starting allocation reading.
         /// </summary>
         private long BeginAllocationSlice()
         {
-            if (m_useHeapDelta)
-            {
-                UnityEngine.Scripting.GarbageCollector.GCMode = UnityEngine.Scripting.GarbageCollector.Mode.Disabled;
-            }
-
-            return ReadAllocatedBytes();
+            return m_allocationCounter.Begin();
         }
 
         /// <summary>
-        /// Closes a measured slice and returns the bytes allocated since <paramref name="startBytes"/>.
+        /// Closes a measured slice, adds its allocated bytes to the sample, and marks the sample
+        /// invalid when the counter could not vouch for the slice.
         /// </summary>
-        private long EndAllocationSlice(long startBytes)
+        private void EndAllocationSlice(SampleSet samples, int sample, long startBytes)
         {
-            long delta = ReadAllocatedBytes() - startBytes;
-            if (m_useHeapDelta)
+            long delta = m_allocationCounter.End(startBytes, out bool valid);
+            samples.bytes[sample] += delta;
+            if (!valid)
             {
-                UnityEngine.Scripting.GarbageCollector.GCMode = UnityEngine.Scripting.GarbageCollector.Mode.Enabled;
+                samples.invalid[sample] = true;
             }
-
-            return delta;
-        }
-
-        private long ReadAllocatedBytes()
-        {
-#if ENABLE_IL2CPP
-            return 0;
-#else
-            if (m_useHeapDelta)
-            {
-                return GC.GetTotalMemory(false);
-            }
-
-            return m_allocationCounterAvailable ? GC.GetAllocatedBytesForCurrentThread() : 0;
-#endif
         }
 
         private void RunSynchronousBenchmarks(TaskBenchmarkReport report)
@@ -359,7 +281,7 @@ namespace Onity.Benchmarks
             }
 
             long stopped = Stopwatch.GetTimestamp();
-            samples.bytes[sample] = EndAllocationSlice(bytes);
+            EndAllocationSlice(samples, sample, bytes);
             samples.ticks[sample] = stopped - started;
         }
 
@@ -406,7 +328,7 @@ namespace Onity.Benchmarks
                             long started = Stopwatch.GetTimestamp();
                             Schedule(library, concurrency);
                             long stopped = Stopwatch.GetTimestamp();
-                            creation[library].bytes[sample] += EndAllocationSlice(bytes);
+                            EndAllocationSlice(creation[library], sample, bytes);
                             creation[library].ticks[sample] += stopped - started;
 
                             int remaining = k_completionTimeoutFrames;
@@ -424,7 +346,7 @@ namespace Onity.Benchmarks
                             started = Stopwatch.GetTimestamp();
                             Consume(library, concurrency);
                             stopped = Stopwatch.GetTimestamp();
-                            consumption[library].bytes[sample] += EndAllocationSlice(bytes);
+                            EndAllocationSlice(consumption[library], sample, bytes);
                             consumption[library].ticks[sample] += stopped - started;
                         }
                     }
@@ -514,7 +436,7 @@ namespace Onity.Benchmarks
                                 long started = Stopwatch.GetTimestamp();
                                 ScheduleAsyncMethods(library, concurrency, typed);
                                 long stopped = Stopwatch.GetTimestamp();
-                                creation[library].bytes[sample] += EndAllocationSlice(bytes);
+                                EndAllocationSlice(creation[library], sample, bytes);
                                 creation[library].ticks[sample] += stopped - started;
 
                                 int remaining = k_completionTimeoutFrames;
@@ -532,7 +454,7 @@ namespace Onity.Benchmarks
                                 started = Stopwatch.GetTimestamp();
                                 ConsumeAsyncMethods(library, concurrency, typed);
                                 stopped = Stopwatch.GetTimestamp();
-                                consumption[library].bytes[sample] += EndAllocationSlice(bytes);
+                                EndAllocationSlice(consumption[library], sample, bytes);
                                 consumption[library].ticks[sample] += stopped - started;
                             }
                         }
@@ -708,12 +630,19 @@ namespace Onity.Benchmarks
             double[] milliseconds = new double[k_samplesPerCase];
             double total = 0;
             long totalBytes = 0;
+            int validSamples = 0;
             for (int i = 0; i < milliseconds.Length; i++)
             {
                 milliseconds[i] = samples.ticks[i] * 1000d / Stopwatch.Frequency;
                 total += milliseconds[i];
-                totalBytes += samples.bytes[i];
+                if (!samples.invalid[i])
+                {
+                    totalBytes += samples.bytes[i];
+                    validSamples++;
+                }
             }
+
+            bool allocationsAvailable = m_allocationCounter.IsAvailable && validSamples > 0;
 
             double mean = total / milliseconds.Length;
             double variance = 0;
@@ -734,11 +663,24 @@ namespace Onity.Benchmarks
                 maxMilliseconds = sorted[sorted.Length - 1],
                 standardDeviationMilliseconds = Math.Sqrt(variance / milliseconds.Length),
                 nanosecondsPerOperation = mean * 1000000d / operations,
-                allocatedBytesPerOperation = m_allocationCounterAvailable
-                    ? (double)totalBytes / (milliseconds.Length * (long)operations) : -1d,
+                allocatedBytesPerOperation = allocationsAvailable
+                    ? (double)totalBytes / (validSamples * (long)operations) : -1d,
+                allocationSamplesValid = m_allocationCounter.IsAvailable ? validSamples : 0,
                 sampleMilliseconds = milliseconds,
-                sampleAllocatedBytes = m_allocationCounterAvailable ? samples.bytes : null
+                sampleAllocatedBytes = m_allocationCounter.IsAvailable ? samples.bytes : null,
+                sampleAllocationValid = m_allocationCounter.IsAvailable ? InvertInvalid(samples.invalid) : null
             };
+        }
+
+        private static bool[] InvertInvalid(bool[] invalid)
+        {
+            bool[] valid = new bool[invalid.Length];
+            for (int i = 0; i < invalid.Length; i++)
+            {
+                valid[i] = !invalid[i];
+            }
+
+            return valid;
         }
 
         private static void EmptyOperation()
@@ -847,7 +789,7 @@ namespace Onity.Benchmarks
                     builder.Append(Number(metric.standardDeviationMilliseconds)).Append(',');
                     builder.Append(Number(metric.nanosecondsPerOperation)).Append(',');
                     builder.Append(Number(metric.allocatedBytesPerOperation)).Append(',');
-                    builder.AppendLine(report.allocationsAvailable ? "true" : "false");
+                    builder.AppendLine(metric.allocatedBytesPerOperation >= 0 ? "true" : "false");
                 }
             }
 
@@ -869,7 +811,8 @@ namespace Onity.Benchmarks
             builder.AppendLine().AppendLine(report.measurementScope).AppendLine();
             builder.AppendLine("Both libraries use identical concurrency and two full warmup batches per frame cohort. "
                 + "Execution order alternates per sample and batch. Burst results include pool retention differences. "
-                + "Unavailable allocations are written as -1, never zero.").AppendLine();
+                + "Unavailable allocations are written as -1, never zero; a metric whose every sample was "
+                + "interrupted by a collection is unavailable too.").AppendLine();
             builder.AppendLine("| Scenario | Concurrency | Library | Mean ns/op | Bytes/op | Stddev ms |");
             builder.AppendLine("|---|---:|---|---:|---:|---:|");
             foreach (TaskBenchmarkScenarioReport scenario in report.scenarios)
@@ -879,7 +822,7 @@ namespace Onity.Benchmarks
                     builder.Append("| ").Append(scenario.displayName).Append(" | ");
                     builder.Append(scenario.concurrency).Append(" | ").Append(metric.library).Append(" | ");
                     builder.Append(Number(metric.nanosecondsPerOperation)).Append(" | ");
-                    builder.Append(report.allocationsAvailable ? Number(metric.allocatedBytesPerOperation) : "unavailable");
+                    builder.Append(metric.allocatedBytesPerOperation >= 0 ? Number(metric.allocatedBytesPerOperation) : "unavailable");
                     builder.Append(" | ").Append(Number(metric.standardDeviationMilliseconds)).AppendLine(" |");
                 }
             }
@@ -897,6 +840,7 @@ namespace Onity.Benchmarks
         {
             public readonly long[] ticks = new long[k_samplesPerCase];
             public readonly long[] bytes = new long[k_samplesPerCase];
+            public readonly bool[] invalid = new bool[k_samplesPerCase];
         }
 
         [Serializable]
@@ -947,8 +891,10 @@ namespace Onity.Benchmarks
             public double standardDeviationMilliseconds;
             public double nanosecondsPerOperation;
             public double allocatedBytesPerOperation;
+            public int allocationSamplesValid;
             public double[] sampleMilliseconds;
             public long[] sampleAllocatedBytes;
+            public bool[] sampleAllocationValid;
         }
     }
 }

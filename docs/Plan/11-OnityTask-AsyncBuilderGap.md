@@ -8,8 +8,10 @@ chose between.
 **Status:** option C is implemented on this branch after the owner asked to
 finish the remaining work: `OnityAsyncStateMachineRunner.cs` holds the pooled
 runners, the builders in `OnityAsync.cs` bind to them on the first suspension,
-`OnityTask.FlowExecutionContext` defaults to true and uses the null-window
-capture described below, native sources rethrow through
+`OnityTask.FlowExecutionContext` defaults to true and, since the verification
+recorded at the end of this memo, binds the class library's internal
+`FastCapture` and `RunInternal` pair through reflection with the null-window
+public capture described below as the fallback, native sources rethrow through
 `ExceptionDispatchInfo` and keep the thrown cancellation instance, `Forget`
 observes single-consumer tasks directly while tracking is off, and the
 two-input untyped `WhenAll` coordinator accepts single-consumer native inputs.
@@ -180,7 +182,14 @@ Two things remain out of reach through public APIs. The Start-phase
 copy-on-write isolation has no public equivalent, so any custom builder lets
 `AsyncLocal` writes made before the first await leak to the caller unless it
 pays a capture per method call. And the internal default-context shortcut is
-unavailable, so the 72-byte context is paid on every suspension.
+unavailable through the public surface, so the public path pays the 72-byte
+context on every suspension. The implementation reaches the shortcut anyway
+by binding the `FriendAccessAllowed` internals `FastCapture` and
+`RunInternal(context, callback, state, preserveSyncCtx)` through reflection,
+proving them with a probe at first use, preserving them with a `link.xml`,
+and falling back to the public path when they are missing; that trades a
+dependency on a decade-old internal signature of the reference source for the
+.NET builder's own cost profile.
 
 Synchronization-context behavior needs precise statements:
 
@@ -380,3 +389,38 @@ tests.
   capture path.
 - Changelog, migration guide, usage guide, and the comparison guide updated
   with the chosen semantics and the measured result before any release.
+
+## Verification at `4be50dc` (2026-09-25)
+
+The owner verified the pooled runner in the isolated host on Unity
+2022.3.62f2, which the repository has pinned since: full EditMode and PlayMode suites
+green under both the default and `-releaseCodeOptimization` code
+optimization, 655/655 and 41/41 each time, including the 38 EditMode and 1
+PlayMode builder tests. Two Release runs of the 24-scenario primary suite
+measured the async-method `NextFrame` scheduling slices at 2.25x to 2.55x
+UniTask with flow on and 1.44x to 1.78x with flow off, so the public capture
+path is slower than the .NET builder it replaced and the flow-off path misses
+the 1.2x gate. Allocation values were unavailable: the heap-delta fallback
+disabled the collector, which the Editor rejects. The owner kept flow on as
+the default because the opt-out changes `AsyncLocal` semantics, and noted
+that the harness measures scheduling and `GetResult` slices only.
+
+Actions taken on the branch afterwards: the reflection-bound fast path above,
+a calibrated allocation counter chain that never changes the collector mode
+in the Editor, and the README correction that removed the never-shipped
+`-onityTaskAllocationsOnly` pass. The fast path was checked outside Unity on
+desktop Mono 6.8, whose `mscorlib` compiles the same reference-source
+`ExecutionContext`: `FastCapture` and the four-argument `RunInternal` bind,
+the probe passes with the synchronization context preserved, two captures on
+a thread without stored `AsyncLocal` values return the same shared default
+instance, `AsyncLocal` values flow to a worker without leaking into it, a
+write after resumption and a `SetSynchronizationContext` call are both
+discarded when the run unwinds, and a suppressed capture returns null. Its
+per-thread allocation counter, which passed a 65,568-byte control, read
+0 B/op and 93 ns for a capture-and-run pair without stored values, 72 B/op
+once a value had been stored on the thread, and 72 B/op and 135 ns for the
+public null-window capture with `Run` and the context re-install. Those are
+desktop Mono figures under SGen, not Unity measurements; the acceptance
+gates above still apply, and the timing gate now has to be read against the
+fast path rather than the public capture.
+

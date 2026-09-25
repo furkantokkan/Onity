@@ -781,6 +781,69 @@ namespace Onity.Tests.EditMode
                 Is.SameAs(custom));
         }
 
+        [Test]
+        public void ExecutionContextFlow_UsesTheClassLibraryFastPathOnThisRuntime()
+        {
+            // A failure here is a performance regression, not a correctness one: the builders fell
+            // back to the public ExecutionContext API, which allocates a context per suspension.
+            Type helperType = typeof(OnityTask).Assembly.GetType(
+                "Onity.Unity.Async.OnityAsyncExecutionContext", true);
+            PropertyInfo available = helperType.GetProperty(
+                "IsFastPathAvailable", BindingFlags.Static | BindingFlags.Public);
+            Assert.That(available, Is.Not.Null);
+            Assert.That((bool)available.GetValue(null), Is.True,
+                "ExecutionContext.FastCapture and RunInternal were not bound on this runtime.");
+        }
+
+        [Test]
+        public void SetSynchronizationContextAfterAwait_IsRevertedWhenTheResumptionUnwinds_WithFlowOn()
+        {
+            OnityTask.FlowExecutionContext = true;
+            SynchronizationContext unityContext = SynchronizationContext.Current;
+            Assert.That(unityContext, Is.Not.Null);
+            SynchronizationContext replacement = new SynchronizationContext();
+            ManualAwaitable gate = new ManualAwaitable();
+            OnityTask<SynchronizationContext> task = ReplaceContextAfterAsync(gate, replacement);
+
+            try
+            {
+                gate.Complete();
+
+                Assert.That(task.GetAwaiter().GetResult(), Is.SameAs(replacement),
+                    "The method must observe its own replacement while it runs.");
+                Assert.That(SynchronizationContext.Current, Is.SameAs(unityContext),
+                    "With flow on, a context installed after an await is discarded when the resumption unwinds.");
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(unityContext);
+            }
+        }
+
+        [Test]
+        public void SetSynchronizationContextAfterAwait_PersistsOnTheThread_WithFlowOff()
+        {
+            OnityTask.FlowExecutionContext = false;
+            SynchronizationContext unityContext = SynchronizationContext.Current;
+            Assert.That(unityContext, Is.Not.Null);
+            SynchronizationContext replacement = new SynchronizationContext();
+            ManualAwaitable gate = new ManualAwaitable();
+            OnityTask<SynchronizationContext> task = ReplaceContextAfterAsync(gate, replacement);
+
+            try
+            {
+                gate.Complete();
+
+                Assert.That(task.GetAwaiter().GetResult(), Is.SameAs(replacement));
+                Assert.That(SynchronizationContext.Current, Is.SameAs(replacement),
+                    "Without flow the bare MoveNext leaves the replacement on the thread, as UniTask does.");
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(unityContext);
+            }
+        }
+
         /// <summary>
         /// Under IL2CPP a released runner returns to its pool from the next dispatcher drain rather
         /// than synchronously; the Mono path returns immediately, so this is a no-op there.
@@ -856,6 +919,15 @@ namespace Onity.Tests.EditMode
         {
             await gate;
             return new ResumeObservation(Thread.CurrentThread.ManagedThreadId, local.Value, SynchronizationContext.Current);
+        }
+
+        private static async OnityTask<SynchronizationContext> ReplaceContextAfterAsync(
+            ManualAwaitable gate,
+            SynchronizationContext replacement)
+        {
+            await gate;
+            SynchronizationContext.SetSynchronizationContext(replacement);
+            return SynchronizationContext.Current;
         }
 
         private static async OnityTask<int> ThrowAfterAsync(ManualAwaitable gate, Exception exception)

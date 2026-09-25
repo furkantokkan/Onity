@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,18 +45,86 @@ namespace Onity.Unity.Async
     /// <summary>
     /// Execution-context helpers shared by the native builders and task bridges.
     /// </summary>
+    /// <remarks>
+    /// The class library's own async method builder captures with the internal
+    /// <c>ExecutionContext.FastCapture</c>, which ignores the synchronization context and returns a
+    /// shared default context when nothing needs to flow, and resumes with the internal
+    /// <c>RunInternal(context, callback, state, preserveSyncCtx: true)</c>, which keeps the resuming
+    /// thread's synchronization context. Both are <c>FriendAccessAllowed</c> members of the .NET
+    /// Framework reference source that Unity's Mono compiles. They are bound through reflection and
+    /// proven with a probe run once; when either is missing or behaves differently, the public
+    /// <see cref="ExecutionContext.Capture"/> and <see cref="ExecutionContext.Run"/> path below is
+    /// used instead, which allocates a context per suspension and re-installs the synchronization
+    /// context inside the callback.
+    /// </remarks>
     internal static class OnityAsyncExecutionContext
     {
+        private static readonly Func<ExecutionContext> s_fastCapture;
+        private static readonly Action<ExecutionContext, ContextCallback, object, bool> s_runPreservingContext;
+
+        static OnityAsyncExecutionContext()
+        {
+            Func<ExecutionContext> fastCapture = null;
+            Action<ExecutionContext, ContextCallback, object, bool> runPreservingContext = null;
+            try
+            {
+                Type type = typeof(ExecutionContext);
+                MethodInfo capture = type.GetMethod(
+                    "FastCapture", BindingFlags.Static | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+                MethodInfo run = type.GetMethod(
+                    "RunInternal",
+                    BindingFlags.Static | BindingFlags.NonPublic,
+                    null,
+                    new[] { typeof(ExecutionContext), typeof(ContextCallback), typeof(object), typeof(bool) },
+                    null);
+                if (capture != null && run != null
+                    && capture.ReturnType == typeof(ExecutionContext)
+                    && !capture.IsGenericMethod && !run.IsGenericMethod)
+                {
+                    fastCapture = (Func<ExecutionContext>)Delegate.CreateDelegate(
+                        typeof(Func<ExecutionContext>), capture, false);
+                    runPreservingContext = (Action<ExecutionContext, ContextCallback, object, bool>)Delegate.CreateDelegate(
+                        typeof(Action<ExecutionContext, ContextCallback, object, bool>), run, false);
+                }
+
+                if (fastCapture == null || runPreservingContext == null || !Probe(fastCapture, runPreservingContext))
+                {
+                    fastCapture = null;
+                    runPreservingContext = null;
+                }
+            }
+            catch (Exception)
+            {
+                fastCapture = null;
+                runPreservingContext = null;
+            }
+
+            s_fastCapture = fastCapture;
+            s_runPreservingContext = runPreservingContext;
+        }
+
+        /// <summary>
+        /// True when the class library's internal capture and run pair was bound and proven on
+        /// this runtime; false means the public, allocating path is in use.
+        /// </summary>
+        public static bool IsFastPathAvailable => s_fastCapture != null;
+
         /// <summary>
         /// Captures the current execution context, including <see cref="AsyncLocal{T}"/> values,
-        /// without copying the thread's synchronization context. The public
-        /// <see cref="ExecutionContext.Capture"/> copies whatever synchronization context the
-        /// thread currently holds, so the context is detached for the duration of the capture.
-        /// Returns null when flow is suppressed.
+        /// without copying the thread's synchronization context. Returns null when flow is
+        /// suppressed. On the fast path a context that carries nothing is the shared default
+        /// instance; on the public path the capture is detached from the synchronization context
+        /// for its duration because <see cref="ExecutionContext.Capture"/> would copy it.
         /// </summary>
         /// <returns>The captured context, or null when flow is suppressed.</returns>
         public static ExecutionContext Capture()
         {
+            Func<ExecutionContext> fastCapture = s_fastCapture;
+            if (fastCapture != null)
+            {
+                return fastCapture();
+            }
+
             SynchronizationContext current = SynchronizationContext.Current;
             if (current == null)
             {
@@ -71,6 +140,28 @@ namespace Onity.Unity.Async
             {
                 SynchronizationContext.SetSynchronizationContext(current);
             }
+        }
+
+        /// <summary>
+        /// Runs the callback inside the captured context while keeping the calling thread's
+        /// synchronization context, and returns false when only the public path is available.
+        /// The public path installs the captured context without a synchronization context, so
+        /// its caller must re-install the thread's context inside the callback.
+        /// </summary>
+        /// <param name="context">A context returned by <see cref="Capture"/>.</param>
+        /// <param name="callback">Callback to run.</param>
+        /// <param name="state">Callback state.</param>
+        /// <returns>True when the callback ran on the fast path.</returns>
+        public static bool TryRunPreservingContext(ExecutionContext context, ContextCallback callback, object state)
+        {
+            Action<ExecutionContext, ContextCallback, object, bool> run = s_runPreservingContext;
+            if (run == null)
+            {
+                return false;
+            }
+
+            run(context, callback, state, true);
+            return true;
         }
 
         /// <summary>
@@ -96,6 +187,40 @@ namespace Onity.Unity.Async
                 flowControl.Undo();
             }
         }
+
+        /// <summary>
+        /// Proves the bound pair once: the capture must succeed and the run must invoke the
+        /// callback with the calling thread's synchronization context still installed.
+        /// </summary>
+        private static bool Probe(
+            Func<ExecutionContext> fastCapture,
+            Action<ExecutionContext, ContextCallback, object, bool> runPreservingContext)
+        {
+            ExecutionContext context = fastCapture();
+            if (context == null)
+            {
+                // Flow is suppressed on the initializing thread; the pair cannot be proven here.
+                return false;
+            }
+
+            ProbeState probe = new ProbeState { Expected = SynchronizationContext.Current };
+            runPreservingContext(context, ProbeCallback, probe, true);
+            return probe.Ran && ReferenceEquals(probe.Observed, probe.Expected);
+        }
+
+        private static void ProbeCallback(object state)
+        {
+            ProbeState probe = (ProbeState)state;
+            probe.Ran = true;
+            probe.Observed = SynchronizationContext.Current;
+        }
+
+        private sealed class ProbeState
+        {
+            public SynchronizationContext Expected;
+            public SynchronizationContext Observed;
+            public bool Ran;
+        }
     }
 
     /// <summary>
@@ -112,6 +237,7 @@ namespace Onity.Unity.Async
         private static readonly Stack<OnityAsyncStateMachineRunner<TStateMachine>> s_pool =
             new Stack<OnityAsyncStateMachineRunner<TStateMachine>>(8);
         private static readonly ContextCallback s_moveNextInContext = MoveNextInContext;
+        private static readonly ContextCallback s_moveNextRestoringContext = MoveNextRestoringContext;
 
         private readonly Action m_moveNext;
 #if ENABLE_IL2CPP
@@ -242,10 +368,15 @@ namespace Onity.Unity.Async
             }
 
             m_executionContext = null;
+            if (OnityAsyncExecutionContext.TryRunPreservingContext(context, s_moveNextInContext, this))
+            {
+                return;
+            }
+
             m_resumeContext = SynchronizationContext.Current;
             try
             {
-                ExecutionContext.Run(context, s_moveNextInContext, this);
+                ExecutionContext.Run(context, s_moveNextRestoringContext, this);
             }
             finally
             {
@@ -254,6 +385,11 @@ namespace Onity.Unity.Async
         }
 
         private static void MoveNextInContext(object state)
+        {
+            ((OnityAsyncStateMachineRunner<TStateMachine>)state).m_stateMachine.MoveNext();
+        }
+
+        private static void MoveNextRestoringContext(object state)
         {
             OnityAsyncStateMachineRunner<TStateMachine> runner =
                 (OnityAsyncStateMachineRunner<TStateMachine>)state;
@@ -285,6 +421,7 @@ namespace Onity.Unity.Async
         private static readonly Stack<OnityAsyncStateMachineRunner<TStateMachine, T>> s_pool =
             new Stack<OnityAsyncStateMachineRunner<TStateMachine, T>>(8);
         private static readonly ContextCallback s_moveNextInContext = MoveNextInContext;
+        private static readonly ContextCallback s_moveNextRestoringContext = MoveNextRestoringContext;
 
         private readonly Action m_moveNext;
 #if ENABLE_IL2CPP
@@ -413,10 +550,15 @@ namespace Onity.Unity.Async
             }
 
             m_executionContext = null;
+            if (OnityAsyncExecutionContext.TryRunPreservingContext(context, s_moveNextInContext, this))
+            {
+                return;
+            }
+
             m_resumeContext = SynchronizationContext.Current;
             try
             {
-                ExecutionContext.Run(context, s_moveNextInContext, this);
+                ExecutionContext.Run(context, s_moveNextRestoringContext, this);
             }
             finally
             {
@@ -425,6 +567,11 @@ namespace Onity.Unity.Async
         }
 
         private static void MoveNextInContext(object state)
+        {
+            ((OnityAsyncStateMachineRunner<TStateMachine, T>)state).m_stateMachine.MoveNext();
+        }
+
+        private static void MoveNextRestoringContext(object state)
         {
             OnityAsyncStateMachineRunner<TStateMachine, T> runner =
                 (OnityAsyncStateMachineRunner<TStateMachine, T>)state;

@@ -82,9 +82,10 @@ or its untyped variant to expose an OnityTask that supports multiple consumers.
 
 Suspended `async OnityTask` methods bind a pooled native runner and return
 single-consumer tasks; await each once or call `Preserve()` to share it. By
-default they flow the execution context across awaits, which allocates the
-captured context per suspension; `OnityTask.FlowExecutionContext = false`
-gives UniTask's no-flow semantics. Many `WhenAll` paths use .NET `Task`
+default they flow the execution context across awaits through the class
+library's own capture path, which allocates a context per suspension only once
+a thread has stored an `AsyncLocal<T>` value; `OnityTask.FlowExecutionContext
+= false` gives UniTask's no-flow semantics. Many `WhenAll` paths use .NET `Task`
 internally. Completed inputs can take direct paths; eligible pending untyped
 pairs use a pooled coordinator with a Task-backed output. Typed `WhenAny`
 uses an allocating result source. A synchronously successful

@@ -16,19 +16,23 @@
 Run `Onity/Benchmarks/Run OnityTask Benchmarks (Play Mode)`. The CLI
 entry point is
 `Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine` and accepts
-`-onityTaskBenchmarkOutput <absolute-json-path>`. Run timing first, then add
-allocation samples to the same JSON in a **separate Unity process** with
-`-profiler-enable -onityTaskAllocationsOnly`. Do not pass `-quit`; the menu
-controller exits after writing the report or hitting its 15-minute timeout.
+`-onityTaskBenchmarkOutput <absolute-json-path>`. One process produces both
+the timings and the allocation values; the counter that produced them is
+recorded in the report (see the measurement contract). Do not pass `-quit`;
+the menu controller exits after writing the report or hitting its 15-minute
+timeout.
 Verify the exact Editor version and host with the Unity CLI first. The installed
 `unity run` 1.0.0-beta.3 adds `-quit` automatically, which closes the Editor
 before a Play Mode benchmark can start. Invoke the pinned Unity 2022 Editor
 directly for this entry point, without `-quit`:
 
 ```text
-Unity.exe -batchmode -nographics -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityTaskBenchmarkOutput <absolute-json-path> -logFile <absolute-log-path>
-Unity.exe -batchmode -nographics -profiler-enable -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityTaskBenchmarkOutput <same-absolute-json-path> -onityTaskAllocationsOnly -logFile <separate-absolute-log-path>
+Unity.exe -batchmode -nographics -releaseCodeOptimization -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkMenu.RunFromCommandLine -onityTaskBenchmarkOutput <absolute-json-path> -logFile <absolute-log-path>
 ```
+
+`-releaseCodeOptimization` compiles the async state machines as structs, which
+is what players run; without it the Editor's Debug code optimization compiles
+them as classes and the builder measurements do not represent a player.
 
 ## Measurement contract
 
@@ -68,33 +72,41 @@ Unity.exe -batchmode -nographics -profiler-enable -projectPath <benchmark-host> 
   method, and builder completion during that resumption remain outside them.
   These measurements are not full-lifecycle async-method costs. Builder pooling
   can differ from the primitive frame-source pool and is not assumed identical.
-- The Editor-only allocation pass measures the same synchronous slices with a
-  dedicated Unity Profiler marker and `GC.Alloc` sample byte metadata. It runs
-  after the same synchronous and completed frame-cohort warmups, using eight
-  samples per scenario. The four synchronous cases use 1,024 operations per
-  profiled sample; frame scheduling and consumption each use one cohort per
-  sample. Profiling is off during the separate timing pass, so timing values
-  do not include profiler overhead. Coroutine suspension, report construction,
-  sample arrays and explicit full collections stay outside the marked slices.
-  Burst source allocations remain included.
-- The profiler must read at least 65,536 bytes for a known 64 KiB allocation
-  and zero bytes for an empty control before publishing bytes/op. If either
-  control or any of the 32 metrics fails, **all** allocation values remain `-1`
-  and the report says unavailable. Unity 2022 IL2CPP allocation claims require
-  separate player evidence.
+- Allocation values come from a calibrated counter selected at run start on
+  the measuring thread. Candidates are tried in order and the first one that
+  reads at least 65,536 bytes for a known 64 KiB allocation and zero bytes for
+  an empty control is used: `GC.GetAllocatedBytesForCurrentThread` (reads zero
+  on Unity 2022 Mono and is skipped on IL2CPP), the engine's
+  `GC Allocated In Frame` counter through `Unity.Profiling.ProfilerRecorder`
+  (process-wide, reset every frame, so it never measures a slice that spans
+  frames), and a `GC.GetTotalMemory` heap delta (process-wide, block
+  granularity). A player disables the collector inside each heap-delta slice;
+  the Editor does not support changing `GarbageCollector.GCMode`, so there a
+  slice in which `GC.CollectionCount` changed is discarded and the metric
+  reports the valid samples it kept (`allocationSamplesValid`). The report's
+  `allocationCounterKind` (`PerThread`, `ProfilerCounter`, `HeapDelta`, or
+  `None`) and `allocationCounter` say which counter produced the values and
+  why the others were rejected. Allocation readings are taken outside the
+  timed region of each slice.
+- A metric whose counter is unavailable, or whose every sample was discarded,
+  reports `-1` bytes/op and never zero. Unity 2022 IL2CPP allocation claims
+  require separate player evidence.
 - Timer frequency/resolution, allocation controls, all timing/allocation samples,
   mean, median, range and standard deviation are retained in JSON. CSV and Markdown
-  summarize the measurements. The report schema is version 4; the original
+  summarize the measurements. The report schema is version 5; the original
   six primitive scenarios retain their names, indices and metric fields. Two
   synchronous async-method cases and eight frame-method cases follow them, and
-  schema 4 appends the same eight frame-method cases measured with
+  schema 4 appended the same eight frame-method cases measured with
   `OnityTask.FlowExecutionContext` off, suffixed ` (flow off)`, for 24 scenarios
   total. The unsuffixed frame-method cases force the setting on, so they stay
   comparable with reports from the earlier .NET-builder implementation, and
   the run restores the caller's setting afterwards. The report records the
   setting's default at run start (`flowExecutionContextDefault`) and whether
   the task tracker was enabled (`taskTrackerEnabled`). Consumers should
-  identify cases by name and concurrency.
+  identify cases by name and concurrency. Schema 5 adds the per-metric
+  `allocationSamplesValid` count and `sampleAllocationValid` flags of the
+  calibrated counter chain; the thread-switch report is schema 2 for the same
+  reason.
 
 The expanded suite requires at least 5,160 rendered frames for its frame cases
 (ten workload/cohort pairs, each with four warmup and 512 measured frame waits).
@@ -149,23 +161,27 @@ by 25 percent between two Editor/Mono runs on 2026-09-25.
 
 The first runs are recorded in the comparison guide with allocation values
 unavailable: Unity 2022 Mono failed the `GC.GetAllocatedBytesForCurrentThread`
-controls on both threads. When that counter fails its controls, both runners
-now fall back to a `GC.GetTotalMemory` delta taken with
-`GarbageCollector.GCMode` disabled inside each measured slice, calibrated with
-the same 64 KiB and empty controls; the report's `allocationCounterKind` says
-which counter produced the values (`PerThread`, `HeapDelta`, or `None`). The
-heap delta is process-wide and has block granularity, so read it as an
-average over many operations: the synchronous cases and the 4,096-operation
-cohorts are meaningful, a 128-operation batch can be off by tens of bytes per
-operation, and the worker-side value can include allocations from other
-threads. The separate calibrated Profiler pass from the isolated host remains
-the reference.
+controls on both threads, and the first heap-delta fallback tried to disable
+the collector, which the Editor rejects with `InvalidOperationException`.
+Both runners now share the calibrated counter chain described in the
+measurement contract. The heap delta is process-wide and has block
+granularity, so read it as an average over many operations: the synchronous
+cases and the 4,096-operation cohorts are meaningful, a 128-operation batch
+can be off by tens of bytes per operation, and the worker-side value can
+include allocations from other threads. The profiler counter is byte-exact
+but also process-wide, and it is not used for the thread-switch round trip
+because that slice spans frames. No run has produced allocation values with
+this chain yet.
 
 ## Change note
 
 - Split comparison assemblies and preserved the moved scripts' `.meta` GUIDs.
 - Replaced the unlabelled 10,000-operation burst with matched, explicitly labelled
-  steady-state and burst cohorts; added a separate calibrated profiler allocation pass.
+  steady-state and burst cohorts.
+- Replaced the collector-disabling heap delta, which the Editor rejects, with a
+  calibrated counter chain shared by both runners; the earlier separate
+  Profiler pass never shipped in the package and its `-onityTaskAllocationsOnly`
+  argument is gone from this README.
 - Added completion checks, bounded frame waits, alternating execution order,
   raw samples and failure propagation from frame measurements.
 - Added matched typed/untyped async-method cases for synchronous completion and
