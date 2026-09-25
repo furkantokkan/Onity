@@ -46,6 +46,7 @@ namespace Onity.Benchmarks
         private static long s_firstBytes;
         private static long s_lastBytes;
         private static bool s_mainThreadAllocationAvailable;
+        private static bool s_useHeapDelta;
 
         private string m_latestJson;
         private Action<string, Exception> m_completed;
@@ -198,6 +199,7 @@ namespace Onity.Benchmarks
 
         private static void CalibrateMainThreadAllocationCounter(ThreadSwitchBenchmarkReport report)
         {
+            s_useHeapDelta = false;
 #if ENABLE_IL2CPP
             s_mainThreadAllocationAvailable = false;
             report.mainThreadAllocationCalibrationBytes = 0;
@@ -214,14 +216,71 @@ namespace Onity.Benchmarks
                 report.mainThreadAllocationCounter = s_mainThreadAllocationAvailable
                     ? "GC.GetAllocatedBytesForCurrentThread; 64 KiB positive control and empty control passed."
                     : "Unavailable: allocation counter calibration failed.";
+
+                if (!s_mainThreadAllocationAvailable)
+                {
+                    // Unity 2022 Mono reports zero for the per-thread counter. Fall back to the
+                    // process heap delta with the collector disabled inside each measured slice.
+                    s_useHeapDelta = CalibrateHeapDeltaCounter(out calibrationBytes, out emptyDeltaBytes);
+                    s_mainThreadAllocationAvailable = s_useHeapDelta;
+                    report.mainThreadAllocationCalibrationBytes = calibrationBytes;
+                    report.mainThreadEmptyAllocationDeltaBytes = emptyDeltaBytes;
+                    report.mainThreadAllocationCounter = s_useHeapDelta
+                        ? "GC.GetTotalMemory delta with GarbageCollector.GCMode disabled inside each measured "
+                          + "slice; 64 KiB positive control and empty control passed. Process-wide, block "
+                          + "granularity: read averages over many operations only."
+                        : "Unavailable: per-thread counter and heap-delta fallback both failed calibration.";
+                }
             }
             catch (Exception exception)
             {
                 s_mainThreadAllocationAvailable = false;
+                s_useHeapDelta = false;
                 report.mainThreadAllocationCounter = "Unavailable: " + exception.GetType().Name;
             }
 #endif
+            report.allocationCounterKind = s_useHeapDelta
+                ? "HeapDelta"
+                : s_mainThreadAllocationAvailable ? "PerThread" : "None";
             report.mainThreadAllocationsAvailable = s_mainThreadAllocationAvailable;
+        }
+
+        private static bool CalibrateHeapDeltaCounter(out long calibrationBytes, out long emptyDeltaBytes)
+        {
+            UnityEngine.Scripting.GarbageCollector.GCMode = UnityEngine.Scripting.GarbageCollector.Mode.Disabled;
+            try
+            {
+                long before = GC.GetTotalMemory(false);
+                byte[] calibration = new byte[65536];
+                long after = GC.GetTotalMemory(false);
+                GC.KeepAlive(calibration);
+                calibrationBytes = after - before;
+                before = GC.GetTotalMemory(false);
+                after = GC.GetTotalMemory(false);
+                emptyDeltaBytes = after - before;
+            }
+            finally
+            {
+                UnityEngine.Scripting.GarbageCollector.GCMode = UnityEngine.Scripting.GarbageCollector.Mode.Enabled;
+            }
+
+            return calibrationBytes >= 65536 && emptyDeltaBytes == 0;
+        }
+
+        private static void BeginAllocationSlice()
+        {
+            if (s_useHeapDelta)
+            {
+                UnityEngine.Scripting.GarbageCollector.GCMode = UnityEngine.Scripting.GarbageCollector.Mode.Disabled;
+            }
+        }
+
+        private static void EndAllocationSlice()
+        {
+            if (s_useHeapDelta)
+            {
+                UnityEngine.Scripting.GarbageCollector.GCMode = UnityEngine.Scripting.GarbageCollector.Mode.Enabled;
+            }
         }
 
         private static bool CalibrateCurrentThreadAllocationCounter(out long calibrationBytes, out long emptyDeltaBytes)
@@ -249,6 +308,11 @@ namespace Onity.Benchmarks
 #if ENABLE_IL2CPP
             return 0;
 #else
+            if (s_useHeapDelta)
+            {
+                return GC.GetTotalMemory(false);
+            }
+
             return s_mainThreadAllocationAvailable ? GC.GetAllocatedBytesForCurrentThread() : 0;
 #endif
         }
@@ -307,6 +371,7 @@ namespace Onity.Benchmarks
 
         private static void MeasureLoop(Action operation, SampleSet samples, int sample, int iterations)
         {
+            BeginAllocationSlice();
             long bytes = ReadMainThreadAllocatedBytes();
             long started = Stopwatch.GetTimestamp();
             for (int i = 0; i < iterations; i++)
@@ -317,6 +382,7 @@ namespace Onity.Benchmarks
             long stopped = Stopwatch.GetTimestamp();
             samples.bytes[sample] += ReadMainThreadAllocatedBytes() - bytes;
             samples.ticks[sample] += stopped - started;
+            EndAllocationSlice();
         }
 
         private IEnumerator RunQueuedBenchmarks(ThreadSwitchBenchmarkReport report)
@@ -367,6 +433,7 @@ namespace Onity.Benchmarks
                         for (int turn = 0; turn < 2; turn++)
                         {
                             int library = (sample + batch + turn) & 1;
+                            BeginAllocationSlice();
                             WorkerSchedulingJob job = ScheduleFromWorker(library, concurrency);
                             scheduling[library].ticks[sample] += job.Ticks;
                             scheduling[library].bytes[sample] += job.Bytes;
@@ -378,6 +445,7 @@ namespace Onity.Benchmarks
                                 yield return null;
                             }
 
+                            EndAllocationSlice();
                             dispatch[library].ticks[sample] += s_lastTimestamp - s_firstTimestamp;
                             dispatch[library].bytes[sample] += s_lastBytes - s_firstBytes;
                         }
@@ -423,6 +491,7 @@ namespace Onity.Benchmarks
                     for (int turn = 0; turn < 2; turn++)
                     {
                         int library = (sample + batch + turn) & 1;
+                        BeginAllocationSlice();
                         long bytes = ReadMainThreadAllocatedBytes();
                         long started = Stopwatch.GetTimestamp();
                         StartRoundTrips(library, k_roundTripConcurrency);
@@ -432,6 +501,7 @@ namespace Onity.Benchmarks
                             yield return null;
                         }
 
+                        EndAllocationSlice();
                         roundTrips[library].ticks[sample] += s_lastTimestamp - started;
                         roundTrips[library].bytes[sample] += s_lastBytes - bytes;
                     }
@@ -471,7 +541,15 @@ namespace Onity.Benchmarks
             {
                 job.AllocationAvailable = CalibrateCurrentThreadAllocationCounter(
                     out job.CalibrationBytes, out job.EmptyDeltaBytes);
-                long bytes = job.AllocationAvailable ? GC.GetAllocatedBytesForCurrentThread() : 0;
+                job.UsesHeapDelta = false;
+                if (!job.AllocationAvailable && s_useHeapDelta)
+                {
+                    job.UsesHeapDelta = true;
+                    job.AllocationAvailable = CalibrateWorkerHeapDelta(
+                        out job.CalibrationBytes, out job.EmptyDeltaBytes);
+                }
+
+                long bytes = ReadWorkerAllocatedBytes(job);
                 long started = Stopwatch.GetTimestamp();
                 if (job.Library == 0)
                 {
@@ -483,13 +561,41 @@ namespace Onity.Benchmarks
                 }
 
                 long stopped = Stopwatch.GetTimestamp();
-                job.Bytes = job.AllocationAvailable ? GC.GetAllocatedBytesForCurrentThread() - bytes : 0;
+                job.Bytes = job.AllocationAvailable ? ReadWorkerAllocatedBytes(job) - bytes : 0;
                 job.Ticks = stopped - started;
             }
             catch (Exception exception)
             {
                 job.Failure = exception;
             }
+        }
+
+        private static long ReadWorkerAllocatedBytes(WorkerSchedulingJob job)
+        {
+#if ENABLE_IL2CPP
+            return 0;
+#else
+            if (!job.AllocationAvailable)
+            {
+                return 0;
+            }
+
+            return job.UsesHeapDelta ? GC.GetTotalMemory(false) : GC.GetAllocatedBytesForCurrentThread();
+#endif
+        }
+
+        private static bool CalibrateWorkerHeapDelta(out long calibrationBytes, out long emptyDeltaBytes)
+        {
+            // The main thread disabled the collector before starting this job and is blocked in Join.
+            long before = GC.GetTotalMemory(false);
+            byte[] calibration = new byte[65536];
+            long after = GC.GetTotalMemory(false);
+            GC.KeepAlive(calibration);
+            calibrationBytes = after - before;
+            before = GC.GetTotalMemory(false);
+            after = GC.GetTotalMemory(false);
+            emptyDeltaBytes = after - before;
+            return calibrationBytes >= 65536 && emptyDeltaBytes == 0;
         }
 
         private void RecordWorkerCalibration(WorkerSchedulingJob job)
@@ -505,8 +611,12 @@ namespace Onity.Benchmarks
 
             if (m_workerAllocationAvailable && m_workerAllocationCounter == "Not measured")
             {
-                m_workerAllocationCounter = "GC.GetAllocatedBytesForCurrentThread on each worker thread; "
-                    + "64 KiB positive control and empty control passed on every scheduling job.";
+                m_workerAllocationCounter = job.UsesHeapDelta
+                    ? "GC.GetTotalMemory delta on each worker job with the collector disabled by the main "
+                      + "thread; 64 KiB positive control and empty control passed on every scheduling job. "
+                      + "Process-wide, block granularity."
+                    : "GC.GetAllocatedBytesForCurrentThread on each worker thread; "
+                      + "64 KiB positive control and empty control passed on every scheduling job.";
             }
         }
 
@@ -816,6 +926,7 @@ namespace Onity.Benchmarks
             builder.AppendLine($"- Unity: {report.unityVersion} ({report.platform}, {report.scriptingBackend})");
             builder.AppendLine($"- Editor code optimization: {report.codeOptimization}; incremental GC: {report.gcIncremental}");
             builder.AppendLine($"- UniTask: {report.uniTaskAssembly}");
+            builder.AppendLine($"- Allocation counter kind: {report.allocationCounterKind}");
             builder.AppendLine($"- Main-thread allocation counter: {report.mainThreadAllocationCounter}");
             builder.AppendLine($"- Worker allocation counter: {report.workerAllocationCounter}");
             builder.AppendLine($"- Scope: {report.measurementScope}");
@@ -854,6 +965,7 @@ namespace Onity.Benchmarks
             public long CalibrationBytes;
             public long EmptyDeltaBytes;
             public bool AllocationAvailable;
+            public bool UsesHeapDelta;
             public Exception Failure;
         }
 
@@ -910,6 +1022,7 @@ namespace Onity.Benchmarks
             public int warmupIterations;
             public int batchesPerSample;
             public string measurementScope;
+            public string allocationCounterKind;
             public bool mainThreadAllocationsAvailable;
             public string mainThreadAllocationCounter;
             public long mainThreadAllocationCalibrationBytes;

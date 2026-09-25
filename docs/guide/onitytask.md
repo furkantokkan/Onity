@@ -149,7 +149,8 @@ large native input sets, and pending, faulted, or canceled typed inputs retain
 the .NET path. Typed calls still need a result array and callers using inline
 `params` arguments create an input array. Untyped calls with other input counts
 also materialize their inputs as .NET `Task` values. Methods declared
-`async OnityTask` use .NET's async method builder internally. The two-input
+`async OnityTask` that suspend are backed by a pooled native runner; see
+"Async methods" below. The two-input
 untyped `WhenAny` uses a native result source, but currently allocates that
 source and two continuation delegates per call. The typed pair also uses a
 nonpooled source that allocates.
@@ -179,6 +180,44 @@ source and registers one native continuation. Use it only when sharing is needed
 directly awaiting a pooled task remains cheaper. The retained result, fault, or
 cancellation can be observed repeatedly. Use `AsTask()` once when a .NET API
 requires a `Task`; the returned `Task` can also be shared.
+
+## Async methods
+
+`async OnityTask` and `async OnityTask<T>` methods use Onity's own builders.
+A method that completes without suspending returns the completed task or its
+result inline; a synchronous exception or cancellation produces a Task-backed
+faulted or canceled task with the thrown instance preserved. A method that
+suspends binds a pooled runner that stores the state machine by value and
+resumes it through one cached delegate, so no .NET `Task`, boxed state machine,
+or per-suspension delegate is created.
+
+The task returned by a suspended method is a **single-consumer native task**,
+like a frame wait: await it once, or call `AsTask()` once, and call
+`Preserve()` before sharing it. Reading its status after it was consumed
+throws `InvalidOperationException`. A fault thrown after a suspension is
+rethrown as the same instance with its stack trace, and an
+`OperationCanceledException` thrown after a suspension cancels the task and is
+rethrown as the same instance.
+
+By default the builder flows the execution context across awaits, so
+`AsyncLocal<T>` values set before an await are visible after it, and a value
+written after an await does not leak into the resuming thread. The capture
+detaches Unity's synchronization context for its duration and restores the
+resuming thread's context before the method continues, so
+`SynchronizationContext.Current` after an await is the resuming thread's
+context. Unlike the .NET builder, writes made before the first await are not
+isolated from the caller. Set `OnityTask.FlowExecutionContext = false` before
+any async Onity method starts to skip the capture entirely; that gives
+UniTask's semantics, where `AsyncLocal<T>` does not flow and writes after an
+await stay on the resuming thread. Suppressing flow with
+`ExecutionContext.SuppressFlow()` around the call has the same effect for one
+method.
+
+`Forget()` on a single-consumer native task registers a direct observer when
+task tracking is disabled and bridges the task when tracking is enabled, so
+tracked tasks stay visible. Two suspended methods passed to the two-input
+untyped `WhenAll` use the pooled coordinator; the typed `WhenAll<T>` and the
+`params` overloads still bridge pending inputs through `AsTask()`.
 
 ## Switch to the main thread
 

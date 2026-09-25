@@ -18,10 +18,14 @@ sources directly; `Task` remains available through `AsTask()` and legacy interop
 helpers.
 
 OnityTask covers the common Unity flows below; it is not a drop-in replacement
-for UniTask's full API. Suspended `async OnityTask` methods and many `WhenAll`
-cases use .NET `Task` internally, so equivalent allocation behavior is not
-guaranteed. Two already successful untyped inputs complete directly; eligible
-pending callback-owned inputs use a pooled coordinator with a Task-backed
+for UniTask's full API. Suspended `async OnityTask` methods are backed by a
+pooled native runner and return single-consumer tasks, like UniTask; unlike
+UniTask they flow `AsyncLocal<T>` values across awaits by default, which costs
+one execution-context allocation per suspension. Set
+`OnityTask.FlowExecutionContext = false` for UniTask's no-flow semantics. Many
+`WhenAll` cases still use .NET `Task` internally, so equivalent allocation
+behavior is not guaranteed. Two already successful untyped inputs complete
+directly; eligible pending inputs use a pooled coordinator with a Task-backed
 output.
 
 For a task-oriented introduction, read [Async with OnityTask](../guide/onitytask.html).

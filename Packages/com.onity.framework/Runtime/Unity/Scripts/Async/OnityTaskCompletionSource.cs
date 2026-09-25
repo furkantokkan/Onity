@@ -368,25 +368,9 @@ namespace Onity.Unity.Async
 
         internal static TaskCompletionSource<T> CreateTaskBridge()
         {
-            if (ExecutionContext.IsFlowSuppressed())
-            {
-                return new TaskCompletionSource<T>(
-                    TaskCreationOptions.RunContinuationsAsynchronously);
-            }
-
-            // A promise has no delegate to run in its creation context. Mono's
-            // options constructor still captures it; consumers capture their own
-            // context when they register continuations after this scope ends.
-            AsyncFlowControl flowControl = ExecutionContext.SuppressFlow();
-            try
-            {
-                return new TaskCompletionSource<T>(
-                    TaskCreationOptions.RunContinuationsAsynchronously);
-            }
-            finally
-            {
-                flowControl.Undo();
-            }
+            // The options constructor still captures the execution context on Mono, which copies
+            // Unity's synchronization context on the main thread; the helper suppresses the flow.
+            return OnityAsyncExecutionContext.CreateTaskBridge<T>();
         }
 
         private void AddContinuation(Action continuation, int token)

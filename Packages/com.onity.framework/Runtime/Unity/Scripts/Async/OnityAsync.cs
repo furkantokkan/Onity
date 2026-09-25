@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,8 +27,24 @@ namespace Onity.Unity.Async
         /// </summary>
         public static readonly OnityTask CompletedTask = default;
 
+        private static bool s_flowExecutionContext = true;
+
         private readonly object m_state;
         private readonly int m_token;
+
+        /// <summary>
+        /// Controls whether <c>async OnityTask</c> and <c>async OnityTask&lt;T&gt;</c> methods flow the
+        /// execution context, including <see cref="AsyncLocal{T}"/> values, across their awaits.
+        /// Enabled by default. Disabling it removes one context allocation per suspension and gives
+        /// the same semantics as UniTask: <see cref="AsyncLocal{T}"/> values do not flow across awaits.
+        /// The setting is read at each suspension and applies process-wide, so set it before any
+        /// async Onity method starts.
+        /// </summary>
+        public static bool FlowExecutionContext
+        {
+            get => Volatile.Read(ref s_flowExecutionContext);
+            set => Volatile.Write(ref s_flowExecutionContext, value);
+        }
 
         /// <summary>
         /// Initializes a task wrapper.
@@ -232,10 +249,20 @@ namespace Onity.Unity.Async
 
         /// <summary>
         /// Runs task without awaiting and routes exceptions to callback or Unity log.
+        /// A single-consumer native task is observed directly when task tracking is disabled;
+        /// otherwise the task is bridged so it stays visible to the tracker.
         /// </summary>
         /// <param name="exceptionHandler">Optional exception callback.</param>
         public void Forget(Action<Exception> exceptionHandler = null)
         {
+            if (!OnityTaskTracker.IsEnabled
+                && m_state is IOnityTaskSource source
+                && !(m_state is IOnityMultiConsumerTaskSource))
+            {
+                OnityTaskForgetObserver.Observe(source, m_token, exceptionHandler);
+                return;
+            }
+
             AsTask().Forget(exceptionHandler);
         }
 
@@ -519,14 +546,9 @@ namespace Onity.Unity.Async
                 return Completed;
             }
 
-            OnityTaskCompletionSource firstSource =
-                first.m_state as OnityTaskCompletionSource;
-            OnityTaskCompletionSource secondSource =
-                second.m_state as OnityTaskCompletionSource;
-            if ((first.m_state == null || firstSource != null)
-                && (second.m_state == null || secondSource != null)
-                && (firstSource == null || !firstSource.HasTaskBridge)
-                && (secondSource == null || !secondSource.HasTaskBridge)
+            if (duplicateSingleConsumer == false
+                && first.IsPairCoordinatorEligible
+                && second.IsPairCoordinatorEligible
                 && (first.IsCompleted == false || second.IsCompleted == false))
             {
                 TaskCompletionSource<bool> completion =
@@ -537,6 +559,29 @@ namespace Onity.Unity.Async
             }
 
             return FromTask(OnityAsync.WhenAll(first.AsTask(), second.AsTask()));
+        }
+
+        /// <summary>
+        /// True for the default completed task, an untyped completion source without a .NET task
+        /// bridge, and any single-consumer native source such as a frame wait or a suspended async
+        /// method. Task-backed and preserved tasks keep the .NET composition path.
+        /// </summary>
+        private bool IsPairCoordinatorEligible
+        {
+            get
+            {
+                if (m_state == null)
+                {
+                    return true;
+                }
+
+                if (m_state is OnityTaskCompletionSource completionSource)
+                {
+                    return !completionSource.HasTaskBridge;
+                }
+
+                return m_state is IOnityTaskSource && !(m_state is IOnityMultiConsumerTaskSource);
+            }
         }
 
         internal OnityTaskSourceStatus ReadCompletedSourceOutcome(
@@ -550,8 +595,43 @@ namespace Onity.Unity.Async
                 return OnityTaskSourceStatus.Succeeded;
             }
 
-            return ((OnityTaskCompletionSource)m_state).ReadCompletedOutcome(
-                out fault, out cancellationToken);
+            if (m_state is OnityTaskCompletionSource completionSource)
+            {
+                return completionSource.ReadCompletedOutcome(out fault, out cancellationToken);
+            }
+
+            // A single-consumer source is consumed here; reading its result observes the outcome
+            // and releases the source.
+            IOnityTaskSource source = (IOnityTaskSource)m_state;
+            OnityTaskSourceStatus status = source.GetStatus(m_token);
+            fault = null;
+            cancellationToken = default;
+            if (status == OnityTaskSourceStatus.Pending)
+            {
+                return status;
+            }
+
+            try
+            {
+                source.GetResult(m_token);
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (status == OnityTaskSourceStatus.Canceled)
+                {
+                    cancellationToken = exception.CancellationToken;
+                }
+                else
+                {
+                    fault = exception;
+                }
+            }
+            catch (Exception exception)
+            {
+                fault = exception;
+            }
+
+            return status;
         }
 
         /// <summary>
@@ -1182,13 +1262,22 @@ namespace Onity.Unity.Async
 
         /// <summary>
         /// Runs task without awaiting and routes exceptions to callback or Unity log.
+        /// A single-consumer native task is observed directly when task tracking is disabled;
+        /// otherwise the task is bridged so it stays visible to the tracker.
         /// </summary>
         /// <param name="exceptionHandler">Optional exception callback.</param>
         public void Forget(Action<Exception> exceptionHandler = null)
         {
+            if (!OnityTaskTracker.IsEnabled
+                && m_state is IOnityTaskSource<T> source
+                && !(m_state is IOnityMultiConsumerTaskSource))
+            {
+                OnityTaskForgetObserver<T>.Observe(source, m_token, exceptionHandler);
+                return;
+            }
+
             AsTask().Forget(exceptionHandler);
         }
-
     }
 
     internal sealed class OnityWhenAllPairCoordinator
@@ -1786,8 +1875,7 @@ namespace Onity.Unity.Async
                     m_completionState as TaskCompletionSource<bool>;
                 if (taskCompletionSource == null)
                 {
-                    taskCompletionSource =
-                        new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    taskCompletionSource = OnityAsyncExecutionContext.CreateTaskBridge<bool>();
                     m_completionState = taskCompletionSource;
                     ApplyStatusToTask(taskCompletionSource);
                 }
@@ -1935,7 +2023,7 @@ namespace Onity.Unity.Async
 
             if (exception != null)
             {
-                throw exception;
+                ExceptionDispatchInfo.Capture(exception).Throw();
             }
         }
 
@@ -1944,6 +2032,19 @@ namespace Onity.Unity.Async
             return token == Volatile.Read(ref m_version)
                 && IsCancellationRequested
                 && TrySetStatus(OnityTaskSourceStatus.Canceled, null);
+        }
+
+        /// <summary>
+        /// Retires the current token so every later use of an old task value throws, before the
+        /// source is reused.
+        /// </summary>
+        protected void InvalidateVersion()
+        {
+            lock (this)
+            {
+                int nextVersion = unchecked(m_version + 1);
+                Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
+            }
         }
 
         protected void Reset(CancellationToken cancellationToken)
@@ -1989,6 +2090,11 @@ namespace Onity.Unity.Async
         protected bool TrySetCanceled()
         {
             return TrySetStatus(OnityTaskSourceStatus.Canceled, null);
+        }
+
+        protected bool TrySetCanceled(OperationCanceledException exception)
+        {
+            return TrySetStatus(OnityTaskSourceStatus.Canceled, exception);
         }
 
         protected abstract void ReleaseSource();
@@ -2064,7 +2170,10 @@ namespace Onity.Unity.Async
             }
             else if (status == (int)OnityTaskSourceStatus.Canceled)
             {
-                taskCompletionSource.TrySetCanceled(m_cancellationToken);
+                CancellationToken cancellationToken = m_exception is OperationCanceledException exception
+                    ? exception.CancellationToken
+                    : m_cancellationToken;
+                taskCompletionSource.TrySetCanceled(cancellationToken);
             }
             else
             {
@@ -2077,7 +2186,8 @@ namespace Onity.Unity.Async
             int status = m_status;
             if (status == (int)OnityTaskSourceStatus.Canceled)
             {
-                return new OperationCanceledException(m_cancellationToken);
+                return m_exception as OperationCanceledException
+                    ?? new OperationCanceledException(m_cancellationToken);
             }
 
             return status == (int)OnityTaskSourceStatus.Faulted ? m_exception : null;
@@ -2205,8 +2315,7 @@ namespace Onity.Unity.Async
                     m_completionState as TaskCompletionSource<T>;
                 if (taskCompletionSource == null)
                 {
-                    taskCompletionSource =
-                        new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    taskCompletionSource = OnityAsyncExecutionContext.CreateTaskBridge<T>();
                     m_completionState = taskCompletionSource;
                     ApplyStatusToTask(taskCompletionSource);
                 }
@@ -2361,7 +2470,7 @@ namespace Onity.Unity.Async
 
             if (exception != null)
             {
-                throw exception;
+                ExceptionDispatchInfo.Capture(exception).Throw();
             }
 
             return result;
@@ -2372,6 +2481,19 @@ namespace Onity.Unity.Async
             return token == Volatile.Read(ref m_version)
                 && IsCancellationRequested
                 && TrySetStatus(OnityTaskSourceStatus.Canceled, default, null);
+        }
+
+        /// <summary>
+        /// Retires the current token so every later use of an old task value throws, before the
+        /// source is reused.
+        /// </summary>
+        protected void InvalidateVersion()
+        {
+            lock (this)
+            {
+                int nextVersion = unchecked(m_version + 1);
+                Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
+            }
         }
 
         protected void Reset(CancellationToken cancellationToken)
@@ -3238,46 +3360,63 @@ namespace Onity.Unity.Async
 
     /// <summary>
     /// Async method builder for async methods returning <see cref="OnityTask"/>.
+    /// A method that completes without suspending produces the completed task, or a Task-backed
+    /// task for a synchronous fault or cancellation. A method that suspends binds a pooled runner
+    /// that holds the state machine by value and is the method's single-consumer native source.
     /// </summary>
     public struct OnityTaskMethodBuilder
     {
-        private AsyncTaskMethodBuilder m_builder;
+        private IOnityAsyncStateMachineRunner m_runner;
+        private Task m_synchronousFailure;
 
         /// <summary>
         /// Creates a method builder.
         /// </summary>
         /// <returns>Created builder.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OnityTaskMethodBuilder Create()
         {
-            return new OnityTaskMethodBuilder
-            {
-                m_builder = AsyncTaskMethodBuilder.Create()
-            };
+            return default;
         }
 
         /// <summary>
-        /// Gets the task controlled by this builder.
+        /// Gets the task controlled by this builder. After a suspension the task is a
+        /// single-consumer native task; call <see cref="OnityTask.Preserve"/> to share it.
         /// </summary>
-        public OnityTask Task => OnityTask.FromTask(m_builder.Task);
+        public OnityTask Task
+        {
+            get
+            {
+                if (m_runner != null)
+                {
+                    return m_runner.Task;
+                }
+
+                return m_synchronousFailure != null
+                    ? OnityTask.FromTask(m_synchronousFailure)
+                    : OnityTask.CompletedTask;
+            }
+        }
 
         /// <summary>
-        /// Starts the async state machine.
+        /// Starts the async state machine on the calling thread.
         /// </summary>
         /// <typeparam name="TStateMachine">State machine type.</typeparam>
         /// <param name="stateMachine">State machine.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine)
             where TStateMachine : IAsyncStateMachine
         {
-            m_builder.Start(ref stateMachine);
+            stateMachine.MoveNext();
         }
 
         /// <summary>
-        /// Sets the async state machine.
+        /// Sets the async state machine. The runner stores the state machine by value, so no boxed
+        /// state machine is kept.
         /// </summary>
         /// <param name="stateMachine">State machine.</param>
         public void SetStateMachine(IAsyncStateMachine stateMachine)
         {
-            m_builder.SetStateMachine(stateMachine);
         }
 
         /// <summary>
@@ -3293,7 +3432,17 @@ namespace Onity.Unity.Async
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
-            m_builder.AwaitOnCompleted(ref awaiter, ref stateMachine);
+            if (m_runner == null)
+            {
+                OnityAsyncStateMachineRunner<TStateMachine>.Rent(ref stateMachine, ref m_runner);
+            }
+
+            if (OnityTask.FlowExecutionContext)
+            {
+                m_runner.CaptureExecutionContext();
+            }
+
+            awaiter.OnCompleted(m_runner.MoveNextAction);
         }
 
         /// <summary>
@@ -3309,7 +3458,17 @@ namespace Onity.Unity.Async
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
-            m_builder.AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine);
+            if (m_runner == null)
+            {
+                OnityAsyncStateMachineRunner<TStateMachine>.Rent(ref stateMachine, ref m_runner);
+            }
+
+            if (OnityTask.FlowExecutionContext)
+            {
+                m_runner.CaptureExecutionContext();
+            }
+
+            awaiter.UnsafeOnCompleted(m_runner.MoveNextAction);
         }
 
         /// <summary>
@@ -3317,67 +3476,92 @@ namespace Onity.Unity.Async
         /// </summary>
         public void SetResult()
         {
-            m_builder.SetResult();
+            if (m_runner != null)
+            {
+                m_runner.SetResult();
+            }
         }
 
         /// <summary>
-        /// Completes the async method with an exception.
+        /// Completes the async method with an exception. An <see cref="OperationCanceledException"/>
+        /// cancels the task and is rethrown as the same instance by the consumer.
         /// </summary>
         /// <param name="exception">Failure exception.</param>
         public void SetException(Exception exception)
         {
-            m_builder.SetException(exception);
+            if (m_runner != null)
+            {
+                m_runner.SetException(exception);
+                return;
+            }
+
+            AsyncTaskMethodBuilder builder = AsyncTaskMethodBuilder.Create();
+            builder.SetException(exception);
+            m_synchronousFailure = builder.Task;
         }
     }
 
     /// <summary>
     /// Async method builder for async methods returning <see cref="OnityTask{T}"/>.
+    /// A method that completes without suspending stores its result inline, or a Task-backed
+    /// task for a synchronous fault or cancellation. A method that suspends binds a pooled runner
+    /// that holds the state machine by value and is the method's single-consumer native source.
     /// </summary>
     /// <typeparam name="T">Result type.</typeparam>
     public struct OnityTaskMethodBuilder<T>
     {
-        private AsyncTaskMethodBuilder<T> m_builder;
+        private IOnityAsyncStateMachineRunner<T> m_runner;
+        private Task<T> m_synchronousFailure;
         private T m_result;
-        private bool m_hasResult;
-        private bool m_suspended;
 
         /// <summary>
         /// Creates a typed method builder.
         /// </summary>
         /// <returns>Created builder.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OnityTaskMethodBuilder<T> Create()
         {
-            return new OnityTaskMethodBuilder<T>
-            {
-                m_builder = AsyncTaskMethodBuilder<T>.Create()
-            };
+            return default;
         }
 
         /// <summary>
-        /// Gets the task controlled by this builder.
+        /// Gets the task controlled by this builder. After a suspension the task is a
+        /// single-consumer native task; call <see cref="OnityTask{T}.Preserve"/> to share it.
         /// </summary>
-        public OnityTask<T> Task => m_hasResult
-            ? OnityTask<T>.FromResult(m_result)
-            : OnityTask<T>.FromTask(m_builder.Task);
+        public OnityTask<T> Task
+        {
+            get
+            {
+                if (m_runner != null)
+                {
+                    return m_runner.Task;
+                }
+
+                return m_synchronousFailure != null
+                    ? OnityTask<T>.FromTask(m_synchronousFailure)
+                    : OnityTask<T>.FromResult(m_result);
+            }
+        }
 
         /// <summary>
-        /// Starts the async state machine.
+        /// Starts the async state machine on the calling thread.
         /// </summary>
         /// <typeparam name="TStateMachine">State machine type.</typeparam>
         /// <param name="stateMachine">State machine.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine)
             where TStateMachine : IAsyncStateMachine
         {
-            m_builder.Start(ref stateMachine);
+            stateMachine.MoveNext();
         }
 
         /// <summary>
-        /// Sets the async state machine.
+        /// Sets the async state machine. The runner stores the state machine by value, so no boxed
+        /// state machine is kept.
         /// </summary>
         /// <param name="stateMachine">State machine.</param>
         public void SetStateMachine(IAsyncStateMachine stateMachine)
         {
-            m_builder.SetStateMachine(stateMachine);
         }
 
         /// <summary>
@@ -3393,8 +3577,17 @@ namespace Onity.Unity.Async
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
-            m_suspended = true;
-            m_builder.AwaitOnCompleted(ref awaiter, ref stateMachine);
+            if (m_runner == null)
+            {
+                OnityAsyncStateMachineRunner<TStateMachine, T>.Rent(ref stateMachine, ref m_runner);
+            }
+
+            if (OnityTask.FlowExecutionContext)
+            {
+                m_runner.CaptureExecutionContext();
+            }
+
+            awaiter.OnCompleted(m_runner.MoveNextAction);
         }
 
         /// <summary>
@@ -3410,8 +3603,17 @@ namespace Onity.Unity.Async
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
-            m_suspended = true;
-            m_builder.AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine);
+            if (m_runner == null)
+            {
+                OnityAsyncStateMachineRunner<TStateMachine, T>.Rent(ref stateMachine, ref m_runner);
+            }
+
+            if (OnityTask.FlowExecutionContext)
+            {
+                m_runner.CaptureExecutionContext();
+            }
+
+            awaiter.UnsafeOnCompleted(m_runner.MoveNextAction);
         }
 
         /// <summary>
@@ -3420,23 +3622,31 @@ namespace Onity.Unity.Async
         /// <param name="result">Async method result.</param>
         public void SetResult(T result)
         {
-            if (m_suspended)
+            if (m_runner != null)
             {
-                m_builder.SetResult(result);
+                m_runner.SetResult(result);
                 return;
             }
 
             m_result = result;
-            m_hasResult = true;
         }
 
         /// <summary>
-        /// Completes the async method with an exception.
+        /// Completes the async method with an exception. An <see cref="OperationCanceledException"/>
+        /// cancels the task and is rethrown as the same instance by the consumer.
         /// </summary>
         /// <param name="exception">Failure exception.</param>
         public void SetException(Exception exception)
         {
-            m_builder.SetException(exception);
+            if (m_runner != null)
+            {
+                m_runner.SetException(exception);
+                return;
+            }
+
+            AsyncTaskMethodBuilder<T> builder = AsyncTaskMethodBuilder<T>.Create();
+            builder.SetException(exception);
+            m_synchronousFailure = builder.Task;
         }
     }
 
