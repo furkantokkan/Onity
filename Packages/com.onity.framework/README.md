@@ -64,6 +64,8 @@ Core assemblies in this package:
   - `OnityTask.WhenAny` for two untyped or same-type typed operations
   - `OnityTaskCompletionSource` / `OnityTaskCompletionSource<T>` for
     callback-owned, multi-consumer completion
+  - `OnityTask.SwitchToMainThread(...)` to resume worker-thread code on
+    Unity's main thread (synchronous when already there)
   - `OnityAsync.DelayAsync`, `NextFrameAsync`, `NextFixedFrameAsync`
   - `OnityAsync.WhenAll`, `OnityAsync.WhenAny`
   - `CancellationTokenSource.CancelAfterSlim(...)`

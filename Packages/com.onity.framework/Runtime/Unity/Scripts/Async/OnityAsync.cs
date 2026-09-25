@@ -436,6 +436,27 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
+        /// Returns an awaitable that resumes on Unity's main thread. Awaiting it on the main thread
+        /// completes synchronously without allocation or a frame delay; awaiting it on another thread
+        /// resumes the continuation during the Update phase of a following frame.
+        /// </summary>
+        /// <remarks>
+        /// Cancellation is observed when the await completes: <c>GetResult</c> throws
+        /// <see cref="OperationCanceledException"/> with the token on the destination thread when the
+        /// token is canceled, including a token that was already canceled. Outside Play Mode the Editor
+        /// resumes queued continuations from its update loop while it is not compiling or importing
+        /// assets. Continuations queued in an earlier Play Mode session, or after the player started
+        /// quitting, are discarded.
+        /// </remarks>
+        /// <param name="cancellationToken">Cancellation token observed when the switch completes.</param>
+        /// <returns>Main-thread switch awaitable.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static OnityTaskThreadSwitch SwitchToMainThread(CancellationToken cancellationToken = default)
+        {
+            return new OnityTaskThreadSwitch(cancellationToken, OnityTaskMainThreadDispatcher.Session);
+        }
+
+        /// <summary>
         /// Awaits a Unit observable.
         /// </summary>
         /// <param name="observable">Source observable.</param>
@@ -2816,6 +2837,19 @@ namespace Onity.Unity.Async
             Interlocked.Increment(ref s_cancellationRequestCount);
         }
 
+        /// <summary>
+        /// True while a runner instance exists. Main thread only.
+        /// </summary>
+        public static bool IsAlive => !ReferenceEquals(s_instance, null);
+
+        /// <summary>
+        /// Creates the runner when it does not exist. Main thread only.
+        /// </summary>
+        public static void EnsureCreated()
+        {
+            GetOrCreate();
+        }
+
         private static OnityTaskRunner GetOrCreate()
         {
             if (!ReferenceEquals(s_instance, null))
@@ -2832,6 +2866,7 @@ namespace Onity.Unity.Async
             }
 
             s_instance = gameObject.AddComponent<OnityTaskRunner>();
+            OnityTaskMainThreadDispatcher.NotifyRunnerCreated();
             return s_instance;
         }
 
@@ -2839,6 +2874,7 @@ namespace Onity.Unity.Async
         {
             DrainCancellationRequests();
             TickSources(m_updateSources, Time.deltaTime, Time.unscaledDeltaTime);
+            OnityTaskMainThreadDispatcher.Drain();
         }
 
         private void FixedUpdate()
@@ -2856,6 +2892,7 @@ namespace Onity.Unity.Async
             if (ReferenceEquals(s_instance, this))
             {
                 s_instance = null;
+                OnityTaskMainThreadDispatcher.NotifyRunnerDestroyed();
             }
         }
 

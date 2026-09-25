@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `OnityTask.SwitchToMainThread(cancellationToken)`, returning the
+  `OnityTaskThreadSwitch` awaitable. Awaiting it on Unity's main thread
+  completes synchronously without allocation or a frame delay; awaiting it on
+  another thread queues the continuation and resumes it during the Update phase
+  through the task runner. Cancellation is observed at `GetResult` on the
+  destination thread, including tokens that were already canceled. Outside
+  Play Mode the Editor drains the queue from `EditorApplication.update` while
+  it is not compiling or importing assets. Entering or exiting Play Mode and
+  quitting the player start a new session, and continuations queued in an
+  earlier session are discarded. A worker-thread switch requested before the
+  runner exists, or after the runner was destroyed, recreates the runner
+  through Unity's synchronization context. Thread-pool switching and timing
+  selection are not included.
+- Added focused EditMode, PlayMode, and Editor lifecycle tests for the thread
+  switch, plus the `Onity/Benchmarks/Run OnityTask Thread Switch Benchmarks
+  (Play Mode)` comparison harness. These were compile-checked outside Unity;
+  the Unity test suites and the benchmark have not yet run on this change, and
+  no thread-switch performance comparison has been published.
+
 ## [0.3.13] - 2026-09-24
 
 ### Added

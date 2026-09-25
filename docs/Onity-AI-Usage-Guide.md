@@ -855,8 +855,8 @@ DON'T:
   `OnityReactiveInputPlayer` (`GetButtonObservable`/`GetVector2Observable`/`GetFloatObservable`/
   `GetLongPressObservable`/`GetLongPressProgressObservable`, `PushContext`/`PopContext`/`SetContext`/`ClearContexts`)
 - Async (`Onity.Unity.Async`): `OnityTask`, `OnityTask<T>`, frame/fixed/late waits,
-  scaled/unscaled delays, predicate waits, scene/web/`AsyncOperation` bridges,
-  `AsTask`, `Forget`, reactive/message bridges, timeout helpers, and task tracking.
+  scaled/unscaled delays, predicate waits, `SwitchToMainThread`, scene/web/`AsyncOperation`
+  bridges, `AsTask`, `Forget`, reactive/message bridges, timeout helpers, and task tracking.
   Pooled task values are single-consumer; see [Async with OnityTask](guide/onitytask.html).
 
 ---

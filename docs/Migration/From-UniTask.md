@@ -62,6 +62,7 @@ using Onity.Unity.Async;
 | `await asyncOperation.ToUniTask(...)` | `await asyncOperation.AsOnityTask(onProgress, ct)` |
 | `await request.SendWebRequest().ToUniTask(...)` | `await OnityTask.Send(request, onProgress, ct)` |
 | `task.Forget()` | `task.Forget()` |
+| `await UniTask.SwitchToMainThread(ct)` | `await OnityTask.SwitchToMainThread(ct)` |
 | `T[] values = await UniTask.WhenAll(typedTasks)` | `T[] values = await OnityTask.WhenAll(typedTasks)` |
 | `await UniTask.WhenAll(first, second)` for two untyped inputs | `await OnityTask.WhenAll(first, second)` |
 | `int winner = await UniTask.WhenAny(first, second)` for two untyped inputs | `int winner = await OnityTask.WhenAny(first, second)` |
@@ -86,6 +87,16 @@ the completion thread rather than capturing Unity's `SynchronizationContext`.
 If the next step needs Unity's main thread, await its `AsTask()` bridge from the
 Unity context instead. The typed result source allocates; this mapping makes
 no performance equivalence claim with UniTask.
+
+`OnityTask.SwitchToMainThread` completes synchronously on the main thread and
+queues a worker-thread continuation for the Update phase of a following frame.
+Cancellation is observed at `GetResult` on the destination thread. Outside Play
+Mode the Editor drains the queue from its update loop, and continuations
+queued in an earlier Play Mode session are discarded when the next session
+starts. There is no `PlayerLoopTiming` argument and no
+`UniTask.SwitchToThreadPool` counterpart yet; use `Task.Run` or
+`ObserveOnThreadPool` for worker work. No thread-switch performance comparison
+has been measured.
 
 ## Scene Loading
 
