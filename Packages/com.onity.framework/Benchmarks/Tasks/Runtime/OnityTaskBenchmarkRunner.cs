@@ -37,6 +37,7 @@ namespace Onity.Benchmarks
         private Action<string, Exception> m_completed;
         private bool m_allocationCounterAvailable;
         private bool m_useHeapDelta;
+        private bool m_flowExecutionContextDefault;
 
         /// <summary>
         /// Queues a benchmark run. The optional callback receives a report path or failure.
@@ -122,6 +123,7 @@ namespace Onity.Benchmarks
                 Debug.LogException(failure, this);
             }
 
+            OnityTask.FlowExecutionContext = m_flowExecutionContextDefault;
             try
             {
                 m_completed?.Invoke(m_latestJson, failure);
@@ -142,7 +144,7 @@ namespace Onity.Benchmarks
         {
             TaskBenchmarkReport report = new TaskBenchmarkReport
             {
-                schemaVersion = 2,
+                schemaVersion = 4,
                 generatedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
                 unityVersion = Application.unityVersion,
                 platform = Application.platform.ToString(),
@@ -157,9 +159,15 @@ namespace Onity.Benchmarks
                 measurementScope = "Main-thread synchronous slices only. Scheduling and GetResult are separate. "
                     + "Async-method cases include builder work within those slices. PlayerLoop execution, "
                     + "suspended-frame time, continuation dispatch and builder completion during resumption are excluded. "
+                    + "Async-method NextFrame cases run twice: with OnityTask.FlowExecutionContext on (unsuffixed) "
+                    + "and off (suffixed 'flow off'); UniTask never flows the execution context. "
                     + "Raw times include harness overhead; no baseline subtraction or overall winner is inferred.",
-                scenarios = new TaskBenchmarkScenarioReport[16]
+                flowExecutionContextDefault = OnityTask.FlowExecutionContext,
+                taskTrackerEnabled = OnityTaskTracker.IsEnabled,
+                scenarios = new TaskBenchmarkScenarioReport[24]
             };
+
+            m_flowExecutionContextDefault = report.flowExecutionContextDefault;
 
             CalibrateAllocationCounter(report);
             return report;
@@ -439,6 +447,27 @@ namespace Onity.Benchmarks
 
         private IEnumerator RunAsyncMethodFrameBenchmarks(TaskBenchmarkReport report)
         {
+            for (int flowMode = 0; flowMode < 2; flowMode++)
+            {
+                bool flowExecutionContext = flowMode == 0;
+                OnityTask.FlowExecutionContext = flowExecutionContext;
+                IEnumerator flowBenchmarks = RunAsyncMethodFrameBenchmarks(report, flowMode, flowExecutionContext);
+                while (flowBenchmarks.MoveNext())
+                {
+                    yield return null;
+                }
+            }
+
+            OnityTask.FlowExecutionContext = m_flowExecutionContextDefault;
+        }
+
+        private IEnumerator RunAsyncMethodFrameBenchmarks(
+            TaskBenchmarkReport report, int flowMode, bool flowExecutionContext)
+        {
+            string suffix = flowExecutionContext ? string.Empty : " (flow off)";
+            string flowLabel = flowExecutionContext
+                ? "; OnityTask.FlowExecutionContext on"
+                : "; OnityTask.FlowExecutionContext off";
             for (int resultKind = 0; resultKind < 2; resultKind++)
             {
                 bool typed = resultKind == 1;
@@ -450,7 +479,7 @@ namespace Onity.Benchmarks
                         ? "Warm steady state; 128 concurrent operations"
                         : "Repeated burst; 4096 concurrent operations")
                         + "; one NextFrame suspension; scheduling/consumption slices only; "
-                        + "suspended-frame time and resumption excluded";
+                        + "suspended-frame time and resumption excluded" + flowLabel;
 
                     for (int warmup = 0; warmup < 2; warmup++)
                     {
@@ -509,11 +538,11 @@ namespace Onity.Benchmarks
                         }
                     }
 
-                    int index = 8 + resultKind * 4 + cohort * 2;
+                    int index = 8 + flowMode * 8 + resultKind * 4 + cohort * 2;
                     int operations = concurrency * k_batchesPerSample;
-                    report.scenarios[index] = BuildScenario(name + " scheduling", workload,
+                    report.scenarios[index] = BuildScenario(name + " scheduling" + suffix, workload,
                         concurrency, operations, creation[0], creation[1]);
-                    report.scenarios[index + 1] = BuildScenario(name + " GetResult", workload,
+                    report.scenarios[index + 1] = BuildScenario(name + " GetResult" + suffix, workload,
                         concurrency, operations, consumption[0], consumption[1]);
                 }
             }
@@ -833,6 +862,8 @@ namespace Onity.Benchmarks
             builder.AppendLine($"- Unity: {report.unityVersion}; {report.platform}; {report.scriptingBackend}");
             builder.AppendLine($"- Samples: {report.samplesPerCase}; frame batches/sample: {report.frameBatchesPerSample}");
             builder.AppendLine($"- Allocation counter: {report.allocationCounter}");
+            builder.AppendLine($"- OnityTask.FlowExecutionContext default at run start: {report.flowExecutionContextDefault}");
+            builder.AppendLine($"- OnityTaskTracker enabled: {report.taskTrackerEnabled}");
             builder.AppendLine($"- Timer resolution: {Number(report.timerResolutionNanoseconds)} ns");
             builder.AppendLine($"- Empty synchronous delegate loop: {Number(report.synchronousHarnessBaseline.nanosecondsPerOperation)} ns/op");
             builder.AppendLine().AppendLine(report.measurementScope).AppendLine();
@@ -884,6 +915,8 @@ namespace Onity.Benchmarks
             public int warmupIterations;
             public int frameBatchesPerSample;
             public string measurementScope;
+            public bool flowExecutionContextDefault;
+            public bool taskTrackerEnabled;
             public string allocationCounterKind;
             public bool allocationsAvailable;
             public string allocationCounter;

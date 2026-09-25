@@ -13,12 +13,20 @@ capture described below, native sources rethrow through
 `ExceptionDispatchInfo` and keep the thrown cancellation instance, `Forget`
 observes single-consumer tasks directly while tracking is off, and the
 two-input untyped `WhenAll` coordinator accepts single-consumer native inputs.
-Deviations from the plan: the typed `WhenAll<T>` and `params` overloads still
-bridge pending runner inputs through `AsTask()`; tracked `Forget` keeps the
-bridge so the tracker stays informed; IL2CPP pool return is deferred through
-the thread-switch dispatcher; and unobserved faults of never-consumed methods
-remain unreported, as they were with the .NET builder. Nothing below is
-measured yet; the acceptance gates still apply before release.
+Deviations from the plan: the typed `WhenAll<T>` and the `params` overloads
+with other than two inputs still bridge pending runner inputs through
+`AsTask()`; tracked `Forget` keeps the bridge so the tracker stays informed;
+IL2CPP pool return is deferred through the thread-switch dispatcher, which
+means an IL2CPP player that never used a frame source creates the task runner
+on the first release, a return queued in an earlier Editor session or after
+shutdown is dropped and that runner is simply collected, and a return is
+re-queued while a worker is still unwinding the completing `MoveNext`; and
+unobserved faults of never-consumed methods remain unreported, as they were
+with the .NET builder. The primary benchmark
+(report schema 4) runs the eight async-method `NextFrame` cases with the flow
+switch on and again with it off, so both settings appear in one report.
+Nothing below is measured yet; the acceptance gates still apply before
+release.
 
 The class-library facts below were checked against the sources Unity 2022.3
 compiles: the Unity-Technologies/mono `unity-2022.3-mbe` branch, whose
@@ -162,8 +170,11 @@ suspension happens inside an enclosing copy-on-write scope. A pooled runner
 that flows the context would therefore land near 136 to 144 B/op on IL2CPP
 and 190 to 200 B/op on Mono, against 304 to 312 B/op today and 64 to 72 B/op
 for UniTask. Captures made on worker threads, such as before
-`SwitchToMainThread`, never paid the copy because no synchronization context
-is installed there.
+`SwitchToMainThread`, are not exempt on their own: a `Task.Run` body started
+from the main thread runs under the context that Unity's CoreRT-derived
+`Task` constructor captured with the public `Capture()`, so it carries a copy
+of the Unity synchronization context, and only the null window avoids copying
+it again.
 
 Two things remain out of reach through public APIs. The Start-phase
 copy-on-write isolation has no public equivalent, so any custom builder lets
@@ -184,11 +195,11 @@ Synchronization-context behavior needs precise statements:
   still posts back through its own `TaskAwaiter`, which reads the non-flowed
   context.
 - With flow enabled through the public path, the resumed callback must
-  re-install the outer context before user code runs, otherwise
-  `SynchronizationContext.Current` is a fresh `UnitySynchronizationContext`
-  copy when the method suspended on the main thread, or null when it suspended
-  on a worker, and `OnityTaskCompletionSource<T>` instances created there would
-  record that value for unobserved-fault reporting.
+  re-install the resuming thread's context before user code runs: the public
+  `Run` installs the captured context without a synchronization context, and
+  the null-window capture stores none, so `SynchronizationContext.Current`
+  would be null on either thread, and `OnityTaskCompletionSource<T>` instances
+  created there would record that value for unobserved-fault reporting.
 
 A no-flow builder has a hazard beyond "`AsyncLocal` does not flow": writes
 made after an await that resumed on the main thread mutate the main thread's
@@ -212,7 +223,7 @@ separate measurable change, not part of this decision.
 | --- | --- | --- | --- |
 | A. Keep the wrapped `AsyncTaskMethodBuilder` | Unchanged: 304 to 312 B/op and 1.8x to 1.9x slower scheduling; synchronous typed results already stored inline. | `AsyncLocal` flows; synchronous-part writes isolated; `SetSynchronizationContext` inside the method reverted. | None. |
 | B. Pooled native builder without context flow | Expected near UniTask's class for the scheduling and synchronous slices: one pooled runner per suspended method, cached `MoveNext`, no `Task`; synchronous completion without any `Task` or scope. Runners derived from the existing source bases take three uncontended locks per suspended method where UniTask's core is lock-free. | UniTask semantics: `AsyncLocal` does not flow across `async OnityTask` awaits; writes before the first await leak to the caller; writes after an await resumed on the main thread persist in the main thread's ambient context; `SetSynchronizationContext` inside the method persists. Results of suspended methods become single-consumer pooled values that throw on reuse; share them with `Preserve()`. | New runner types deriving from the native source bases, a native `Forget`, an `AsTask` bridge fix, IL2CPP deferred pool return, plus the test and documentation changes listed below. Roughly 650 to 800 runtime lines and more than 20 new test cases. |
-| C. Pooled native builder with context flow through the null-window capture, and a static switch to turn flow off | Flow on: about 136 to 144 B/op on IL2CPP and 190 to 200 B/op on Mono with no `AsyncLocal` set, unmeasured. Flow off: option B. | Flow on keeps `AsyncLocal` flow across awaits and the Unity context at resumption, but not the Start-phase isolation or the `SetSynchronizationContext` revert. Results are single-consumer as in B. Flow off is option B. | Option B plus the capture, the re-install, a per-suspension captured field, and tests for both settings. Roughly 800 to 950 runtime lines. |
+| C. Pooled native builder with context flow through the null-window capture, and a static switch to turn flow off | Flow on: about 136 to 144 B/op on IL2CPP and 190 to 200 B/op on Mono with no `AsyncLocal` set, unmeasured. Flow off: option B. | Flow on keeps `AsyncLocal` flow across awaits and the Unity context at resumption, but not the Start-phase isolation; a `SetSynchronizationContext` call made before the first await persists, while one made after an await is still reverted when that resumption unwinds. Results are single-consumer as in B. Flow off is option B. | Option B plus the capture, the re-install, a per-suspension captured field, and tests for both settings. Roughly 800 to 950 runtime lines. |
 
 Option A cannot close the measured gap. Option B closes it at the cost of a
 documented semantic change. Option C keeps `AsyncLocal` working by default and

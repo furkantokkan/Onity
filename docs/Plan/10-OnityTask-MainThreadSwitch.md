@@ -86,10 +86,11 @@ released `0.3.13` source (`ad0bfd5`).
 - Main-thread drain: 0 B/op in the dispatcher itself. The continuation delegate
   is owned by the caller's async builder or manual registration.
 - Execution context is not captured by `OnCompleted`, matching the existing
-  native `OnityTaskAwaiter`. Compiler-generated `async Task` and
-  `async OnityTask` methods flow `AsyncLocal` values through their builders and
-  keep Unity's synchronization context during resumption; `SuppressFlow`
-  before the await prevents the flow as it does for other awaiters.
+  native `OnityTaskAwaiter`. Compiler-generated `async Task` methods, and
+  `async OnityTask` methods while `OnityTask.FlowExecutionContext` is on,
+  flow `AsyncLocal` values through their builders and keep Unity's
+  synchronization context during resumption; `SuppressFlow` before the await
+  prevents the flow as it does for other awaiters.
 
 ## Verification matrix
 

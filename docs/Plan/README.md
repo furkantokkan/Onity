@@ -29,8 +29,8 @@ Read these in order on first contact:
     Editor lifecycle, hook ownership, and verification contract for
     `OnityTask.SwitchToMainThread`.
 12. [`11-OnityTask-AsyncBuilderGap.md`](11-OnityTask-AsyncBuilderGap.md) -
-    measured `async OnityTask` builder overhead, its causes, and the
-    execution-context decision needed to close it.
+    measured `async OnityTask` builder overhead, its causes, the
+    execution-context decision, and the pooled runner implementation status.
 
 ## Scope discipline
 
@@ -55,7 +55,7 @@ revisit `00-Overview.md` Section "Non-Goals".
 | 08-Surpass-VContainer | Draft v1 | - |
 | 09-OnityTask-Integration-Plan | Draft v1 | - |
 | 10-OnityTask-MainThreadSwitch | Draft v1, Unity verification pending | - |
-| 11-OnityTask-AsyncBuilderGap | Draft v1, decision pending | - |
+| 11-OnityTask-AsyncBuilderGap | Draft v2, option C implemented, Unity verification pending | - |
 
 Draft v1 = first complete pass, not yet validated against running benchmarks.
 

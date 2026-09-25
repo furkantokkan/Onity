@@ -243,7 +243,8 @@ namespace Onity.Unity.Async
                 {
                     ref readonly QueuedContinuation queued = ref batch[i];
 
-                    // Session zero only comes from a default awaitable value; it always runs.
+                    // Session zero comes from a default awaitable value or an IL2CPP runner pool
+                    // return; it always runs.
                     if (queued.Session != session && queued.Session != 0)
                     {
                         continue;

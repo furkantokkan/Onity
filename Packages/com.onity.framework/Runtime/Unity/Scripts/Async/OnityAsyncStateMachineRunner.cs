@@ -116,6 +116,7 @@ namespace Onity.Unity.Async
         private readonly Action m_moveNext;
 #if ENABLE_IL2CPP
         private readonly Action m_returnToPool;
+        private int m_moveNextDepth;
 #endif
         private TStateMachine m_stateMachine;
         private ExecutionContext m_executionContext;
@@ -163,6 +164,9 @@ namespace Onity.Unity.Async
 
         public void SetException(Exception exception)
         {
+            // A method that faults after capturing, for example when its awaiter rejected the
+            // registration, never resumes; drop the captured context now rather than at pool return.
+            m_executionContext = null;
             if (exception is OperationCanceledException canceled)
             {
                 TrySetCanceled(canceled);
@@ -192,6 +196,15 @@ namespace Onity.Unity.Async
 
         private void ReturnToPool()
         {
+#if ENABLE_IL2CPP
+            // A worker that completed the method may still be unwinding its MoveNext call; wait
+            // for a later drain so the copy-back cannot overwrite the next rental.
+            if (Volatile.Read(ref m_moveNextDepth) != 0)
+            {
+                OnityTaskMainThreadDispatcher.Enqueue(m_returnToPool, 0);
+                return;
+            }
+#endif
             m_stateMachine = default;
             m_executionContext = null;
             m_resumeContext = null;
@@ -206,6 +219,21 @@ namespace Onity.Unity.Async
 
         private void MoveNext()
         {
+#if ENABLE_IL2CPP
+            Interlocked.Increment(ref m_moveNextDepth);
+            try
+            {
+                MoveNextCore();
+            }
+            finally
+            {
+                Interlocked.Decrement(ref m_moveNextDepth);
+            }
+        }
+
+        private void MoveNextCore()
+        {
+#endif
             ExecutionContext context = m_executionContext;
             if (context == null)
             {
@@ -261,6 +289,7 @@ namespace Onity.Unity.Async
         private readonly Action m_moveNext;
 #if ENABLE_IL2CPP
         private readonly Action m_returnToPool;
+        private int m_moveNextDepth;
 #endif
         private TStateMachine m_stateMachine;
         private ExecutionContext m_executionContext;
@@ -308,6 +337,9 @@ namespace Onity.Unity.Async
 
         public void SetException(Exception exception)
         {
+            // A method that faults after capturing, for example when its awaiter rejected the
+            // registration, never resumes; drop the captured context now rather than at pool return.
+            m_executionContext = null;
             if (exception is OperationCanceledException canceled)
             {
                 TrySetCanceled(canceled);
@@ -335,6 +367,15 @@ namespace Onity.Unity.Async
 
         private void ReturnToPool()
         {
+#if ENABLE_IL2CPP
+            // A worker that completed the method may still be unwinding its MoveNext call; wait
+            // for a later drain so the copy-back cannot overwrite the next rental.
+            if (Volatile.Read(ref m_moveNextDepth) != 0)
+            {
+                OnityTaskMainThreadDispatcher.Enqueue(m_returnToPool, 0);
+                return;
+            }
+#endif
             m_stateMachine = default;
             m_executionContext = null;
             m_resumeContext = null;
@@ -349,6 +390,21 @@ namespace Onity.Unity.Async
 
         private void MoveNext()
         {
+#if ENABLE_IL2CPP
+            Interlocked.Increment(ref m_moveNextDepth);
+            try
+            {
+                MoveNextCore();
+            }
+            finally
+            {
+                Interlocked.Decrement(ref m_moveNextDepth);
+            }
+        }
+
+        private void MoveNextCore()
+        {
+#endif
             ExecutionContext context = m_executionContext;
             if (context == null)
             {

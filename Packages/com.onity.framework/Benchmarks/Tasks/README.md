@@ -84,13 +84,20 @@ Unity.exe -batchmode -nographics -profiler-enable -projectPath <benchmark-host> 
   separate player evidence.
 - Timer frequency/resolution, allocation controls, all timing/allocation samples,
   mean, median, range and standard deviation are retained in JSON. CSV and Markdown
-  summarize the measurements. The report schema is version 3; the original
+  summarize the measurements. The report schema is version 4; the original
   six primitive scenarios retain their names, indices and metric fields. Two
-  synchronous async-method cases and eight frame-method cases are appended, for
-  16 scenarios total. Consumers should identify cases by name and concurrency.
+  synchronous async-method cases and eight frame-method cases follow them, and
+  schema 4 appends the same eight frame-method cases measured with
+  `OnityTask.FlowExecutionContext` off, suffixed ` (flow off)`, for 24 scenarios
+  total. The unsuffixed frame-method cases force the setting on, so they stay
+  comparable with reports from the earlier .NET-builder implementation, and
+  the run restores the caller's setting afterwards. The report records the
+  setting's default at run start (`flowExecutionContextDefault`) and whether
+  the task tracker was enabled (`taskTrackerEnabled`). Consumers should
+  identify cases by name and concurrency.
 
-The expanded suite requires at least 3,096 rendered frames for its frame cases
-(six workload/cohort pairs, each with four warmup and 512 measured frame waits).
+The expanded suite requires at least 5,160 rendered frames for its frame cases
+(ten workload/cohort pairs, each with four warmup and 512 measured frame waits).
 The command-line runner has a 15-minute timeout. Run the benchmark in a dedicated,
 responsive host because a heavily throttled Editor may still hit that limit.
 

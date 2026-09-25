@@ -140,9 +140,12 @@ waits also skip the frame in which they are scheduled in Play Mode.
 
 Two successful, already completed inputs to the untyped
 `WhenAll(first, second)` are consumed immediately and return the completed
-task without .NET task bridges or a tracker entry. Eligible pending untyped
-completion-source pairs use a pooled coordinator with a Task-backed output;
-other input combinations use the .NET `Task.WhenAll` path. Typed `WhenAll` also
+task without .NET task bridges or a tracker entry. Pending untyped inputs use
+a pooled coordinator with a Task-backed output when each input is a completion
+source without an `AsTask()` bridge or an unclaimed single-consumer native
+source, such as a frame wait or a suspended async method; Task-backed,
+preserved, bridged, or already awaited inputs use the .NET `Task.WhenAll`
+path. Typed `WhenAll` also
 collects eligible already successful results directly in input order, without
 .NET task bridges or a tracker entry. Repeated single-consumer native inputs,
 large native input sets, and pending, faulted, or canceled typed inputs retain
@@ -206,18 +209,37 @@ detaches Unity's synchronization context for its duration and restores the
 resuming thread's context before the method continues, so
 `SynchronizationContext.Current` after an await is the resuming thread's
 context. Unlike the .NET builder, writes made before the first await are not
-isolated from the caller. Set `OnityTask.FlowExecutionContext = false` before
-any async Onity method starts to skip the capture entirely; that gives
-UniTask's semantics, where `AsyncLocal<T>` does not flow and writes after an
-await stay on the resuming thread. Suppressing flow with
-`ExecutionContext.SuppressFlow()` around the call has the same effect for one
-method.
+isolated from the caller: on the main thread they persist in the thread's
+ambient context, as any synchronous code's writes do. A
+`SetSynchronizationContext` call made before the first await persists on the
+thread as well; one made after an await is reverted when that resumption
+unwinds. The flow has a price: Unity's public
+`ExecutionContext.Capture()` has no shortcut for an empty context, so every
+suspension allocates the captured context, about 72 bytes, plus a call-context
+object of about 56 bytes on the Mono JIT profile, even when no `AsyncLocal<T>`
+is set; resumption then switches the thread's context around `MoveNext`.
+Set `OnityTask.FlowExecutionContext = false` before any async Onity method
+starts to skip the capture entirely; that gives UniTask's semantics, where
+`AsyncLocal<T>` does not flow and writes after an await stay on the resuming
+thread, and a suspension then costs only the pooled runner's work. The primary
+benchmark measures the async-method cases under both settings; neither figure
+is measured yet. Suppressing flow with `ExecutionContext.SuppressFlow()`
+around the call skips the capture for the awaits reached while flow is
+suppressed, normally the first one; later awaits capture on the resuming
+thread again, as they do with the .NET builder.
+
+The same-instance guarantee for a fault or cancellation holds for the native
+await. A consumer of `AsTask()` receives a `TaskCanceledException` for a
+canceled method, and `Preserve()` re-raises the cancellation as a new
+`OperationCanceledException` with the same token.
 
 `Forget()` on a single-consumer native task registers a direct observer when
-task tracking is disabled and bridges the task when tracking is enabled, so
-tracked tasks stay visible. Two suspended methods passed to the two-input
-untyped `WhenAll` use the pooled coordinator; the typed `WhenAll<T>` and the
-`params` overloads still bridge pending inputs through `AsTask()`.
+task tracking is disabled and bridges the task when tracking is enabled, which
+it is by default, so tracked tasks stay visible. Two suspended methods passed
+to the two-input untyped `WhenAll`, including the `params` overload with
+exactly two inputs, use the pooled coordinator; the typed `WhenAll<T>` and the
+`params` overloads with other input counts still bridge pending inputs through
+`AsTask()`.
 
 ## Switch to the main thread
 
@@ -255,9 +277,10 @@ Outside Play Mode the Editor resumes queued continuations from its update loop
 while it is not compiling or importing assets. Entering or exiting Play Mode,
 and quitting the player, ends the current session: continuations queued in an
 earlier session are discarded rather than resumed in the next one. Compiler
-generated `async Task` and `async OnityTask` methods flow `AsyncLocal` values
-across the switch through their builders and keep Unity's synchronization
-context; `OnityTaskThreadSwitchAwaiter.OnCompleted` itself does not capture an
+generated `async Task` methods, and `async OnityTask` methods while
+`OnityTask.FlowExecutionContext` is on, flow `AsyncLocal` values across the
+switch through their builders and keep Unity's synchronization context;
+`OnityTaskThreadSwitchAwaiter.OnCompleted` itself does not capture an
 execution context, like the other native Onity awaiters. There is no
 thread-pool switch yet; use `Task.Run` or the reactive `ObserveOnThreadPool`
 operator for worker work.
