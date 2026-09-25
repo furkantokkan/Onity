@@ -95,25 +95,25 @@ released `0.3.13` source (`ad0bfd5`).
 
 | Behavior | Coverage | Status |
 | --- | --- | --- |
-| Main-thread fast path completes synchronously; canceled token throws at `GetResult`; null continuation rejected | EditMode `OnityTaskThreadSwitchEditModeTests`, PlayMode `OnityTaskThreadSwitchPlayModeTests` | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
-| Worker switch resumes on the main thread during `Update`, before `LateUpdate`, outside fixed steps | PlayMode `OnityTaskThreadSwitchPlayModeTests` probe test | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
-| Cancellation while queued throws on the main thread with the original token | PlayMode and EditMode | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
-| Concurrent producers, reentrant registration during a drain, runner destruction and recreation | PlayMode `OnityTaskThreadSwitchPlayModeTests` | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
-| `AsyncLocal` flow and suppressed flow through `async Task` and `async OnityTask` | PlayMode `OnityTaskThreadSwitchPlayModeTests` | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
-| Edit Mode dispatch through `EditorApplication.update`, including manual main-thread registration | EditMode `OnityTaskThreadSwitchEditModeTests` | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
-| Session isolation across Play Mode entry and exit, domain reload enabled and disabled | EditMode `OnityTaskThreadSwitchEditorLifecycleTests` with `EnterPlayMode`/`ExitPlayMode` | Passed at `3260c40` per the 2026-09-25 report; not rerun after the drain rewrite |
-| A throwing continuation does not stop the rest of a batch, in the same drain, exactly once; registration order survives buffer growth past the initial 64 entries from the main thread, from a worker, and from a reentrant registration | EditMode `OnityTaskThreadSwitchEditModeTests` (including a synchronous drain through reflection), PlayMode `OnityTaskThreadSwitchPlayModeTests` | Written after `3260c40`, not yet run in Unity |
+| Main-thread fast path completes synchronously; canceled token throws at `GetResult`; null continuation rejected | EditMode `OnityTaskThreadSwitchEditModeTests`, PlayMode `OnityTaskThreadSwitchPlayModeTests` | Passed at `6c978a6` (focused filter, Unity 2022.3.62f2) |
+| Worker switch resumes on the main thread during `Update`, before `LateUpdate`, outside fixed steps | PlayMode `OnityTaskThreadSwitchPlayModeTests` probe test | Passed at `6c978a6` (focused filter, Unity 2022.3.62f2) |
+| Cancellation while queued throws on the main thread with the original token | PlayMode and EditMode | Passed at `6c978a6` (focused filter, Unity 2022.3.62f2) |
+| Concurrent producers, reentrant registration during a drain, runner destruction and recreation | PlayMode `OnityTaskThreadSwitchPlayModeTests` | Passed at `6c978a6` (focused filter, Unity 2022.3.62f2) |
+| `AsyncLocal` flow and suppressed flow through `async Task` and `async OnityTask` | PlayMode `OnityTaskThreadSwitchPlayModeTests` | Passed at `6c978a6` (focused filter, Unity 2022.3.62f2) |
+| Edit Mode dispatch through `EditorApplication.update`, including manual main-thread registration | EditMode `OnityTaskThreadSwitchEditModeTests` | Passed at `6c978a6` (focused filter, Unity 2022.3.62f2) |
+| Session isolation across Play Mode entry and exit, domain reload enabled and disabled | EditMode `OnityTaskThreadSwitchEditorLifecycleTests` with `EnterPlayMode`/`ExitPlayMode` | Passed at `6c978a6` (focused filter, Unity 2022.3.62f2) |
+| A throwing continuation does not stop the rest of a batch, in the same drain, exactly once; registration order survives buffer growth past the initial 64 entries from the main thread, from a worker, and from a reentrant registration | EditMode `OnityTaskThreadSwitchEditModeTests` (including a synchronous drain through reflection), PlayMode `OnityTaskThreadSwitchPlayModeTests` | Passed at `6c978a6` (focused filter, Unity 2022.3.62f2) |
 | Compile check of the changed runtime, tests, and benchmark files | Roslyn 4.10 against .NET Standard 2.1 references with Unity, Editor, Test Framework, and UniTask stubs | Passed for every revision on this branch |
 
-The 2026-09-25 benchmark report cites 614 EditMode, 37 PlayMode, and 26
-analyzer passes as separate correctness evidence. Those counts equal the
-suites at `3260c40` (602 plus the 12 EditMode tests and 28 plus the 9 PlayMode
-tests added there), which is why the rows above record a pass at that commit;
-the report does not name the commit, so confirm it against the run logs. The
-array-backed drain, the runner re-request on destruction, the first-session
-rule, and the tests added afterwards are compile-checked only. Do not publish
-a release from this state; the thread-switch comparison below is timing
-evidence for `3260c40` and does not verify the later changes.
+The 2026-09-25 rerun report ran the focused `OnityTaskThreadSwitch` filters on
+`6c978a6` through the Unity CLI: 15 of 15 EditMode and 12 of 12 PlayMode tests
+passed with no skips, which covers every row above. The earlier report's 614
+EditMode, 37 PlayMode, and 26 analyzer passes match the full suites at
+`3260c40`. Two limits remain: the focused filters are not the complete
+repository suite, so the full EditMode and PlayMode runs still have to be
+repeated on the current head before a release, and both reports used the
+installed Unity 2022.3.62f2 Editor rather than the repository's pinned
+2022.3.62f3. Do not publish a release from this state.
 
 ## Benchmark protocol
 
@@ -155,11 +155,16 @@ The drain was then rewritten to array-backed double buffers with one session
 read per batch and an inline exception guard, matching the shape of UniTask's
 `ContinuationQueue`. A source-level review found the new loop at or below
 UniTask's per-item cost on Mono x64 and IL2CPP, with the old gap explained by
-the non-inlined `List<T>` indexer and invoke helper. That rewrite is
-compile-checked only; it needs a new two-process run before the dispatch row
-can be reassessed. An optional IL2CPP-only follow-up is to disable null and
-bounds checks on `Drain` through `Il2CppSetOption`, which needs the attribute
-source added to the runtime assembly.
+the non-inlined `List<T>` indexer and invoke helper. The rerun on `6c978a6`
+(same host, Debug code optimization, incremental GC enabled, two processes)
+confirmed it: main-thread dispatch moved from 24.7 to 36.1 percent slower to
+9.0 to 36.1 percent faster than UniTask across both cohorts and both runs,
+worker enqueue of 4,096 continuations stayed faster, and the synchronous
+switch stayed within noise. Allocation counters failed their controls again,
+so the 0 B/op targets are still unverified, and no Release-mode, player, or
+IL2CPP run exists yet. An optional IL2CPP-only follow-up is to disable null
+and bounds checks on `Drain` through `Il2CppSetOption`, which needs the
+attribute source added to the runtime assembly.
 
 ## Remaining scope from the continuation plan
 

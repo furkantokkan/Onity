@@ -36,12 +36,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rewrote the main-thread switch drain to array-backed double buffers with one
   session read per batch and an inline exception guard. Two Editor/Mono runs of
   the earlier `List<T>` drain measured main-thread dispatch about 25 to 36
-  percent (24.7 to 36.1) slower than pinned UniTask while worker enqueue of
-  4,096 continuations was 10.5 to 22 percent faster; the rewrite is not yet
-  measured, and allocation counters were unavailable in those runs. A runner
+  percent (24.7 to 36.1) slower than pinned UniTask; two runs of the rewrite on
+  the same Unity 2022.3.62f2 host measured it 9.0 to 36.1 percent faster in
+  both cohorts, with worker enqueue of 4,096 continuations still 7.2 to 17.1
+  percent faster and the synchronous switch within noise. Allocation counters
+  were unavailable in all four runs, so no allocation claim follows. A runner
   destroyed while continuations are queued now requests its replacement at
   once, and a fresh player domain keeps its first session so awaits requested
-  before Onity's load hook still resume.
+  before Onity's load hook still resume. The focused thread-switch EditMode
+  and PlayMode filters passed on that host.
 
 ## [0.3.13] - 2026-09-24
 
