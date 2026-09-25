@@ -493,10 +493,13 @@ record the controls, sample values, and Editor/Mono measurement boundaries.
 `OnityTask.SwitchToMainThread` at product commit `3260c40` was measured against
 pinned UniTask `2.5.11` with the dedicated
 `Onity/Benchmarks/Run OnityTask Thread Switch Benchmarks (Play Mode)` harness
-in two separate Editor/Mono processes on 2026-09-25. Values are mean ns/op from
-eight samples per case with alternating library order; Delta is Onity relative
-to UniTask, so a negative value favors Onity. These are descriptive
-comparisons, not significance tests.
+in two separate Editor/Mono processes on 2026-09-25. The host was the
+installed Unity 2022.3.62f2 Windows Editor with Debug code optimization and
+incremental GC enabled, on an AMD Ryzen 9 5900X with other Unity instances
+open; the repository's pinned 2022.3.62f3 Editor was not installed there.
+Values are mean ns/op from eight samples per case with alternating library
+order; Delta is Onity relative to UniTask, so a negative value favors Onity.
+These are descriptive comparisons, not significance tests.
 
 | Scenario | N | Run 1 Onity | Run 1 UniTask | Delta | Run 2 Onity | Run 2 UniTask | Delta |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -523,15 +526,49 @@ the session number per entry, and invoked every continuation through a separate
 non-inlined helper with its own null check and exception guard. The pinned
 UniTask `ContinuationQueue` runs a raw `Action[]` with an inline exception
 guard. The drain was rewritten afterwards to array-backed double buffers with
-one session read per batch and an inline exception guard; **that change is not
-yet measured**, so the table above remains the current evidence. The runs did
-not record the Editor's code optimization mode. In the default Debug mode the
-Mono JIT disables inlining and register allocation, which penalizes helper
-calls such as the old drain's indexer and invoke helper more than a Release
-build would, and identical code varied by 25 percent between the two runs
-(Onity 4,096 dispatch: 102.58 versus 76.00 ns/op). Later runs record the mode
-and the incremental GC setting in the report and should treat differences
-below about 5 ns/op as noise.
+one session read per batch and an inline exception guard; the rerun below
+measures that change. In the Editor's default Debug mode the Mono JIT disables
+inlining and register allocation, which penalizes helper calls such as the old
+drain's indexer and invoke helper more than a Release build would, and
+identical code varied by 25 percent between the two runs (Onity 4,096
+dispatch: 102.58 versus 76.00 ns/op). Later reports record the mode and the
+incremental GC setting, and differences below about 5 ns/op should be treated
+as noise.
+
+### Rerun after the drain rewrite
+
+The same harness, host, and settings were rerun on product commit `6c978a6`
+on 2026-09-25, again in two separate Editor/Mono processes. The package tree
+of the benchmark host matched the commit exactly.
+
+| Scenario | N | Run 1 Onity | Run 1 UniTask | Delta | Run 2 Onity | Run 2 UniTask | Delta |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Main-thread switch | 1 | 223.11 | 213.41 | +4.5% | 169.09 | 164.22 | +3.0% |
+| Pre-canceled main-thread switch | 1 | 8588.33 | 8666.96 | -0.9% | 5170.93 | 5278.80 | -2.0% |
+| Worker scheduling | 128 | 425.78 | 459.70 | -7.4% | 322.85 | 322.66 | +0.1% |
+| Main-thread dispatch | 128 | 63.82 | 99.89 | -36.1% | 68.44 | 75.25 | -9.0% |
+| Worker scheduling | 4096 | 330.56 | 398.55 | -17.1% | 265.63 | 286.33 | -7.2% |
+| Main-thread dispatch | 4096 | 62.58 | 91.47 | -31.6% | 58.02 | 68.03 | -14.7% |
+| Thread-pool hop then switch | 128 | 30908.04 | 24774.77 | +24.8% | 15972.01 | 15997.38 | -0.2% |
+
+Main-thread dispatch reversed direction in both cohorts and both runs: the
+`3260c40` deltas were +24.7 and +36.1 percent at 128 and +27.3 and +28.4
+percent at 4,096, and the `6c978a6` deltas are -36.1 and -9.0 percent at 128
+and -31.6 and -14.7 percent at 4,096. Worker enqueue of 4,096 continuations
+again favored Onity in both runs. The synchronous main-thread switch is 3 to
+4.5 percent slower in this rerun after being 0.5 to 1.4 percent faster in the
+previous one; both differences are about 5 to 10 ns and inside the run-to-run
+noise of this host. The 128-continuation enqueue and the round trip changed
+direction between runs and have no winner. Absolute times still varied
+substantially across processes, so only within-process comparisons are used.
+
+Allocation values remain unavailable: both switch runs and the primary report
+failed the 64 KiB positive control again, and no new Profiler procedure was
+attempted. The focused `OnityTaskThreadSwitch` EditMode (15 of 15) and
+PlayMode (12 of 12) test filters passed on `6c978a6` through the Unity CLI on
+the same Editor; that is not the complete repository suite. This rerun does
+not establish overall superiority: it covers seven thread-switch slices on one
+Editor build without allocation data, IL2CPP, or player results.
 
 Allocation values are unavailable for these runs: the main-thread and
 worker-thread `GC.GetAllocatedBytesForCurrentThread` counters reported zero for
@@ -572,7 +609,14 @@ unchanged by that pass.
 Starting a native `async OnityTask` method that suspends once is roughly 1.8 to
 1.9 times slower than the UniTask equivalent, and consuming a synchronously
 completed async method is about 1.9 to 2.2 times slower (untyped 2.19x, typed
-1.85x), while consuming the suspended method's result is faster. The
+1.85x), while consuming the suspended method's result is faster. A fresh
+sixteen-scenario report on `6c978a6`, same host and settings, repeated the
+pattern: completed untyped `GetResult` 786.13 versus 335.93 ns/op (2.34x),
+`NextFrame` scheduling 2511.64 versus 1345.87 at 128 and 2173.23 versus
+1148.62 at 4,096 (1.87x and 1.89x), `NextFrame<int>` scheduling 2450.09 versus
+1320.53 at 128 and 2218.59 versus 1231.76 at 4,096 (1.86x and 1.80x), and
+`NextFrame<int>` `GetResult` 65.87 versus 127.93 at 4,096 in Onity's favor.
+The drain rewrite did not touch this path, and it was not expected to. The
 [async builder gap analysis](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/11-OnityTask-AsyncBuilderGap.md)
 traces this to the wrapped `AsyncTaskMethodBuilder` and records the decision
 the product owner has to make before that gap can close. Raw run reports were
@@ -589,7 +633,7 @@ retained on the benchmark host and are not yet committed to this repository.
 | Native `WhenAny` | Available for two untyped inputs (winner index) and two inputs of the same result type (winner index and value). Both inputs are consumed; the loser is observed without cancellation. Duplicate single-consumer native inputs are rejected. The typed result source is nonpooled and allocates; the untyped source and two delegates allocate per call. Typed Editor/Mono results are reported above. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
 | Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. Pending typed conversion measured 120 B/task in Editor/Mono at `c2f9358`; see the follow-up above. |
-| Main-thread switch | `OnityTask.SwitchToMainThread` completes synchronously on the main thread and queues worker-thread continuations for the Update phase. Cancellation is observed at `GetResult` on the destination thread; Edit Mode dispatch and Play Mode session isolation are defined in the [contract](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/10-OnityTask-MainThreadSwitch.md). Thread-pool switching and timing selection are not available. The Editor/Mono comparison above is mixed: the synchronous switch is close, large worker enqueues favor Onity, and callback dispatch favored UniTask in both runs before the unmeasured drain rewrite. Allocations are unmeasured. |
+| Main-thread switch | `OnityTask.SwitchToMainThread` completes synchronously on the main thread and queues worker-thread continuations for the Update phase. Cancellation is observed at `GetResult` on the destination thread; Edit Mode dispatch and Play Mode session isolation are defined in the [contract](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/10-OnityTask-MainThreadSwitch.md). Thread-pool switching and timing selection are not available. In the Editor/Mono comparison above the synchronous switch is within noise of UniTask, large worker enqueues and, after the array-backed drain, callback dispatch favored Onity in both runs, and the 128-continuation enqueue and round trip have no winner. Allocations are unmeasured. |
 | Selectable PlayerLoop phases and immediate cancellation | Limited to the supported runner phases and next-tick cancellation. |
 | `await foreach` async enumerable | Not yet available. |
 
