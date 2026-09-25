@@ -448,3 +448,39 @@ either setting, so the remaining cost sits outside the context flow, in the
 pooled runner and source path itself; the burst allocation follows from the
 pool caps; and the IL2CPP player gate is still outstanding.
 
+## Builder path on desktop Mono 6.8 (2026-09-25)
+
+To separate the builder from the PlayerLoop, the Onity Async layer and the
+UniTask 2.5.11 core were compiled for desktop Mono 6.8 and driven by one
+`async` method that awaits a manual awaitable; each cycle is one schedule
+(start the method until it registers on the awaiter), one completion (fire the
+awaiter so the method resumes and completes), and one consumption
+(`GetResult`). Nanoseconds per operation at 128 concurrent operations, with
+the per-thread allocation counter reading 0 B/op for every row:
+
+| Path | Schedule | Complete | Consume | Total |
+| --- | ---: | ---: | ---: | ---: |
+| Onity, flow on, before the pool change | 115 | 96 | 110 | 321 |
+| Onity, flow off, before the pool change | 103 | 48 | 112 | 263 |
+| Onity, flow on, after the pool change | 66 | 97 | 61 | 224 |
+| Onity, flow off, after the pool change | 50 | 53 | 61 | 164 |
+| UniTask | 39 | 19 | 17 | 75 |
+
+The pool change replaced the locked `Stack<T>` with a compare-and-swap gate,
+reused a retired runner without the source lock, and made `InvalidateVersion`
+lock-free, so a cycle takes three monitor acquisitions (`OnCompleted`,
+`TrySetStatus`, `GetResultCore`) instead of seven. Flow on costs about 45 ns
+per resumption for the class library's copy-on-write scope. At 4,096
+concurrent operations Onity allocated about 295 B/op because the pool cap
+was exceeded; UniTask's pool is unbounded and allocated nothing.
+
+These figures are 10 to 20 times smaller than what the Editor attributes to
+the same wrappers: the `f682b7c` Editor runs put the Onity wrapper near 1,400
+ns and the UniTask wrapper near 800 ns above the `NextFrame` primitive. The
+working hypothesis is that the Editor's script runtime does not optimize
+call-heavy paths the way a player's does, so Editor ratios exaggerate call
+count differences; the new player build runner exists to test that. The
+remaining structural difference is the three monitor acquisitions against
+UniTask's interlocked core, which a later change could remove for the native
+consumption path while keeping the locks for the bridge and preserved paths.
+

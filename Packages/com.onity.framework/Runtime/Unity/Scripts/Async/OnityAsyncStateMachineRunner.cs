@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -268,18 +267,79 @@ namespace Onity.Unity.Async
     }
 
     /// <summary>
+    /// Intrusive pool node: the runner stores the link to the next pooled runner itself.
+    /// </summary>
+    /// <typeparam name="T">Runner type.</typeparam>
+    internal interface IOnityPooledRunner<T> where T : class
+    {
+        ref T NextPooled { get; }
+    }
+
+    /// <summary>
+    /// Runner pool guarded by one compare-and-swap gate instead of a monitor. A rent or return that
+    /// finds the gate taken does not wait: the rent allocates and the return lets the runner be
+    /// collected, which keeps the uncontended path to two interlocked operations.
+    /// </summary>
+    /// <typeparam name="T">Runner type.</typeparam>
+    internal struct OnityRunnerPool<T> where T : class, IOnityPooledRunner<T>
+    {
+        private int m_gate;
+        private int m_size;
+        private T m_head;
+
+        public bool TryPop(out T runner)
+        {
+            if (Interlocked.CompareExchange(ref m_gate, 1, 0) == 0)
+            {
+                T head = m_head;
+                if (head != null)
+                {
+                    ref T next = ref head.NextPooled;
+                    m_head = next;
+                    next = null;
+                    m_size--;
+                    Volatile.Write(ref m_gate, 0);
+                    runner = head;
+                    return true;
+                }
+
+                Volatile.Write(ref m_gate, 0);
+            }
+
+            runner = null;
+            return false;
+        }
+
+        public bool TryPush(T runner, int capacity)
+        {
+            if (Interlocked.CompareExchange(ref m_gate, 1, 0) == 0)
+            {
+                if (m_size < capacity)
+                {
+                    runner.NextPooled = m_head;
+                    m_head = runner;
+                    m_size++;
+                    Volatile.Write(ref m_gate, 0);
+                    return true;
+                }
+
+                Volatile.Write(ref m_gate, 0);
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Pooled state machine runner for suspended untyped async methods. The state machine is held
     /// by value, one cached delegate resumes it, and the runner is the method's native task source.
     /// </summary>
     /// <typeparam name="TStateMachine">Compiler-generated state machine type.</typeparam>
     internal sealed class OnityAsyncStateMachineRunner<TStateMachine> :
-        OnityTaskSourceBase, IOnityAsyncStateMachineRunner
+        OnityTaskSourceBase, IOnityAsyncStateMachineRunner, IOnityPooledRunner<OnityAsyncStateMachineRunner<TStateMachine>>
         where TStateMachine : IAsyncStateMachine
     {
-        private const int k_maxPoolSize = 128;
-
-        private static readonly Stack<OnityAsyncStateMachineRunner<TStateMachine>> s_pool =
-            new Stack<OnityAsyncStateMachineRunner<TStateMachine>>(8);
+        private static OnityRunnerPool<OnityAsyncStateMachineRunner<TStateMachine>> s_pool;
         private static readonly ContextCallback s_moveNextInContext = MoveNextInContext;
         private static readonly ContextCallback s_moveNextRestoringContext = MoveNextRestoringContext;
 
@@ -291,6 +351,7 @@ namespace Onity.Unity.Async
         private TStateMachine m_stateMachine;
         private ExecutionContext m_executionContext;
         private SynchronizationContext m_resumeContext;
+        private OnityAsyncStateMachineRunner<TStateMachine> m_nextPooled;
 
         private OnityAsyncStateMachineRunner()
         {
@@ -304,6 +365,8 @@ namespace Onity.Unity.Async
 
         public OnityTask Task => new OnityTask((IOnityTaskSource)this);
 
+        public ref OnityAsyncStateMachineRunner<TStateMachine> NextPooled => ref m_nextPooled;
+
         /// <summary>
         /// Rents a runner, binds it to the builder field inside the state machine, and then copies
         /// the state machine so the copy already references its runner.
@@ -314,15 +377,14 @@ namespace Onity.Unity.Async
             ref TStateMachine stateMachine,
             ref IOnityAsyncStateMachineRunner runnerField)
         {
-            OnityAsyncStateMachineRunner<TStateMachine> runner;
-            lock (s_pool)
+            if (!s_pool.TryPop(out OnityAsyncStateMachineRunner<TStateMachine> runner))
             {
-                runner = s_pool.Count > 0
-                    ? s_pool.Pop()
-                    : new OnityAsyncStateMachineRunner<TStateMachine>();
+                runner = new OnityAsyncStateMachineRunner<TStateMachine>();
             }
 
-            runner.Reset(CancellationToken.None);
+            // The runner was retired before it was pooled, or was never published, so no other
+            // thread can hold a valid token; the unsynchronized reset publishes the new version.
+            runner.ResetRetired();
             runnerField = runner;
             runner.m_stateMachine = stateMachine;
         }
@@ -378,13 +440,7 @@ namespace Onity.Unity.Async
             m_stateMachine = default;
             m_executionContext = null;
             m_resumeContext = null;
-            lock (s_pool)
-            {
-                if (s_pool.Count < k_maxPoolSize)
-                {
-                    s_pool.Push(this);
-                }
-            }
+            s_pool.TryPush(this, OnityTask.RunnerPoolCapacity);
         }
 
         private void MoveNext()
@@ -457,13 +513,10 @@ namespace Onity.Unity.Async
     /// <typeparam name="TStateMachine">Compiler-generated state machine type.</typeparam>
     /// <typeparam name="T">Result type.</typeparam>
     internal sealed class OnityAsyncStateMachineRunner<TStateMachine, T> :
-        OnityTaskSourceBase<T>, IOnityAsyncStateMachineRunner<T>
+        OnityTaskSourceBase<T>, IOnityAsyncStateMachineRunner<T>, IOnityPooledRunner<OnityAsyncStateMachineRunner<TStateMachine, T>>
         where TStateMachine : IAsyncStateMachine
     {
-        private const int k_maxPoolSize = 128;
-
-        private static readonly Stack<OnityAsyncStateMachineRunner<TStateMachine, T>> s_pool =
-            new Stack<OnityAsyncStateMachineRunner<TStateMachine, T>>(8);
+        private static OnityRunnerPool<OnityAsyncStateMachineRunner<TStateMachine, T>> s_pool;
         private static readonly ContextCallback s_moveNextInContext = MoveNextInContext;
         private static readonly ContextCallback s_moveNextRestoringContext = MoveNextRestoringContext;
 
@@ -475,6 +528,7 @@ namespace Onity.Unity.Async
         private TStateMachine m_stateMachine;
         private ExecutionContext m_executionContext;
         private SynchronizationContext m_resumeContext;
+        private OnityAsyncStateMachineRunner<TStateMachine, T> m_nextPooled;
 
         private OnityAsyncStateMachineRunner()
         {
@@ -488,6 +542,8 @@ namespace Onity.Unity.Async
 
         public OnityTask<T> Task => new OnityTask<T>((IOnityTaskSource<T>)this);
 
+        public ref OnityAsyncStateMachineRunner<TStateMachine, T> NextPooled => ref m_nextPooled;
+
         /// <summary>
         /// Rents a runner, binds it to the builder field inside the state machine, and then copies
         /// the state machine so the copy already references its runner.
@@ -498,15 +554,12 @@ namespace Onity.Unity.Async
             ref TStateMachine stateMachine,
             ref IOnityAsyncStateMachineRunner<T> runnerField)
         {
-            OnityAsyncStateMachineRunner<TStateMachine, T> runner;
-            lock (s_pool)
+            if (!s_pool.TryPop(out OnityAsyncStateMachineRunner<TStateMachine, T> runner))
             {
-                runner = s_pool.Count > 0
-                    ? s_pool.Pop()
-                    : new OnityAsyncStateMachineRunner<TStateMachine, T>();
+                runner = new OnityAsyncStateMachineRunner<TStateMachine, T>();
             }
 
-            runner.Reset(CancellationToken.None);
+            runner.ResetRetired();
             runnerField = runner;
             runner.m_stateMachine = stateMachine;
         }
@@ -560,13 +613,7 @@ namespace Onity.Unity.Async
             m_stateMachine = default;
             m_executionContext = null;
             m_resumeContext = null;
-            lock (s_pool)
-            {
-                if (s_pool.Count < k_maxPoolSize)
-                {
-                    s_pool.Push(this);
-                }
-            }
+            s_pool.TryPush(this, OnityTask.RunnerPoolCapacity);
         }
 
         private void MoveNext()

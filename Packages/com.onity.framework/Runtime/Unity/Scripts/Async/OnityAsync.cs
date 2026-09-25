@@ -46,6 +46,21 @@ namespace Onity.Unity.Async
             set => Volatile.Write(ref s_flowExecutionContext, value);
         }
 
+        private static int s_runnerPoolCapacity = 128;
+
+        /// <summary>
+        /// Maximum number of released runners kept per <c>async OnityTask</c> method, that is per
+        /// compiler-generated state machine type. A burst of more concurrent suspended calls of one
+        /// method than this allocates a runner for each extra call and lets it be collected
+        /// afterwards. Raise it before the burst to keep those runners; the memory is retained until
+        /// the domain reloads. Defaults to 128.
+        /// </summary>
+        public static int RunnerPoolCapacity
+        {
+            get => Volatile.Read(ref s_runnerPoolCapacity);
+            set => Volatile.Write(ref s_runnerPoolCapacity, value < 0 ? 0 : value);
+        }
+
         /// <summary>
         /// Initializes a task wrapper.
         /// </summary>
@@ -2099,15 +2114,35 @@ namespace Onity.Unity.Async
 
         /// <summary>
         /// Retires the current token so every later use of an old task value throws, before the
-        /// source is reused.
+        /// source is reused. Called once per cycle by the single releasing thread after the
+        /// consumed flag was published under the lock, so a stale caller that still passes the
+        /// token check is rejected as consumed.
         /// </summary>
         protected void InvalidateVersion()
         {
-            lock (this)
-            {
-                int nextVersion = unchecked(m_version + 1);
-                Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
-            }
+            int nextVersion = unchecked(m_version + 1);
+            Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
+        }
+
+        /// <summary>
+        /// Prepares a source that <see cref="InvalidateVersion"/> retired and no other thread can
+        /// reach yet for a new cycle without cancellation, without taking the lock.
+        /// </summary>
+        protected void ResetRetired()
+        {
+            m_continuation = null;
+            m_completionState = null;
+            m_cancellationToken = default;
+            m_cancellationRegistration = default;
+            m_exception = null;
+            m_consumptionMode = k_noConsumption;
+            m_consumed = 0;
+            m_cancellationRequested = 0;
+            m_taskMaterialized = 0;
+            m_released = 0;
+            m_status = (int)OnityTaskSourceStatus.Pending;
+            int nextVersion = unchecked(m_version + 1);
+            Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
         }
 
         protected void Reset(CancellationToken cancellationToken)
@@ -2550,13 +2585,38 @@ namespace Onity.Unity.Async
         /// Retires the current token so every later use of an old task value throws, before the
         /// source is reused.
         /// </summary>
+        /// <summary>
+        /// Retires the current token so every later use of an old task value throws, before the
+        /// source is reused. Called once per cycle by the single releasing thread after the
+        /// consumed flag was published under the lock, so a stale caller that still passes the
+        /// token check is rejected as consumed.
+        /// </summary>
         protected void InvalidateVersion()
         {
-            lock (this)
-            {
-                int nextVersion = unchecked(m_version + 1);
-                Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
-            }
+            int nextVersion = unchecked(m_version + 1);
+            Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
+        }
+
+        /// <summary>
+        /// Prepares a source that <see cref="InvalidateVersion"/> retired and no other thread can
+        /// reach yet for a new cycle without cancellation, without taking the lock.
+        /// </summary>
+        protected void ResetRetired()
+        {
+            m_continuation = null;
+            m_completionState = null;
+            m_cancellationToken = default;
+            m_cancellationRegistration = default;
+            m_exception = null;
+            m_result = default;
+            m_consumptionMode = k_noConsumption;
+            m_consumed = 0;
+            m_cancellationRequested = 0;
+            m_taskMaterialized = 0;
+            m_released = 0;
+            m_status = (int)OnityTaskSourceStatus.Pending;
+            int nextVersion = unchecked(m_version + 1);
+            Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
         }
 
         protected void Reset(CancellationToken cancellationToken)

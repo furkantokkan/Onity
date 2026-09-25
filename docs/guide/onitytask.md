@@ -194,9 +194,13 @@ suspends binds a pooled runner that stores the state machine by value and
 resumes it through one cached delegate, so no .NET `Task`, boxed state machine,
 or per-suspension delegate is created.
 
-The task returned by a suspended method is a **single-consumer native task**,
-like a frame wait: await it once, or call `AsTask()` once, and call
-`Preserve()` before sharing it. Reading its status after it was consumed
+Released runners return to a per-method pool guarded by one compare-and-swap
+gate rather than a lock, and `OnityTask.RunnerPoolCapacity` (default 128)
+caps how many are kept per method; a burst above the cap allocates a runner
+per extra call and lets it be collected, so raise the cap before a burst
+whose retained memory is acceptable. The task returned by a suspended method
+is a **single-consumer native task**, like a frame wait: await it once, or
+call `AsTask()` once, and call `Preserve()` before sharing it. Reading its status after it was consumed
 throws `InvalidOperationException`. A fault thrown after a suspension is
 rethrown as the same instance with its stack trace, and an
 `OperationCanceledException` thrown after a suspension cancels the task and is

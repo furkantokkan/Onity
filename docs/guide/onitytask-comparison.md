@@ -667,8 +667,14 @@ and two Release runs of the primary suite.
 | Onity allocation at 128 concurrent operations | about 0.04 to 0.06 B/op | same |
 | Onity allocation in the 4,096 burst | about 399 to 407 B/op | same |
 
-Onity was slower in every one of the 24 scenarios. The counter chain
-calibrated in both runs with every sample valid. The steady-state figure is
+Onity was slower in every one of the 24 scenarios. A desktop Mono 6.8
+micro-benchmark of the builder wrapper alone (see the [builder gap
+memo](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/11-OnityTask-AsyncBuilderGap.md))
+measured Onity at 164 to 224 ns per full cycle against 75 ns for UniTask
+after the pool change, and put both wrappers an order of magnitude below what
+the Editor attributes to them; a player run through the new build runner is
+needed before those Editor ratios are read as product performance. The
+counter chain calibrated in both runs with every sample valid. The steady-state figure is
 within the counter's noise of zero; the burst figure follows from the
 128-runner and 256-source pool caps, above which each operation allocates a
 runner and a frame source, and it is not a zero-allocation result. The
