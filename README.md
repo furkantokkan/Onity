@@ -10,6 +10,8 @@
 ![AI-indexed docs](https://img.shields.io/badge/docs-AI--indexed-blueviolet)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
 
+**Repository Editor version:** Unity `2022.3.62f2`. The package supports Unity 2022.3 LTS or newer.
+
 **📖 [Documentation, guides & API reference](https://furkantokkan.github.io/Onity/)**  ·  [Install](#install)  ·  [OnityTask](docs/guide/onitytask.md)  ·  [AI usage guide](docs/Onity-AI-Usage-Guide.md)  ·  [Onity vs VContainer / Zenject](docs/Onity-vs-VContainer-Zenject.md)
 
 ---

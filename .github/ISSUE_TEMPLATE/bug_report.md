@@ -49,7 +49,7 @@ it there, it is much faster to diagnose. -->
 
 ## Environment
 
-- **Unity version:** <!-- e.g. 2022.3.62f3 -->
+- **Unity version:** <!-- e.g. 2022.3.62f2 -->
 - **Onity version / commit:**
 - **Scripting backend:** <!-- Mono or IL2CPP -->
 - **Platform:** <!-- e.g. Windows Editor, Android IL2CPP -->

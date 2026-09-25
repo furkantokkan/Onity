@@ -2,7 +2,7 @@
 
 ## Setup
 
-- Use a dedicated Unity `2022.3.62f3` benchmark host with the current Onity package.
+- Use a dedicated Unity `2022.3.62f2` benchmark host with the current Onity package.
 - Install official UniTask `2.5.11`, tag commit
   `2e993ff18f28c931602a07292df0b0804eebef99`, using this pinned UPM URL:
   `https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99`.

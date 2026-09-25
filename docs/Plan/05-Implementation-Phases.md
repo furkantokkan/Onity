@@ -274,7 +274,8 @@ correctness requirement.
 Then a 5-lane parallel workflow landed the remaining surpass-VContainer work (file-disjoint;
 SourceGen headless-verified, the rest write-only pending a Unity run):
 - **CI (P2):** `.github/workflows/onity-ci.yml` - GameCI, matrix `testMode: [editmode, playmode]`,
-  Unity 2022.3.62f3, on push/PR to main+master. Needs 3 repo secrets (UNITY_LICENSE/EMAIL/PASSWORD).
+  Unity 2022.3.62f2 (updated from the original f3 pin), on push/PR to main+master.
+  Needs 3 repo secrets (UNITY_LICENSE/EMAIL/PASSWORD).
 - **PlayMode tests (P2):** `Tests/PlayMode/` (asmdef mirroring EditMode + Onity.Unity) -
   `OnityContextLifecyclePlayModeTests` (proves the OnityContext Update->Tick pump drives ticks)
   and `OnityResolveSoakPlayModeTests` (120-frame resolve + subscribe/dispose churn).

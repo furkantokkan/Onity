@@ -6,7 +6,8 @@ messaging hot paths must report measured numbers against these gates.
 
 ## 1. Hardware and Unity baseline
 
-The headline numbers are gathered on:
+The repository now targets Unity 2022.3.62f2. The historical headline numbers
+below were gathered on:
 
 - Unity 2022.3.62f3
 - Windows 11 Pro 64-bit
@@ -206,7 +207,7 @@ PRs without numbers for the affected scenarios are not merged.
 Phase 1 deliverable:
 
 - A GitHub Actions workflow that:
-  - Restores Unity 2022.3.62f3
+  - Restores Unity 2022.3.62f2
   - Runs `dotnet build` on all Onity asmdefs
   - Runs `Unity.exe -batchmode -nographics -executeMethod
     Onity.Editor.Benchmarks.OnityDiBenchmarkRunner.RunBenchmarksFromCommandLine`

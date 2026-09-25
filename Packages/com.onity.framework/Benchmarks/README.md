@@ -29,7 +29,7 @@ Command line (batchmode) entry point:
 Example:
 
 ```powershell
-& "C:\Program Files\Unity\Hub\Editor\2022.3.62f3\Editor\Unity.exe" `
+& "C:\Program Files\Unity\Hub\Editor\2022.3.62f2\Editor\Unity.exe" `
   -batchmode -nographics -quit `
   -projectPath "C:\Users\e-fur\Documents\Repos\Onity" `
   -executeMethod Onity.Editor.Benchmarks.OnityDiBenchmarkRunner.RunBenchmarksFromCommandLine `

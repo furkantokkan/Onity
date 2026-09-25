@@ -110,11 +110,10 @@ The 2026-09-25 rerun report ran the focused `OnityTaskThreadSwitch` filters on
 `6c978a6` through the Unity CLI: 15 of 15 EditMode and 12 of 12 PlayMode tests
 passed with no skips, which covers every row above. The earlier report's 614
 EditMode, 37 PlayMode, and 26 analyzer passes match the full suites at
-`3260c40`. Two limits remain: the focused filters are not the complete
-repository suite, so the full EditMode and PlayMode runs still have to be
-repeated on the current head before a release, and both reports used the
-installed Unity 2022.3.62f2 Editor rather than the repository's pinned
-2022.3.62f3. Do not publish a release from this state.
+`3260c40`. The later `4be50dc` full-suite verification passed 655 EditMode
+and 41 PlayMode tests in both normal and Release optimization on the installed
+Unity 2022.3.62f2 Editor, which is now the repository target. A focused
+non-development IL2CPP player check remains outstanding before release.
 
 ## Benchmark protocol
 
