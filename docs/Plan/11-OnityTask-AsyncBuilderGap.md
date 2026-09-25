@@ -186,8 +186,10 @@ unavailable through the public surface, so the public path pays the 72-byte
 context on every suspension. The implementation reaches the shortcut anyway
 by binding the `FriendAccessAllowed` internals `FastCapture` and
 `RunInternal(context, callback, state, preserveSyncCtx)` through reflection,
-proving them with a probe at first use, preserving them with a `link.xml`,
-and falling back to the public path when they are missing; that trades a
+proving them with a probe at first use, keeping them reachable for the
+linker through an in-assembly `async Task` anchor because Unity ignores a
+`link.xml` inside a package, and falling back to the public path when they
+are missing; that trades a
 dependency on a decade-old internal signature of the reference source for the
 .NET builder's own cost profile.
 
@@ -423,4 +425,26 @@ public null-window capture with `Run` and the context re-install. Those are
 desktop Mono figures under SGen, not Unity measurements; the acceptance
 gates above still apply, and the timing gate now has to be read against the
 fast path rather than the public capture.
+
+## Verification at `f682b7c` (2026-09-25)
+
+The owner reran the isolated host on Unity 2022.3.62f2 with the fast path in
+place: 658/658 EditMode and 41/41 PlayMode under both code optimizations,
+including the 41 EditMode builder tests, so `FastCapture` and `RunInternal`
+bind and probe on Unity's Mono. Two Release runs measured the async-method
+`NextFrame` scheduling rows at 1.62x to 2.10x UniTask with flow on, down from
+2.25x to 2.55x, and 1.40x to 1.83x with flow off; Onity was slower in every
+one of the 24 scenarios. The allocation counter chain calibrated in both runs
+with every sample valid: about 0.04 to 0.06 B/op at 128 concurrent
+operations, which is the steady state the pools are sized for, and about 399
+to 407 B/op in the 4,096 burst, where the 128-runner and 256-source pool caps
+are exceeded and each extra operation allocates a runner and a frame source.
+The owner kept flow on as the default and found that Unity 2022.3 ignores a
+`link.xml` inside a package, so the reachability of the bound members now
+rests on an in-assembly reference to the class library's builder instead.
+
+Open items after this run: the scheduling rows still miss the 1.2x gate with
+either setting, so the remaining cost sits outside the context flow, in the
+pooled runner and source path itself; the burst allocation follows from the
+pool caps; and the IL2CPP player gate is still outstanding.
 

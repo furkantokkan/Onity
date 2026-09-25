@@ -652,10 +652,28 @@ end-to-end await costs. In response the builders now bind the class library's
 per-suspension context allocation until a thread stores an `AsyncLocal` value
 and keeps the resuming thread's synchronization context, and both runners
 use a calibrated counter chain that never changes the collector mode in the
-Editor. Neither change is measured in Unity yet; on desktop Mono 6.8, which
-compiles the same reference-source `ExecutionContext`, the fast path bound
-and probed correctly and a capture-and-run pair read 0 B/op without stored
-`AsyncLocal` values against 72 B/op on the public path.
+Editor. On desktop Mono 6.8, which compiles the same reference-source
+`ExecutionContext`, the fast path bound and probed correctly and a
+capture-and-run pair read 0 B/op without stored `AsyncLocal` values against
+72 B/op on the public path.
+
+A rerun at `f682b7c` on the same host verified both changes in Unity: 658/658
+EditMode and 41/41 PlayMode in both code optimizations, the fast path bound,
+and two Release runs of the primary suite.
+
+| Async method awaiting `NextFrame`, Release, `f682b7c` | Flow on | Flow off |
+| --- | ---: | ---: |
+| Scheduling, Onity/UniTask across both runs and all four rows | 1.62x to 2.10x | 1.40x to 1.83x |
+| Onity allocation at 128 concurrent operations | about 0.04 to 0.06 B/op | same |
+| Onity allocation in the 4,096 burst | about 399 to 407 B/op | same |
+
+Onity was slower in every one of the 24 scenarios. The counter chain
+calibrated in both runs with every sample valid. The steady-state figure is
+within the counter's noise of zero; the burst figure follows from the
+128-runner and 256-source pool caps, above which each operation allocates a
+runner and a frame source, and it is not a zero-allocation result. The
+scheduling gap that remains sits in the pooled runner and source path
+itself, not in the context flow.
 
 ## Feature coverage
 
@@ -663,7 +681,7 @@ and probed correctly and a capture-and-run pair read 0 B/op without stored
 | --- | --- |
 | Frame, fixed-frame, and late-frame waits; scaled and unscaled delays; predicate waits | Available with cancellation and single-consumer pooled sources. |
 | Scene, `AsyncOperation`, and web-request bridges | Available. Deferred scene loads require the caller to activate a started operation, even after cancellation. |
-| `async OnityTask` and `async OnityTask<T>` | Synchronous success stores the result inline; synchronous faults and cancellations are Task-backed. A suspended method binds a pooled native runner that holds the state machine by value and resumes through one cached delegate, and its task is single-consumer. The execution context flows across awaits by default (`OnityTask.FlowExecutionContext`) through the class library's internal `FastCapture` and `RunInternal` pair bound by reflection, with the public capture as the fallback; disable it for UniTask's no-flow semantics. Verified at `4be50dc` on the public path: full suites green in both code optimizations, Release scheduling 2.25x to 2.55x slower than UniTask with flow on and 1.44x to 1.78x with flow off, allocations unavailable. The reflection fast path (0 B/op against 72 B/op per capture-and-run pair on desktop Mono 6.8, not a Unity figure) and the new allocation counter are unmeasured in Unity. |
+| `async OnityTask` and `async OnityTask<T>` | Synchronous success stores the result inline; synchronous faults and cancellations are Task-backed. A suspended method binds a pooled native runner that holds the state machine by value and resumes through one cached delegate, and its task is single-consumer. The execution context flows across awaits by default (`OnityTask.FlowExecutionContext`) through the class library's internal `FastCapture` and `RunInternal` pair bound by reflection, with the public capture as the fallback; disable it for UniTask's no-flow semantics. Verified at `4be50dc` on the public path: full suites green in both code optimizations, Release scheduling 2.25x to 2.55x slower than UniTask with flow on and 1.44x to 1.78x with flow off, allocations unavailable. Re-verified at `f682b7c` with the reflection fast path bound: 1.62x to 2.10x with flow on and 1.40x to 1.83x with flow off, about 0.04 to 0.06 B/op at 128 concurrent operations and about 400 B/op in the 4,096 burst above the pool caps. |
 | `WhenAll` | Available, including typed ordered results. Already successful two-input untyped and eligible typed calls avoid Task bridges. Pending two-input untyped calls whose inputs are completion sources without a bridge or unclaimed single-consumer native sources, including suspended async methods, use a pooled coordinator and a Task-backed output. Pending calls with Task-backed, preserved, bridged, or already awaited inputs, duplicate single-consumer native inputs, and larger native typed sets use the Task bridge path. |
 | Native `WhenAny` | Available for two untyped inputs (winner index) and two inputs of the same result type (winner index and value). Both inputs are consumed; the loser is observed without cancellation. Duplicate single-consumer native inputs are rejected. The typed result source is nonpooled and allocates; the untyped source and two delegates allocate per call. Typed Editor/Mono results are reported above. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |

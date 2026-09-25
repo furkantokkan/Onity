@@ -55,15 +55,22 @@ namespace Onity.Unity.Async
     /// proven with a probe run once; when either is missing or behaves differently, the public
     /// <see cref="ExecutionContext.Capture"/> and <see cref="ExecutionContext.Run"/> path below is
     /// used instead, which allocates a context per suspension and re-installs the synchronization
-    /// context inside the callback.
+    /// context inside the callback. Managed code stripping keeps both members because this class
+    /// references the class library's own async method builder, whose completion path calls them.
     /// </remarks>
     internal static class OnityAsyncExecutionContext
     {
         private static readonly Func<ExecutionContext> s_fastCapture;
         private static readonly Action<ExecutionContext, ContextCallback, object, bool> s_runPreservingContext;
+        private static readonly Func<Task, Task> s_classLibraryBuilderAnchor;
 
         static OnityAsyncExecutionContext()
         {
+            // The state machine of this async Task method references
+            // AsyncTaskMethodBuilder.AwaitUnsafeOnCompleted, which reaches FastCapture and
+            // RunInternal, so the linker cannot strip them while this class is in the build.
+            s_classLibraryBuilderAnchor = AwaitThroughClassLibraryBuilderAsync;
+
             Func<ExecutionContext> fastCapture = null;
             Action<ExecutionContext, ContextCallback, object, bool> runPreservingContext = null;
             try
@@ -101,6 +108,10 @@ namespace Onity.Unity.Async
 
             s_fastCapture = fastCapture;
             s_runPreservingContext = runPreservingContext;
+            if (fastCapture == null)
+            {
+                ReportFallback();
+            }
         }
 
         /// <summary>
@@ -186,6 +197,39 @@ namespace Onity.Unity.Async
             {
                 flowControl.Undo();
             }
+        }
+
+        /// <summary>
+        /// Never invoked; its state machine keeps the class library's builder path reachable.
+        /// </summary>
+        private static async Task AwaitThroughClassLibraryBuilderAsync(Task task)
+        {
+            await task;
+        }
+
+        /// <summary>
+        /// Logs once, in players only, that the public path is in use, since that is the
+        /// allocation profile a developer would otherwise attribute to the package.
+        /// </summary>
+        private static void ReportFallback()
+        {
+#if !UNITY_EDITOR
+            try
+            {
+                if (Debug.isDebugBuild)
+                {
+                    Debug.LogWarning(
+                        "OnityTask: ExecutionContext.FastCapture or RunInternal is unavailable on this "
+                        + "runtime, so async OnityTask methods flow their context through the public "
+                        + "ExecutionContext API, which allocates per suspension. Managed code stripping "
+                        + "or a different class library can cause this; see the OnityTask guide.");
+                }
+            }
+            catch (Exception)
+            {
+                // Logging is a courtesy; the public path is fully functional.
+            }
+#endif
         }
 
         /// <summary>

@@ -217,8 +217,11 @@ unwinds. The builders bind the class library's own capture and run pair, the
 internal `ExecutionContext.FastCapture` and
 `RunInternal(context, callback, state, preserveSyncCtx: true)` that .NET's
 `AsyncTaskMethodBuilder` uses, through reflection, proven with a probe at
-first use and kept through managed code stripping by the package's
-`link.xml`. On that path a suspension on a thread that has never stored an
+first use. Managed code stripping keeps both members because the binding
+class references the class library's own async builder, whose completion path
+calls them; Unity ignores a `link.xml` inside a package, so none is shipped.
+A development player logs one warning when the pair is unavailable. On that
+path a suspension on a thread that has never stored an
 `AsyncLocal<T>` value captures the shared default context without
 allocating, and resumption keeps the thread's synchronization context; once a
 thread has stored a value, each suspension captures a context of about 72
@@ -226,12 +229,14 @@ bytes, as the .NET builder does. When the pair is missing the builders fall
 back to the public `ExecutionContext.Capture()` and `Run`, which allocate the
 captured context on every suspension, about 72 bytes plus a call-context
 object of about 56 bytes on the Mono JIT profile, and re-install the resuming
-thread's synchronization context inside the callback. The 2026-09-25 Unity
-verification measured the public path only. On desktop Mono 6.8, which
-compiles the same reference-source `ExecutionContext`, a capture-and-run pair
-measured 0 bytes and about 93 ns on the fast path without stored values
-against 72 bytes and about 135 ns on the public path; that is not a Unity
-measurement.
+thread's synchronization context inside the callback. The fast path binds on
+Unity 2022.3.62f2 Mono, where a test asserts it, and the 2026-09-25 Release
+verification at `f682b7c` measured async-method scheduling with it at 1.62x
+to 2.10x UniTask against 2.25x to 2.55x on the public path; flow off measured
+1.40x to 1.83x. On desktop Mono 6.8, which compiles the same reference-source
+`ExecutionContext`, a capture-and-run pair measured 0 bytes and about 93 ns
+on the fast path without stored values against 72 bytes and about 135 ns on
+the public path; that is not a Unity measurement.
 Set `OnityTask.FlowExecutionContext = false` before any async Onity method
 starts to skip the capture entirely; that gives UniTask's semantics, where
 `AsyncLocal<T>` does not flow, writes after an await stay on the resuming

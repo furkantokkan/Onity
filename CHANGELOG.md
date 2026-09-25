@@ -53,8 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   across awaits by default through the new `OnityTask.FlowExecutionContext`
   switch. The builders bind the class library's internal
   `ExecutionContext.FastCapture` and `RunInternal(..., preserveSyncCtx: true)`
-  pair through reflection, proven by a probe and kept through stripping by a
-  package `link.xml`, so a suspension allocates no context until a thread has
+  pair through reflection, proven by a probe and kept reachable for managed
+  code stripping by an in-assembly reference to the class library's builder
+  (Unity ignores a `link.xml` inside a package), so a suspension allocates no
+  context until a thread has
   stored an `AsyncLocal<T>` value and resumption keeps the thread's
   synchronization context; without the pair they use the public capture and
   run, which allocate the captured context on every suspension (about 72
@@ -67,9 +69,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   token. Verified at `4be50dc` on Unity 2022.3.62f2 with the public path:
   full EditMode and PlayMode suites passed in both code optimizations, and
   two Release runs measured async-method scheduling 2.25x to 2.55x slower
-  than UniTask with flow on and 1.44x to 1.78x with flow off. The fast path
-  is unmeasured in Unity; on desktop Mono 6.8, which compiles the same
-  reference-source `ExecutionContext`, it bound and probed correctly and a
+  than UniTask with flow on and 1.44x to 1.78x with flow off. Verified again
+  at `f682b7c` with the fast path bound: 658/658 EditMode and 41/41 PlayMode
+  in both code optimizations, flow-on scheduling 1.62x to 2.10x and flow-off
+  1.40x to 1.83x UniTask in two Release runs, Onity slower in every scenario,
+  and the new allocation counter calibrated with about 0.04 to 0.06 B/op at
+  128 concurrent operations and about 399 to 407 B/op in the 4,096 burst,
+  which exceeds the 128-runner and 256-source pool caps. On desktop Mono 6.8,
+  which compiles the same reference-source `ExecutionContext`, a
   capture-and-run pair read 0 B/op without stored `AsyncLocal` values against
   72 B/op on the public path.
 - Native single-consumer sources rethrow faults and cancellations through
