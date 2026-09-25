@@ -186,6 +186,7 @@ namespace Onity.Tests.EditMode
             object firstRunner = GetState(first);
             firstGate.Complete();
             first.GetAwaiter().GetResult();
+            DrainDeferredPoolReturns();
 
             ManualAwaitable secondGate = new ManualAwaitable();
             OnityTask<int> second = ReturnAfterAsync(secondGate, 2);
@@ -233,9 +234,13 @@ namespace Onity.Tests.EditMode
             OnityTask<ResumeObservation> task = ObserveAfterAsync(gate, local);
             local.Value = null;
             string workerAmbientAfter = "unset";
+            SynchronizationContext workerContext = null;
 
             Task.Run(() =>
             {
+                // Unity's Task constructor captures the main thread's context through the public
+                // ExecutionContext.Capture, so a Task.Run body carries a copy of the Unity context.
+                workerContext = SynchronizationContext.Current;
                 gate.Complete();
                 workerAmbientAfter = local.Value;
             }).GetAwaiter().GetResult();
@@ -243,7 +248,8 @@ namespace Onity.Tests.EditMode
             ResumeObservation observation = task.GetAwaiter().GetResult();
             Assert.That(observation.ThreadId, Is.Not.EqualTo(Thread.CurrentThread.ManagedThreadId));
             Assert.That(observation.LocalValue, Is.EqualTo("main"));
-            Assert.That(observation.Context, Is.Null, "A worker without a synchronization context must resume without one.");
+            Assert.That(observation.Context, Is.SameAs(workerContext),
+                "The resumed method must observe the resuming thread's synchronization context.");
             Assert.That(workerAmbientAfter, Is.Null, "The flowed value leaked into the worker's ambient context.");
         }
 
@@ -330,6 +336,40 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void FlowSwitchFlippedWhileSuspended_KeepsEachMethodsCaptureDecision()
+        {
+            AsyncLocal<string> local = new AsyncLocal<string>();
+            ManualAwaitable flowedGate = new ManualAwaitable();
+            ManualAwaitable bareGate = new ManualAwaitable();
+
+            try
+            {
+                OnityTask.FlowExecutionContext = true;
+                local.Value = "captured";
+                OnityTask<ResumeObservation> flowed = ObserveAfterAsync(flowedGate, local);
+
+                OnityTask.FlowExecutionContext = false;
+                OnityTask<ResumeObservation> bare = ObserveAfterAsync(bareGate, local);
+
+                // The decision was taken at each suspension; flipping the switch and the ambient
+                // value before resumption must not change what either method observes.
+                local.Value = "ambient";
+                OnityTask.FlowExecutionContext = true;
+                flowedGate.Complete();
+                OnityTask.FlowExecutionContext = false;
+                bareGate.Complete();
+
+                Assert.That(flowed.GetAwaiter().GetResult().LocalValue, Is.EqualTo("captured"));
+                Assert.That(bare.GetAwaiter().GetResult().LocalValue, Is.EqualTo("ambient"));
+                Assert.That(local.Value, Is.EqualTo("ambient"));
+            }
+            finally
+            {
+                local.Value = null;
+            }
+        }
+
+        [Test]
         public void Forget_NativeTask_ReportsTheFailureToTheHandler()
         {
             OnityTaskTracker.IsEnabled = false;
@@ -406,6 +446,80 @@ namespace Onity.Tests.EditMode
             Assert.That(combined.IsFaulted, Is.True);
             Assert.That(Assert.Throws<InvalidOperationException>(() => combined.GetAwaiter().GetResult()),
                 Is.SameAs(failure));
+        }
+
+        [Test]
+        public void WhenAll_PendingInputWithTaskBridge_TakesTheTaskPath_AndCompletes()
+        {
+            ManualAwaitable firstGate = new ManualAwaitable();
+            ManualAwaitable secondGate = new ManualAwaitable();
+            OnityTask first = CompleteAfterAsync(firstGate);
+            OnityTask second = CompleteAfterAsync(secondGate);
+            Task bridge = second.AsTask();
+
+            OnityTask combined = OnityTask.WhenAll(first, second);
+
+            Assert.That(GetState(combined), Is.InstanceOf<Task>(),
+                "An input that already has a .NET bridge must not enter the pooled coordinator.");
+            firstGate.Complete();
+            secondGate.Complete();
+
+            Task combinedTask = combined.AsTask();
+            Assert.That(combinedTask.Wait(TimeSpan.FromSeconds(5)), Is.True, "WhenAll did not complete.");
+            Assert.That(combinedTask.IsCompletedSuccessfully, Is.True);
+            Assert.That(bridge.IsCompletedSuccessfully, Is.True);
+        }
+
+        [Test]
+        public void WhenAll_InputWithNativeAwaiter_Throws_AndKeepsTheOtherInputAwaitable()
+        {
+            ManualAwaitable firstGate = new ManualAwaitable();
+            ManualAwaitable secondGate = new ManualAwaitable();
+            OnityTask first = CompleteAfterAsync(firstGate);
+            OnityTask second = CompleteAfterAsync(secondGate);
+            bool firstObserved = false;
+            first.GetAwaiter().OnCompleted(() => firstObserved = true);
+
+            Assert.Throws<InvalidOperationException>(() => OnityTask.WhenAll(first, second),
+                "An input that already has a native awaiter cannot join a WhenAll.");
+
+            // The rejected call must not have claimed the other input or stranded a coordinator.
+            secondGate.Complete();
+            Assert.That(second.IsCompletedSuccessfully, Is.True);
+            Assert.DoesNotThrow(() => second.GetAwaiter().GetResult());
+            firstGate.Complete();
+            Assert.That(firstObserved, Is.True);
+        }
+
+        [Test]
+        public void WhenAll_ConsumedInput_ThrowsInsteadOfHanging()
+        {
+            ManualAwaitable firstGate = new ManualAwaitable();
+            ManualAwaitable secondGate = new ManualAwaitable();
+            OnityTask first = CompleteAfterAsync(firstGate);
+            OnityTask second = CompleteAfterAsync(secondGate);
+            firstGate.Complete();
+            first.GetAwaiter().GetResult();
+
+            Assert.Throws<InvalidOperationException>(() => OnityTask.WhenAll(first, second));
+
+            secondGate.Complete();
+            Assert.DoesNotThrow(() => second.GetAwaiter().GetResult());
+        }
+
+        /// <summary>
+        /// Under IL2CPP a released runner returns to its pool from the next dispatcher drain rather
+        /// than synchronously; the Mono path returns immediately, so this is a no-op there.
+        /// </summary>
+        private static void DrainDeferredPoolReturns()
+        {
+#if ENABLE_IL2CPP
+            Type dispatcherType = typeof(OnityTask).Assembly.GetType(
+                "Onity.Unity.Async.OnityTaskMainThreadDispatcher", true);
+            MethodInfo drain = dispatcherType.GetMethod("Drain", BindingFlags.Static | BindingFlags.Public);
+            Assert.That(drain, Is.Not.Null);
+            drain.Invoke(null, null);
+#endif
         }
 
         private static object GetState(OnityTask task)

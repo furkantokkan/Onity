@@ -80,13 +80,17 @@ the original pooled value.
 For an operation completed by a callback, use `OnityTaskCompletionSource<T>`
 or its untyped variant to expose an OnityTask that supports multiple consumers.
 
-Suspended `async OnityTask` methods and many `WhenAll` paths use .NET `Task`
+Suspended `async OnityTask` methods bind a pooled native runner and return
+single-consumer tasks; await each once or call `Preserve()` to share it. By
+default they flow the execution context across awaits, which allocates the
+captured context per suspension; `OnityTask.FlowExecutionContext = false`
+gives UniTask's no-flow semantics. Many `WhenAll` paths use .NET `Task`
 internally. Completed inputs can take direct paths; eligible pending untyped
-completion-source pairs use a pooled coordinator with a Task-backed output.
-Typed `WhenAny` uses an allocating result source. A synchronously
-successful `async OnityTask<T>` stores its result inline. Pooled Unity waits
-avoid a `Task` until explicitly converted; do not assume all OnityTask paths
-are allocation-free.
+pairs use a pooled coordinator with a Task-backed output. Typed `WhenAny`
+uses an allocating result source. A synchronously successful
+`async OnityTask<T>` stores its result inline. Pooled Unity waits avoid a
+`Task` until explicitly converted; do not assume all OnityTask paths are
+allocation-free.
 
 See the [Async with OnityTask guide](https://furkantokkan.github.io/Onity/guide/onitytask.html)
 for cancellation, scene/web operations, interop, and diagnostics.

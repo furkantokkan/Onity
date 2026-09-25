@@ -564,7 +564,9 @@ namespace Onity.Unity.Async
         /// <summary>
         /// True for the default completed task, an untyped completion source without a .NET task
         /// bridge, and any single-consumer native source such as a frame wait or a suspended async
-        /// method. Task-backed and preserved tasks keep the .NET composition path.
+        /// method that no awaiter, bridge, or consumer has claimed yet. Task-backed, preserved, and
+        /// already claimed tasks keep the .NET composition path, whose <c>AsTask()</c> calls report
+        /// the conflict instead of stranding the coordinator.
         /// </summary>
         private bool IsPairCoordinatorEligible
         {
@@ -578,6 +580,11 @@ namespace Onity.Unity.Async
                 if (m_state is OnityTaskCompletionSource completionSource)
                 {
                     return !completionSource.HasTaskBridge;
+                }
+
+                if (m_state is OnityTaskSourceBase sourceBase)
+                {
+                    return !sourceBase.HasConsumer;
                 }
 
                 return m_state is IOnityTaskSource && !(m_state is IOnityMultiConsumerTaskSource);
@@ -1339,16 +1346,53 @@ namespace Onity.Unity.Async
 
         public void Start()
         {
+            int registered = 0;
+            Exception registrationFailure = null;
             try
             {
                 Register(m_first, m_completeFirst);
+                registered = 1;
                 Register(m_second, m_completeSecond);
+                registered = 2;
+            }
+            catch (Exception exception)
+            {
+                registrationFailure = exception;
+                throw;
             }
             finally
             {
+                TaskCompletionSource<bool> failedCompletion = null;
                 lock (this)
                 {
                     m_registrationPinned = false;
+                    if (registered < 2)
+                    {
+                        // An input whose registration threw never calls back. Record the failure
+                        // for it so the caller's exception also settles the tracked completion
+                        // and the coordinator returns to the pool once the other input reports.
+                        if (registered == 0)
+                        {
+                            m_firstFault = registrationFailure;
+                            m_remaining--;
+                        }
+
+                        m_secondFault = registrationFailure;
+                        m_remaining--;
+                        if (m_remaining == 0)
+                        {
+                            failedCompletion = m_completion;
+                        }
+                    }
+                }
+
+                if (failedCompletion != null)
+                {
+                    failedCompletion.TrySetException(registrationFailure);
+                }
+
+                lock (this)
+                {
                     ReturnIfReady();
                 }
             }
@@ -1385,55 +1429,65 @@ namespace Onity.Unity.Async
                 input = isFirst ? m_first : m_second;
             }
 
-            Exception fault = null;
-            bool canceled = false;
-            CancellationToken cancellationToken = default;
-            OnityTaskSourceStatus status = input.ReadCompletedSourceOutcome(
-                out fault, out cancellationToken);
-            if (status == OnityTaskSourceStatus.Pending)
-            {
-                fault = new InvalidOperationException("OnityTask is not completed.");
-            }
-
-            canceled = status == OnityTaskSourceStatus.Canceled;
-
-            TaskCompletionSource<bool> completion = null;
-            Exception firstFault = null;
-            Exception secondFault = null;
-            bool firstCanceled = false;
-            bool secondCanceled = false;
-            CancellationToken firstCancellationToken = default;
-            CancellationToken secondCancellationToken = default;
-
-            lock (this)
-            {
-                if (isFirst)
-                {
-                    m_firstFault = fault;
-                    m_firstCanceled = canceled;
-                    m_firstCancellationToken = cancellationToken;
-                }
-                else
-                {
-                    m_secondFault = fault;
-                    m_secondCanceled = canceled;
-                    m_secondCancellationToken = cancellationToken;
-                }
-
-                if (--m_remaining == 0)
-                {
-                    completion = m_completion;
-                    firstFault = m_firstFault;
-                    secondFault = m_secondFault;
-                    firstCanceled = m_firstCanceled;
-                    secondCanceled = m_secondCanceled;
-                    firstCancellationToken = m_firstCancellationToken;
-                    secondCancellationToken = m_secondCancellationToken;
-                }
-            }
-
             try
             {
+                Exception fault;
+                CancellationToken cancellationToken;
+                OnityTaskSourceStatus status;
+                try
+                {
+                    status = input.ReadCompletedSourceOutcome(out fault, out cancellationToken);
+                    if (status == OnityTaskSourceStatus.Pending)
+                    {
+                        fault = new InvalidOperationException("OnityTask is not completed.");
+                    }
+                }
+                catch (Exception exception)
+                {
+                    // A single-consumer input consumed elsewhere between its completion and this
+                    // callback rejects its token; report that instead of leaving the pair pending.
+                    status = OnityTaskSourceStatus.Faulted;
+                    fault = exception;
+                    cancellationToken = default;
+                }
+
+                bool canceled = status == OnityTaskSourceStatus.Canceled;
+
+                TaskCompletionSource<bool> completion = null;
+                Exception firstFault = null;
+                Exception secondFault = null;
+                bool firstCanceled = false;
+                bool secondCanceled = false;
+                CancellationToken firstCancellationToken = default;
+                CancellationToken secondCancellationToken = default;
+
+                lock (this)
+                {
+                    if (isFirst)
+                    {
+                        m_firstFault = fault;
+                        m_firstCanceled = canceled;
+                        m_firstCancellationToken = cancellationToken;
+                    }
+                    else
+                    {
+                        m_secondFault = fault;
+                        m_secondCanceled = canceled;
+                        m_secondCancellationToken = cancellationToken;
+                    }
+
+                    if (--m_remaining == 0)
+                    {
+                        completion = m_completion;
+                        firstFault = m_firstFault;
+                        secondFault = m_secondFault;
+                        firstCanceled = m_firstCanceled;
+                        secondCanceled = m_secondCanceled;
+                        firstCancellationToken = m_firstCancellationToken;
+                        secondCancellationToken = m_secondCancellationToken;
+                    }
+                }
+
                 if (completion != null)
                 {
                     if (firstFault != null && secondFault != null)
@@ -1822,6 +1876,15 @@ namespace Onity.Unity.Async
         public int Version => Volatile.Read(ref m_version);
 
         public bool IsCancellationRequested => Volatile.Read(ref m_cancellationRequested) != 0;
+
+        /// <summary>
+        /// True once a native awaiter, a preserved continuation, or a .NET task bridge has claimed
+        /// the source, or after its result was consumed. Read without the lock: a caller that
+        /// registers afterwards still goes through the locked checks.
+        /// </summary>
+        internal bool HasConsumer =>
+            Volatile.Read(ref m_consumptionMode) != k_noConsumption
+            || Volatile.Read(ref m_consumed) != 0;
 
         protected bool IsPending => Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Pending;
 
@@ -3411,8 +3474,9 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
-        /// Sets the async state machine. The runner stores the state machine by value, so no boxed
-        /// state machine is kept.
+        /// Part of the builder contract that is never invoked: the compiler-generated state machine
+        /// forwards this call only when a builder boxes it, and the runner stores the state machine
+        /// by value instead.
         /// </summary>
         /// <param name="stateMachine">State machine.</param>
         public void SetStateMachine(IAsyncStateMachine stateMachine)
@@ -3556,8 +3620,9 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
-        /// Sets the async state machine. The runner stores the state machine by value, so no boxed
-        /// state machine is kept.
+        /// Part of the builder contract that is never invoked: the compiler-generated state machine
+        /// forwards this call only when a builder boxes it, and the runner stores the state machine
+        /// by value instead.
         /// </summary>
         /// <param name="stateMachine">State machine.</param>
         public void SetStateMachine(IAsyncStateMachine stateMachine)

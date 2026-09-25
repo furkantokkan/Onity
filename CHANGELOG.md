@@ -44,22 +44,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instance preserved. A fault or `OperationCanceledException` thrown after a
   suspension is rethrown as the same instance. `AsyncLocal<T>` values flow
   across awaits by default through the new `OnityTask.FlowExecutionContext`
-  switch, which uses a public sync-context-free capture; disabling it gives
-  UniTask's no-flow semantics. Writes made before the first await are no
-  longer isolated from the caller. Measured in the Editor as compile-checked
-  only; the 2026-09-25 builder timings and the 2026-09-23 allocation figures
-  describe the previous implementation.
+  switch, which uses a public sync-context-free capture that still allocates
+  the captured context on every suspension (about 72 bytes, plus about 56
+  bytes on Mono); disabling it gives UniTask's no-flow semantics without that
+  capture. Writes made before the first await are no longer isolated from the
+  caller and persist in the thread's ambient context. The same-instance
+  guarantee holds for the native await; `AsTask()` consumers receive a
+  `TaskCanceledException` and `Preserve()` re-raises a new
+  `OperationCanceledException` with the same token. Compile-checked only; the
+  2026-09-25 builder timings and the 2026-09-23 allocation figures describe
+  the previous implementation.
 - Native single-consumer sources rethrow faults and cancellations through
-  `ExceptionDispatchInfo`, keep the thrown `OperationCanceledException`
-  instance, and retire their token when they return to the pool. Their
-  `AsTask()` bridges are created without capturing the caller's execution
-  context. `Forget()` on such a task observes it directly while task tracking
-  is disabled, and the two-input untyped `WhenAll` accepts pending
-  single-consumer native inputs, including suspended async methods, on the
-  pooled coordinator path.
+  `ExceptionDispatchInfo` and keep the thrown `OperationCanceledException`
+  instance, and runner-backed sources retire their token when they return to
+  the pool. Their `AsTask()` bridges are created without capturing the
+  caller's execution context. `Forget()` on such a task observes it directly
+  while task tracking is disabled, and the two-input untyped `WhenAll` accepts
+  pending single-consumer native inputs, including suspended async methods,
+  on the pooled coordinator path. Inputs that already have an awaiter, a
+  bridge, or a consumer stay on the .NET path, whose `AsTask()` reports the
+  conflict; a registration failure or an input consumed elsewhere before the
+  coordinator reads it now faults the combined task instead of leaving it
+  pending. On IL2CPP a runner's deferred pool return waits while a worker is
+  still unwinding the completing `MoveNext`.
 - Both task benchmark runners fall back to a `GC.GetTotalMemory` delta with the
   collector disabled inside each measured slice when the per-thread counter
-  fails its controls, and record which counter produced the values.
+  fails its controls, and record which counter produced the values. The
+  primary suite (report schema 4) measures the eight async-method `NextFrame`
+  cases with `OnityTask.FlowExecutionContext` on and again with it off,
+  suffixed ` (flow off)`, for 24 scenarios, and records the setting's default
+  and the task tracker state.
 
 ### Improved
 

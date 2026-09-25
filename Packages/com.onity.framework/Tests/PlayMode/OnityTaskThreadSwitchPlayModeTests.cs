@@ -201,24 +201,34 @@ namespace Onity.Tests.PlayMode
         [UnityTest]
         public IEnumerator SwitchToMainThread_AsyncLocal_FlowsThroughAsyncTaskAndAsyncOnityTask()
         {
-            AsyncLocal<string> local = new AsyncLocal<string>();
-            SynchronizationContext unityContext = SynchronizationContext.Current;
-            Assert.That(unityContext, Is.Not.Null);
+            // The async OnityTask half depends on the builder's flow switch, so the test pins it.
+            bool previousFlow = OnityTask.FlowExecutionContext;
+            OnityTask.FlowExecutionContext = true;
+            try
+            {
+                AsyncLocal<string> local = new AsyncLocal<string>();
+                SynchronizationContext unityContext = SynchronizationContext.Current;
+                Assert.That(unityContext, Is.Not.Null);
 
-            Task<(string value, SynchronizationContext context)> viaTask =
-                Task.Run(() => FlowThroughTaskAsync(local));
-            Task<(string value, SynchronizationContext context)> viaOnityTask =
-                Task.Run(() => FlowThroughOnityTaskAsync(local).AsTask());
+                Task<(string value, SynchronizationContext context)> viaTask =
+                    Task.Run(() => FlowThroughTaskAsync(local));
+                Task<(string value, SynchronizationContext context)> viaOnityTask =
+                    Task.Run(() => FlowThroughOnityTaskAsync(local).AsTask());
 
-            yield return WaitForFlag(() => viaTask.IsCompleted && viaOnityTask.IsCompleted, k_timeoutFrames);
+                yield return WaitForFlag(() => viaTask.IsCompleted && viaOnityTask.IsCompleted, k_timeoutFrames);
 
-            Assert.That(viaTask.IsCompletedSuccessfully, Is.True);
-            Assert.That(viaOnityTask.IsCompletedSuccessfully, Is.True);
-            Assert.That(viaTask.Result.value, Is.EqualTo("task"));
-            Assert.That(viaTask.Result.context, Is.SameAs(unityContext));
-            Assert.That(viaOnityTask.Result.value, Is.EqualTo("onity"));
-            Assert.That(viaOnityTask.Result.context, Is.SameAs(unityContext));
-            Assert.That(local.Value, Is.Null, "The flowed value leaked into the main thread's context.");
+                Assert.That(viaTask.IsCompletedSuccessfully, Is.True);
+                Assert.That(viaOnityTask.IsCompletedSuccessfully, Is.True);
+                Assert.That(viaTask.Result.value, Is.EqualTo("task"));
+                Assert.That(viaTask.Result.context, Is.SameAs(unityContext));
+                Assert.That(viaOnityTask.Result.value, Is.EqualTo("onity"));
+                Assert.That(viaOnityTask.Result.context, Is.SameAs(unityContext));
+                Assert.That(local.Value, Is.Null, "The flowed value leaked into the main thread's context.");
+            }
+            finally
+            {
+                OnityTask.FlowExecutionContext = previousFlow;
+            }
         }
 
         [UnityTest]
