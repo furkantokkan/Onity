@@ -25,8 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added focused EditMode, PlayMode, and Editor lifecycle tests for the thread
   switch, plus the `Onity/Benchmarks/Run OnityTask Thread Switch Benchmarks
   (Play Mode)` comparison harness. These were compile-checked outside Unity;
-  the Unity test suites and the benchmark have not yet run on this change, and
-  no thread-switch performance comparison has been published.
+  the Unity test suites have not yet run on this change.
+
+### Improved
+
+- Rewrote the main-thread switch drain to array-backed double buffers with one
+  session read per batch and an inline exception guard. Two Editor/Mono runs of
+  the earlier `List<T>` drain measured main-thread dispatch 25 to 36 percent
+  slower than pinned UniTask while worker enqueue of 4,096 continuations was 10
+  to 22 percent faster; the rewrite is not yet measured, and allocation
+  counters were unavailable in those runs.
 
 ## [0.3.13] - 2026-09-24
 

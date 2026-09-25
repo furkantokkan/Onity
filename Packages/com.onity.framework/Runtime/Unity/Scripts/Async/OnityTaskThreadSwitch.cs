@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using UnityEngine;
@@ -127,10 +126,11 @@ namespace Onity.Unity.Async
         private static readonly object s_gate = new object();
         private static readonly SendOrPostCallback s_ensureRunnerCallback = EnsureRunnerPosted;
 
-        private static List<QueuedContinuation> s_pending =
-            new List<QueuedContinuation>(k_initialQueueCapacity);
-        private static List<QueuedContinuation> s_draining =
-            new List<QueuedContinuation>(k_initialQueueCapacity);
+        // Double-buffered arrays: workers append to the pending buffer under the gate, and a drain
+        // swaps the buffers so it can run the batch without holding the gate.
+        private static QueuedContinuation[] s_pending = new QueuedContinuation[k_initialQueueCapacity];
+        private static QueuedContinuation[] s_draining = new QueuedContinuation[k_initialQueueCapacity];
+        private static int s_pendingCount;
         private static SynchronizationContext s_mainThreadContext;
         private static int s_mainThreadId;
         private static int s_session = 1;
@@ -163,7 +163,7 @@ namespace Onity.Unity.Async
             {
                 lock (s_gate)
                 {
-                    return s_pending.Count;
+                    return s_pendingCount;
                 }
             }
         }
@@ -188,7 +188,16 @@ namespace Onity.Unity.Async
                     return;
                 }
 
-                s_pending.Add(new QueuedContinuation(continuation, session));
+                int count = s_pendingCount;
+                if (count == s_pending.Length)
+                {
+                    QueuedContinuation[] grown = new QueuedContinuation[count * 2];
+                    Array.Copy(s_pending, grown, count);
+                    s_pending = grown;
+                }
+
+                s_pending[count] = new QueuedContinuation(continuation, session);
+                s_pendingCount = count + 1;
             }
 
             if (Volatile.Read(ref s_runnerMissing) != 0 && Volatile.Read(ref s_isPlaying) != 0)
@@ -211,32 +220,46 @@ namespace Onity.Unity.Async
             s_isDraining = true;
             try
             {
-                List<QueuedContinuation> batch;
+                QueuedContinuation[] batch;
+                int count;
                 lock (s_gate)
                 {
-                    if (s_pending.Count == 0)
+                    count = s_pendingCount;
+                    if (count == 0)
                     {
                         return;
                     }
 
                     batch = s_pending;
                     s_pending = s_draining;
+                    s_pendingCount = 0;
                     s_draining = batch;
                 }
 
-                int count = batch.Count;
+                // Sessions change only from Unity load hooks, Play Mode transitions and quitting,
+                // never synchronously inside a drained continuation, so one read covers the batch.
+                int session = Volatile.Read(ref s_session);
                 for (int i = 0; i < count; i++)
                 {
-                    QueuedContinuation queued = batch[i];
+                    ref readonly QueuedContinuation queued = ref batch[i];
 
                     // Session zero only comes from a default awaitable value; it always runs.
-                    if (queued.Session == 0 || queued.Session == Volatile.Read(ref s_session))
+                    if (queued.Session != session && queued.Session != 0)
                     {
-                        OnityTaskContinuation.Invoke(queued.Continuation);
+                        continue;
+                    }
+
+                    try
+                    {
+                        queued.Continuation();
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception);
                     }
                 }
 
-                batch.Clear();
+                Array.Clear(batch, 0, count);
             }
             finally
             {
@@ -316,7 +339,7 @@ namespace Onity.Unity.Async
             lock (s_gate)
             {
                 s_session++;
-                s_pending.Clear();
+                ClearPendingUnsafe();
                 s_isShutDown = 0;
             }
         }
@@ -327,12 +350,18 @@ namespace Onity.Unity.Async
             lock (s_gate)
             {
                 s_session++;
-                s_pending.Clear();
+                ClearPendingUnsafe();
                 if (shutDown)
                 {
                     s_isShutDown = 1;
                 }
             }
+        }
+
+        private static void ClearPendingUnsafe()
+        {
+            Array.Clear(s_pending, 0, s_pendingCount);
+            s_pendingCount = 0;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

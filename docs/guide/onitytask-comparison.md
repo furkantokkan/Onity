@@ -488,6 +488,88 @@ candidate passed 602/602 EditMode and 28/28 PlayMode tests; the Release
 The [immutable comparison and raw evidence](https://github.com/furkantokkan/Onity/blob/9d68815f38847731377f59c25a34d5b736f118c3/docs/assets/benchmarks/onity-typed-whenany-callbacks-2026-09-24.md)
 record the controls, sample values, and Editor/Mono measurement boundaries.
 
+## Thread-switch comparison
+
+`OnityTask.SwitchToMainThread` at product commit `3260c40` was measured against
+pinned UniTask `2.5.11` with the dedicated
+`Onity/Benchmarks/Run OnityTask Thread Switch Benchmarks (Play Mode)` harness
+in two separate Editor/Mono processes on 2026-09-25. Values are mean ns/op from
+eight samples per case with alternating library order; Delta is Onity relative
+to UniTask, so a negative value favors Onity. These are descriptive
+comparisons, not significance tests.
+
+| Scenario | N | Run 1 Onity | Run 1 UniTask | Delta | Run 2 Onity | Run 2 UniTask | Delta |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Main-thread switch | 1 | 207.00 | 209.88 | -1.4% | 198.09 | 199.01 | -0.5% |
+| Pre-canceled main-thread switch | 1 | 9882.97 | 10569.85 | -6.5% | 6263.22 | 6613.02 | -5.3% |
+| Worker scheduling | 128 | 486.77 | 433.72 | +12.2% | 299.10 | 402.55 | -25.7% |
+| Main-thread dispatch | 128 | 101.06 | 81.07 | +24.7% | 100.15 | 73.57 | +36.1% |
+| Worker scheduling | 4096 | 323.81 | 361.80 | -10.5% | 204.28 | 261.87 | -22.0% |
+| Main-thread dispatch | 4096 | 102.58 | 80.57 | +27.3% | 76.00 | 59.20 | +28.4% |
+| Thread-pool hop then switch | 128 | 47351.62 | 47224.63 | +0.3% | 19014.39 | 17793.82 | +6.9% |
+
+The synchronous main-thread switch is close in both runs. Enqueueing 4,096
+continuations from a worker favored Onity in both runs, while the 128-operation
+enqueue changed direction between runs and has no winner. Main-thread callback
+dispatch favored UniTask in both runs by 25 to 36 percent. Dispatch measures
+the interval between the first and last callback of one batch divided by N-1;
+queue setup, buffer swapping, and teardown are outside it. The round trip uses
+`async Task` for both libraries, so it compares neither native builder, and its
+batch time divided by concurrency is not an individual call latency.
+
+The measured `3260c40` drain read each entry through a `List<T>` indexer, read
+the session number per entry, and invoked every continuation through a separate
+non-inlined helper with its own null check and exception guard. The pinned
+UniTask `ContinuationQueue` runs a raw `Action[]` with an inline exception
+guard. The drain was rewritten afterwards to array-backed double buffers with
+one session read per batch and an inline exception guard; **that change is not
+yet measured**, so the table above remains the current evidence.
+
+Allocation values are unavailable for these runs: the main-thread and
+worker-thread `GC.GetAllocatedBytesForCurrentThread` counters reported zero for
+the 64 KiB positive control, so every bytes/op value is `-1` and the empty
+baseline's literal zero is not a zero-allocation measurement. No zero-allocation
+claim follows from these runs; the design target of 0 B/op for the synchronous
+main-thread path is unverified.
+
+## Primary suite rerun
+
+The 16-scenario primary harness was rerun on the same source and host on
+2026-09-25. Mean ns/op; scheduling and result consumption remain separate
+slices, and frame waits, resumption, and builder completion during resumption
+are excluded. The separate Profiler allocation pass passed its 65,568 B and 0 B
+controls but did not capture a synchronous sample in two attempts, so its
+bytes/op values are also unavailable and the timing arrays were verified
+unchanged by that pass.
+
+| Scenario | N | Onity | UniTask |
+| --- | ---: | ---: | ---: |
+| Completed GetResult | 1 | 71.11 | 70.54 |
+| FromResult<int> GetResult | 1 | 88.49 | 88.61 |
+| NextFrame scheduling | 128 | 559.78 | 568.87 |
+| NextFrame GetResult | 128 | 249.46 | 212.04 |
+| NextFrame scheduling | 4096 | 473.76 | 459.89 |
+| NextFrame GetResult | 4096 | 164.31 | 152.44 |
+| Async method completed GetResult | 1 | 775.42 | 354.33 |
+| Async method completed<int> GetResult | 1 | 702.54 | 379.77 |
+| Async method NextFrame scheduling | 128 | 2734.70 | 1440.73 |
+| Async method NextFrame GetResult | 128 | 75.70 | 153.91 |
+| Async method NextFrame scheduling | 4096 | 2414.53 | 1337.64 |
+| Async method NextFrame GetResult | 4096 | 63.04 | 138.53 |
+| Async method NextFrame<int> scheduling | 128 | 2571.04 | 1350.38 |
+| Async method NextFrame<int> GetResult | 128 | 79.28 | 144.61 |
+| Async method NextFrame<int> scheduling | 4096 | 2107.73 | 1175.43 |
+| Async method NextFrame<int> GetResult | 4096 | 66.71 | 116.52 |
+
+Starting a native `async OnityTask` method that suspends once is roughly 1.8 to
+2.2 times slower than the UniTask equivalent, and consuming a synchronously
+completed async method is about 2.2 times slower, while consuming the suspended
+method's result is faster. The
+[async builder gap analysis](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/11-OnityTask-AsyncBuilderGap.md)
+traces this to the wrapped `AsyncTaskMethodBuilder` and records the decision
+the product owner has to make before that gap can close. Raw run reports were
+retained on the benchmark host and are not yet committed to this repository.
+
 ## Feature coverage
 
 | Capability | OnityTask status |
@@ -499,7 +581,7 @@ record the controls, sample values, and Editor/Mono measurement boundaries.
 | Native `WhenAny` | Available for two untyped inputs (winner index) and two inputs of the same result type (winner index and value). Both inputs are consumed; the loser is observed without cancellation. Duplicate single-consumer native inputs are rejected. The typed result source is nonpooled and allocates; the untyped source and two delegates allocate per call. Typed Editor/Mono results are reported above. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
 | Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. Pending typed conversion measured 120 B/task in Editor/Mono at `c2f9358`; see the follow-up above. |
-| Main-thread switch | `OnityTask.SwitchToMainThread` completes synchronously on the main thread and queues worker-thread continuations for the Update phase. Cancellation is observed at `GetResult` on the destination thread; Edit Mode dispatch and Play Mode session isolation are defined in the [contract](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/10-OnityTask-MainThreadSwitch.md). Thread-pool switching and timing selection are not available. **Not yet measured** against UniTask; the dedicated `Onity/Benchmarks/Run OnityTask Thread Switch Benchmarks (Play Mode)` harness exists but has produced no published result. |
+| Main-thread switch | `OnityTask.SwitchToMainThread` completes synchronously on the main thread and queues worker-thread continuations for the Update phase. Cancellation is observed at `GetResult` on the destination thread; Edit Mode dispatch and Play Mode session isolation are defined in the [contract](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/10-OnityTask-MainThreadSwitch.md). Thread-pool switching and timing selection are not available. The Editor/Mono comparison above is mixed: the synchronous switch is close, large worker enqueues favor Onity, and callback dispatch favored UniTask in both runs before the unmeasured drain rewrite. Allocations are unmeasured. |
 | Selectable PlayerLoop phases and immediate cancellation | Limited to the supported runner phases and next-tick cancellation. |
 | `await foreach` async enumerable | Not yet available. |
 

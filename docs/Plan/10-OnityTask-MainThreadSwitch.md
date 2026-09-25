@@ -99,6 +99,7 @@ released `0.3.13` source (`ad0bfd5`).
 | Concurrent producers, reentrant registration during a drain, runner destruction and recreation | PlayMode `OnityTaskThreadSwitchPlayModeTests` | Written, not yet run in Unity |
 | `AsyncLocal` flow and suppressed flow through `async Task` and `async OnityTask` | PlayMode `OnityTaskThreadSwitchPlayModeTests` | Written, not yet run in Unity |
 | Edit Mode dispatch through `EditorApplication.update`, including manual main-thread registration | EditMode `OnityTaskThreadSwitchEditModeTests` | Written, not yet run in Unity |
+| A throwing continuation does not stop the rest of a batch; registration order survives buffer growth past the initial 64 entries | EditMode `OnityTaskThreadSwitchEditModeTests` | Written, not yet run in Unity |
 | Session isolation across Play Mode entry and exit, domain reload enabled and disabled | EditMode `OnityTaskThreadSwitchEditorLifecycleTests` with `EnterPlayMode`/`ExitPlayMode` | Written, not yet run in Unity |
 | Compile check of the changed runtime, tests, and benchmark files | Roslyn 4.10 against .NET Standard 2.1 references with Unity, Editor, Test Framework, and UniTask stubs | See the change record in the pull request or commit message |
 
@@ -126,7 +127,23 @@ pinned UniTask dependency and the `ONITY_TASK_BENCHMARKS` define. It measures:
 
 Timing uses eight samples per case, alternating library order. Report values
 are machine-specific Editor/Mono evidence; player and IL2CPP results need a
-separate run. No thread-switch measurement has been taken yet.
+separate run.
+
+### Measured state
+
+Two Editor/Mono runs of `3260c40` on 2026-09-25 are recorded in the
+[comparison guide](../guide/onitytask-comparison.md#thread-switch-comparison).
+The synchronous main-thread switch was within 1.5 percent of UniTask, worker
+enqueue of 4,096 continuations favored Onity by 10 to 22 percent, the
+128-continuation enqueue had no consistent winner, and main-thread dispatch
+favored UniTask by 25 to 36 percent in both runs. Both per-thread allocation
+counters failed the 64 KiB positive control, so no allocation value is
+available and the 0 B/op targets above are unverified.
+
+The drain was then rewritten to array-backed double buffers with one session
+read per batch and an inline exception guard, matching the shape of UniTask's
+`ContinuationQueue`. That rewrite is compile-checked only; it needs a new
+two-process run before the dispatch row can be reassessed.
 
 ## Remaining scope from the continuation plan
 

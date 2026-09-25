@@ -1,10 +1,13 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using Onity.Unity.Async;
+using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace Onity.Tests.EditMode
@@ -161,6 +164,41 @@ namespace Onity.Tests.EditMode
             Assert.That(all.IsCompletedSuccessfully, Is.True);
             Assert.That(completedSwitches, Is.EqualTo(producerCount * switchesPerProducer));
             Assert.That(offThreadResumes, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator SwitchToMainThread_ThrowingContinuation_DoesNotStopTheRestOfTheBatch()
+        {
+            OnityTaskThreadSwitchAwaiter awaiter = OnityTask.SwitchToMainThread().GetAwaiter();
+            bool secondRan = false;
+
+            awaiter.UnsafeOnCompleted(() => throw new InvalidOperationException("Thread switch continuation failure."));
+            awaiter.UnsafeOnCompleted(() => secondRan = true);
+            LogAssert.Expect(LogType.Exception,
+                new Regex("InvalidOperationException: Thread switch continuation failure\\."));
+
+            yield return WaitForFlag(() => secondRan);
+        }
+
+        [UnityTest]
+        public IEnumerator SwitchToMainThread_MoreContinuationsThanInitialCapacity_RunInRegistrationOrder()
+        {
+            const int continuationCount = 200;
+            OnityTaskThreadSwitchAwaiter awaiter = OnityTask.SwitchToMainThread().GetAwaiter();
+            List<int> observed = new List<int>(continuationCount);
+
+            for (int i = 0; i < continuationCount; i++)
+            {
+                int index = i;
+                awaiter.UnsafeOnCompleted(() => observed.Add(index));
+            }
+
+            yield return WaitForFlag(() => observed.Count == continuationCount);
+
+            for (int i = 0; i < continuationCount; i++)
+            {
+                Assert.That(observed[i], Is.EqualTo(i), "Queued continuations ran out of registration order.");
+            }
         }
 
         private static IEnumerator WaitForFlag(Func<bool> predicate)
