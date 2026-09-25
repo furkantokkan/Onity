@@ -2,7 +2,7 @@
 
 Core runtime, editor integration, and tests for the `Onity` package stack.
 
-Current Unity target in this repository: `2022.3.62f3`.
+Current Unity target in this repository: `2022.3.62f2`.
 
 ## Scope
 

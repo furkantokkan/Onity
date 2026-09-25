@@ -114,7 +114,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           projectPath: .
-          unityVersion: 2022.3.62f3
+          unityVersion: 2022.3.62f2
           testMode: ${{ matrix.testMode }}
           artifactsPath: artifacts
 
