@@ -51,16 +51,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instance preserved. A fault or `OperationCanceledException` thrown after a
   suspension is rethrown as the same instance. `AsyncLocal<T>` values flow
   across awaits by default through the new `OnityTask.FlowExecutionContext`
-  switch, which uses a public sync-context-free capture that still allocates
-  the captured context on every suspension (about 72 bytes, plus about 56
-  bytes on Mono); disabling it gives UniTask's no-flow semantics without that
-  capture. Writes made before the first await are no longer isolated from the
-  caller and persist in the thread's ambient context. The same-instance
-  guarantee holds for the native await; `AsTask()` consumers receive a
-  `TaskCanceledException` and `Preserve()` re-raises a new
-  `OperationCanceledException` with the same token. Compile-checked only; the
-  2026-09-25 builder timings and the 2026-09-23 allocation figures describe
-  the previous implementation.
+  switch. The builders bind the class library's internal
+  `ExecutionContext.FastCapture` and `RunInternal(..., preserveSyncCtx: true)`
+  pair through reflection, proven by a probe and kept through stripping by a
+  package `link.xml`, so a suspension allocates no context until a thread has
+  stored an `AsyncLocal<T>` value and resumption keeps the thread's
+  synchronization context; without the pair they use the public capture and
+  run, which allocate the captured context on every suspension (about 72
+  bytes, plus about 56 bytes on Mono) and re-install the synchronization
+  context. Disabling the switch gives UniTask's no-flow semantics. Writes made
+  before the first await are no longer isolated from the caller and persist
+  in the thread's ambient context. The same-instance guarantee holds for the
+  native await; `AsTask()` consumers receive a `TaskCanceledException` and
+  `Preserve()` re-raises a new `OperationCanceledException` with the same
+  token. Verified at `4be50dc` on Unity 2022.3.62f2 with the public path:
+  full EditMode and PlayMode suites passed in both code optimizations, and
+  two Release runs measured async-method scheduling 2.25x to 2.55x slower
+  than UniTask with flow on and 1.44x to 1.78x with flow off. The fast path
+  is unmeasured in Unity; on desktop Mono 6.8, which compiles the same
+  reference-source `ExecutionContext`, it bound and probed correctly and a
+  capture-and-run pair read 0 B/op without stored `AsyncLocal` values against
+  72 B/op on the public path.
 - Native single-consumer sources rethrow faults and cancellations through
   `ExceptionDispatchInfo` and keep the thrown `OperationCanceledException`
   instance, and runner-backed sources retire their token when they return to
@@ -74,13 +85,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   coordinator reads it now faults the combined task instead of leaving it
   pending. On IL2CPP a runner's deferred pool return waits while a worker is
   still unwinding the completing `MoveNext`.
-- Both task benchmark runners fall back to a `GC.GetTotalMemory` delta with the
-  collector disabled inside each measured slice when the per-thread counter
-  fails its controls, and record which counter produced the values. The
-  primary suite (report schema 4) measures the eight async-method `NextFrame`
-  cases with `OnityTask.FlowExecutionContext` on and again with it off,
-  suffixed ` (flow off)`, for 24 scenarios, and records the setting's default
-  and the task tracker state.
+- Both task benchmark runners select a calibrated allocation counter at run
+  start: the per-thread counter, the engine's `GC Allocated In Frame` counter
+  through `ProfilerRecorder`, or a `GC.GetTotalMemory` delta that disables the
+  collector only in players and discards slices interrupted by a collection
+  in the Editor, which rejects `GarbageCollector.GCMode` changes. Reports
+  record the counter, its rejected alternatives, and per-metric valid sample
+  counts (primary schema 5, thread-switch schema 2). The primary suite
+  measures the eight async-method `NextFrame` cases with
+  `OnityTask.FlowExecutionContext` on and again with it off, suffixed
+  ` (flow off)`, for 24 scenarios, and records the setting's default and the
+  task tracker state. The benchmark README no longer describes a separate
+  `-onityTaskAllocationsOnly` Profiler pass, which never shipped in the
+  package.
 
 ### Improved
 

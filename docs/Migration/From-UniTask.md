@@ -20,8 +20,9 @@ helpers.
 OnityTask covers the common Unity flows below; it is not a drop-in replacement
 for UniTask's full API. Suspended `async OnityTask` methods are backed by a
 pooled native runner and return single-consumer tasks, like UniTask; unlike
-UniTask they flow `AsyncLocal<T>` values across awaits by default, which costs
-one execution-context allocation per suspension. Set
+UniTask they flow `AsyncLocal<T>` values across awaits by default; on Unity's
+Mono class library that costs an execution-context allocation per suspension
+only once a thread has stored an `AsyncLocal<T>` value. Set
 `OnityTask.FlowExecutionContext = false` for UniTask's no-flow semantics. Many
 `WhenAll` cases still use .NET `Task` internally, so equivalent allocation
 behavior is not guaranteed. Two already successful untyped inputs complete

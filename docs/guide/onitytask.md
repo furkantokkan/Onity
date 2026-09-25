@@ -213,17 +213,31 @@ isolated from the caller: on the main thread they persist in the thread's
 ambient context, as any synchronous code's writes do. A
 `SetSynchronizationContext` call made before the first await persists on the
 thread as well; one made after an await is reverted when that resumption
-unwinds. The flow has a price: Unity's public
-`ExecutionContext.Capture()` has no shortcut for an empty context, so every
-suspension allocates the captured context, about 72 bytes, plus a call-context
-object of about 56 bytes on the Mono JIT profile, even when no `AsyncLocal<T>`
-is set; resumption then switches the thread's context around `MoveNext`.
+unwinds. The builders bind the class library's own capture and run pair, the
+internal `ExecutionContext.FastCapture` and
+`RunInternal(context, callback, state, preserveSyncCtx: true)` that .NET's
+`AsyncTaskMethodBuilder` uses, through reflection, proven with a probe at
+first use and kept through managed code stripping by the package's
+`link.xml`. On that path a suspension on a thread that has never stored an
+`AsyncLocal<T>` value captures the shared default context without
+allocating, and resumption keeps the thread's synchronization context; once a
+thread has stored a value, each suspension captures a context of about 72
+bytes, as the .NET builder does. When the pair is missing the builders fall
+back to the public `ExecutionContext.Capture()` and `Run`, which allocate the
+captured context on every suspension, about 72 bytes plus a call-context
+object of about 56 bytes on the Mono JIT profile, and re-install the resuming
+thread's synchronization context inside the callback. The 2026-09-25 Unity
+verification measured the public path only. On desktop Mono 6.8, which
+compiles the same reference-source `ExecutionContext`, a capture-and-run pair
+measured 0 bytes and about 93 ns on the fast path without stored values
+against 72 bytes and about 135 ns on the public path; that is not a Unity
+measurement.
 Set `OnityTask.FlowExecutionContext = false` before any async Onity method
 starts to skip the capture entirely; that gives UniTask's semantics, where
-`AsyncLocal<T>` does not flow and writes after an await stay on the resuming
-thread, and a suspension then costs only the pooled runner's work. The primary
-benchmark measures the async-method cases under both settings; neither figure
-is measured yet. Suppressing flow with `ExecutionContext.SuppressFlow()`
+`AsyncLocal<T>` does not flow, writes after an await stay on the resuming
+thread, and a `SetSynchronizationContext` call after an await persists. The
+primary benchmark measures the async-method cases under both settings.
+Suppressing flow with `ExecutionContext.SuppressFlow()`
 around the call skips the capture for the awaits reached while flow is
 suppressed, normally the first one; later awaits capture on the resuming
 thread again, as they do with the .NET builder.

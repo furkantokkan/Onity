@@ -1,0 +1,12 @@
+<linker>
+  <!--
+    The native async method builders bind ExecutionContext.FastCapture and
+    ExecutionContext.RunInternal through reflection so that execution-context flow
+    across awaits neither allocates a context per suspension nor loses the resuming
+    thread's synchronization context. Keep them through managed code stripping; the
+    builders fall back to the public ExecutionContext API when they are missing.
+  -->
+  <assembly fullname="mscorlib">
+    <type fullname="System.Threading.ExecutionContext" preserve="all" />
+  </assembly>
+</linker>

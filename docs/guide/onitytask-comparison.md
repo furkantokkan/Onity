@@ -622,13 +622,48 @@ traces this to the wrapped `AsyncTaskMethodBuilder` and records the decision
 the product owner has to make before that gap can close. Raw run reports were
 retained on the benchmark host and are not yet committed to this repository.
 
+### Pooled runner verification at `4be50dc`
+
+The pooled native builder was verified on 2026-09-25 in the same isolated host
+(Unity 2022.3.62f2 Windows Editor/Mono, which the repository now pins).
+The full EditMode and PlayMode suites passed under both the Editor's default
+code optimization and `-releaseCodeOptimization`: 655/655 and 41/41 each
+time, including the 38 EditMode and 1 PlayMode builder tests. Two independent
+Release-optimization runs of the 24-scenario primary suite gave these paired
+Onity/UniTask mean scheduling ratios; above 1 means Onity is slower.
+
+| Async method awaiting `NextFrame` | N | Run 1 flow on | Run 1 flow off | Run 2 flow on | Run 2 flow off |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Untyped | 128 | 2.36x | 1.44x | 2.55x | 1.50x |
+| Untyped | 4096 | 2.43x | 1.74x | 2.46x | 1.77x |
+| Typed (`int`) | 128 | 2.52x | 1.47x | 2.25x | 1.44x |
+| Typed (`int`) | 4096 | 2.51x | 1.68x | 2.35x | 1.78x |
+
+With flow on, the default, the pooled runner was slower than the previous
+.NET-builder implementation's 1.8x to 1.9x; with flow off it improved on it
+but stayed above the 1.2x target. UniTask's own figures also moved between
+the two blocks, so the raw change cannot be attributed wholly to the setting.
+Allocation values were unavailable in both runs because the heap-delta
+fallback tried to disable the collector, which the Editor rejects. The owner
+kept `FlowExecutionContext = true` as the default because the opt-out changes
+`AsyncLocal` semantics. These are scheduling and `GetResult` slices only, not
+end-to-end await costs. In response the builders now bind the class library's
+`FastCapture` and `RunInternal` pair through reflection, which removes the
+per-suspension context allocation until a thread stores an `AsyncLocal` value
+and keeps the resuming thread's synchronization context, and both runners
+use a calibrated counter chain that never changes the collector mode in the
+Editor. Neither change is measured in Unity yet; on desktop Mono 6.8, which
+compiles the same reference-source `ExecutionContext`, the fast path bound
+and probed correctly and a capture-and-run pair read 0 B/op without stored
+`AsyncLocal` values against 72 B/op on the public path.
+
 ## Feature coverage
 
 | Capability | OnityTask status |
 | --- | --- |
 | Frame, fixed-frame, and late-frame waits; scaled and unscaled delays; predicate waits | Available with cancellation and single-consumer pooled sources. |
 | Scene, `AsyncOperation`, and web-request bridges | Available. Deferred scene loads require the caller to activate a started operation, even after cancellation. |
-| `async OnityTask` and `async OnityTask<T>` | Synchronous success stores the result inline; synchronous faults and cancellations are Task-backed. A suspended method binds a pooled native runner that holds the state machine by value and resumes through one cached delegate, and its task is single-consumer. The execution context flows across awaits by default through a public sync-context-free capture (`OnityTask.FlowExecutionContext`), which allocates the captured context per suspension; disable it for UniTask's no-flow semantics. The primary suite measures the async-method `NextFrame` cases under both settings from report schema 4 on. **Not yet measured**: the 1.8x to 1.9x scheduling gap and the 304 to 312 B/op figures above are for the previous .NET-builder implementation. |
+| `async OnityTask` and `async OnityTask<T>` | Synchronous success stores the result inline; synchronous faults and cancellations are Task-backed. A suspended method binds a pooled native runner that holds the state machine by value and resumes through one cached delegate, and its task is single-consumer. The execution context flows across awaits by default (`OnityTask.FlowExecutionContext`) through the class library's internal `FastCapture` and `RunInternal` pair bound by reflection, with the public capture as the fallback; disable it for UniTask's no-flow semantics. Verified at `4be50dc` on the public path: full suites green in both code optimizations, Release scheduling 2.25x to 2.55x slower than UniTask with flow on and 1.44x to 1.78x with flow off, allocations unavailable. The reflection fast path (0 B/op against 72 B/op per capture-and-run pair on desktop Mono 6.8, not a Unity figure) and the new allocation counter are unmeasured in Unity. |
 | `WhenAll` | Available, including typed ordered results. Already successful two-input untyped and eligible typed calls avoid Task bridges. Pending two-input untyped calls whose inputs are completion sources without a bridge or unclaimed single-consumer native sources, including suspended async methods, use a pooled coordinator and a Task-backed output. Pending calls with Task-backed, preserved, bridged, or already awaited inputs, duplicate single-consumer native inputs, and larger native typed sets use the Task bridge path. |
 | Native `WhenAny` | Available for two untyped inputs (winner index) and two inputs of the same result type (winner index and value). Both inputs are consumed; the loser is observed without cancellation. Duplicate single-consumer native inputs are rejected. The typed result source is nonpooled and allocates; the untyped source and two delegates allocate per call. Typed Editor/Mono results are reported above. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
