@@ -7,14 +7,53 @@ description: "Measured Unity 2022 OnityTask and UniTask workloads, API coverage,
 
 # OnityTask and UniTask comparison
 
-This page records a **Unity 2022.3.62f3 Windows Editor / Mono** comparison with
-official UniTask 2.5.11 pinned to commit
-`2e993ff18f28c931602a07292df0b0804eebef99`. It describes measured
-workloads, not a general winner or a result for IL2CPP players. The separate
+This page records Unity Editor and Windows Player comparisons with official
+UniTask 2.5.11 pinned to commit `2e993ff18f28c931602a07292df0b0804eebef99`.
+The latest verification uses **Unity 2022.3.62f2, Mono and IL2CPP Release Players**;
+older sections retain their measured Editor versions and source revisions.
+Each result applies to its stated workload and timing boundary. The separate
 [benchmark harness](https://github.com/furkantokkan/Onity/blob/main/Packages/com.onity.framework/Benchmarks/Tasks/README.md)
 defines every timing boundary and how to reproduce the run.
 
-## Measured result
+## Latest Player verification (2026-09-27)
+
+Runtime candidate `528d52c` plus benchmark-only startup/verification changes
+passed 668/668 EditMode and 41/41 PlayMode tests under both default and Release
+code optimization. Final Mono and IL2CPP Players each passed 13 semantic smoke
+cases and used the internal execution-context capture/run pair. Runtime library
+sources were unchanged; full suites preceded the final benchmark-only reporting
+and smoke additions, which were rebuilt and verified in both Players.
+
+Two independent processes per backend measured 24 primary scenarios with
+tracking off and runner capacity 128. These are Onity/UniTask mean-time ratios
+for typed/untyped async `NextFrame` **scheduling slices**; above 1 is slower.
+
+| Backend | Concurrency | Flow on | Flow off |
+| --- | ---: | ---: | ---: |
+| Mono | 128 | 1.41-1.53 | 1.23-1.26 |
+| Mono | 4096 | 1.76-1.88 | 1.48-1.61 |
+| IL2CPP | 128 | 1.77-1.94 | 1.70-1.74 |
+| IL2CPP | 4096 | 1.94-2.29 | 1.81-2.13 |
+
+All allocation metrics retained eight valid samples using calibrated HeapDelta
+(69,632-byte positive control, zero-byte empty control). At 128 operations,
+Mono read zero and IL2CPP read 242-245 B/op. A separate two-frame drain control
+reduced IL2CPP's reading to zero, supporting delayed pool replenishment as the
+cause; it still read 607-611 B/op at 4096. HeapDelta is coarse and process-wide:
+zero does not prove zero allocation. The control does not replace the default
+workload or demonstrate a runtime optimization.
+
+Keep `FlowExecutionContext = true` by default to preserve ambient-context
+semantics. Neither superiority nor the intermediate 1.2x timing milestone is
+established. Separate optimized Development IL2CPP profiles passed all eight
+configurations and captured all resumptions and deferred returns. They identify
+native source synchronization as the next bounded investigation: five of nine
+operation-related monitor acquisitions occur in registration, completion and
+result consumption. Their instrumented durations do not establish a Release
+bottleneck percentage. See the [verification report and raw samples](../assets/benchmarks/onitytask-player-verification-2026-09-27.md)
+for startup diagnosis, allocation sites, build settings, test freshness and limits.
+
+## Historical Editor measured result
 
 The table shows mean nanoseconds per operation from one eight-sample run after
 the synchronous typed builder improvement. Each frame cohort had two completed
@@ -672,8 +711,8 @@ micro-benchmark of the builder wrapper alone (see the [builder gap
 memo](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/11-OnityTask-AsyncBuilderGap.md))
 measured Onity at 164 to 224 ns per full cycle against 75 ns for UniTask
 after the pool change, and put both wrappers an order of magnitude below what
-the Editor attributes to them; a player run through the new build runner is
-needed before those Editor ratios are read as product performance. The
+the Editor attributes to them. The separate Player verification above supplies
+Player scheduling evidence; these Editor ratios are not Player results. The
 counter chain calibrated in both runs with every sample valid. The steady-state figure is
 within the counter's noise of zero; the burst figure follows from the
 128-runner and 256-source pool caps, above which each operation allocates a
@@ -687,7 +726,7 @@ itself, not in the context flow.
 | --- | --- |
 | Frame, fixed-frame, and late-frame waits; scaled and unscaled delays; predicate waits | Available with cancellation and single-consumer pooled sources. |
 | Scene, `AsyncOperation`, and web-request bridges | Available. Deferred scene loads require the caller to activate a started operation, even after cancellation. |
-| `async OnityTask` and `async OnityTask<T>` | Synchronous success stores the result inline; synchronous faults and cancellations are Task-backed. A suspended method binds a pooled native runner that holds the state machine by value and resumes through one cached delegate, and its task is single-consumer. The execution context flows across awaits by default (`OnityTask.FlowExecutionContext`) through the class library's internal `FastCapture` and `RunInternal` pair bound by reflection, with the public capture as the fallback; disable it for UniTask's no-flow semantics. Verified at `4be50dc` on the public path: full suites green in both code optimizations, Release scheduling 2.25x to 2.55x slower than UniTask with flow on and 1.44x to 1.78x with flow off, allocations unavailable. Re-verified at `f682b7c` with the reflection fast path bound: 1.62x to 2.10x with flow on and 1.40x to 1.83x with flow off, about 0.04 to 0.06 B/op at 128 concurrent operations and about 400 B/op in the 4,096 burst above the pool caps. |
+| `async OnityTask` and `async OnityTask<T>` | Synchronous success stores the result inline; synchronous faults and cancellations are Task-backed. A suspended method uses a pooled native runner holding the state machine by value and a cached continuation delegate; its task is single-consumer. Execution context flows by default through the internal capture/run pair, with a public fallback. Disabling `OnityTask.FlowExecutionContext` changes ambient-context semantics. Both Mono and IL2CPP passed the 13-case Player smoke suite at `528d52c` with the internal pair active. See the latest Player table above for measured scheduling costs and allocation limits. |
 | `WhenAll` | Available, including typed ordered results. Already successful two-input untyped and eligible typed calls avoid Task bridges. Pending two-input untyped calls whose inputs are completion sources without a bridge or unclaimed single-consumer native sources, including suspended async methods, use a pooled coordinator and a Task-backed output. Pending calls with Task-backed, preserved, bridged, or already awaited inputs, duplicate single-consumer native inputs, and larger native typed sets use the Task bridge path. |
 | Native `WhenAny` | Available for two untyped inputs (winner index) and two inputs of the same result type (winner index and value). Both inputs are consumed; the loser is observed without cancellation. Duplicate single-consumer native inputs are rejected. The typed result source is nonpooled and allocates; the untyped source and two delegates allocate per call. Typed Editor/Mono results are reported above. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
@@ -697,5 +736,8 @@ itself, not in the context flow.
 | `await foreach` async enumerable | Not yet available. |
 
 OnityTask is useful for common Unity flows today, but it is **not a full
-UniTask replacement**. The next measured work is lower-allocation native async
-continuations, source-based composition, and IL2CPP/player validation.
+UniTask replacement**. Player startup and the scoped semantic suite are now
+verified on both backends, with full-cycle IL2CPP attribution completed. The next
+bounded investigation is native source synchronization while preserving bridge
+and shared-task semantics; source-based composition and broader API coverage
+remain separate work.

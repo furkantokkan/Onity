@@ -52,13 +52,119 @@ player sees. Run the player build for any performance claim:
 - The command-line entry point is
   `Onity.Editor.Benchmarks.OnityTaskBenchmarkPlayerBuildRunner.BuildAndRunFromCommandLine`
   with `-onityTaskBenchmarkBackend Mono|IL2CPP` (default IL2CPP),
-  `-onityTaskBenchmarkSuite primary|threadswitch` (default primary),
+  `-onityTaskBenchmarkSuite primary|threadswitch|smoke` (default primary),
   `-onityTaskBenchmarkBuildPath <exe>`, and `-onityTaskBenchmarkOutput <json>`;
   it may be combined with `-quit`. The player itself accepts
   `-onityRunTaskBenchmark`, the same suite and output arguments, and writes
   the report with `isEditor` false and the backend it was built with.
 
+### Player startup and smoke verification
+
+- Benchmark-only runtime hooks persist early initialization, BeforeSceneLoad,
+  AfterSceneLoad, argument detection, and benchmark entry to `<report>.startup.log`
+  (extension replaced). The launcher clears that trace before each process.
+  `-onityTaskBenchmarkStartupTrace <path>` selects a different trace for direct runs.
+- Missing benchmark entry fails within 60 seconds. After entry, measurement has
+  its own 15-minute limit. The launcher stops reading the trace during measurement
+  and includes the final startup evidence on failure. Exit zero still requires a
+  handshake and a report written after this process launched.
+- Select `smoke` in a separate Player process before timing. Its 13 cases cover
+  synchronous completion, critical/safe typed and untyped suspension, native and
+  bridge consumer exclusivity, stale tokens, bridge recycling, real-frame pool
+  return, consume/re-rent during MoveNext, held-worker IL2CPP deferral, and
+  execution-context flow, suppression, isolation, and synchronization context.
+  Failure identifies the case in JSON and the persistent trace. No reflective
+  dispatcher drain or benchmark timing occurs in this suite.
+- Primary runs save and restore tracking, stack traces, flow, and runner capacity.
+  Effective baseline settings are tracker off, stack traces off, flow on, capacity
+  128; flow-off cases remain separately labeled. Schema 6 records these settings,
+  build GUID/development state, runtime internal-pair/public-fallback evidence,
+  allocation selection and rejected candidates. The launcher writes a
+  `<exe>.build.json` sidecar containing optimization, stripping, and registered
+  package IDs and passes `-onityTaskBenchmarkBuildMetadata <path>` to the Player.
+  Direct runs without a sidecar explicitly report unknown build fields.
+- Optional `-onityTaskBenchmarkDrainBetweenBatches` adds two real frames after
+  every consumed frame cohort, before another scheduling slice (including warmup).
+  The launcher forwards it; JSON/Markdown report the control and drain frame count.
+  It distinguishes immediate re-rent costs from fully recycled pools on IL2CPP.
+  This is a separate experiment, never a replacement for the default alternating
+  cohort baseline. Scheduling/GetResult timing slices themselves are unchanged.
+
 ## Measurement contract
+
+### Full lifecycle diagnostic profile
+
+`fullcycle` is a separate Development IL2CPP profile build with
+`BuildOptions.Development | BuildOptions.EnableDeepProfilingSupport`. It runs
+only bounded typed async helpers awaiting `NextFrame`, returning and checking `42` for
+every operation. The launcher adds `-deepprofiling`. Do not enable deep profiling
+on the primary million-iteration loops or compare diagnostic times with Release
+baseline timings.
+The diagnostic build appends `/optimize+` through Standalone additional compiler
+arguments so managed state machines remain structs despite Development defaults.
+Original arguments restore in `finally`; Release build arguments are untouched.
+The build sidecar records `managedCompilerOptimization` explicitly.
+
+Build and capture one configuration per process:
+
+```text
+Unity.exe -batchmode -nographics -quit -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkPlayerBuildRunner.BuildAndRunFromCommandLine -onityTaskBenchmarkBackend IL2CPP -onityTaskBenchmarkSuite fullcycle -onityTaskProfileConcurrency 128 -onityTaskProfileFlow on -onityTaskProfileReuse immediate -onityTaskBenchmarkBuildPath <diagnostic-exe> -onityTaskBenchmarkOutput <case-json> -logFile <build-log>
+```
+
+The Player emits `<case>.raw` beside its JSON (extension replaced), plus the
+existing startup and Player logs. A built diagnostic executable may be reused
+for the other configurations:
+
+```text
+<diagnostic-exe> -batchmode -nographics -deepprofiling -onityRunTaskBenchmark -onityTaskBenchmarkSuite fullcycle -onityTaskProfileConcurrency 4096 -onityTaskProfileFlow off -onityTaskProfileReuse drain -onityTaskBenchmarkOutput <case-json> -onityTaskBenchmarkBuildMetadata <diagnostic-exe>.build.json -logFile <player-log>
+```
+
+Required configurations are the eight combinations of concurrency `128|4096`,
+flow `on|off`, and reuse `immediate|drain`. Use unique JSON/raw paths for each
+process. Every process captures Onity and UniTask in separate timestamp windows.
+Each library runs two warmup batches with profiling disabled, then exactly two
+captured batches using the same async helper type. Immediate reuse consumes and
+re-rents in the same coroutine step; drain inserts two real frames between the
+batches for both libraries. Capture remains enabled for two real terminal frames
+after the last consumption to include deferred returns. The profiler buffer is
+bounded to 512 MiB; missing capture markers/operations cause export failure.
+
+Export in a headless Editor using the verified public Unity 2022 profiler APIs:
+
+```text
+Unity.exe -batchmode -nographics -quit -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskFullCycleProfileExporter.ExportFromCommandLine -onityTaskProfileInput <case-json> -onityTaskProfileExport <attribution-json> -logFile <export-log>
+```
+
+To export several completed captures in one Editor session, replace the two
+file flags with `-onityTaskProfileInputDirectory <capture-directory>` and
+`-onityTaskProfileExportDirectory <output-directory>`. This selects only
+`fullcycle-*.json` in that directory, excludes `*-attribution.json`, and validates
+each selected Player report and raw capture. A focused subset is allowed; it
+does not waive the eight-configuration evidence requirement. Single-file mode
+is preserved and cannot be combined with directory mode.
+
+The exporter loads the raw file with `ProfilerDriver.LoadProfile` and reads
+`GetRawFrameDataView`. Begin/End marker timestamps define windows; Player frame
+counts are evidence, never raw-frame index assumptions. Schedule and Consume
+sample scopes never cross a yield; Resumed stamps validate all operations.
+Exports retain full sample paths, thread and nearest Schedule/Consume phase,
+with other work labeled Lifecycle. Per-path inclusive times are descriptive and
+must not be added across parents/children. Exclusive self times subtract only
+direct children inside the clipped window. `GC.Alloc` metadata is counted once
+per event, never re-added to parent samples. Missing metadata or absent allocation
+samples produces `gcAllocationBytes: -1` with explicit counts, not an inferred
+zero. Preserve raw files for call-stack inspection and check all eight exports
+before selecting a runtime optimization.
+Sample durations retain instrumentation, waits and idle paths; they are not
+aggregate active CPU time. Inspect the relevant runtime paths and phase boundaries.
+The exporter also requires recognizable managed runner/source/pool detail for
+Onity and managed builder/source detail for UniTask, beyond the custom phase
+markers. It records `deepRuntimeSamplesPresent` and the matching sample count;
+missing detail fails export instead of suggesting an absent cost is zero.
+These values are instrumented sample durations, with wait/idle paths retained;
+they are not aggregate active CPU time across all threads.
+
+### Primary suite
 
 - Two synchronous primitives: completed `GetResult`, and `FromResult<int>` plus
   `GetResult`. Each uses 4,096 warmup calls and eight samples of 1,000,000 calls.
@@ -117,7 +223,7 @@ player sees. Run the player build for any performance claim:
   require separate player evidence.
 - Timer frequency/resolution, allocation controls, all timing/allocation samples,
   mean, median, range and standard deviation are retained in JSON. CSV and Markdown
-  summarize the measurements. The report schema is version 5; the original
+  summarize the measurements. The primary report schema is version 6; the original
   six primitive scenarios retain their names, indices and metric fields. Two
   synchronous async-method cases and eight frame-method cases follow them, and
   schema 4 appended the same eight frame-method cases measured with
@@ -194,8 +300,29 @@ cases and the 4,096-operation cohorts are meaningful, a 128-operation batch
 can be off by tens of bytes per operation, and the worker-side value can
 include allocations from other threads. The profiler counter is byte-exact
 but also process-wide, and it is not used for the thread-switch round trip
-because that slice spans frames. No run has produced allocation values with
-this chain yet.
+because that slice spans frames. The 2026-09-27 primary Player runs produced
+calibrated HeapDelta values with eight valid samples per metric; this does not
+verify thread-switch allocation values, which were not rerun in that task.
+
+## Player verification - 2026-09-27
+
+- Unity `2022.3.62f2` Release, Windows x64: Mono and IL2CPP each passed the
+  13-case smoke suite with the internal execution-context pair active.
+- Two primary processes per backend completed all 24 cases, tracking off and
+  capacity 128. At concurrency 128, async scheduling Onity/UniTask ratios were
+  1.41-1.53 with flow on and 1.23-1.26 with flow off for Mono, and 1.77-1.94
+  and 1.70-1.74 for IL2CPP. The performance target remains unmet.
+- HeapDelta calibrated at 69,632/0 bytes and retained eight valid samples per
+  metric. The separate drain control removed the measured 128-operation IL2CPP
+  heap delta; the burst remained above the pool caps. Measured zero is not
+  proof of zero allocation.
+- Full EditMode/PlayMode suites passed 668/668 and 41/41 in both optimizations
+  after the startup fix. Final benchmark-only additions were rebuilt and smoke
+  verified in both Players. Separate optimized Development IL2CPP profiling
+  passed all eight configurations/16 windows, including every deferred runner
+  return. It supplies attribution, not replacement Release timings.
+- Raw samples, the separate drain control and detailed limits are in the
+  [verification report](../../../../docs/assets/benchmarks/onitytask-player-verification-2026-09-27.md).
 
 ## Change note
 
@@ -210,8 +337,17 @@ this chain yet.
   raw samples and failure propagation from frame measurements.
 - Added matched typed/untyped async-method cases for synchronous completion and
   one-frame suspension; existing primitive case names and indices are retained.
-- Validated the two-process harness in Unity 2022.3.62f3 Editor/Mono with a
-  65,568-byte positive and zero-byte empty control. Player/IL2CPP results remain
-  unmeasured.
+- Earlier validation used Unity 2022.3.62f3 Editor/Mono with a 65,568-byte
+  positive and zero-byte empty control. The 2026-09-27 Player verification above
+  records the current f2 backend results and their different counter limits.
 - Added the thread-switch harness with per-thread calibrated allocation
-  controls; it has not been run yet.
+  controls; historical Editor timing runs are in the comparison guide. Its
+  current shared counter chain was not verified by the primary Player runs.
+- Rooted benchmark initialization with `AlwaysLinkAssembly`, added startup
+  deadlines and semantic smoke coverage, and recorded effective build/runtime
+  metadata with allocation-counter rejection reasons in schema 6.
+- Added bounded full-cycle capture and headless batch export. Managed helper
+  value types were verified after the diagnostic `/optimize+` override; the
+  final diagnostic Player also passed 13/13 smoke cases. After API restoration,
+  Unity retained an empty Standalone compiler-argument map entry; verification
+  removed that serialization-only entry and confirmed the original file hash.
