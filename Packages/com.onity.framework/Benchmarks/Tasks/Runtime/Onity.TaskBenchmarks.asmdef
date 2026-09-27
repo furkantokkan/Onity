@@ -1,7 +1,7 @@
 {
   "name": "Onity.TaskBenchmarks",
   "rootNamespace": "Onity.Benchmarks",
-  "references": ["Onity.Unity", "UniTask"],
+  "references": ["Onity.Unity", "Onity.Core", "UniTask", "Unity.Burst", "Unity.Collections"],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

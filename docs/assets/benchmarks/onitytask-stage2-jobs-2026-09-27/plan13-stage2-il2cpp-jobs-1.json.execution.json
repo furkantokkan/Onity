@@ -1,0 +1,31 @@
+{
+  "StartedUtc": "2026-09-27T01:33:23.2116843Z",
+  "FinishedUtc": "2026-09-27T01:33:23.9272537Z",
+  "Backend": "IL2CPP",
+  "Run": 1,
+  "ExitCode": 0,
+  "BackgroundBefore": [
+    {
+      "Id": 45732,
+      "ProcessName": "Unity",
+      "CPU": 49386.125
+    },
+    {
+      "Id": 115476,
+      "ProcessName": "unity",
+      "CPU": 1.015625
+    }
+  ],
+  "BackgroundAfter": [
+    {
+      "Id": 45732,
+      "ProcessName": "Unity",
+      "CPU": 49387.21875
+    },
+    {
+      "Id": 115476,
+      "ProcessName": "unity",
+      "CPU": 1.015625
+    }
+  ]
+}

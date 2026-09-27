@@ -1,0 +1,34 @@
+[
+  {
+    "File": "plan13-stage1-editmode-normal-verified.xml",
+    "Result": "Passed",
+    "Total": 682,
+    "Passed": 682,
+    "Failed": 0,
+    "Sha256": "BD2CC3111CE87B45602BF2D1DFA8190B0137A0EE58B2F8CF674279BC3119DD6E"
+  },
+  {
+    "File": "plan13-stage1-editmode-release-verified.xml",
+    "Result": "Passed",
+    "Total": 682,
+    "Passed": 682,
+    "Failed": 0,
+    "Sha256": "0AA620286B175252621F0E7A2569F0B40DAE753E96FBFBF2E8A3F9A6DBBBC55A"
+  },
+  {
+    "File": "plan13-stage1-playmode-normal-verified.xml",
+    "Result": "Passed",
+    "Total": 46,
+    "Passed": 46,
+    "Failed": 0,
+    "Sha256": "E6B4993EE70B990E69A61FA28C85BDC871CA0C832BEC81033582DBA635C6CE2A"
+  },
+  {
+    "File": "plan13-stage1-playmode-release-verified.xml",
+    "Result": "Passed",
+    "Total": 46,
+    "Passed": 46,
+    "Failed": 0,
+    "Sha256": "5FAE1FE14C7DD95BDFD48B9664171E103D6BF93EA6435F9A540F418606707715"
+  }
+]

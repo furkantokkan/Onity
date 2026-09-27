@@ -1,0 +1,104 @@
+{
+  "generatedAtUtc": "2026-09-27T09:05:52.3136069Z",
+  "sourceRoot": "C:/Users/e-fur/.codex/worktrees/onity-fast-capture-f682b7c/Onity",
+  "verificationHost": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity",
+  "sourceHead": "3f098937e9198a17edcf72cd75e73bd5bc76e2fd",
+  "unityVersion": "2022.3.62f2",
+  "cliVersion": "1.0.0-beta.11",
+  "sourceManifestFileCount": 574,
+  "editorRuntimeAndFixtureFileCount": 529,
+  "allSourceHashesMatchedAfterExecution": true,
+  "settings": [
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "sha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/EditorSettings.asset",
+      "sha256": "962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "sha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33",
+      "restored": true
+    }
+  ],
+  "settingsRestorationNote": "After the failed initial Player run and corrected builds, Standalone backend was Mono (0), not baseline IL2CPP (1). With the exact host Editor closed, the sole differing field was restored to 1; the complete original file SHA256 matches again. Other settings restored automatically.",
+  "temporarySceneRemoved": true,
+  "initialSnapshots": [
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4c-await-initial-fixture/OnityAsyncEnumerableAwaitEditModeTests.cs",
+      "sha256": "ED61D834F4592510B1087C7A09F3C2684C09B8C7770CFBB379E7B981BE209746"
+    },
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4c-await-initial-smoke/OnityTaskPlayerSmokeRunner.cs",
+      "sha256": "5F25326098F4E910460B39404F76BD362238C2555A6A7BE71BD31B7A21001061"
+    }
+  ],
+  "players": [
+    {
+      "backend": "Mono",
+      "cliExitCode": 0,
+      "cases": 35,
+      "buildGuid": "727cf6b1e791428b99ca5767c9ab7638",
+      "smokeSha256": "50CD5392FD2D39E4BB1242EC973C267F8467B6A86478AD2731EA87AA4AA352FF",
+      "buildLog": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-stage4c-await-mono-build-final.log",
+      "buildLogSha256": "C92778F7D2490085D03D07DC07945FDB17D1208950CD9C379CAA8445608C156F",
+      "environment": {
+        "buildGuid": "727cf6b1e791428b99ca5767c9ab7638",
+        "isDevelopment": false,
+        "scriptingBackend": "Mono",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-27T08:53:47.3383405Z",
+          "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+          "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Disabled",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.14",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    },
+    {
+      "backend": "IL2CPP",
+      "cliExitCode": 0,
+      "cases": 35,
+      "buildGuid": "c440c6fbdcb84058bfabfd1c690b3a73",
+      "smokeSha256": "4F614678CAD099D1F5EC1609C25EC3C906F87CC9028257B0043EBDE24FA67911",
+      "buildLog": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-stage4c-await-il2cpp-build-final.log",
+      "buildLogSha256": "D812756D5B4B6A124D54F792CB05EA5CF317C217038FC7A2B93D54FA615EA5C5",
+      "environment": {
+        "buildGuid": "c440c6fbdcb84058bfabfd1c690b3a73",
+        "isDevelopment": false,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-27T08:56:31.5587332Z",
+          "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+          "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.14",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    }
+  ]
+}

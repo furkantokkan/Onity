@@ -1,0 +1,150 @@
+{
+    "generatedAtUtc": "2026-09-27T05:49:52.4679470Z",
+    "passed": true,
+    "failure": "",
+    "expectedCaseCount": 6,
+    "caseDeadlineSeconds": 10.0,
+    "suiteDeadlineSeconds": 60.0,
+    "expectedBackend": "Mono",
+    "expectedBuildGuid": "3f884a8ad0ae4e40b53f4ace09425b97",
+    "isBatchMode": false,
+    "hasBatchModeArgument": false,
+    "hasNoGraphicsArgument": false,
+    "environment": {
+        "buildGuid": "3f884a8ad0ae4e40b53f4ace09425b97",
+        "isDevelopment": false,
+        "scriptingBackend": "Mono",
+        "trackerEnabled": true,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+            "generatedAtUtc": "2026-09-27T05:49:49.2127048Z",
+            "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+            "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+            "il2CppCompilerConfiguration": "Release",
+            "managedStrippingLevel": "Disabled",
+            "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+            "onityVersion": "0.3.14",
+            "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+            "uniTaskVersion": "2.5.11"
+        }
+    },
+    "graphicsApi": "Direct3D11",
+    "graphicsDevice": "NVIDIA GeForce RTX 3090",
+    "pipeline": "Built-in (no active pipeline asset)",
+    "colorSpace": "Linear",
+    "screenWidth": 320,
+    "screenHeight": 240,
+    "textureWidth": 16,
+    "textureHeight": 16,
+    "cases": [
+        {
+            "name": "rendered alternating pixels",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "reentrant next drain",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "stalled pump Update cancellation",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "source reuse and old token",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "manual host replacement and old pump",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "global detach close and failed repair",
+            "passed": true,
+            "failure": ""
+        }
+    ],
+    "pixels": [
+        {
+            "registeredFrame": 3,
+            "lateFrame": 3,
+            "renderedFrame": 3,
+            "completedFrame": 3,
+            "thread": 1,
+            "expected": "red",
+            "red": 1.0,
+            "green": 0.0,
+            "blue": 0.0
+        },
+        {
+            "registeredFrame": 4,
+            "lateFrame": 4,
+            "renderedFrame": 4,
+            "completedFrame": 4,
+            "thread": 1,
+            "expected": "blue",
+            "red": 0.0,
+            "green": 0.0,
+            "blue": 1.0
+        },
+        {
+            "registeredFrame": 5,
+            "lateFrame": 5,
+            "renderedFrame": 5,
+            "completedFrame": 5,
+            "thread": 1,
+            "expected": "red",
+            "red": 1.0,
+            "green": 0.0,
+            "blue": 0.0
+        },
+        {
+            "registeredFrame": 6,
+            "lateFrame": 6,
+            "renderedFrame": 6,
+            "completedFrame": 6,
+            "thread": 1,
+            "expected": "blue",
+            "red": 0.0,
+            "green": 0.0,
+            "blue": 1.0
+        }
+    ],
+    "trace": [
+        "rendered alternating pixels:frame=3:thread=1:outcome=success",
+        "rendered alternating pixels:frame=4:thread=1:outcome=success",
+        "rendered alternating pixels:frame=5:thread=1:outcome=success",
+        "rendered alternating pixels:frame=6:thread=1:outcome=success",
+        "reentrant next drain:frame=8:thread=1:outcome=success",
+        "reentrant next drain:frame=9:thread=1:outcome=success",
+        "stalled pump Update cancellation:frame=11:thread=1:outcome=OperationCanceledException",
+        "source reuse and old token:frame=13:thread=1:outcome=success",
+        "source reuse and old token:frame=14:thread=1:outcome=success",
+        "manual host replacement and old pump:frame=16:thread=1:outcome=OperationCanceledException",
+        "manual host replacement and old pump:frame=16:thread=1:outcome=OperationCanceledException",
+        "manual host replacement and old pump:frame=16:thread=1:outcome=success",
+        "manual host replacement and old pump:frame=16:thread=1:outcome=success",
+        "manual host replacement and old pump:frame=17:thread=1:outcome=success",
+        "manual host replacement and old pump:frame=18:thread=1:outcome=success",
+        "manual host replacement and old pump:frame=18:thread=1:outcome=OperationCanceledException",
+        "manual host replacement and old pump:frame=19:thread=1:outcome=success",
+        "global detach close and failed repair:frame=21:thread=1:outcome=success",
+        "global detach close and failed repair:frame=21:thread=1:outcome=OperationCanceledException",
+        "global detach close and failed repair:frame=21:thread=1:outcome=OperationCanceledException",
+        "global detach close and failed repair:frame=21:thread=1:outcome=OperationCanceledException",
+        "global detach close and failed repair:frame=22:thread=1:outcome=success",
+        "global detach close and failed repair:frame=23:thread=1:outcome=success",
+        "global detach close and failed repair:frame=23:thread=1:outcome=InvalidOperationException",
+        "global detach close and failed repair:frame=23:thread=1:outcome=InvalidOperationException",
+        "global detach close and failed repair:frame=23:thread=1:outcome=InvalidOperationException",
+        "global detach close and failed repair:frame=24:thread=1:outcome=success"
+    ]
+}

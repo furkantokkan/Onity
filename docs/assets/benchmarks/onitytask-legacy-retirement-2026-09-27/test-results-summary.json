@@ -1,0 +1,139 @@
+[
+  {
+    "name": "plan13-legacy-existing-editmode-release-initial",
+    "result": "Failed(Child)",
+    "total": 780,
+    "passed": 770,
+    "failed": 10,
+    "skipped": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-legacy-existing-editmode-release-initial.xml",
+    "xmlSha256": "3AF997FEB31C347AB7724D9CEED86B11CAA1A968CCAA3B287AE4107477BEAA3D",
+    "logSha256": "090B03A1F1094B3CFCA2464A913E7F5E2E2932A82615D52D01FC4DB13BBC6DED",
+    "failures": [
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_AlreadyCompletedNativeTask_KeepsItsResult",
+        "message": "System.Reflection.TargetParameterCountException : Number of parameters specified does not match the expected number."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_InvokesPendingConsumerOutsideSourceLock",
+        "message": "System.Reflection.TargetParameterCountException : Number of parameters specified does not match the expected number."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_OriginalAlreadyAwaited_IsRejected",
+        "message": "System.Reflection.TargetParameterCountException : Number of parameters specified does not match the expected number."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_OriginalAlreadyMaterializedAsTask_IsRejected",
+        "message": "System.Reflection.TargetParameterCountException : Number of parameters specified does not match the expected number."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_PooledSourceReuse_DoesNotChangePreservedResult",
+        "message": "System.Reflection.TargetParameterCountException : Number of parameters specified does not match the expected number."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_SharedNativeTask_CanBePassedToWhenAnyTwice",
+        "message": "System.Reflection.TargetParameterCountException : Number of parameters specified does not match the expected number."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_UntypedNativeTask_SupportsFourPendingAndLateConsumers",
+        "message": "System.Reflection.TargetParameterCountException : Number of parameters specified does not match the expected number."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityWhenAnyEditModeTests.AsTask_UntypedConcurrentCompletionAndSecondBridge_Completes",
+        "message": "System.Reflection.TargetParameterCountException : Number of parameters specified does not match the expected number."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityWhenAnyEditModeTests.WhenAny_LateNativeLoser_IsConsumedAfterWinner",
+        "message": "System.Reflection.TargetParameterCountException : Number of parameters specified does not match the expected number."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityWhenAnyEditModeTests.WhenAny_SameNativeInputTwice_RejectsDoubleConsumption",
+        "message": "System.Reflection.TargetParameterCountException : Number of parameters specified does not match the expected number."
+      }
+    ]
+  },
+  {
+    "name": "plan13-legacy-existing-editmode-release",
+    "result": "Passed",
+    "total": 780,
+    "passed": 780,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-legacy-existing-editmode-release.xml",
+    "xmlSha256": "603F0685E3FF7CBF82FE82B6A32992F254056EE41BB810454F39F71FD3579019",
+    "logSha256": "5AFAC524607C5167F681E6C262C26C16B14C788CA6CAB21807E78D66C9504A38",
+    "failures": []
+  },
+  {
+    "name": "plan13-legacy-existing-playmode-release",
+    "result": "Passed",
+    "total": 64,
+    "passed": 64,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-legacy-existing-playmode-release.xml",
+    "xmlSha256": "5D75CE45C268047A15992D4D3A4E175ABA8DE3FA996855E000862E1BD3C792A0",
+    "logSha256": "97C02E1A6FE35715B961F38AFC7882EB1CABEBAD25FD948ABADADFF5B40DD20E",
+    "failures": []
+  },
+  {
+    "name": "plan13-legacy-new-editmode-release",
+    "result": "Passed",
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-legacy-new-editmode-release.xml",
+    "xmlSha256": "E7980E011BF0D04EC93B72CB094F317AAC16F53248057D83789B547CFB0E2465",
+    "logSha256": "667BDD65F2057711ED43E56B332E7D8DF20C41F070F399C21D61DE6D17730E11",
+    "failures": []
+  },
+  {
+    "name": "plan13-legacy-editmode-normal-verified",
+    "result": "Passed",
+    "total": 782,
+    "passed": 782,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-legacy-editmode-normal-verified.xml",
+    "xmlSha256": "EB46A8DF38B0DB31007BA720060F12F8926822A9CA903F28FB8BDE31C996881F",
+    "logSha256": "742F7A2553261DBD2849EA94B6D3FF0EE305881F421C31E7C66ADBDFBF13CCCB",
+    "failures": []
+  },
+  {
+    "name": "plan13-legacy-playmode-normal-verified",
+    "result": "Passed",
+    "total": 73,
+    "passed": 73,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-legacy-playmode-normal-verified.xml",
+    "xmlSha256": "58C248FA3A9472D4268F3647D63A861F00FAD5A22BBB10B8DA72FACC413F9D97",
+    "logSha256": "F7F7607CCEE0B839FEC3056AA2CDE19DCDE1048F910A6D4B0CA27951A3F9DAD5",
+    "failures": []
+  },
+  {
+    "name": "plan13-legacy-editmode-release-verified",
+    "result": "Passed",
+    "total": 782,
+    "passed": 782,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-legacy-editmode-release-verified.xml",
+    "xmlSha256": "924A5BC93A46C71A3CB1FDE83ACC6DA0B00876C1F9C5E8117D907AF687FF273C",
+    "logSha256": "D393C625C7FEFDD9C072C79C3919B1695A902DAF2C34EA236BA96EF0578B8817",
+    "failures": []
+  },
+  {
+    "name": "plan13-legacy-playmode-release-verified",
+    "result": "Passed",
+    "total": 73,
+    "passed": 73,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-legacy-playmode-release-verified.xml",
+    "xmlSha256": "A7F337789F2D418A514341FBF9C6CF0825DAF834C60B4437339A9D66E1F573F7",
+    "logSha256": "A66C4F3FDDAC5E24781B05BC78A93237135E511AE0B1E2635A71C6FBD5F8A400",
+    "failures": []
+  }
+]

@@ -53,7 +53,7 @@ namespace Onity.Editor.Benchmarks
 
         /// <summary>
         /// Command-line entry point. Reads <c>-onityTaskBenchmarkBackend Mono|IL2CPP</c> (default
-        /// IL2CPP), <c>-onityTaskBenchmarkSuite primary|threadswitch|smoke</c> (default primary),
+        /// IL2CPP), <c>-onityTaskBenchmarkSuite primary|threadswitch|threadpool|jobs|whenall|whenany|timing|smoke|fullcycle</c> (default primary),
         /// <c>-onityTaskBenchmarkBuildPath</c>, and <c>-onityTaskBenchmarkOutput</c>.
         /// </summary>
         public static void BuildAndRunFromCommandLine()
@@ -64,9 +64,11 @@ namespace Onity.Editor.Benchmarks
                 : ScriptingImplementation.IL2CPP;
             string suite = GetArgumentValue(k_suiteArgument);
             suite = string.IsNullOrEmpty(suite) ? "primary" : suite.ToLowerInvariant();
-            if (suite != "primary" && suite != k_threadSwitchSuite && suite != "smoke" && suite != "fullcycle")
+            if (suite != "primary" && suite != k_threadSwitchSuite && suite != "threadpool"
+                && suite != "jobs" && suite != "whenall" && suite != "whenany" && suite != "timing"
+                && suite != "smoke" && suite != "fullcycle" && suite != "eof" && suite != "finite" && suite != "channels")
             {
-                throw new ArgumentException("Task benchmark suite must be primary, threadswitch, smoke, or fullcycle.");
+                throw new ArgumentException("Task benchmark suite must be primary, threadswitch, threadpool, jobs, whenall, whenany, timing, eof, finite, channels, smoke, or fullcycle.");
             }
 
             BuildAndRunPlayerBenchmark(implementation, suite);
@@ -112,7 +114,15 @@ namespace Onity.Editor.Benchmarks
             if (string.IsNullOrEmpty(latestJson))
             {
                 latestJson = Path.Combine(
-                    k_resultsDirectory, fullCycle ? "onity-task-fullcycle-player-latest.json"
+                    k_resultsDirectory, suite == "eof" ? "onity-task-eof-player-latest.json"
+                        : suite == "channels" ? "onity-channels-player-latest.json"
+                        : suite == "finite" ? "onity-async-enumerable-player-latest.json"
+                        : fullCycle ? "onity-task-fullcycle-player-latest.json"
+                        : suite == "jobs" ? "onity-task-jobs-player-latest.json"
+                        : suite == "whenall" ? "onity-task-whenall-player-latest.json"
+                        : suite == "whenany" ? "onity-task-whenany-player-latest.json"
+                        : suite == "timing" ? "onity-task-timing-player-latest.json"
+                        : suite == "threadpool" ? "onity-thread-pool-benchmark-player-latest.json"
                         : suite == "smoke" ? k_latestSmokeJsonFileName
                         : suite == k_threadSwitchSuite ? k_latestThreadSwitchJsonFileName : k_latestJsonFileName);
             }
@@ -160,7 +170,15 @@ namespace Onity.Editor.Benchmarks
                 }
 
                 WriteBuildMetadata(buildPath + ".build.json", targetGroup, fullCycle);
-                RunPlayer(buildPath, latestJson, suite);
+                string buildGuid = report.summary.guid.ToString();
+                RunPlayer(buildPath, latestJson, suite, backendLabel, buildGuid);
+                if (suite == "eof" || suite == "finite" || suite == "channels")
+                {
+                    // Reuse the exact fresh binary for ordinary headless smoke, with separate evidence.
+                    string smokeJson = Path.ChangeExtension(latestJson, ".smoke.json");
+                    RunPlayer(buildPath, smokeJson, "smoke", backendLabel, buildGuid);
+                    CheckSmokeReport(smokeJson);
+                }
                 AssetDatabase.Refresh();
                 UnityEngine.Debug.Log(
                     $"Onity task {suiteLabel} {backendLabel} player benchmark completed. Latest report: {latestJson}");
@@ -218,7 +236,8 @@ namespace Onity.Editor.Benchmarks
             }
         }
 
-        private static void RunPlayer(string buildPath, string latestJson, string suite)
+        private static void RunPlayer(string buildPath, string latestJson, string suite,
+            string expectedBackend, string expectedBuildGuid)
         {
             string logPath = Path.ChangeExtension(latestJson, ".player.log");
             string startupTracePath = Path.ChangeExtension(latestJson, ".startup.log");
@@ -237,10 +256,14 @@ namespace Onity.Editor.Benchmarks
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = buildPath,
-                Arguments = $"-batchmode -nographics -logFile \"{logPath}\" {k_playerRunArgument} "
+                Arguments = (suite == "eof"
+                    ? "-screen-fullscreen 0 -screen-width 320 -screen-height 240 "
+                    : "-batchmode -nographics ") + $"-logFile \"{logPath}\" {k_playerRunArgument} "
                     + $"{k_outputArgument} \"{latestJson}\" {k_suiteArgument} {suite} "
                     + $"{k_startupTraceArgument} \"{startupTracePath}\" "
-                    + $"-onityTaskBenchmarkBuildMetadata \"{buildPath}.build.json\"" + drainArgument + profileArguments,
+                    + $"-onityTaskBenchmarkBuildMetadata \"{buildPath}.build.json\""
+                    + (suite == "eof" ? $" -onityTaskExpectedBackend {expectedBackend} -onityTaskExpectedBuildGuid {expectedBuildGuid}" : string.Empty)
+                    + drainArgument + profileArguments,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -321,6 +344,305 @@ namespace Onity.Editor.Benchmarks
                 throw new InvalidOperationException("Player benchmark left a stale report from an earlier run: "
                     + latestJson + StartupEvidence(startupTracePath, startupTrace, logPath));
             }
+            if (suite == "eof")
+            {
+                CheckEndOfFrameReport(latestJson, expectedBackend, expectedBuildGuid);
+            }
+            else if (suite == "finite")
+            {
+                CheckFiniteReport(latestJson, expectedBackend, expectedBuildGuid);
+            }
+            else if (suite == "channels")
+            {
+                CheckChannelReport(latestJson, expectedBackend, expectedBuildGuid);
+            }
+        }
+
+        private static void CheckEndOfFrameReport(string path, string expectedBackend, string expectedBuildGuid)
+        {
+            EndOfFrameReport report = JsonUtility.FromJson<EndOfFrameReport>(File.ReadAllText(path));
+            if (report == null || !report.passed || report.expectedCaseCount != 6
+                || report.cases == null || report.cases.Length != 6 || report.pixels == null || report.pixels.Length != 4
+                || report.expectedBackend != expectedBackend || report.expectedBuildGuid != expectedBuildGuid
+                || report.environment == null || report.environment.scriptingBackend != expectedBackend
+                || !string.Equals(report.environment.buildGuid, expectedBuildGuid, StringComparison.OrdinalIgnoreCase)
+                || report.environment.isDevelopment)
+            {
+                throw new InvalidOperationException("EOF report does not prove all six cases for the expected fresh Release Player: " + path);
+            }
+            foreach (ReportCase result in report.cases)
+            {
+                if (result == null || !result.passed)
+                {
+                    throw new InvalidOperationException("EOF report contains a failed/missing case: " + path);
+                }
+            }
+        }
+
+        private static void CheckSmokeReport(string path)
+        {
+            SmokeReport report = JsonUtility.FromJson<SmokeReport>(File.ReadAllText(path));
+            if (report == null || !report.passed || report.expectedCaseCount != 35
+                || report.cases == null || report.cases.Length != 35)
+            {
+                throw new InvalidOperationException("Paired headless smoke did not pass all 35 cases: " + path);
+            }
+            foreach (ReportCase result in report.cases)
+            {
+                if (result == null || !result.passed)
+                {
+                    throw new InvalidOperationException("Paired smoke report contains a failed/missing case: " + path);
+                }
+            }
+        }
+
+        private static void CheckChannelReport(string path, string expectedBackend, string expectedBuildGuid)
+        {
+            ChannelReport report = JsonUtility.FromJson<ChannelReport>(File.ReadAllText(path));
+            if (report == null || !report.completed || !string.IsNullOrEmpty(report.failure)
+                || !report.counterCalibrated || report.counterCalibrationBytes < 65536 || report.counterEmptyBytes != 0
+                || (report.counterKind != "PerThread" && report.counterKind != "HeapDelta")
+                || report.cyclesPerWindow != 4096 || report.warmups != 3 || report.runs != 2 || report.samplesPerRun != 8
+                || report.scenarios == null || report.scenarios.Length != 2 || report.environment == null
+                || report.environment.isDevelopment || report.environment.scriptingBackend != expectedBackend
+                || !string.Equals(report.environment.buildGuid, expectedBuildGuid, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Channel report lacks calibrated work or the expected fresh Release identity: " + path);
+            }
+            for (int scenarioIndex = 0; scenarioIndex < report.scenarios.Length; scenarioIndex++)
+            {
+                ChannelScenario scenario = report.scenarios[scenarioIndex];
+                int capacity = scenarioIndex == 0 ? 1 : 128;
+                int count = 4096 * capacity;
+                long checksum = (long)count * (count - 1) / 2;
+                long primeChecksum = -(long)capacity * (capacity + 1) / 2;
+                if (scenario == null || scenario.capacity != capacity || scenario.expectedItemsPerWindow != count
+                    || scenario.expectedChecksum != checksum || scenario.expectedPrimingChecksum != primeChecksum
+                    || scenario.warmedItems != (long)count * 3 || scenario.measuredItems != (long)count * 16
+                    || scenario.warmedPrimingItems != capacity * 3 || scenario.measuredPrimingItems != capacity * 16
+                    || !scenario.controlsPassed || !scenario.emptyValid || scenario.emptyBytes != 0
+                    || !scenario.positiveValid || scenario.positiveBytes < 65536
+                    || scenario.samples == null || scenario.samples.Length != 16)
+                {
+                    throw new InvalidOperationException("Channel scenario has missing work, priming or controls: " + path);
+                }
+                bool zeros = true;
+                for (int index = 0; index < scenario.samples.Length; index++)
+                {
+                    ChannelSample sample = scenario.samples[index];
+                    if (sample == null || sample.run != index / 8 || sample.index != index % 8
+                        || !sample.allocationValid || sample.rawBytes < 0 || sample.writeCalls != count || sample.readCalls != count
+                        || sample.successfulWrites != count || sample.successfulReads != count || sample.failedOperations != 0
+                        || sample.checksum != checksum || sample.primingWrites != capacity || sample.primingReads != capacity
+                        || sample.primingChecksum != primeChecksum)
+                    {
+                        throw new InvalidOperationException("Channel report contains an invalid raw window: " + path);
+                    }
+                    zeros &= sample.rawBytes == 0;
+                }
+                if (scenario.allRawSamplesZero != zeros
+                    || scenario.zeroAllocationProven != (zeros && report.counterKind == "PerThread"))
+                {
+                    throw new InvalidOperationException("Channel report overstates its counter evidence: " + path);
+                }
+            }
+        }
+
+        [Serializable]
+        private sealed class ChannelReport
+        {
+            public bool completed;
+            public string failure;
+            public string counterKind;
+            public bool counterCalibrated;
+            public long counterCalibrationBytes;
+            public long counterEmptyBytes;
+            public int cyclesPerWindow;
+            public int warmups;
+            public int runs;
+            public int samplesPerRun;
+            public ReportEnvironment environment;
+            public ChannelScenario[] scenarios;
+        }
+
+        [Serializable]
+        private sealed class ChannelScenario
+        {
+            public int capacity;
+            public int expectedItemsPerWindow;
+            public long expectedChecksum;
+            public long expectedPrimingChecksum;
+            public long warmedItems;
+            public long measuredItems;
+            public int warmedPrimingItems;
+            public int measuredPrimingItems;
+            public bool controlsPassed;
+            public bool emptyValid;
+            public long emptyBytes;
+            public bool positiveValid;
+            public long positiveBytes;
+            public bool allRawSamplesZero;
+            public bool zeroAllocationProven;
+            public ChannelSample[] samples;
+        }
+
+        [Serializable]
+        private sealed class ChannelSample
+        {
+            public int run;
+            public int index;
+            public long rawBytes;
+            public bool allocationValid;
+            public int writeCalls;
+            public int readCalls;
+            public int successfulWrites;
+            public int successfulReads;
+            public int failedOperations;
+            public long checksum;
+            public int primingWrites;
+            public int primingReads;
+            public long primingChecksum;
+        }
+
+        private static void CheckFiniteReport(string path, string expectedBackend, string expectedBuildGuid)
+        {
+            FiniteReport report = JsonUtility.FromJson<FiniteReport>(File.ReadAllText(path));
+            if (report == null || !report.completed || !report.counterCalibrated
+                || report.counterCalibrationBytes < 65536 || report.counterEmptyBytes != 0
+                || report.itemsPerWindow != 4096 || report.warmups != 3 || report.runs != 2 || report.samplesPerRun != 8
+                || report.primingItemsPerWindow != 1
+                || report.scenarios == null || report.scenarios.Length != 2 || report.environment == null
+                || report.environment.isDevelopment || report.environment.scriptingBackend != expectedBackend
+                || !string.Equals(report.environment.buildGuid, expectedBuildGuid, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Finite report has missing controls/work or the wrong fresh Release identity: " + path);
+            }
+            for (int scenarioIndex = 0; scenarioIndex < report.scenarios.Length; scenarioIndex++)
+            {
+                FiniteScenario scenario = report.scenarios[scenarioIndex];
+                long checksum = scenarioIndex == 0 ? 8386560 : 33546240;
+                string name = scenarioIndex == 0 ? "Range" : "Select/Where/Take";
+                int primingValue = scenarioIndex == 0 ? -1 : -4;
+                if (scenario == null || scenario.name != name || scenario.expectedChecksum != checksum
+                    || scenario.expectedPrimingValue != primingValue
+                    || scenario.sourceStart != (scenarioIndex == 0 ? -1 : -2)
+                    || scenario.sourceCount != (scenarioIndex == 0 ? 4097 : 16386)
+                    || scenario.takeCount != (scenarioIndex == 0 ? 0 : 4097)
+                    || scenario.warmedPrimingItems != 3 || scenario.measuredPrimingItems != 16
+                    || !scenario.controlsPassed || !scenario.emptyValid || scenario.emptyBytes != 0
+                    || !scenario.positiveValid || scenario.positiveBytes < 65536
+                    || scenario.warmedItems != 12288 || scenario.measuredItems != 65536
+                    || scenario.samples == null || scenario.samples.Length != 16)
+                {
+                    throw new InvalidOperationException("Finite scenario is missing bounded work or bracket controls: " + path);
+                }
+                for (int index = 0; index < scenario.samples.Length; index++)
+                {
+                    FiniteSample sample = scenario.samples[index];
+                    if (sample == null || sample.run != index / 8 || sample.index != index % 8
+                        || !sample.allocationValid || sample.rawBytes < 0 || sample.moveCalls != 4097
+                        || sample.successfulMoves != 4096 || sample.currentReads != 4096
+                        || sample.endMoves != 1 || sample.checksum != checksum
+                        || sample.primingMoves != 1 || sample.primingCurrentReads != 1 || sample.primingValue != primingValue)
+                    {
+                        throw new InvalidOperationException("Finite report contains an invalid/missing raw sample: " + path);
+                    }
+                }
+            }
+        }
+
+        [Serializable]
+        private sealed class FiniteReport
+        {
+            public bool completed;
+            public bool counterCalibrated;
+            public long counterCalibrationBytes;
+            public long counterEmptyBytes;
+            public int itemsPerWindow;
+            public int warmups;
+            public int runs;
+            public int samplesPerRun;
+            public int primingItemsPerWindow;
+            public ReportEnvironment environment;
+            public FiniteScenario[] scenarios;
+        }
+
+        [Serializable]
+        private sealed class FiniteScenario
+        {
+            public string name;
+            public long expectedChecksum;
+            public int expectedPrimingValue;
+            public int sourceStart;
+            public int sourceCount;
+            public int takeCount;
+            public int warmedPrimingItems;
+            public int measuredPrimingItems;
+            public bool controlsPassed;
+            public bool emptyValid;
+            public long emptyBytes;
+            public bool positiveValid;
+            public long positiveBytes;
+            public int warmedItems;
+            public int measuredItems;
+            public FiniteSample[] samples;
+        }
+
+        [Serializable]
+        private sealed class FiniteSample
+        {
+            public int run;
+            public int index;
+            public bool allocationValid;
+            public long rawBytes;
+            public int moveCalls;
+            public int successfulMoves;
+            public int currentReads;
+            public int endMoves;
+            public long checksum;
+            public int primingMoves;
+            public int primingCurrentReads;
+            public int primingValue;
+        }
+
+        [Serializable]
+        private sealed class EndOfFrameReport
+        {
+            public bool passed;
+            public int expectedCaseCount;
+            public string expectedBackend;
+            public string expectedBuildGuid;
+            public ReportEnvironment environment;
+            public ReportCase[] cases;
+            public ReportPixel[] pixels;
+        }
+
+        [Serializable]
+        private sealed class SmokeReport
+        {
+            public bool passed;
+            public int expectedCaseCount;
+            public ReportCase[] cases;
+        }
+
+        [Serializable]
+        private sealed class ReportCase
+        {
+            public bool passed;
+        }
+
+        [Serializable]
+        private sealed class ReportEnvironment
+        {
+            public string buildGuid;
+            public string scriptingBackend;
+            public bool isDevelopment;
+        }
+
+        [Serializable]
+        private sealed class ReportPixel
+        {
+            public int completedFrame;
         }
 
         private static string ReadStartupTrace(string tracePath, string previousTrace)

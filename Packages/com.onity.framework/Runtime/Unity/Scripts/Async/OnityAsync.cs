@@ -158,6 +158,150 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
+        /// Completes with the index of the first observed terminal input. Every input is observed;
+        /// losing operations continue running and are not canceled.
+        /// </summary>
+        /// <remarks>
+        /// Inputs are snapshotted and registered in order. Already terminal inputs favor the lowest
+        /// index; concurrent callbacks race by observation, not by an atomic completion-time snapshot.
+        /// Native publication can run on a producer worker, without an implicit main-thread hop.
+        /// A pending loser retains its observer. The returned native task is single-consumer.
+        /// </remarks>
+        /// <param name="tasks">Nonempty input array. Default and one-element inputs are supported.</param>
+        /// <returns>A single-consumer task with the winner index, or its failure/cancellation.</returns>
+        /// <exception cref="ArgumentNullException">The array is null.</exception>
+        /// <exception cref="ArgumentException">The array is empty or repeats a single-consumer source/token.</exception>
+        public static OnityTask<int> WhenAny(params OnityTask[] tasks)
+        {
+            if (tasks == null)
+            {
+                throw new ArgumentNullException(nameof(tasks));
+            }
+            if (tasks.Length == 0)
+            {
+                throw new ArgumentException("WhenAny requires at least one input.", nameof(tasks));
+            }
+
+            OnityWhenAnyArrayTaskSource source = OnityWhenAnyArrayTaskSource.Rent(tasks);
+            OnityTask<int> output = new OnityTask<int>(source);
+            source.Start();
+            return output;
+        }
+
+        /// <summary>
+        /// Completes with the first observed terminal input's index and result. Every input is
+        /// observed; losing operations continue running and are not canceled.
+        /// </summary>
+        /// <remarks>
+        /// Inputs are snapshotted and registered in order. Already terminal inputs favor the lowest
+        /// index; concurrent callbacks race by observation, not by an atomic completion-time snapshot.
+        /// Winning fault/cancellation status is preserved. Native publication can run on a producer
+        /// worker. A pending loser retains its observer. The returned native task is single-consumer.
+        /// </remarks>
+        /// <typeparam name="T">Shared input result type.</typeparam>
+        /// <param name="tasks">Nonempty input array. Default and one-element inputs are supported.</param>
+        /// <returns>A single-consumer task with the winner index/result, or its failure/cancellation.</returns>
+        /// <exception cref="ArgumentNullException">The array is null.</exception>
+        /// <exception cref="ArgumentException">The array is empty or repeats a single-consumer source/token.</exception>
+        public static OnityTask<(int winnerIndex, T result)> WhenAny<T>(params OnityTask<T>[] tasks)
+        {
+            if (tasks == null)
+            {
+                throw new ArgumentNullException(nameof(tasks));
+            }
+            if (tasks.Length == 0)
+            {
+                throw new ArgumentException("WhenAny requires at least one input.", nameof(tasks));
+            }
+
+            OnityWhenAnyArrayTaskSource<T> source = OnityWhenAnyArrayTaskSource<T>.Rent(tasks);
+            OnityTask<(int winnerIndex, T result)> output = new OnityTask<(int winnerIndex, T result)>(source);
+            source.Start();
+            return output;
+        }
+
+        internal bool TryGetWhenAnyIdentity(out OnityWhenAnyInputIdentity identity)
+        {
+            identity = new OnityWhenAnyInputIdentity(m_state, m_token);
+            return m_state is IOnityTaskSource && !(m_state is IOnityMultiConsumerTaskSource);
+        }
+
+        internal void RegisterWhenAnyObserver(Action callback)
+        {
+            if (m_state is Task task)
+            {
+                var awaiter = task.ConfigureAwait(false).GetAwaiter();
+                if (awaiter.IsCompleted)
+                {
+                    callback();
+                }
+                else
+                {
+                    awaiter.UnsafeOnCompleted(callback);
+                }
+                return;
+            }
+
+            OnityTaskAwaiter native = GetAwaiter();
+            if (native.IsCompleted)
+            {
+                callback();
+            }
+            else
+            {
+                native.UnsafeOnCompleted(callback);
+            }
+        }
+
+        internal OnityTaskSourceStatus ReadWhenAnyOutcome(out Exception fault, out CancellationToken cancellationToken)
+        {
+            fault = null;
+            cancellationToken = default;
+            if (m_state == null)
+            {
+                return OnityTaskSourceStatus.Succeeded;
+            }
+
+            if (m_state is OnityTaskCompletionSource<bool> completion)
+            {
+                return completion.ReadCompletedOutcome(
+                    out bool ignored, out fault, out cancellationToken);
+            }
+
+            OnityTaskSourceStatus status = m_state is IOnityTaskSource source
+                ? source.GetStatus(m_token)
+                : ((Task)m_state).IsCanceled ? OnityTaskSourceStatus.Canceled
+                : ((Task)m_state).IsFaulted ? OnityTaskSourceStatus.Faulted
+                : ((Task)m_state).IsCompleted ? OnityTaskSourceStatus.Succeeded : OnityTaskSourceStatus.Pending;
+            if (status == OnityTaskSourceStatus.Pending)
+            {
+                throw new InvalidOperationException("OnityTask is not completed.");
+            }
+
+            try
+            {
+                GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (status == OnityTaskSourceStatus.Canceled)
+                {
+                    cancellationToken = exception.CancellationToken;
+                }
+                else
+                {
+                    fault = exception;
+                }
+            }
+            catch (Exception exception)
+            {
+                fault = exception;
+            }
+
+            return status;
+        }
+
+        /// <summary>
         /// True when the wrapped task completed.
         /// </summary>
         public bool IsCompleted => m_state == null
@@ -279,6 +423,66 @@ namespace Onity.Unity.Async
             }
 
             AsTask().Forget(exceptionHandler);
+        }
+
+        /// <summary>
+        /// Awaits the next selected PlayerLoop drain, which may occur in this rendered frame.
+        /// </summary>
+        /// <param name="timing">Selected PlayerLoop phase.</param>
+        /// <param name="cancellationToken">Cancellation published on Unity's main thread.</param>
+        /// <returns>A single-consumer completion task.</returns>
+        /// <remarks>Requires the main thread and active Play/player execution. Requests
+        /// created during a drain wait for its next occurrence. No same-frame completion
+        /// is promised from callers later than the selected node, including ECS Update.</remarks>
+        public static OnityTask Yield(
+            OnityPlayerLoopTiming timing = OnityPlayerLoopTiming.Update,
+            CancellationToken cancellationToken = default)
+        {
+            return OnityTaskPlayerLoop.Schedule(timing, 0, true, cancellationToken);
+        }
+
+        /// <summary>Awaits Unity's real rendering end-of-frame coroutine primitive.</summary>
+        /// <param name="cancellationToken">Cancellation published on the main thread,
+        /// including through Update while the rendering coroutine is stalled.</param>
+        /// <returns>A single-consumer completion task, or a pre-canceled task.</returns>
+        /// <remarks>Requires the main thread, active accepting Play/player execution and
+        /// a non-null graphics device. Editor batch mode is unsupported. These checks
+        /// precede pre-cancellation. Completion may occur in the registration frame;
+        /// requests created during its drain wait for a later drain. Editor Scene-view
+        /// switching can stall the Unity primitive. Cold host/coroutine creation allocates.</remarks>
+        /// <exception cref="InvalidOperationException">The thread/session is unavailable.</exception>
+        /// <exception cref="PlatformNotSupportedException">Rendering is unsupported.</exception>
+        public static OnityTask WaitForEndOfFrame(CancellationToken cancellationToken = default)
+        {
+            return OnityTaskPlayerLoop.ScheduleEndOfFrame(cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits a later rendered frame at the selected PlayerLoop phase.
+        /// </summary>
+        /// <param name="timing">Selected PlayerLoop phase.</param>
+        /// <param name="cancellationToken">Cancellation published on Unity's main thread.</param>
+        /// <returns>A single-consumer completion task.</returns>
+        /// <remarks>Requires the main thread and active Play/player execution.</remarks>
+        public static OnityTask NextFrame(
+            OnityPlayerLoopTiming timing, CancellationToken cancellationToken)
+        {
+            return OnityTaskPlayerLoop.Schedule(timing, 1, false, cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits elapsed rendered frames at the selected PlayerLoop phase.
+        /// </summary>
+        /// <param name="frameCount">Number of future rendered frames; zero completes immediately.</param>
+        /// <param name="timing">Selected PlayerLoop phase.</param>
+        /// <param name="cancellationToken">Cancellation published on Unity's main thread.</param>
+        /// <returns>A single-consumer completion task, or an inline zero-frame result.</returns>
+        /// <remarks>Requires the main thread and active Play/player execution, including
+        /// pre-canceled and zero-frame calls. Multiple fixed ticks cannot shorten the wait.</remarks>
+        public static OnityTask DelayFrames(
+            int frameCount, OnityPlayerLoopTiming timing, CancellationToken cancellationToken)
+        {
+            return OnityTaskPlayerLoop.Schedule(timing, frameCount, false, cancellationToken);
         }
 
         /// <summary>
@@ -496,6 +700,97 @@ namespace Onity.Unity.Async
         public static OnityTaskThreadSwitch SwitchToMainThread(CancellationToken cancellationToken = default)
         {
             return new OnityTaskThreadSwitch(cancellationToken, OnityTaskMainThreadDispatcher.Session);
+        }
+
+        /// <summary>
+        /// Returns an awaitable that always queues its continuation to the thread pool,
+        /// including when requested from a worker thread.
+        /// </summary>
+        /// <remarks>
+        /// Cancellation is observed on the worker when the await completes. The awaiter does not
+        /// capture execution context; async builders own context flow. Direct continuation
+        /// registration does not flow context. WebGL players do not support this operation.
+        /// </remarks>
+        /// <param name="cancellationToken">Cancellation token observed on the worker.</param>
+        /// <returns>Thread-pool switch awaitable.</returns>
+        /// <exception cref="PlatformNotSupportedException">Called in a WebGL player.</exception>
+        public static OnityTaskThreadPoolSwitch SwitchToThreadPool(CancellationToken cancellationToken = default)
+        {
+            OnityTaskThreadPoolDispatcher.ThrowIfUnsupported();
+            return new OnityTaskThreadPoolSwitch(cancellationToken);
+        }
+
+        /// <summary>
+        /// Runs synchronous work on the thread pool and optionally returns to Unity's main thread
+        /// before publishing completion, fault or cancellation.
+        /// </summary>
+        /// <remarks>
+        /// Pre-canceled work is not dispatched. Cancellation is checked before and after invocation
+        /// but cannot interrupt the delegate. A delegate exception takes precedence over cancellation.
+        /// Main-thread returns use the originating session and discard stale-session continuations.
+        /// An await of an already completed task may run inline on the consumer's thread.
+        /// </remarks>
+        /// <param name="action">Synchronous work. Do not access Unity objects from the worker.</param>
+        /// <param name="returnToMainThread">Return through the main-thread dispatcher after work.</param>
+        /// <param name="cancellationToken">Cancellation token observed before and after work.</param>
+        /// <returns>Task representing work and the optional return to the main thread.</returns>
+        /// <exception cref="ArgumentNullException">The action is null.</exception>
+        /// <exception cref="PlatformNotSupportedException">Called in a WebGL player.</exception>
+        public static OnityTask RunOnThreadPool(
+            Action action,
+            bool returnToMainThread = true,
+            CancellationToken cancellationToken = default)
+        {
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            OnityTaskThreadPoolDispatcher.ThrowIfUnsupported();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return FromCanceled(cancellationToken);
+            }
+
+            return OnityTaskThreadPoolDispatcher.Run(
+                action, returnToMainThread, cancellationToken, OnityTaskMainThreadDispatcher.Session);
+        }
+
+        /// <summary>
+        /// Runs synchronous work on the thread pool and optionally returns to Unity's main thread
+        /// before publishing its result, fault or cancellation.
+        /// </summary>
+        /// <remarks>
+        /// Pre-canceled work is not dispatched. Cancellation is checked before and after invocation
+        /// but cannot interrupt the delegate. A delegate exception takes precedence over cancellation.
+        /// Main-thread returns use the originating session and discard stale-session continuations.
+        /// An await of an already completed task may run inline on the consumer's thread.
+        /// </remarks>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="function">Synchronous work. Do not access Unity objects from the worker.</param>
+        /// <param name="returnToMainThread">Return through the main-thread dispatcher after work.</param>
+        /// <param name="cancellationToken">Cancellation token observed before and after work.</param>
+        /// <returns>Task containing the worker result after the optional main-thread return.</returns>
+        /// <exception cref="ArgumentNullException">The function is null.</exception>
+        /// <exception cref="PlatformNotSupportedException">Called in a WebGL player.</exception>
+        public static OnityTask<T> RunOnThreadPool<T>(
+            Func<T> function,
+            bool returnToMainThread = true,
+            CancellationToken cancellationToken = default)
+        {
+            if (function == null)
+            {
+                throw new ArgumentNullException(nameof(function));
+            }
+
+            OnityTaskThreadPoolDispatcher.ThrowIfUnsupported();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return OnityTask<T>.FromCanceled(cancellationToken);
+            }
+
+            return OnityTaskThreadPoolDispatcher.Run(
+                function, returnToMainThread, cancellationToken, OnityTaskMainThreadDispatcher.Session);
         }
 
         /// <summary>
@@ -717,6 +1012,12 @@ namespace Onity.Unity.Async
                 }
 
                 return OnityTask<T[]>.FromResult(results);
+            }
+
+            if (OnityWhenAllTypedCoordinator<T>.TryRent(tasks, out OnityWhenAllTypedCoordinator<T> coordinator))
+            {
+                Task<T[]> completion = coordinator.Start();
+                return OnityTask<T[]>.FromTask(OnityTaskTracker.Track(completion, "OnityAsync.WhenAll<T>"));
             }
 
             Task<T>[] taskArray = new Task<T>[tasks.Length];
@@ -1272,6 +1573,115 @@ namespace Onity.Unity.Async
             m_state is IOnityTaskSource<T>
             && !(m_state is IOnityMultiConsumerTaskSource);
 
+        internal bool TryGetWhenAnyIdentity(out OnityWhenAnyInputIdentity identity)
+        {
+            identity = new OnityWhenAnyInputIdentity(m_state, m_token);
+            return HasSingleConsumerSource;
+        }
+
+        internal void RegisterWhenAnyObserver(Action callback)
+        {
+            if (m_state is Task<T> task)
+            {
+                var awaiter = task.ConfigureAwait(false).GetAwaiter();
+                if (awaiter.IsCompleted)
+                {
+                    callback();
+                }
+                else
+                {
+                    awaiter.UnsafeOnCompleted(callback);
+                }
+                return;
+            }
+
+            OnityTaskAwaiter<T> native = GetAwaiter();
+            if (native.IsCompleted)
+            {
+                callback();
+            }
+            else
+            {
+                native.UnsafeOnCompleted(callback);
+            }
+        }
+
+        internal OnityTaskSourceStatus ReadWhenAnyOutcome(
+            out T result, out Exception fault, out CancellationToken cancellationToken)
+        {
+            result = default;
+            fault = null;
+            cancellationToken = default;
+            if (m_state == null)
+            {
+                result = m_result;
+                return OnityTaskSourceStatus.Succeeded;
+            }
+
+            if (m_state is OnityTaskCompletionSource<T> completion)
+            {
+                return completion.ReadCompletedOutcome(out result, out fault, out cancellationToken);
+            }
+
+            OnityTaskSourceStatus status = m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token)
+                : ((Task<T>)m_state).IsCanceled ? OnityTaskSourceStatus.Canceled
+                : ((Task<T>)m_state).IsFaulted ? OnityTaskSourceStatus.Faulted
+                : ((Task<T>)m_state).IsCompleted ? OnityTaskSourceStatus.Succeeded : OnityTaskSourceStatus.Pending;
+            if (status == OnityTaskSourceStatus.Pending)
+            {
+                throw new InvalidOperationException("OnityTask is not completed.");
+            }
+
+            try
+            {
+                result = GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (status == OnityTaskSourceStatus.Canceled)
+                {
+                    cancellationToken = exception.CancellationToken;
+                }
+                else
+                {
+                    fault = exception;
+                }
+            }
+            catch (Exception exception)
+            {
+                fault = exception;
+            }
+
+            return status;
+        }
+
+        internal bool IsTypedCoordinatorEligible => m_state == null
+            || (m_state.GetType() == typeof(OnityTaskCompletionSource<T>)
+                && !((OnityTaskCompletionSource<T>)m_state).HasTaskBridge);
+
+        internal bool SharesTypedCoordinatorSourceWith(OnityTask<T> other)
+        {
+            return m_state != null && ReferenceEquals(m_state, other.m_state);
+        }
+
+        internal OnityTaskSourceStatus ReadTypedCoordinatorOutcome(
+            out T result,
+            out Exception fault,
+            out CancellationToken cancellationToken)
+        {
+            if (m_state == null)
+            {
+                result = m_result;
+                fault = null;
+                cancellationToken = default;
+                return OnityTaskSourceStatus.Succeeded;
+            }
+
+            return ((OnityTaskCompletionSource<T>)m_state).ReadCompletedOutcome(
+                out result, out fault, out cancellationToken);
+        }
+
         /// <summary>
         /// Returns the task awaiter.
         /// </summary>
@@ -1826,7 +2236,9 @@ namespace Onity.Unity.Async
 
         bool TrySetCanceledFromRunner(int token);
 
-        bool Tick(float deltaTime, float unscaledDeltaTime);
+        bool TrySetRetiredFromRunner(int token);
+
+        bool Tick(OnityTaskRunner owner, float deltaTime, float unscaledDeltaTime);
     }
 
     internal static class OnityTaskContinuation
@@ -2107,9 +2519,13 @@ namespace Onity.Unity.Async
 
         public bool TrySetCanceledFromRunner(int token)
         {
-            return token == Volatile.Read(ref m_version)
-                && IsCancellationRequested
-                && TrySetStatus(OnityTaskSourceStatus.Canceled, null);
+            return IsCancellationRequested
+                && TrySetStatus(OnityTaskSourceStatus.Canceled, null, token);
+        }
+
+        public bool TrySetRetiredFromRunner(int token)
+        {
+            return TrySetStatus(OnityTaskSourceStatus.Canceled, null, token);
         }
 
         /// <summary>
@@ -2204,7 +2620,7 @@ namespace Onity.Unity.Async
             OnityTaskRunner.NotifyCancellationRequested();
         }
 
-        private bool TrySetStatus(OnityTaskSourceStatus status, Exception exception)
+        private bool TrySetStatus(OnityTaskSourceStatus status, Exception exception, int? expectedVersion = null)
         {
             Action continuation;
             IOnityPreservedTaskContinuation preservedContinuation;
@@ -2213,7 +2629,8 @@ namespace Onity.Unity.Async
 
             lock (this)
             {
-                if (m_status != (int)OnityTaskSourceStatus.Pending)
+                if ((expectedVersion.HasValue && m_version != expectedVersion.Value)
+                    || m_status != (int)OnityTaskSourceStatus.Pending)
                 {
                     return false;
                 }
@@ -2576,9 +2993,13 @@ namespace Onity.Unity.Async
 
         public bool TrySetCanceledFromRunner(int token)
         {
-            return token == Volatile.Read(ref m_version)
-                && IsCancellationRequested
-                && TrySetStatus(OnityTaskSourceStatus.Canceled, default, null);
+            return IsCancellationRequested
+                && TrySetStatus(OnityTaskSourceStatus.Canceled, default, null, token);
+        }
+
+        public bool TrySetRetiredFromRunner(int token)
+        {
+            return TrySetStatus(OnityTaskSourceStatus.Canceled, default, null, token);
         }
 
         /// <summary>
@@ -2680,7 +3101,8 @@ namespace Onity.Unity.Async
             OnityTaskRunner.NotifyCancellationRequested();
         }
 
-        private bool TrySetStatus(OnityTaskSourceStatus status, T result, Exception exception)
+        private bool TrySetStatus(
+            OnityTaskSourceStatus status, T result, Exception exception, int? expectedVersion = null)
         {
             Action continuation;
             IOnityPreservedTaskContinuation preservedContinuation;
@@ -2689,7 +3111,8 @@ namespace Onity.Unity.Async
 
             lock (this)
             {
-                if (m_status != (int)OnityTaskSourceStatus.Pending)
+                if ((expectedVersion.HasValue && m_version != expectedVersion.Value)
+                    || m_status != (int)OnityTaskSourceStatus.Pending)
                 {
                     return false;
                 }
@@ -3048,12 +3471,34 @@ namespace Onity.Unity.Async
     [ExecuteAlways]
     internal sealed class OnityTaskRunner : MonoBehaviour
     {
+        private struct Entry
+        {
+            internal IOnityTaskTickSource Source;
+            internal int Version;
+        }
+
         private static OnityTaskRunner s_instance;
         private static int s_cancellationRequestCount;
+        private static int s_sessionEpoch;
+        private static bool s_accepting = true;
+        private static bool s_shuttingDown;
 
-        private readonly List<IOnityTaskTickSource> m_updateSources = new List<IOnityTaskTickSource>(64);
-        private readonly List<IOnityTaskTickSource> m_fixedUpdateSources = new List<IOnityTaskTickSource>(16);
-        private readonly List<IOnityTaskTickSource> m_lateUpdateSources = new List<IOnityTaskTickSource>(16);
+        private List<Entry> m_updateSources = new List<Entry>(64);
+        private List<Entry> m_fixedUpdateSources = new List<Entry>(16);
+        private List<Entry> m_lateUpdateSources = new List<Entry>(16);
+        private bool m_retired;
+        private bool m_ticking;
+        private Entry m_activeEntry;
+
+        internal bool IsRetired => m_retired;
+
+        internal static void ValidateAcceptance()
+        {
+            if (!s_accepting || s_shuttingDown)
+            {
+                throw new InvalidOperationException("The legacy Onity task runner is closing its session.");
+            }
+        }
 
         public static void Schedule(IOnityTaskTickSource source, OnityTaskLoopPhase phase)
         {
@@ -3063,17 +3508,18 @@ namespace Onity.Unity.Async
             }
 
             OnityTaskRunner runner = GetOrCreate();
+            Entry entry = new Entry { Source = source, Version = source.Version };
             if (phase == OnityTaskLoopPhase.FixedUpdate)
             {
-                runner.m_fixedUpdateSources.Add(source);
+                runner.m_fixedUpdateSources.Add(entry);
             }
             else if (phase == OnityTaskLoopPhase.LateUpdate)
             {
-                runner.m_lateUpdateSources.Add(source);
+                runner.m_lateUpdateSources.Add(entry);
             }
             else
             {
-                runner.m_updateSources.Add(source);
+                runner.m_updateSources.Add(entry);
             }
         }
 
@@ -3097,6 +3543,7 @@ namespace Onity.Unity.Async
 
         private static OnityTaskRunner GetOrCreate()
         {
+            ValidateAcceptance();
             if (!ReferenceEquals(s_instance, null))
             {
                 return s_instance;
@@ -3117,48 +3564,178 @@ namespace Onity.Unity.Async
 
         private void Update()
         {
+            if (m_retired || m_ticking)
+            {
+                return;
+            }
             DrainCancellationRequests();
+            if (m_retired)
+            {
+                return;
+            }
             TickSources(m_updateSources, Time.deltaTime, Time.unscaledDeltaTime);
+            if (m_retired)
+            {
+                return;
+            }
+            OnityJobHandleRegistry.Update();
+            if (m_retired)
+            {
+                return;
+            }
             OnityTaskMainThreadDispatcher.Drain();
         }
 
         private void FixedUpdate()
         {
+            if (m_retired)
+            {
+                return;
+            }
             TickSources(m_fixedUpdateSources, Time.fixedDeltaTime, Time.fixedUnscaledDeltaTime);
         }
 
         private void LateUpdate()
         {
+            if (m_retired)
+            {
+                return;
+            }
             TickSources(m_lateUpdateSources, Time.deltaTime, Time.unscaledDeltaTime);
         }
 
         private void OnDestroy()
         {
-            if (ReferenceEquals(s_instance, this))
+            Retire();
+        }
+
+        private void Retire()
+        {
+            if (m_retired)
+            {
+                return;
+            }
+
+            m_retired = true;
+            List<Entry> update = m_updateSources;
+            List<Entry> fixedUpdate = m_fixedUpdateSources;
+            List<Entry> lateUpdate = m_lateUpdateSources;
+            m_updateSources = null;
+            m_fixedUpdateSources = null;
+            m_lateUpdateSources = null;
+            bool owned = ReferenceEquals(s_instance, this);
+            if (owned)
             {
                 s_instance = null;
-                OnityTaskMainThreadDispatcher.NotifyRunnerDestroyed();
+            }
+            try
+            {
+                if (owned)
+                {
+                    // Retire old Jobs before legacy continuations can create a replacement.
+                    OnityJobHandleRegistry.RetireRunner();
+                }
+            }
+            finally
+            {
+                try
+                {
+                    RetireEntries(update);
+                    RetireEntries(fixedUpdate);
+                    RetireEntries(lateUpdate);
+                }
+                finally
+                {
+                    if (owned && ReferenceEquals(s_instance, null))
+                    {
+                        OnityTaskMainThreadDispatcher.NotifyRunnerDestroyed();
+                    }
+                }
             }
         }
 
-        private static void TickSources(
-            List<IOnityTaskTickSource> sources,
+        private void RetireEntries(List<Entry> entries)
+        {
+            for (int i = entries.Count - 1; i >= 0; i--)
+            {
+                Entry entry = entries[i];
+                entries.RemoveAt(i);
+                if (m_ticking && ReferenceEquals(entry.Source, m_activeEntry.Source)
+                    && entry.Version == m_activeEntry.Version)
+                {
+                    // A predicate/progress callback still owns these fields. Its Tick
+                    // finally publishes cancellation only after the callback has returned.
+                    continue;
+                }
+                CancelRetired(entry);
+            }
+        }
+
+        private static void CancelRetired(Entry entry)
+        {
+            try
+            {
+                entry.Source.TrySetRetiredFromRunner(entry.Version);
+            }
+            catch (Exception exception)
+            {
+                try
+                {
+                    Debug.LogException(exception);
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
+        private void TickSources(
+            List<Entry> sources,
             float deltaTime,
             float unscaledDeltaTime)
         {
-            int count = sources.Count;
-            for (int i = count - 1; i >= 0; i--)
+            if (m_ticking)
             {
-                IOnityTaskTickSource source = sources[i];
+                return;
+            }
+            int count = sources.Count;
+            for (int i = count - 1; i >= 0 && !m_retired; i--)
+            {
+                Entry entry = sources[i];
+                IOnityTaskTickSource source = entry.Source;
+                if (source.Version != entry.Version)
+                {
+                    RemoveAtSwapBack(sources, i);
+                    continue;
+                }
                 if (source.IsCancellationRequested)
                 {
-                    int version = source.Version;
                     RemoveAtSwapBack(sources, i);
-                    source.TrySetCanceledFromRunner(version);
+                    source.TrySetCanceledFromRunner(entry.Version);
                     continue;
                 }
 
-                if (source.Tick(deltaTime, unscaledDeltaTime))
+                bool completed;
+                m_activeEntry = entry;
+                m_ticking = true;
+                try
+                {
+                    completed = source.Tick(this, deltaTime, unscaledDeltaTime);
+                }
+                finally
+                {
+                    m_activeEntry = default;
+                    m_ticking = false;
+                    if (m_retired)
+                    {
+                        CancelRetired(entry);
+                    }
+                }
+                if (m_retired)
+                {
+                    return;
+                }
+                if (completed)
                 {
                     RemoveAtSwapBack(sources, i);
                 }
@@ -3173,32 +3750,128 @@ namespace Onity.Unity.Async
             }
 
             CancelRequestedSources(m_updateSources);
+            if (m_retired)
+            {
+                return;
+            }
             CancelRequestedSources(m_fixedUpdateSources);
+            if (m_retired)
+            {
+                return;
+            }
             CancelRequestedSources(m_lateUpdateSources);
         }
 
-        private static void CancelRequestedSources(List<IOnityTaskTickSource> sources)
+        private void CancelRequestedSources(List<Entry> sources)
         {
-            for (int i = sources.Count - 1; i >= 0; i--)
+            for (int i = sources.Count - 1; i >= 0 && !m_retired; i--)
             {
-                IOnityTaskTickSource source = sources[i];
+                Entry entry = sources[i];
+                IOnityTaskTickSource source = entry.Source;
                 if (source.IsCancellationRequested == false)
                 {
                     continue;
                 }
 
-                int version = source.Version;
                 RemoveAtSwapBack(sources, i);
-                source.TrySetCanceledFromRunner(version);
+                source.TrySetCanceledFromRunner(entry.Version);
             }
         }
 
-        private static void RemoveAtSwapBack(List<IOnityTaskTickSource> sources, int index)
+        private static void RemoveAtSwapBack(List<Entry> sources, int index)
         {
             int lastIndex = sources.Count - 1;
             sources[index] = sources[lastIndex];
             sources.RemoveAt(lastIndex);
         }
+
+        private static void CloseSession()
+        {
+            s_accepting = false;
+            s_sessionEpoch++;
+            OnityTaskRunner runner = s_instance;
+            GameObject owner = runner != null ? runner.gameObject : null;
+            try
+            {
+                if (!ReferenceEquals(runner, null))
+                {
+                    runner.Retire();
+                }
+            }
+            finally
+            {
+                // Callbacks may create a different runner; destroy only this captured host.
+                if (owner != null)
+                {
+                    if (Application.isPlaying)
+                    {
+                        Destroy(owner);
+                    }
+                    else
+                    {
+                        DestroyImmediate(owner);
+                    }
+                }
+            }
+        }
+
+        private static void CloseApplication()
+        {
+            s_shuttingDown = true;
+            CloseSession();
+        }
+
+        private static void BeginSession(bool force)
+        {
+            if (s_shuttingDown || (!force && s_accepting))
+            {
+                return;
+            }
+            int expectedEpoch = unchecked(s_sessionEpoch + 1);
+            CloseSession();
+            if (s_sessionEpoch == expectedEpoch && !s_shuttingDown)
+            {
+                s_accepting = true;
+            }
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void InitializeRuntime()
+        {
+#if !UNITY_EDITOR
+            Application.quitting -= CloseApplication;
+            Application.quitting += CloseApplication;
+#endif
+            BeginSession(true);
+        }
+
+#if UNITY_EDITOR
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void InitializeEditor()
+        {
+            UnityEditor.EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+            UnityEditor.EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+            UnityEditor.EditorApplication.quitting -= CloseApplication;
+            UnityEditor.EditorApplication.quitting += CloseApplication;
+            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= CloseApplication;
+            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += CloseApplication;
+            BeginSession(false);
+        }
+
+        private static void HandlePlayModeStateChanged(UnityEditor.PlayModeStateChange state)
+        {
+            if (state == UnityEditor.PlayModeStateChange.ExitingEditMode
+                || state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
+            {
+                CloseSession();
+            }
+            else if (state == UnityEditor.PlayModeStateChange.EnteredEditMode
+                || state == UnityEditor.PlayModeStateChange.EnteredPlayMode)
+            {
+                BeginSession(false);
+            }
+        }
+#endif
 
     }
 
@@ -3217,6 +3890,7 @@ namespace Onity.Unity.Async
             CancellationToken cancellationToken,
             int frameCount = 1)
         {
+            OnityTaskRunner.ValidateAcceptance();
             OnityFrameTaskSource source;
             lock (s_pool)
             {
@@ -3231,7 +3905,7 @@ namespace Onity.Unity.Async
             return source;
         }
 
-        public bool Tick(float deltaTime, float unscaledDeltaTime)
+        public bool Tick(OnityTaskRunner owner, float deltaTime, float unscaledDeltaTime)
         {
             if (IsPending == false)
             {
@@ -3283,6 +3957,7 @@ namespace Onity.Unity.Async
             bool useUnscaledTime,
             CancellationToken cancellationToken)
         {
+            OnityTaskRunner.ValidateAcceptance();
             OnityDelayTaskSource source;
             lock (s_pool)
             {
@@ -3298,7 +3973,7 @@ namespace Onity.Unity.Async
             return source;
         }
 
-        public bool Tick(float deltaTime, float unscaledDeltaTime)
+        public bool Tick(OnityTaskRunner owner, float deltaTime, float unscaledDeltaTime)
         {
             if (IsPending == false)
             {
@@ -3350,6 +4025,7 @@ namespace Onity.Unity.Async
             bool waitWhile,
             CancellationToken cancellationToken)
         {
+            OnityTaskRunner.ValidateAcceptance();
             OnityPredicateTaskSource source;
             lock (s_pool)
             {
@@ -3363,7 +4039,7 @@ namespace Onity.Unity.Async
             return source;
         }
 
-        public bool Tick(float deltaTime, float unscaledDeltaTime)
+        public bool Tick(OnityTaskRunner owner, float deltaTime, float unscaledDeltaTime)
         {
             if (IsPending == false)
             {
@@ -3374,9 +4050,17 @@ namespace Onity.Unity.Async
             try
             {
                 value = m_predicate();
+                if (owner.IsRetired)
+                {
+                    return true;
+                }
             }
             catch (Exception exception)
             {
+                if (owner.IsRetired)
+                {
+                    return true;
+                }
                 TrySetException(exception);
                 return true;
             }
@@ -3423,6 +4107,7 @@ namespace Onity.Unity.Async
             Action<float> onProgress,
             CancellationToken cancellationToken)
         {
+            OnityTaskRunner.ValidateAcceptance();
             OnityAsyncOperationTaskSource<TAsyncOperation> source;
             lock (s_pool)
             {
@@ -3438,7 +4123,7 @@ namespace Onity.Unity.Async
             return source;
         }
 
-        public bool Tick(float deltaTime, float unscaledDeltaTime)
+        public bool Tick(OnityTaskRunner owner, float deltaTime, float unscaledDeltaTime)
         {
             if (IsPending == false)
             {
@@ -3449,6 +4134,10 @@ namespace Onity.Unity.Async
             try
             {
                 m_onProgress?.Invoke(Mathf.Clamp01(operation.progress));
+                if (owner.IsRetired)
+                {
+                    return true;
+                }
 
                 if (operation.isDone == false)
                 {
@@ -3456,9 +4145,17 @@ namespace Onity.Unity.Async
                 }
 
                 m_onProgress?.Invoke(1f);
+                if (owner.IsRetired)
+                {
+                    return true;
+                }
             }
             catch (Exception exception)
             {
+                if (owner.IsRetired)
+                {
+                    return true;
+                }
                 TrySetException(exception);
                 return true;
             }

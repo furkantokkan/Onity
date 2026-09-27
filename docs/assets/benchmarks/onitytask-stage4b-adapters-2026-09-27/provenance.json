@@ -1,0 +1,106 @@
+{
+  "generatedAtUtc": "2026-09-27T07:32:22.5906457Z",
+  "sourceRoot": "C:/Users/e-fur/.codex/worktrees/onity-fast-capture-f682b7c/Onity",
+  "verificationHost": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity",
+  "sourceHead": "3f098937e9198a17edcf72cd75e73bd5bc76e2fd",
+  "unityVersion": "2022.3.62f2",
+  "cliVersion": "1.0.0-beta.11",
+  "sourceManifestFileCount": 552,
+  "editorRuntimeAndFixtureFileCount": 509,
+  "allSourceHashesMatchedAfterExecution": true,
+  "settings": [
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "sha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "sha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/EditorSettings.asset",
+      "sha256": "962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34",
+      "restored": true
+    }
+  ],
+  "temporarySceneRemoved": true,
+  "initialFixtureSnapshots": [
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-initial-fixture/OnityAsyncEnumerableAdapterEditModeTests.cs",
+      "sha256": "678D835474CE87222D35ED4BCF63A62CA6881D1CE350328F6D88FE9ADE790537"
+    },
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-initial-fixture/OnityAsyncEnumerableAdapterSessionProbe.cs",
+      "sha256": "1523640B80073AB2F42064BC7016D31B02F7871D43479CEF30A612C1F8F148DF"
+    }
+  ],
+  "players": [
+    {
+      "backend": "Mono",
+      "cliExitCode": 0,
+      "passed": true,
+      "cases": 31,
+      "buildGuid": "f519b73276814a03abceeaa68d25d582",
+      "reportSha256": "D187567B18DCC1EBF3A5884C6BD6428F2F649DB9694F2C0F908309752E611C1A",
+      "buildLog": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-stage4b-mono-build.log",
+      "buildLogSha256": "F6F704636947E139FB3D712AFA3DC77BABACC228E93E81D3AE4F714B78A3C067",
+      "environment": {
+        "buildGuid": "f519b73276814a03abceeaa68d25d582",
+        "isDevelopment": false,
+        "scriptingBackend": "Mono",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-27T07:27:55.2086669Z",
+          "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+          "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Disabled",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.14",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    },
+    {
+      "backend": "IL2CPP",
+      "cliExitCode": 0,
+      "passed": true,
+      "cases": 31,
+      "buildGuid": "538dd737a4784d41af1140ed1587ea4b",
+      "reportSha256": "11FB8D0B0BC242E01E8FFBB9EB40BC9554A8D23A5F899D2BCC363095A08DE55D",
+      "buildLog": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-stage4b-il2cpp-build.log",
+      "buildLogSha256": "80A83EDF0C58D4B22F71827453C3B7A8709CDE5D4F9D3D22BE5D48A445485304",
+      "environment": {
+        "buildGuid": "538dd737a4784d41af1140ed1587ea4b",
+        "isDevelopment": false,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-27T07:31:09.1762182Z",
+          "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+          "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.14",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    }
+  ],
+  "limits": "Functional verification only; pending adapters allocate; no comparative timing or allocation quantity measured."
+}

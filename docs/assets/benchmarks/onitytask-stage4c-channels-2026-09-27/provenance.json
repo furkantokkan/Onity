@@ -1,0 +1,146 @@
+{
+  "generatedAtUtc": "2026-09-27T08:15:54.3857809Z",
+  "sourceRoot": "C:/Users/e-fur/.codex/worktrees/onity-fast-capture-f682b7c/Onity",
+  "verificationHost": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity",
+  "sourceHead": "3f098937e9198a17edcf72cd75e73bd5bc76e2fd",
+  "unityVersion": "2022.3.62f2",
+  "cliVersion": "1.0.0-beta.11",
+  "sourceManifestFileCount": 568,
+  "editorRuntimeAndFixtureFileCount": 523,
+  "allSourceHashesMatchedAfterExecution": true,
+  "settings": [
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "sha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/EditorSettings.asset",
+      "sha256": "962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "sha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33",
+      "restored": true
+    }
+  ],
+  "temporarySceneRemoved": true,
+  "initialFixtureSnapshot": {
+    "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4c-channels-initial-fixture/OnityChannelEditModeTests.cs",
+    "sha256": "72A97BF02CF4AE98F9BF546AF7D07B11445EC0803135D0CC9FF575E852DFD9D4"
+  },
+  "finalFixtureSha256": "32C400325B15A6544A2B554ECB01A6DBD5DCB6BAED6806A2C8E4E32E395009D9",
+  "players": [
+    {
+      "backend": "Mono",
+      "cliExitCode": 0,
+      "cases": 33,
+      "buildGuid": "40871a99802b442990065ba8120d784a",
+      "reportSha256": "9EA55D39450A5C7642BD6C20D2FE649A802A5374C06C1F554907CB8E60F5B843",
+      "smokeSha256": "F9BBC9554EC062A1967A3C87AB1E034D704866A47885B79B78B9794BEAF33812",
+      "buildLog": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-stage4c-channels-mono-build.log",
+      "buildLogSha256": "22123A038B0C7C9E2FFED6EDCD22ACD730D48669231F16057E702E15B4E7C7E0",
+      "environment": {
+        "buildGuid": "40871a99802b442990065ba8120d784a",
+        "isDevelopment": false,
+        "scriptingBackend": "Mono",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-27T08:12:27.8540412Z",
+          "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+          "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Disabled",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.14",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      },
+      "counterKind": "HeapDelta",
+      "scenarios": [
+        {
+          "capacity": 1,
+          "itemsPerWindow": 4096,
+          "samples": 16,
+          "emptyBytes": 0,
+          "positiveBytes": 69632,
+          "allRawSamplesZero": true,
+          "zeroAllocationProven": false,
+          "meanMilliseconds": 0.20748750000000005
+        },
+        {
+          "capacity": 128,
+          "itemsPerWindow": 524288,
+          "samples": 16,
+          "emptyBytes": 0,
+          "positiveBytes": 69632,
+          "allRawSamplesZero": true,
+          "zeroAllocationProven": false,
+          "meanMilliseconds": 27.405862499999998
+        }
+      ]
+    },
+    {
+      "backend": "IL2CPP",
+      "cliExitCode": 0,
+      "cases": 33,
+      "buildGuid": "145b61b28dda4a81b8e70f664b52f2a7",
+      "reportSha256": "55CEB51E8493FB57B8C08D040C6C4AC822333C929927322BB6573720213BC235",
+      "smokeSha256": "152071D727F69912EF8B835493A1D3E39C30421687CFE845739CB7313F5CD112",
+      "buildLog": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-stage4c-channels-il2cpp-build.log",
+      "buildLogSha256": "F8C8EBE8B1F2D37318C5088039A86565DE8244DB5931A4AE8A98C0A921F3E334",
+      "environment": {
+        "buildGuid": "145b61b28dda4a81b8e70f664b52f2a7",
+        "isDevelopment": false,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-27T08:14:43.7408076Z",
+          "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+          "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.14",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      },
+      "counterKind": "HeapDelta",
+      "scenarios": [
+        {
+          "capacity": 1,
+          "itemsPerWindow": 4096,
+          "samples": 16,
+          "emptyBytes": 0,
+          "positiveBytes": 69632,
+          "allRawSamplesZero": true,
+          "zeroAllocationProven": false,
+          "meanMilliseconds": 0.34906875
+        },
+        {
+          "capacity": 128,
+          "itemsPerWindow": 524288,
+          "samples": 16,
+          "emptyBytes": 0,
+          "positiveBytes": 69632,
+          "allRawSamplesZero": true,
+          "zeroAllocationProven": false,
+          "meanMilliseconds": 44.36654375
+        }
+      ]
+    }
+  ]
+}
