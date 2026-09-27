@@ -464,7 +464,7 @@ producer completes on a worker and the next action needs Unity APIs. Native
 interfaces support consumption by `await foreach`; compiler-generated
 `async` / `yield return` methods use BCL async interfaces. The adapters below
 connect those interfaces. Sequential awaitable operators and channels are
-documented below; reactive adapters follow in [Plan 13](../Plan/13-OnityTask-ApiCoverageAndJobs.md).
+documented below; reactive adapters follow in [Plan 13](https://github.com/furkantokkan/Onity/blob/v0.4.0/docs/Plan/13-OnityTask-ApiCoverageAndJobs.md).
 
 Descriptions, enumerators, linked token sources and pending completion state
 may allocate; `ToArrayAsync` also allocates storage. Inline finite iteration

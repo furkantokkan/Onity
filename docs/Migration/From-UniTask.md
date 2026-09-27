@@ -82,10 +82,10 @@ using Onity.Unity.Async;
 | `task.Timeout(...)` | 0.4.0: `task.Timeout(seconds, useUnscaledTime: true)`; finite nonnegative float seconds; the producer continues and is observed |
 | `task.TimeoutWithoutException(...)` | 0.4.0: bool / `(bool isTimeout, T result)`; only the wrapper's own timeout becomes a flag, producer faults/cancellation propagate |
 | `await observable.FirstAsync(ct)` | `await observable.FirstOnityTask(ct)` |
-| Finite async streams and synchronous operators | 0.4.0: `OnityAsyncEnumerable.Empty/Return/Range`, `Select/Where/Take/WithCancellation`, native `await foreach`, `FirstAsync` and `ToArrayAsync`; [ownership and limits](../guide/onitytask.md#finite-async-streams) |
-| Update streams and BCL async iterators | 0.4.0: pull-based `OnityAsyncEnumerable.EveryUpdate()`, BCL `AsOnityAsyncEnumerable()` and native `AsAsyncEnumerable()`; [cancellation, cleanup and allocation limits](../guide/onitytask.md#update-streams-and-bcl-async-iterators) |
-| Channels | 0.4.0: `OnityChannel.CreateBounded<T>(capacity)` / `CreateUnbounded<T>()`, Reader/Writer handles, FIFO backpressure and `ReadAllAsync`; one consumer lease, multiple producers, no drop modes or separate Completion task. [Ownership and limits](../guide/onitytask.md#channels) |
-| Sequential async stream operators | 0.4.0: `SelectAwait`, `WhereAwait` and `ForEachAsync` with `(value, CancellationToken) => OnityTask` delegates; one item at a time, owned delegate cancellation and shared cleanup. [Semantics and example](../guide/onitytask.md#sequential-awaitable-operators) |
+| Finite async streams and synchronous operators | 0.4.0: `OnityAsyncEnumerable.Empty/Return/Range`, `Select/Where/Take/WithCancellation`, native `await foreach`, `FirstAsync` and `ToArrayAsync`; [ownership and limits](../guide/onitytask.html#finite-async-streams) |
+| Update streams and BCL async iterators | 0.4.0: pull-based `OnityAsyncEnumerable.EveryUpdate()`, BCL `AsOnityAsyncEnumerable()` and native `AsAsyncEnumerable()`; [cancellation, cleanup and allocation limits](../guide/onitytask.html#update-streams-and-bcl-async-iterators) |
+| Channels | 0.4.0: `OnityChannel.CreateBounded<T>(capacity)` / `CreateUnbounded<T>()`, Reader/Writer handles, FIFO backpressure and `ReadAllAsync`; one consumer lease, multiple producers, no drop modes or separate Completion task. [Ownership and limits](../guide/onitytask.html#channels) |
+| Sequential async stream operators | 0.4.0: `SelectAwait`, `WhereAwait` and `ForEachAsync` with `(value, CancellationToken) => OnityTask` delegates; one item at a time, owned delegate cancellation and shared cleanup. [Semantics and example](../guide/onitytask.html#sequential-awaitable-operators) |
 | `await asyncPublisher.PublishAsync(message, ct).AsTask()` | `await asyncPublisher.PublishOnityTask(message, ct)` |
 
 For two untyped `OnityTaskCompletionSource` inputs, `WhenAll` can observe
