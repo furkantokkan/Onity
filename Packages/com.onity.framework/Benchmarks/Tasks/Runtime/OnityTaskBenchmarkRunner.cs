@@ -37,6 +37,12 @@ namespace Onity.Benchmarks
         private Action<string, Exception> m_completed;
         private OnityBenchmarkAllocationCounter m_allocationCounter;
         private bool m_flowExecutionContextDefault;
+        private bool m_originalFlow;
+        private bool m_originalTracking;
+        private bool m_originalStackTrace;
+        private int m_originalPoolCapacity;
+        private bool m_hasSettings;
+        private bool m_drainBetweenBatches;
 
         /// <summary>
         /// Queues a benchmark run. The optional callback receives a report path or failure.
@@ -60,6 +66,25 @@ namespace Onity.Benchmarks
             OnityTaskBenchmarkRunner runner = runnerObject.AddComponent<OnityTaskBenchmarkRunner>();
             runner.m_latestJson = Path.GetFullPath(latestJson);
             runner.m_completed = completed;
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (string.Equals(args[i], "-onityTaskBenchmarkDrainBetweenBatches", StringComparison.OrdinalIgnoreCase))
+                {
+                    runner.m_drainBetweenBatches = true;
+                    break;
+                }
+            }
+
+            runner.m_originalFlow = OnityTask.FlowExecutionContext;
+            runner.m_originalTracking = OnityTaskTracker.IsEnabled;
+            runner.m_originalStackTrace = OnityTaskTracker.EnableStackTrace;
+            runner.m_originalPoolCapacity = OnityTask.RunnerPoolCapacity;
+            runner.m_hasSettings = true;
+            OnityTask.FlowExecutionContext = true;
+            OnityTaskTracker.IsEnabled = false;
+            OnityTaskTracker.EnableStackTrace = false;
+            OnityTask.RunnerPoolCapacity = 128;
             s_isRunning = true;
         }
 
@@ -122,7 +147,7 @@ namespace Onity.Benchmarks
                 Debug.LogException(failure, this);
             }
 
-            OnityTask.FlowExecutionContext = m_flowExecutionContextDefault;
+            RestoreSettings();
             m_allocationCounter?.Dispose();
             try
             {
@@ -137,14 +162,32 @@ namespace Onity.Benchmarks
 
         private void OnDestroy()
         {
+            RestoreSettings();
             s_isRunning = false;
+        }
+
+        private void RestoreSettings()
+        {
+            if (!m_hasSettings)
+            {
+                return;
+            }
+
+            OnityTask.FlowExecutionContext = m_originalFlow;
+            OnityTaskTracker.IsEnabled = m_originalTracking;
+            OnityTaskTracker.EnableStackTrace = m_originalStackTrace;
+            OnityTask.RunnerPoolCapacity = m_originalPoolCapacity;
+            m_hasSettings = false;
         }
 
         private TaskBenchmarkReport CreateReport()
         {
             TaskBenchmarkReport report = new TaskBenchmarkReport
             {
-                schemaVersion = 5,
+                schemaVersion = 6,
+                environment = OnityTaskBenchmarkEnvironment.Capture(),
+                drainBetweenBatches = m_drainBetweenBatches,
+                betweenBatchDrainFrames = m_drainBetweenBatches ? 2 : 0,
                 generatedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
                 unityVersion = Application.unityVersion,
                 platform = Application.platform.ToString(),
@@ -185,6 +228,7 @@ namespace Onity.Benchmarks
             report.allocationCounter = m_allocationCounter.Description;
             report.allocationCalibrationBytes = m_allocationCounter.CalibrationBytes;
             report.emptyAllocationDeltaBytes = m_allocationCounter.EmptyDeltaBytes;
+            report.allocationRejectedCandidates = m_allocationCounter.RejectedCandidates;
         }
 
         /// <summary>
@@ -311,6 +355,11 @@ namespace Onity.Benchmarks
                         }
                         while (!IsCompleted(library, concurrency));
                         Consume(library, concurrency);
+                        if (m_drainBetweenBatches)
+                        {
+                            yield return null;
+                            yield return null;
+                        }
                     }
                 }
 
@@ -348,6 +397,11 @@ namespace Onity.Benchmarks
                             stopped = Stopwatch.GetTimestamp();
                             EndAllocationSlice(consumption[library], sample, bytes);
                             consumption[library].ticks[sample] += stopped - started;
+                            if (m_drainBetweenBatches)
+                            {
+                                yield return null;
+                                yield return null;
+                            }
                         }
                     }
                 }
@@ -419,6 +473,11 @@ namespace Onity.Benchmarks
                             }
                             while (!AreAsyncMethodsCompleted(library, concurrency, typed));
                             ConsumeAsyncMethods(library, concurrency, typed);
+                            if (m_drainBetweenBatches)
+                            {
+                                yield return null;
+                                yield return null;
+                            }
                         }
                     }
 
@@ -456,6 +515,11 @@ namespace Onity.Benchmarks
                                 stopped = Stopwatch.GetTimestamp();
                                 EndAllocationSlice(consumption[library], sample, bytes);
                                 consumption[library].ticks[sample] += stopped - started;
+                                if (m_drainBetweenBatches)
+                                {
+                                    yield return null;
+                                    yield return null;
+                                }
                             }
                         }
                     }
@@ -804,6 +868,13 @@ namespace Onity.Benchmarks
             builder.AppendLine($"- Unity: {report.unityVersion}; {report.platform}; {report.scriptingBackend}");
             builder.AppendLine($"- Samples: {report.samplesPerCase}; frame batches/sample: {report.frameBatchesPerSample}");
             builder.AppendLine($"- Allocation counter: {report.allocationCounter}");
+            builder.AppendLine($"- Rejected allocation candidates: {report.allocationRejectedCandidates}");
+            builder.AppendLine($"- Drain-between-batches control: {report.drainBetweenBatches}; frames: {report.betweenBatchDrainFrames}");
+            builder.AppendLine($"- Runner pool capacity: {report.environment.runnerPoolCapacity}; stack traces: {report.environment.trackerStackTraceEnabled}");
+            builder.AppendLine($"- Execution-context path: {report.environment.executionContextPath}; {report.environment.executionContextEvidence}");
+            builder.AppendLine($"- Build GUID: {report.environment.buildGuid}; development: {report.environment.isDevelopment}");
+            builder.AppendLine($"- Build optimization: {report.environment.build.codeOptimization}; IL2CPP: {report.environment.build.il2CppCompilerConfiguration}; stripping: {report.environment.build.managedStrippingLevel}");
+            builder.AppendLine($"- Packages: {report.environment.build.onityPackageId}; {report.environment.build.uniTaskPackageId}");
             builder.AppendLine($"- OnityTask.FlowExecutionContext default at run start: {report.flowExecutionContextDefault}");
             builder.AppendLine($"- OnityTaskTracker enabled: {report.taskTrackerEnabled}");
             builder.AppendLine($"- Timer resolution: {Number(report.timerResolutionNanoseconds)} ns");
@@ -846,6 +917,9 @@ namespace Onity.Benchmarks
         [Serializable]
         private sealed class TaskBenchmarkReport
         {
+            public OnityTaskBenchmarkEnvironment environment;
+            public bool drainBetweenBatches;
+            public int betweenBatchDrainFrames;
             public int schemaVersion;
             public string generatedAtUtc;
             public string unityVersion;
@@ -866,6 +940,7 @@ namespace Onity.Benchmarks
             public string allocationCounter;
             public long allocationCalibrationBytes;
             public long emptyAllocationDeltaBytes;
+            public string allocationRejectedCandidates;
             public TaskBenchmarkMetricReport synchronousHarnessBaseline;
             public TaskBenchmarkScenarioReport[] scenarios;
         }

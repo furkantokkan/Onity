@@ -28,15 +28,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (Play Mode)` comparison harness. The tests were compile-checked outside
   Unity; the 2026-09-25 benchmark report cites 614 EditMode, 37 PlayMode, and
   26 analyzer passes whose counts match the suites at `3260c40`, and the
-  harness ran in two Editor/Mono processes. The drain rewrite below and the
-  tests added after `3260c40` have not run in Unity.
+  harness ran in two Editor/Mono processes. Subsequent full-suite verification
+  at `528d52c` plus the benchmark startup fix passed 668/668 EditMode and 41/41
+  PlayMode tests in both default and Release optimization on Unity 2022.3.62f2.
 - Added `OnityTaskAsyncBuilderEditModeTests` and
   `OnityTaskAsyncBuilderPlayModeTests` for the pooled builder: representation,
   single-consumer rules, fault and cancellation instance mapping on the native,
   bridged, and preserved paths, pool reuse on both return sites including the
   deferred IL2CPP return, execution-context flow under both switch settings
   and a flip while suspended, `Forget`, `WhenAll`, and `WhenAny` with runner
-  inputs. Compile-checked only; they have not run in Unity.
+  inputs. These passed in the full Unity suites above. Final Mono and IL2CPP
+  Players also passed 13 separate semantic smoke cases, including context flow
+  and deferred pool return, with the internal capture/run pair active.
+- Added benchmark startup traces, separate startup/measurement deadlines,
+  stale-report rejection and nine watchdog tests. Primary schema 6 reports
+  effective runtime/build settings and rejected allocation-counter candidates.
+  A separately labelled two-frame drain control diagnoses pool replenishment
+  without changing the default benchmark workload.
+- Added bounded Development IL2CPP lifecycle profiles and headless raw-data
+  export. Eight configurations/16 library windows passed with optimized,
+  verified value-type state machines, complete resumption/return counts and
+  allocation-site metadata. Deep-profile timings remain diagnostic only;
+  Release scheduling still misses the performance target. Native source
+  synchronization is the next investigation, with flow and pool defaults kept.
+
+### Fixed
+
+- Kept the task benchmark initialization assembly reachable with
+  `AlwaysLinkAssembly`. The empty-scene IL2CPP build previously stripped it,
+  producing a Player that never entered the benchmark. Rebuilt Mono and IL2CPP
+  Players now pass smoke and two independent primary runs each. Runtime library
+  sources are unchanged by this fix.
 
 ### Changed
 
@@ -107,7 +129,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   collector only in players and discards slices interrupted by a collection
   in the Editor, which rejects `GarbageCollector.GCMode` changes. Reports
   record the counter, its rejected alternatives, and per-metric valid sample
-  counts (primary schema 5, thread-switch schema 2). The primary suite
+  counts (introduced in primary schema 5, thread-switch schema 2). The primary suite
   measures the eight async-method `NextFrame` cases with
   `OnityTask.FlowExecutionContext` on and again with it off, suffixed
   ` (flow off)`, for 24 scenarios, and records the setting's default and the

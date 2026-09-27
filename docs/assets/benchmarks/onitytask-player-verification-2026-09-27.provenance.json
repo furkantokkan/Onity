@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "runtimeSourceCommit": "528d52c3a2db2f07abb0612d2784413623c6c45d",
+  "benchmarkPatch": "Uncommitted benchmark-only changes, hashes below",
+  "unityVersion": "2022.3.62f2",
+  "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "hostCheckoutCommit": "cdf94f8483117131bf8c5739b0594cfaaeb21c42",
+  "hostCheckoutCaveat": "Host package staged from runtimeSourceCommit; host checkout commit is not the tested runtime revision.",
+  "runtimeFilesMatching": 302,
+  "sourceFiles": [
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkPlayerBuildRunner.cs",
+      "sha256": "71A2945EC072637E73F56F8E0975E2E6550D19E612CDFA6141F324AFB0D16B34",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkPlayerWatchdog.cs",
+      "sha256": "CC3098E92E224367A7C57C1EA0867ED9140B4FB09ABA91CAEDAE5427AAC4433F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkPlayerWatchdog.cs.meta",
+      "sha256": "B822330FE3533FB8AC86D3FD7F678A135110D2419FFC21DD0B6C8A80BEFB4E4B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityBenchmarkAllocationCounter.cs",
+      "sha256": "5C76872B9A517964994F70E6D0AF3EAB3BBC46C6571E9DE2743E07FFED74B538",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkEnvironment.cs",
+      "sha256": "9E6754D73BE55CD526AE15C9A16ACFDCC737111D0AA9CF05C2F1BD29B8401878",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkEnvironment.cs.meta",
+      "sha256": "8C425E67E200AFE81F5E13C94FCCBE3BD382597D61BB5D70D41539BDF527A6AC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkPlayerRunner.cs",
+      "sha256": "F79E574A49738731E3182CDFC5F329B4322DB5692ED24F018D2BB0DE89C50A19",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs",
+      "sha256": "650D24340CF614CBC00F451997A655986D743D2E0F69C6A88DA7290B6CFA234C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskPlayerSmokeRunner.cs",
+      "sha256": "6AC11EC59C1B04540DBC7639AD7E26B5BE91F42105090F0817687CC418D059BA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskPlayerSmokeRunner.cs.meta",
+      "sha256": "E61601863BFA6C359F62F6CC635E579E9B9F9077A95AE66913BB58D587798870",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskBenchmarkPlayerWatchdogTests.cs",
+      "sha256": "5248CAF895B9CF8966493865414D3021E11E07DFE8F5FB5F2A5A4EEE810C99E2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskBenchmarkPlayerWatchdogTests.cs.meta",
+      "sha256": "065153FC35EEF54D0B2C6FCED865E6F13F2337D91A64A23440AEB76FD1813FE7",
+      "hostMatches": true
+    }
+  ],
+  "reports": [
+    {
+      "path": "onitytask-player-il2cpp-drain-control-2026-09-27.json",
+      "sha256": "E043F2039551C057C1DFABB705E9787B42750F337A74DCC4DF464BBDD1AC5070",
+      "buildGuid": "cf8830d809954c5e82e59b881f890513",
+      "backend": "IL2CPP",
+      "generatedAtUtc": "2026-09-26T22:20:24.1375605Z"
+    },
+    {
+      "path": "onitytask-player-il2cpp-run1-2026-09-27.json",
+      "sha256": "1F2F6F7F2D14E0AC264FED6321C6D8ABD5A62CA8F155ED5A9DB79F402FB5BA53",
+      "buildGuid": "cf8830d809954c5e82e59b881f890513",
+      "backend": "IL2CPP",
+      "generatedAtUtc": "2026-09-26T22:20:01.8194369Z"
+    },
+    {
+      "path": "onitytask-player-il2cpp-run2-2026-09-27.json",
+      "sha256": "F333B2614A1D014C3D8861116A32D452B52DB2F16FAF86C6E23CEDC3FB47BE6A",
+      "buildGuid": "cf8830d809954c5e82e59b881f890513",
+      "backend": "IL2CPP",
+      "generatedAtUtc": "2026-09-26T22:20:12.6734125Z"
+    },
+    {
+      "path": "onitytask-player-il2cpp-smoke-2026-09-27.json",
+      "sha256": "5A12A666B5218EDF5A886B2F85A2B1343017CB946679C9DAE91386949A7D63C3",
+      "buildGuid": "cf8830d809954c5e82e59b881f890513",
+      "backend": "IL2CPP",
+      "generatedAtUtc": "2026-09-26T22:19:06.5051532Z"
+    },
+    {
+      "path": "onitytask-player-mono-run1-2026-09-27.json",
+      "sha256": "F0B73C8208B651E469D66D5B6D079F35D05D3749FE5CE62CC5B0DD4A81C0E287",
+      "buildGuid": "a620762aa4414542acef003e67df0792",
+      "backend": "Mono",
+      "generatedAtUtc": "2026-09-26T22:14:55.6128146Z"
+    },
+    {
+      "path": "onitytask-player-mono-run2-2026-09-27.json",
+      "sha256": "48B2BBE83AE144E7E6E8E9BF00DB989D5FE96753DD812CF7571407BEFD2657AB",
+      "buildGuid": "a620762aa4414542acef003e67df0792",
+      "backend": "Mono",
+      "generatedAtUtc": "2026-09-26T22:15:05.4916392Z"
+    },
+    {
+      "path": "onitytask-player-mono-smoke-2026-09-27.json",
+      "sha256": "2B77264A67671819DEAEB6094F385F746C78FBBD21091AAB0ADFA6F3997612B9",
+      "buildGuid": "a620762aa4414542acef003e67df0792",
+      "backend": "Mono",
+      "generatedAtUtc": "2026-09-26T22:14:12.2450562Z"
+    }
+  ],
+  "fullSuites": [
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\editmode-player-verification-normal.xml",
+      "sha256": "800BC9931D1D7559385CE36F4CC9827330D2AD71819DDF34A9ACE407BC6F6BE6",
+      "total": 668,
+      "passed": 668,
+      "failed": 0
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\editmode-player-verification-release.xml",
+      "sha256": "B47A231D4E98CE76CD99CDB1135A770D4C12D84EDD48CAD339A800B66A357F97",
+      "total": 668,
+      "passed": 668,
+      "failed": 0
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\playmode-player-verification-normal.xml",
+      "sha256": "3FDE32C676E2585955458D1D06331DB4F481088961A2E3089F67FF304908339B",
+      "total": 41,
+      "passed": 41,
+      "failed": 0
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\playmode-player-verification-release.xml",
+      "sha256": "6E4D4546E0A890DB918D086E2F3FA78C2206222163EEA12989D5B345237E58FB",
+      "total": 41,
+      "passed": 41,
+      "failed": 0
+    }
+  ],
+  "testFreshness": "Full suites followed startup fix. Later benchmark-only reporting and smoke additions were rebuilt and passed final Player smoke; runtime library unchanged.",
+  "restoredHostSettings": [
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "sha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33"
+    },
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "sha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880"
+    }
+  ],
+  "temporaryBenchmarkFolderPresent": false,
+  "fullCycleProfile": "Pending: WPR policy error 0xc5585011; no recording remained active."
+}

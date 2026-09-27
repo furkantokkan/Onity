@@ -58,6 +58,9 @@ namespace Onity.Benchmarks
         /// </summary>
         public bool SupportsCrossFrameSlices => Kind != k_kindProfilerCounter;
 
+        /// <summary>Rejected candidates and calibration failures preceding the selected counter.</summary>
+        public string RejectedCandidates { get; private set; }
+
         /// <summary>
         /// Selects and calibrates a counter on the calling thread.
         /// </summary>
@@ -74,6 +77,7 @@ namespace Onity.Benchmarks
             OnityBenchmarkAllocationCounter counter = TryCreatePerThread(ref failures);
             if (counter != null)
             {
+                counter.RejectedCandidates = failures.TrimEnd(' ', ';');
                 return counter;
             }
 
@@ -82,6 +86,7 @@ namespace Onity.Benchmarks
                 counter = TryCreateProfilerCounter(ref failures);
                 if (counter != null)
                 {
+                    counter.RejectedCandidates = failures.TrimEnd(' ', ';');
                     return counter;
                 }
             }
@@ -89,10 +94,14 @@ namespace Onity.Benchmarks
             counter = TryCreateHeapDelta(allowCollectorModeSwitch, ref failures);
             if (counter != null)
             {
+                counter.RejectedCandidates = failures.TrimEnd(' ', ';');
                 return counter;
             }
 
-            return new OnityBenchmarkAllocationCounter(k_kindNone, "Unavailable: " + failures.TrimEnd(' ', ';'), 0, 0);
+            return new OnityBenchmarkAllocationCounter(k_kindNone, "Unavailable: " + failures.TrimEnd(' ', ';'), 0, 0)
+            {
+                RejectedCandidates = failures.TrimEnd(' ', ';')
+            };
         }
 
         /// <summary>Opens a slice and returns its starting reading.</summary>

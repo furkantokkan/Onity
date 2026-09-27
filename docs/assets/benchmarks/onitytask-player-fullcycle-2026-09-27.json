@@ -1,0 +1,2490 @@
+{
+  "schemaVersion": 1,
+  "runtimeSourceCommit": "528d52c3a2db2f07abb0612d2784413623c6c45d",
+  "attributionOnly": true,
+  "caseCount": 8,
+  "windowCount": 16,
+  "managedShape": {
+    "schemaVersion": 1,
+    "assemblyPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Library\\Bee\\PlayerScriptAssemblies\\Onity.TaskBenchmarks.dll",
+    "assemblySha256": "3E717773ED11EF96E9C0EFEC932127959945D2B664AB304D47E99DDE47924D07",
+    "responseFile": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Library\\Bee\\artifacts\\1900b0aPDevDbg.dag\\Onity.TaskBenchmarks.rsp",
+    "responseSha256": "761CB661BFEC8D1D87857E4929112FB3231FEB17F860576C0B0F282A56C6BC1F",
+    "optimizationArguments": [
+      "/optimize-",
+      "/optimize+"
+    ],
+    "helpers": [
+      {
+        "name": "Onity.Benchmarks.OnityTaskFullCycleProfileRunner/<OnityNextFrameAsync>d__22",
+        "isValueType": true,
+        "baseType": "System.ValueType"
+      },
+      {
+        "name": "Onity.Benchmarks.OnityTaskFullCycleProfileRunner/<UniTaskNextFrameAsync>d__23",
+        "isValueType": true,
+        "baseType": "System.ValueType"
+      }
+    ],
+    "limitation": "Development deep-profiler attribution only; optimized managed state machines do not make timings equivalent to non-development Release."
+  },
+  "finalDiagnosticSmoke": {
+    "schemaVersion": 1,
+    "generatedAtUtc": "2026-09-26T23:02:23.5683516Z",
+    "unityVersion": "2022.3.62f2",
+    "expectedCaseCount": 13,
+    "passed": true,
+    "failure": "",
+    "environment": {
+      "buildGuid": "1d115b31d7684accaf7133fc654420c0",
+      "isDevelopment": true,
+      "scriptingBackend": "IL2CPP",
+      "trackerEnabled": false,
+      "trackerStackTraceEnabled": false,
+      "flowExecutionContext": true,
+      "runnerPoolCapacity": 128,
+      "executionContextPath": "InternalPair",
+      "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+      "build": {
+        "generatedAtUtc": "2026-09-26T22:57:51.2577113Z",
+        "codeOptimization": "Development diagnostic Player; EnableDeepProfilingSupport; attribution only",
+        "managedCompilerOptimization": "/optimize+ requested; verify effective response file and generated state-machine shape",
+        "il2CppCompilerConfiguration": "Release",
+        "managedStrippingLevel": "Minimal",
+        "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+        "onityVersion": "0.3.13",
+        "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+        "uniTaskVersion": "2.5.11"
+      }
+    },
+    "cases": [
+      {
+        "name": "synchronous typed/untyped",
+        "passed": true,
+        "failure": ""
+      },
+      {
+        "name": "critical typed/untyped suspension and stale tokens",
+        "passed": true,
+        "failure": ""
+      },
+      {
+        "name": "safe typed/untyped suspension",
+        "passed": true,
+        "failure": ""
+      },
+      {
+        "name": "typed native/bridge exclusivity and bridge recycling",
+        "passed": true,
+        "failure": ""
+      },
+      {
+        "name": "untyped native/bridge exclusivity and bridge recycling",
+        "passed": true,
+        "failure": ""
+      },
+      {
+        "name": "typed deferred pool return",
+        "passed": true,
+        "failure": ""
+      },
+      {
+        "name": "untyped deferred pool return",
+        "passed": true,
+        "failure": ""
+      },
+      {
+        "name": "typed consume and re-rent during MoveNext",
+        "passed": true,
+        "failure": ""
+      },
+      {
+        "name": "untyped consume and re-rent during MoveNext",
+        "passed": true,
+        "failure": ""
+      },
+      {
+        "name": "typed held-worker pool deferral",
+        "passed": true,
+        "failure": ""
+      },
+      {
+        "name": "untyped held-worker pool deferral",
+        "passed": true,
+        "failure": ""
+      },
+      {
+        "name": "execution context flow on/off/suppressed and safe await",
+        "passed": true,
+        "failure": ""
+      },
+      {
+        "name": "AsyncLocal isolation and synchronization context restoration",
+        "passed": true,
+        "failure": ""
+      }
+    ]
+  },
+  "limits": [
+    "Development deep profiling with optimized managed helpers; not non-development Release timing.",
+    "Self sample durations include instrumentation and retained wait paths; not aggregate active CPU time.",
+    "Two recorded batches expose initial deferred pool expansion in both libraries, not the later repeated-batch retention advantage.",
+    "Zero GC.Alloc events is recorded as -1 unknown bytes, not proof of zero allocation."
+  ],
+  "reports": [
+    {
+      "case": "fullcycle-128-on-immediate",
+      "capturePath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-128-on-immediate.json",
+      "captureSha256": "146D544D8B44A7D47A0706216F1AD44A510C7D51C2832E31DB9E340CD4AE24B6",
+      "rawPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-128-on-immediate.raw",
+      "rawSha256": "47117F9099F64AB0DB14AC7EFA8F2A79930FE65DEBEE1BDEC97F6A3E71804B8B",
+      "exportPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\Attribution\\fullcycle-128-on-immediate-attribution.json",
+      "exportSha256": "77D5BB0B6EE3A97F0033795215F5288389D7F3CDF2634695F94DB2E2FD835C31",
+      "environment": {
+        "buildGuid": "1d115b31d7684accaf7133fc654420c0",
+        "isDevelopment": true,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-26T22:57:51.2577113Z",
+          "codeOptimization": "Development diagnostic Player; EnableDeepProfilingSupport; attribution only",
+          "managedCompilerOptimization": "/optimize+ requested; verify effective response file and generated state-machine shape",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.13",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    },
+    {
+      "case": "fullcycle-128-on-drain",
+      "capturePath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-128-on-drain.json",
+      "captureSha256": "3B6B61E06B13F9657432C1F0F41C31A5680DD9818DD665285D4E9749880FE5FF",
+      "rawPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-128-on-drain.raw",
+      "rawSha256": "9B98A97FDFDFAA57959BFB1E06261DE3B2A99A78E5F2E64277C2040FEA708C54",
+      "exportPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\Attribution\\fullcycle-128-on-drain-attribution.json",
+      "exportSha256": "23A9E452CB48CE55C9F3788613C1A6B7F3BF404987F248F2A16D76C949DAF20B",
+      "environment": {
+        "buildGuid": "1d115b31d7684accaf7133fc654420c0",
+        "isDevelopment": true,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-26T22:57:51.2577113Z",
+          "codeOptimization": "Development diagnostic Player; EnableDeepProfilingSupport; attribution only",
+          "managedCompilerOptimization": "/optimize+ requested; verify effective response file and generated state-machine shape",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.13",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    },
+    {
+      "case": "fullcycle-128-off-immediate",
+      "capturePath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-128-off-immediate.json",
+      "captureSha256": "01CB00BD68E0FF8944486BECBD9660C38E5B4A00BE37266512C8484418FA410E",
+      "rawPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-128-off-immediate.raw",
+      "rawSha256": "5551ABB8E71B2CAF4DCF0A0AD562050AA800F64FE7207A34E05B3F83766A1B41",
+      "exportPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\Attribution\\fullcycle-128-off-immediate-attribution.json",
+      "exportSha256": "255ACD90F3C77D14C4B3DE30285B383D307D4D3F9E462D21CE01B73F58644E1B",
+      "environment": {
+        "buildGuid": "1d115b31d7684accaf7133fc654420c0",
+        "isDevelopment": true,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": false,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-26T22:57:51.2577113Z",
+          "codeOptimization": "Development diagnostic Player; EnableDeepProfilingSupport; attribution only",
+          "managedCompilerOptimization": "/optimize+ requested; verify effective response file and generated state-machine shape",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.13",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    },
+    {
+      "case": "fullcycle-128-off-drain",
+      "capturePath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-128-off-drain.json",
+      "captureSha256": "1FE2F181399CB9726CD266726382C22FA20BF7190927DE3E04557AB23C41B5EE",
+      "rawPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-128-off-drain.raw",
+      "rawSha256": "F8AC1E28F382AB938D902C1CFEA2BC1AE0A1D9C23AEDB48809026CBE9A226198",
+      "exportPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\Attribution\\fullcycle-128-off-drain-attribution.json",
+      "exportSha256": "1B4DD46F7704CA71937104154236F83BEC69DE99FFE214A0C203EC6B820C9F72",
+      "environment": {
+        "buildGuid": "1d115b31d7684accaf7133fc654420c0",
+        "isDevelopment": true,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": false,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-26T22:57:51.2577113Z",
+          "codeOptimization": "Development diagnostic Player; EnableDeepProfilingSupport; attribution only",
+          "managedCompilerOptimization": "/optimize+ requested; verify effective response file and generated state-machine shape",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.13",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    },
+    {
+      "case": "fullcycle-4096-on-immediate",
+      "capturePath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-4096-on-immediate.json",
+      "captureSha256": "CBE84B55C2B973871CAECD0781A18783D814E2A844BEF3AA58CAFF1D95558CB1",
+      "rawPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-4096-on-immediate.raw",
+      "rawSha256": "33231B9440E31CD59105115FD45D471BC86E1C877059AF092F27E3E5E3E47F69",
+      "exportPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\Attribution\\fullcycle-4096-on-immediate-attribution.json",
+      "exportSha256": "3FF5B32B8679E73A081950B94463C53B3606FBDDCC6D7AF2C151F195B79D7DD1",
+      "environment": {
+        "buildGuid": "1d115b31d7684accaf7133fc654420c0",
+        "isDevelopment": true,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-26T22:57:51.2577113Z",
+          "codeOptimization": "Development diagnostic Player; EnableDeepProfilingSupport; attribution only",
+          "managedCompilerOptimization": "/optimize+ requested; verify effective response file and generated state-machine shape",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.13",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    },
+    {
+      "case": "fullcycle-4096-on-drain",
+      "capturePath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-4096-on-drain.json",
+      "captureSha256": "D7516A39FB266E138CEC0D3DADFE4120FE37268008CAD1BB557CFAB6D51772B1",
+      "rawPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-4096-on-drain.raw",
+      "rawSha256": "E5BB36145320B86CB150ABF3346F21D2684823CCF2D74FEEBA58B7F18D107BC5",
+      "exportPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\Attribution\\fullcycle-4096-on-drain-attribution.json",
+      "exportSha256": "D701A18605CCC0A496210AB8281BBDB1373D11F851691F004FD35F2094E48318",
+      "environment": {
+        "buildGuid": "1d115b31d7684accaf7133fc654420c0",
+        "isDevelopment": true,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-26T22:57:51.2577113Z",
+          "codeOptimization": "Development diagnostic Player; EnableDeepProfilingSupport; attribution only",
+          "managedCompilerOptimization": "/optimize+ requested; verify effective response file and generated state-machine shape",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.13",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    },
+    {
+      "case": "fullcycle-4096-off-immediate",
+      "capturePath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-4096-off-immediate.json",
+      "captureSha256": "696A0BB4CB8C56D2BFB87FE688D1189FB17964EF104133987B58620BC1D2E17A",
+      "rawPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-4096-off-immediate.raw",
+      "rawSha256": "845360E0A728B0DEF7A97DD459F03DAD3135FB0CD12EF3B756961DB1CBA6A5BD",
+      "exportPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\Attribution\\fullcycle-4096-off-immediate-attribution.json",
+      "exportSha256": "57B46D851DA970C818FF1EB8D71D0CEE56AB40123BC15515D5F84F0576491EDA",
+      "environment": {
+        "buildGuid": "1d115b31d7684accaf7133fc654420c0",
+        "isDevelopment": true,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": false,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-26T22:57:51.2577113Z",
+          "codeOptimization": "Development diagnostic Player; EnableDeepProfilingSupport; attribution only",
+          "managedCompilerOptimization": "/optimize+ requested; verify effective response file and generated state-machine shape",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.13",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    },
+    {
+      "case": "fullcycle-4096-off-drain",
+      "capturePath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-4096-off-drain.json",
+      "captureSha256": "AE1AFDE7500633D1A16317DF5B795C596637404FA2611122F6CC10F5986332F8",
+      "rawPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\fullcycle-4096-off-drain.raw",
+      "rawSha256": "FF1927BF42A63F1D143454F565A4DB2A86B49BEC1B07BE02526397F2BE375433",
+      "exportPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\ProfileOptimized\\Attribution\\fullcycle-4096-off-drain-attribution.json",
+      "exportSha256": "B1E6507C230DBD337497487F43703BC07FCB6F0B5EB31E651A7788D04231AEE6",
+      "environment": {
+        "buildGuid": "1d115b31d7684accaf7133fc654420c0",
+        "isDevelopment": true,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": false,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-26T22:57:51.2577113Z",
+          "codeOptimization": "Development diagnostic Player; EnableDeepProfilingSupport; attribution only",
+          "managedCompilerOptimization": "/optimize+ requested; verify effective response file and generated state-machine shape",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.13",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    }
+  ],
+  "windows": [
+    {
+      "case": "fullcycle-128-on-immediate",
+      "library": "Onity",
+      "concurrency": 128,
+      "flow": "on",
+      "reuse": "immediate",
+      "operations": 256,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 256,
+      "deepRuntimeSampleCount": 11264,
+      "gcAllocationSamples": 384,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": 58368,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 5376.0,
+          "selfMilliseconds": 0.7924000000000003,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 24278.0,
+          "selfMilliseconds": 3.1793000000000005,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 16512.0,
+          "selfMilliseconds": 1.936899999999999,
+          "gcKnownAllocatedBytes": 58368.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 2308.0,
+          "selfMilliseconds": 0.24179999999999965
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::ExecutionContext.RunInternal()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.23080000000000003
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 2308.0,
+          "selfMilliseconds": 0.21499999999999952
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 2308.0,
+          "selfMilliseconds": 0.21139999999999948
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Exit()",
+          "sampleCount": 2308.0,
+          "selfMilliseconds": 0.16909999999999992
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.try_enter_with_atomic_var()",
+          "sampleCount": 2308.0,
+          "selfMilliseconds": 0.1650999999999996
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.14019999999999988
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.13570000000000007
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.1347
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::ExecutionContext.Capture()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.1307
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.1266000000000001
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.TrySetStatus()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.12229999999999995
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.11470000000000008
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.11319999999999997
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.0992
+        }
+      ],
+      "allocationSites": [
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+          "sampleCount": 256,
+          "gcKnownAllocatedBytes": 32768
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+          "sampleCount": 128,
+          "gcKnownAllocatedBytes": 25600
+        }
+      ],
+      "deferredReturnSamples": 256.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 2308.0
+    },
+    {
+      "case": "fullcycle-128-on-immediate",
+      "library": "UniTask",
+      "concurrency": 128,
+      "flow": "on",
+      "reuse": "immediate",
+      "operations": 256,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 256,
+      "deepRuntimeSampleCount": 4096,
+      "gcAllocationSamples": 384,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": 50176,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 4096.0,
+          "selfMilliseconds": 0.34469999999999945,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 8898.0,
+          "selfMilliseconds": 0.9060999999999939,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 8960.0,
+          "selfMilliseconds": 0.8259999999999998,
+          "gcKnownAllocatedBytes": 50176.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "UniTask.dll!::NextFramePromise.Create()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.10719999999999995
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.08250000000000005
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.get_CurrentThread()",
+          "sampleCount": 892.0,
+          "selfMilliseconds": 0.07619999999999978
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.TrySetResult()",
+          "sampleCount": 512.0,
+          "selfMilliseconds": 0.07480000000000013
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.07370000000000008
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.GetCurrentThread()",
+          "sampleCount": 892.0,
+          "selfMilliseconds": 0.07029999999999985
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTask.NextFrame()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.06440000000000026
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.TryReturn()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.06290000000000004
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Interlocked.CompareExchange()",
+          "sampleCount": 1342.0,
+          "selfMilliseconds": 0.06019999999999994
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.05850000000000004
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 680.0,
+          "selfMilliseconds": 0.05619999999999994
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.Reset()",
+          "sampleCount": 512.0,
+          "selfMilliseconds": 0.056099999999999844
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 680.0,
+          "selfMilliseconds": 0.05580000000000011
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 680.0,
+          "selfMilliseconds": 0.05320000000000002
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.Internal::PlayerLoopRunner.AddAction()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.05240000000000002
+        }
+      ],
+      "allocationSites": [
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()/GC.Alloc",
+          "sampleCount": 256,
+          "gcKnownAllocatedBytes": 32768
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/GC.Alloc",
+          "sampleCount": 128,
+          "gcKnownAllocatedBytes": 17408
+        }
+      ],
+      "deferredReturnSamples": 256.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 680.0
+    },
+    {
+      "case": "fullcycle-128-on-drain",
+      "library": "Onity",
+      "concurrency": 128,
+      "flow": "on",
+      "reuse": "drain",
+      "operations": 256,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 256,
+      "deepRuntimeSampleCount": 11264,
+      "gcAllocationSamples": 0,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": -1,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 5376.0,
+          "selfMilliseconds": 0.48729999999999996,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 24440.0,
+          "selfMilliseconds": 2.626000000000002,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 15616.0,
+          "selfMilliseconds": 1.443799999999999,
+          "gcKnownAllocatedBytes": 0.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "mscorlib.dll!System.Threading::ExecutionContext.RunInternal()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.19690000000000038
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 2310.0,
+          "selfMilliseconds": 0.15999999999999956
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 2310.0,
+          "selfMilliseconds": 0.1560999999999999
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 2310.0,
+          "selfMilliseconds": 0.15219999999999978
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.try_enter_with_atomic_var()",
+          "sampleCount": 2310.0,
+          "selfMilliseconds": 0.1341999999999997
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Exit()",
+          "sampleCount": 2310.0,
+          "selfMilliseconds": 0.12029999999999977
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.11960000000000028
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.11840000000000017
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::ExecutionContext.Capture()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.1177999999999999
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.11679999999999999
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.10760000000000032
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.TickSources()",
+          "sampleCount": 13.0,
+          "selfMilliseconds": 0.0883
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.TrySetStatus()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.08770000000000006
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.08580000000000021
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.08490000000000035
+        }
+      ],
+      "allocationSites": [],
+      "deferredReturnSamples": 256.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 2310.0
+    },
+    {
+      "case": "fullcycle-128-on-drain",
+      "library": "UniTask",
+      "concurrency": 128,
+      "flow": "on",
+      "reuse": "drain",
+      "operations": 256,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 256,
+      "deepRuntimeSampleCount": 4096,
+      "gcAllocationSamples": 0,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": -1,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 4096.0,
+          "selfMilliseconds": 0.3271999999999993,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 9878.0,
+          "selfMilliseconds": 0.8972999999999957,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 0.6625999999999997,
+          "gcKnownAllocatedBytes": 0.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "UniTask.dll!::NextFramePromise.Create()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.10260000000000004
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.08180000000000008
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.get_CurrentThread()",
+          "sampleCount": 952.0,
+          "selfMilliseconds": 0.07519999999999984
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 764.0,
+          "selfMilliseconds": 0.06409999999999991
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.GetCurrentThread()",
+          "sampleCount": 952.0,
+          "selfMilliseconds": 0.06399999999999993
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.TrySetResult()",
+          "sampleCount": 512.0,
+          "selfMilliseconds": 0.05880000000000007
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.Reset()",
+          "sampleCount": 512.0,
+          "selfMilliseconds": 0.05689999999999984
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.TryReturn()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.0563
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTask.NextFrame()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.054000000000000284
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.05120000000000012
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 764.0,
+          "selfMilliseconds": 0.050799999999999956
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.0506000000000001
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 764.0,
+          "selfMilliseconds": 0.05029999999999995
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Interlocked.CompareExchange()",
+          "sampleCount": 1372.0,
+          "selfMilliseconds": 0.04830000000000002
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.Internal::PlayerLoopRunner.RunCore()",
+          "sampleCount": 84.0,
+          "selfMilliseconds": 0.047300000000000016
+        }
+      ],
+      "allocationSites": [],
+      "deferredReturnSamples": 256.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 764.0
+    },
+    {
+      "case": "fullcycle-128-off-immediate",
+      "library": "Onity",
+      "concurrency": 128,
+      "flow": "off",
+      "reuse": "immediate",
+      "operations": 256,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 256,
+      "deepRuntimeSampleCount": 10752,
+      "gcAllocationSamples": 384,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": 58368,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 5376.0,
+          "selfMilliseconds": 0.4754,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 17622.0,
+          "selfMilliseconds": 1.7936999999999996,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 11648.0,
+          "selfMilliseconds": 1.1031999999999995,
+          "gcKnownAllocatedBytes": 58368.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 2308.0,
+          "selfMilliseconds": 0.16509999999999986
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 2308.0,
+          "selfMilliseconds": 0.16459999999999958
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 2308.0,
+          "selfMilliseconds": 0.1479999999999998
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.try_enter_with_atomic_var()",
+          "sampleCount": 2308.0,
+          "selfMilliseconds": 0.12109999999999976
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Exit()",
+          "sampleCount": 2308.0,
+          "selfMilliseconds": 0.11809999999999982
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.11229999999999994
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.10380000000000017
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.09420000000000016
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.09150000000000029
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.08300000000000009
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.08180000000000016
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.TrySetStatus()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.08180000000000007
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.07910000000000027
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.TickSources()",
+          "sampleCount": 9.0,
+          "selfMilliseconds": 0.07680000000000001
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.06840000000000027
+        }
+      ],
+      "allocationSites": [
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+          "sampleCount": 256,
+          "gcKnownAllocatedBytes": 32768
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+          "sampleCount": 128,
+          "gcKnownAllocatedBytes": 25600
+        }
+      ],
+      "deferredReturnSamples": 256.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 2308.0
+    },
+    {
+      "case": "fullcycle-128-off-immediate",
+      "library": "UniTask",
+      "concurrency": 128,
+      "flow": "off",
+      "reuse": "immediate",
+      "operations": 256,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 256,
+      "deepRuntimeSampleCount": 4096,
+      "gcAllocationSamples": 384,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": 50176,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 4096.0,
+          "selfMilliseconds": 0.34819999999999945,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 8898.0,
+          "selfMilliseconds": 0.845699999999994,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 8960.0,
+          "selfMilliseconds": 0.8035999999999999,
+          "gcKnownAllocatedBytes": 50176.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "UniTask.dll!::NextFramePromise.Create()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.11640000000000009
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.08260000000000023
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.07840000000000007
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.get_CurrentThread()",
+          "sampleCount": 892.0,
+          "selfMilliseconds": 0.06729999999999983
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.GetCurrentThread()",
+          "sampleCount": 892.0,
+          "selfMilliseconds": 0.06359999999999988
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.TrySetResult()",
+          "sampleCount": 512.0,
+          "selfMilliseconds": 0.0631
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 680.0,
+          "selfMilliseconds": 0.060099999999999966
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.TryReturn()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.058999999999999934
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTask.NextFrame()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.05890000000000025
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.Reset()",
+          "sampleCount": 512.0,
+          "selfMilliseconds": 0.05459999999999984
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Interlocked.CompareExchange()",
+          "sampleCount": 1342.0,
+          "selfMilliseconds": 0.05429999999999997
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.05310000000000012
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.Internal::PlayerLoopRunner.AddAction()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.05260000000000006
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 680.0,
+          "selfMilliseconds": 0.05149999999999999
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 680.0,
+          "selfMilliseconds": 0.05119999999999994
+        }
+      ],
+      "allocationSites": [
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()/GC.Alloc",
+          "sampleCount": 256,
+          "gcKnownAllocatedBytes": 32768
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/GC.Alloc",
+          "sampleCount": 128,
+          "gcKnownAllocatedBytes": 17408
+        }
+      ],
+      "deferredReturnSamples": 256.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 680.0
+    },
+    {
+      "case": "fullcycle-128-off-drain",
+      "library": "Onity",
+      "concurrency": 128,
+      "flow": "off",
+      "reuse": "drain",
+      "operations": 256,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 256,
+      "deepRuntimeSampleCount": 10752,
+      "gcAllocationSamples": 0,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": -1,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 5376.0,
+          "selfMilliseconds": 0.6799999999999999,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 17784.0,
+          "selfMilliseconds": 2.3619000000000003,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 10752.0,
+          "selfMilliseconds": 1.3618,
+          "gcKnownAllocatedBytes": 0.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 2310.0,
+          "selfMilliseconds": 0.22719999999999954
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 2310.0,
+          "selfMilliseconds": 0.20979999999999954
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 2310.0,
+          "selfMilliseconds": 0.20379999999999954
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.try_enter_with_atomic_var()",
+          "sampleCount": 2310.0,
+          "selfMilliseconds": 0.17429999999999954
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.1648
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Exit()",
+          "sampleCount": 2310.0,
+          "selfMilliseconds": 0.15989999999999957
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.13079999999999997
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.13010000000000002
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.1134000000000002
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.11260000000000016
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.TrySetStatus()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.11050000000000013
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.10719999999999995
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.09960000000000034
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.TickSources()",
+          "sampleCount": 13.0,
+          "selfMilliseconds": 0.09740000000000001
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.08900000000000008
+        }
+      ],
+      "allocationSites": [],
+      "deferredReturnSamples": 256.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 2310.0
+    },
+    {
+      "case": "fullcycle-128-off-drain",
+      "library": "UniTask",
+      "concurrency": 128,
+      "flow": "off",
+      "reuse": "drain",
+      "operations": 256,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 256,
+      "deepRuntimeSampleCount": 4096,
+      "gcAllocationSamples": 0,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": -1,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 4096.0,
+          "selfMilliseconds": 0.5363999999999997,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 9878.0,
+          "selfMilliseconds": 1.3962999999999919,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 0.9370000000000007,
+          "gcKnownAllocatedBytes": 0.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "UniTask.dll!::NextFramePromise.Create()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.1569000000000002
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.13139999999999985
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.get_CurrentThread()",
+          "sampleCount": 952.0,
+          "selfMilliseconds": 0.11409999999999977
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.TrySetResult()",
+          "sampleCount": 512.0,
+          "selfMilliseconds": 0.10170000000000014
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.GetCurrentThread()",
+          "sampleCount": 952.0,
+          "selfMilliseconds": 0.09879999999999983
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.TryReturn()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.09070000000000011
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 764.0,
+          "selfMilliseconds": 0.09030000000000007
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.MoveNext()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.08110000000000021
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTask.NextFrame()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.08080000000000032
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.Reset()",
+          "sampleCount": 512.0,
+          "selfMilliseconds": 0.07600000000000003
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Interlocked.CompareExchange()",
+          "sampleCount": 1372.0,
+          "selfMilliseconds": 0.07419999999999985
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::SpinLock.Enter()",
+          "sampleCount": 348.0,
+          "selfMilliseconds": 0.07110000000000007
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.Internal::PlayerLoopRunner.RunCore()",
+          "sampleCount": 84.0,
+          "selfMilliseconds": 0.07110000000000001
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 764.0,
+          "selfMilliseconds": 0.07050000000000003
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.Internal::PlayerLoopRunner.AddAction()",
+          "sampleCount": 256.0,
+          "selfMilliseconds": 0.07030000000000011
+        }
+      ],
+      "allocationSites": [],
+      "deferredReturnSamples": 256.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 764.0
+    },
+    {
+      "case": "fullcycle-4096-on-immediate",
+      "library": "Onity",
+      "concurrency": 4096,
+      "flow": "on",
+      "reuse": "immediate",
+      "operations": 8192,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 8192,
+      "deepRuntimeSampleCount": 368128,
+      "gcAllocationSamples": 31872,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": 4598784,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 172032.0,
+          "selfMilliseconds": 14.127599999998973,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 762606.0,
+          "selfMilliseconds": 69.4783999999963,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 579204.0,
+          "selfMilliseconds": 50.755099999997434,
+          "gcKnownAllocatedBytes": 4598784.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 73732.0,
+          "selfMilliseconds": 5.827999999999579
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 73732.0,
+          "selfMilliseconds": 5.724099999999626
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 73732.0,
+          "selfMilliseconds": 5.671899999999608
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::ExecutionContext.RunInternal()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 4.224200000000063
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.try_enter_with_atomic_var()",
+          "sampleCount": 73732.0,
+          "selfMilliseconds": 4.144499999999703
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Exit()",
+          "sampleCount": 73732.0,
+          "selfMilliseconds": 4.142899999999713
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 3.2572000000001053
+        },
+        {
+          "name": "GC.Collect",
+          "sampleCount": 3.0,
+          "selfMilliseconds": 3.0653
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::ExecutionContext.Capture()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.7846000000000015
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.72280000000001
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.590900000000001
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.TrySetStatus()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.581599999999998
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()",
+          "sampleCount": 8064.0,
+          "selfMilliseconds": 2.530499999999997
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.2458999999999
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.1532999999998927
+        }
+      ],
+      "allocationSites": [
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+          "sampleCount": 16128,
+          "gcKnownAllocatedBytes": 2064384
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+          "sampleCount": 8064,
+          "gcKnownAllocatedBytes": 1612800
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/GC.Alloc",
+          "sampleCount": 7680,
+          "gcKnownAllocatedBytes": 921600
+        }
+      ],
+      "deferredReturnSamples": 8192.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 73732.0
+    },
+    {
+      "case": "fullcycle-4096-on-immediate",
+      "library": "UniTask",
+      "concurrency": 4096,
+      "flow": "on",
+      "reuse": "immediate",
+      "operations": 8192,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 8192,
+      "deepRuntimeSampleCount": 131072,
+      "gcAllocationSamples": 12288,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": 1605632,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 131072.0,
+          "selfMilliseconds": 10.885599999999208,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 223374.0,
+          "selfMilliseconds": 19.570099999998664,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 286721.0,
+          "selfMilliseconds": 23.959599999998517,
+          "gcKnownAllocatedBytes": 1605632.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "UniTask.dll!::NextFramePromise.Create()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.8341000000000034
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.128399999999897
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.get_CurrentThread()",
+          "sampleCount": 24712.0,
+          "selfMilliseconds": 2.0940999999998513
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.GetCurrentThread()",
+          "sampleCount": 24712.0,
+          "selfMilliseconds": 1.894199999999857
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.860599999999868
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.TryReturn()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.8270999999998623
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.Internal::PlayerLoopRunner.AddAction()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.7493999999998608
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Interlocked.CompareExchange()",
+          "sampleCount": 41028.0,
+          "selfMilliseconds": 1.646499999999905
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.TrySetResult()",
+          "sampleCount": 16384.0,
+          "selfMilliseconds": 1.6283999999998773
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.Reset()",
+          "sampleCount": 16384.0,
+          "selfMilliseconds": 1.468099999999894
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.MoveNext()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.4150999999998959
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()",
+          "sampleCount": 4096.0,
+          "selfMilliseconds": 1.3839999999999328
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 16570.0,
+          "selfMilliseconds": 1.3429999999998865
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.Return()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.3417999999998953
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 16570.0,
+          "selfMilliseconds": 1.3362999999998864
+        }
+      ],
+      "allocationSites": [
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()/GC.Alloc",
+          "sampleCount": 8192,
+          "gcKnownAllocatedBytes": 1048576
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/GC.Alloc",
+          "sampleCount": 4096,
+          "gcKnownAllocatedBytes": 557056
+        }
+      ],
+      "deferredReturnSamples": 8192.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 16570.0
+    },
+    {
+      "case": "fullcycle-4096-on-drain",
+      "library": "Onity",
+      "concurrency": 4096,
+      "flow": "on",
+      "reuse": "drain",
+      "operations": 8192,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 8192,
+      "deepRuntimeSampleCount": 368128,
+      "gcAllocationSamples": 31488,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": 4540416,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 172032.0,
+          "selfMilliseconds": 13.268399999999078,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 762768.0,
+          "selfMilliseconds": 60.47829999999664,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 578310.0,
+          "selfMilliseconds": 49.05189999999761,
+          "gcKnownAllocatedBytes": 4540416.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 73734.0,
+          "selfMilliseconds": 5.319099999999681
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 73734.0,
+          "selfMilliseconds": 5.176599999999613
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 73734.0,
+          "selfMilliseconds": 5.175999999999661
+        },
+        {
+          "name": "GC.Collect",
+          "sampleCount": 6.0,
+          "selfMilliseconds": 4.2998
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.try_enter_with_atomic_var()",
+          "sampleCount": 73734.0,
+          "selfMilliseconds": 3.8867999999997305
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Exit()",
+          "sampleCount": 73734.0,
+          "selfMilliseconds": 3.8499999999997367
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::ExecutionContext.RunInternal()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 3.7121000000001048
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 3.1190000000001317
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::ExecutionContext.Capture()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.7557000000000347
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()",
+          "sampleCount": 7936.0,
+          "selfMilliseconds": 2.3319999999999808
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.2643999999999456
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.TrySetStatus()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.240099999999953
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.2336999999999203
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.0076999999998453
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.9948999999998391
+        }
+      ],
+      "allocationSites": [
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+          "sampleCount": 15872,
+          "gcKnownAllocatedBytes": 2031616
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+          "sampleCount": 7936,
+          "gcKnownAllocatedBytes": 1587200
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/GC.Alloc",
+          "sampleCount": 7680,
+          "gcKnownAllocatedBytes": 921600
+        }
+      ],
+      "deferredReturnSamples": 8192.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 73734.0
+    },
+    {
+      "case": "fullcycle-4096-on-drain",
+      "library": "UniTask",
+      "concurrency": 4096,
+      "flow": "on",
+      "reuse": "drain",
+      "operations": 8192,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 8192,
+      "deepRuntimeSampleCount": 131072,
+      "gcAllocationSamples": 0,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": -1,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 131072.0,
+          "selfMilliseconds": 10.20309999999928,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 224354.0,
+          "selfMilliseconds": 18.130099999998716,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 262144.0,
+          "selfMilliseconds": 19.317099999998746,
+          "gcKnownAllocatedBytes": 0.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "UniTask.dll!::NextFramePromise.Create()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.4963999999999915
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.get_CurrentThread()",
+          "sampleCount": 24772.0,
+          "selfMilliseconds": 1.9567999999998584
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.9386999999998493
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.GetCurrentThread()",
+          "sampleCount": 24772.0,
+          "selfMilliseconds": 1.7702999999998754
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.Internal::PlayerLoopRunner.AddAction()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.7559999999998677
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.TryReturn()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.62589999999987
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Interlocked.CompareExchange()",
+          "sampleCount": 41058.0,
+          "selfMilliseconds": 1.5348999999999149
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.Return()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.5347999999998874
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.Reset()",
+          "sampleCount": 16384.0,
+          "selfMilliseconds": 1.5181999999998965
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.TrySetResult()",
+          "sampleCount": 16384.0,
+          "selfMilliseconds": 1.506199999999882
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.3741999999998964
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 16654.0,
+          "selfMilliseconds": 1.262999999999892
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.MoveNext()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.241499999999901
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 16654.0,
+          "selfMilliseconds": 1.161999999999898
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 16654.0,
+          "selfMilliseconds": 1.1612999999999034
+        }
+      ],
+      "allocationSites": [],
+      "deferredReturnSamples": 8192.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 16654.0
+    },
+    {
+      "case": "fullcycle-4096-off-immediate",
+      "library": "Onity",
+      "concurrency": 4096,
+      "flow": "off",
+      "reuse": "immediate",
+      "operations": 8192,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 8192,
+      "deepRuntimeSampleCount": 351744,
+      "gcAllocationSamples": 31872,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": 4598784,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 172032.0,
+          "selfMilliseconds": 14.780599999998996,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 549606.0,
+          "selfMilliseconds": 45.26879999999738,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 423557.0,
+          "selfMilliseconds": 36.69099999999828,
+          "gcKnownAllocatedBytes": 4598784.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 73732.0,
+          "selfMilliseconds": 5.559899999999656
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 73732.0,
+          "selfMilliseconds": 5.431899999999611
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 73732.0,
+          "selfMilliseconds": 5.309199999999648
+        },
+        {
+          "name": "GC.Collect",
+          "sampleCount": 5.0,
+          "selfMilliseconds": 4.0168
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.try_enter_with_atomic_var()",
+          "sampleCount": 73732.0,
+          "selfMilliseconds": 3.988899999999728
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Exit()",
+          "sampleCount": 73732.0,
+          "selfMilliseconds": 3.9451999999997365
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 3.1175000000001343
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()",
+          "sampleCount": 8064.0,
+          "selfMilliseconds": 2.394100000000016
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.3219999999999703
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.2979999999999317
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.TrySetStatus()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.220799999999921
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.0800999999998804
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.0041999999998525
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.8415999999998527
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.5734999999998749
+        }
+      ],
+      "allocationSites": [
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+          "sampleCount": 16128,
+          "gcKnownAllocatedBytes": 2064384
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+          "sampleCount": 8064,
+          "gcKnownAllocatedBytes": 1612800
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/GC.Alloc",
+          "sampleCount": 7680,
+          "gcKnownAllocatedBytes": 921600
+        }
+      ],
+      "deferredReturnSamples": 8192.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 73732.0
+    },
+    {
+      "case": "fullcycle-4096-off-immediate",
+      "library": "UniTask",
+      "concurrency": 4096,
+      "flow": "off",
+      "reuse": "immediate",
+      "operations": 8192,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 8192,
+      "deepRuntimeSampleCount": 131072,
+      "gcAllocationSamples": 12288,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": 1605632,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 131072.0,
+          "selfMilliseconds": 10.938799999999182,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 223374.0,
+          "selfMilliseconds": 20.95459999999852,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 286721.0,
+          "selfMilliseconds": 25.432999999998476,
+          "gcKnownAllocatedBytes": 1605632.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "UniTask.dll!::NextFramePromise.Create()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.7997000000000045
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.150699999999887
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.get_CurrentThread()",
+          "sampleCount": 24712.0,
+          "selfMilliseconds": 2.0546999999998468
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.GetCurrentThread()",
+          "sampleCount": 24712.0,
+          "selfMilliseconds": 2.0092999999998504
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.823099999999864
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.TryReturn()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.8011999999998443
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Interlocked.CompareExchange()",
+          "sampleCount": 41028.0,
+          "selfMilliseconds": 1.765199999999897
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.Internal::PlayerLoopRunner.AddAction()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.7611999999998604
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.TrySetResult()",
+          "sampleCount": 16384.0,
+          "selfMilliseconds": 1.7401999999998616
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.Reset()",
+          "sampleCount": 16384.0,
+          "selfMilliseconds": 1.6969999999998766
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.Return()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.583499999999877
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()",
+          "sampleCount": 4096.0,
+          "selfMilliseconds": 1.4606999999999202
+        },
+        {
+          "name": "GC.Collect",
+          "sampleCount": 1.0,
+          "selfMilliseconds": 1.4527
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 16570.0,
+          "selfMilliseconds": 1.3452999999998851
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 16570.0,
+          "selfMilliseconds": 1.3414999999998838
+        }
+      ],
+      "allocationSites": [
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()/GC.Alloc",
+          "sampleCount": 8192,
+          "gcKnownAllocatedBytes": 1048576
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/GC.Alloc",
+          "sampleCount": 4096,
+          "gcKnownAllocatedBytes": 557056
+        }
+      ],
+      "deferredReturnSamples": 8192.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 16570.0
+    },
+    {
+      "case": "fullcycle-4096-off-drain",
+      "library": "Onity",
+      "concurrency": 4096,
+      "flow": "off",
+      "reuse": "drain",
+      "operations": 8192,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 8192,
+      "deepRuntimeSampleCount": 351744,
+      "gcAllocationSamples": 31488,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": 4540416,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 172032.0,
+          "selfMilliseconds": 15.02069999999899,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 549768.0,
+          "selfMilliseconds": 46.5941999999974,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 422662.0,
+          "selfMilliseconds": 40.95669999999806,
+          "gcKnownAllocatedBytes": 4540416.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 73734.0,
+          "selfMilliseconds": 5.739699999999621
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 73734.0,
+          "selfMilliseconds": 5.719999999999598
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 73734.0,
+          "selfMilliseconds": 5.709999999999614
+        },
+        {
+          "name": "GC.Collect",
+          "sampleCount": 6.0,
+          "selfMilliseconds": 4.6044
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Exit()",
+          "sampleCount": 73734.0,
+          "selfMilliseconds": 4.211099999999714
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.try_enter_with_atomic_var()",
+          "sampleCount": 73734.0,
+          "selfMilliseconds": 4.16459999999971
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 3.276700000000128
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()",
+          "sampleCount": 7936.0,
+          "selfMilliseconds": 2.7532000000000725
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.TrySetStatus()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.450599999999998
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.448399999999998
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.327599999999944
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.9912999999998442
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.9674999999998437
+        },
+        {
+          "name": "Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.9489999999998606
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.8980999999998474
+        }
+      ],
+      "allocationSites": [
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+          "sampleCount": 15872,
+          "gcKnownAllocatedBytes": 2031616
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+          "sampleCount": 7936,
+          "gcKnownAllocatedBytes": 1587200
+        },
+        {
+          "phase": "Schedule",
+          "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/GC.Alloc",
+          "sampleCount": 7680,
+          "gcKnownAllocatedBytes": 921600
+        }
+      ],
+      "deferredReturnSamples": 8192.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 73734.0
+    },
+    {
+      "case": "fullcycle-4096-off-drain",
+      "library": "UniTask",
+      "concurrency": 4096,
+      "flow": "off",
+      "reuse": "drain",
+      "operations": 8192,
+      "scheduleSamples": 2,
+      "consumeSamples": 2,
+      "resumeSamples": 8192,
+      "deepRuntimeSampleCount": 131072,
+      "gcAllocationSamples": 0,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": -1,
+      "runtimeDescendantPhases": [
+        {
+          "phase": "Consume",
+          "sampleCount": 131072.0,
+          "selfMilliseconds": 11.727699999999167,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Lifecycle",
+          "sampleCount": 224354.0,
+          "selfMilliseconds": 24.47229999999855,
+          "gcKnownAllocatedBytes": 0.0
+        },
+        {
+          "phase": "Schedule",
+          "sampleCount": 262144.0,
+          "selfMilliseconds": 22.56559999999854,
+          "gcKnownAllocatedBytes": 0.0
+        }
+      ],
+      "topRuntimeDescendantMethods": [
+        {
+          "name": "UniTask.dll!::NextFramePromise.Create()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.9799000000000175
+        },
+        {
+          "name": "Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.6625000000000196
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.get_CurrentThread()",
+          "sampleCount": 24772.0,
+          "selfMilliseconds": 2.421899999999839
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.TryReturn()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 2.3812999999999813
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.Reset()",
+          "sampleCount": 16384.0,
+          "selfMilliseconds": 2.1307999999998337
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks::UniTaskCompletionSourceCore`1.TrySetResult()",
+          "sampleCount": 16384.0,
+          "selfMilliseconds": 2.078699999999843
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Thread.GetCurrentThread()",
+          "sampleCount": 24772.0,
+          "selfMilliseconds": 2.0510999999998445
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.Internal::PlayerLoopRunner.AddAction()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.9204999999998522
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.Return()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.8338999999998473
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Interlocked.CompareExchange()",
+          "sampleCount": 41058.0,
+          "selfMilliseconds": 1.8152999999998871
+        },
+        {
+          "name": "UniTask.dll!::NextFramePromise.MoveNext()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.7421999999998765
+        },
+        {
+          "name": "UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()",
+          "sampleCount": 8192.0,
+          "selfMilliseconds": 1.51809999999988
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+          "sampleCount": 16654.0,
+          "selfMilliseconds": 1.384599999999883
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnterTimeout()",
+          "sampleCount": 16654.0,
+          "selfMilliseconds": 1.3769999999998814
+        },
+        {
+          "name": "mscorlib.dll!System.Threading::Monitor.ReliableEnter()",
+          "sampleCount": 16654.0,
+          "selfMilliseconds": 1.3694999999998823
+        }
+      ],
+      "allocationSites": [],
+      "deferredReturnSamples": 8192.0,
+      "deferredReturnPhase": "Lifecycle",
+      "runtimeDescendantMonitorEnterCount": 16654.0
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkPlayerBuildRunner.cs",
+      "sha256": "A7C5A0BC78225733A79E2DF226E91AB81C52EDBE6351AB4715B1DAD499BE4336",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkPlayerWatchdog.cs",
+      "sha256": "CC3098E92E224367A7C57C1EA0867ED9140B4FB09ABA91CAEDAE5427AAC4433F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkPlayerWatchdog.cs.meta",
+      "sha256": "B822330FE3533FB8AC86D3FD7F678A135110D2419FFC21DD0B6C8A80BEFB4E4B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskFullCycleProfileExporter.cs",
+      "sha256": "DE346F2066269BAEF4E66ED225BFADB73A2E123023074CF94A9FA40C9AEFB027",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskFullCycleProfileExporter.cs.meta",
+      "sha256": "85C978EED6BC332C3D33004A5A7FD95BEDDEDD1DC4CA1280DA20D3AD2F7071EA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityBenchmarkAllocationCounter.cs",
+      "sha256": "5C76872B9A517964994F70E6D0AF3EAB3BBC46C6571E9DE2743E07FFED74B538",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkEnvironment.cs",
+      "sha256": "671C32CA748C112CCE9D50CE0A79B5DCD55D3E19430346C6FECAE575D2052B62",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkEnvironment.cs.meta",
+      "sha256": "8C425E67E200AFE81F5E13C94FCCBE3BD382597D61BB5D70D41539BDF527A6AC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkPlayerRunner.cs",
+      "sha256": "52680DCDA01CC83FEC96C46E358F9FFE52616D7D336D201AD7A62BB6DC347848",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs",
+      "sha256": "650D24340CF614CBC00F451997A655986D743D2E0F69C6A88DA7290B6CFA234C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskFullCycleProfileRunner.cs",
+      "sha256": "7C0FE3490B04E8A7987299A41DEAE6C1BFD97AA9F3FE065DA22E05B8C105E79E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskFullCycleProfileRunner.cs.meta",
+      "sha256": "F938E3DDD3E11685204411388EB07817969A38C2227B3F6E9CB69415188164DF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskPlayerSmokeRunner.cs",
+      "sha256": "6AC11EC59C1B04540DBC7639AD7E26B5BE91F42105090F0817687CC418D059BA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskPlayerSmokeRunner.cs.meta",
+      "sha256": "E61601863BFA6C359F62F6CC635E579E9B9F9077A95AE66913BB58D587798870",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskBenchmarkPlayerWatchdogTests.cs",
+      "sha256": "5248CAF895B9CF8966493865414D3021E11E07DFE8F5FB5F2A5A4EEE810C99E2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskBenchmarkPlayerWatchdogTests.cs.meta",
+      "sha256": "065153FC35EEF54D0B2C6FCED865E6F13F2337D91A64A23440AEB76FD1813FE7",
+      "hostMatches": true
+    }
+  ],
+  "runtimeFilesMatching": 302,
+  "restoredSettings": [
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "sha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33"
+    },
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "sha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880"
+    }
+  ],
+  "restorationNote": "Unity API restored compiler arguments but serialized an empty Standalone entry. After Editor exit, that entry was returned to the original empty map; original hashes match."
+}
