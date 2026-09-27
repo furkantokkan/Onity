@@ -1,0 +1,207 @@
+{
+    "schemaVersion": 1,
+    "generatedAtUtc": "2026-09-27T08:50:07.8938287Z",
+    "unityVersion": "2022.3.62f2",
+    "expectedCaseCount": 35,
+    "passed": false,
+    "failure": "System.InvalidOperationException: Player smoke failed: await operator pending disposal and upstream cleanup orders ---> System.InvalidOperationException: Critical gate has no continuation.\r\n  at Onity.Benchmarks.OnityTaskPlayerSmokeRunner+CriticalGate.Complete () [0x0001f] in <f722f2612fe4413b80cd0cff77a03de7>:0 \r\n  at Onity.Benchmarks.OnityTaskPlayerSmokeRunner+<AwaitOperatorDisposalSmoke>d__40.<>m__Finally1 () [0x00007] in <f722f2612fe4413b80cd0cff77a03de7>:0 \r\n  at Onity.Benchmarks.OnityTaskPlayerSmokeRunner+<AwaitOperatorDisposalSmoke>d__40.System.IDisposable.Dispose () [0x00013] in <f722f2612fe4413b80cd0cff77a03de7>:0 \r\n  at Onity.Benchmarks.OnityTaskPlayerSmokeRunner+<AwaitOperatorDisposalSmoke>d__40.MoveNext () [0x003af] in <f722f2612fe4413b80cd0cff77a03de7>:0 \r\n  at Onity.Benchmarks.OnityTaskPlayerSmokeRunner+<Start>d__10.MoveNext () [0x00590] in <f722f2612fe4413b80cd0cff77a03de7>:0 \r\n   --- End of inner exception stack trace ---",
+    "environment": {
+        "buildGuid": "3442cb9cd1414b57b10267ad306d3665",
+        "isDevelopment": false,
+        "scriptingBackend": "Mono",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+            "generatedAtUtc": "2026-09-27T08:50:04.6989626Z",
+            "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+            "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+            "il2CppCompilerConfiguration": "Release",
+            "managedStrippingLevel": "Disabled",
+            "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+            "onityVersion": "0.3.14",
+            "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+            "uniTaskVersion": "2.5.11"
+        }
+    },
+    "cases": [
+        {
+            "name": "synchronous typed/untyped",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "critical typed/untyped suspension and stale tokens",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "safe typed/untyped suspension",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "typed native/bridge exclusivity and bridge recycling",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "untyped native/bridge exclusivity and bridge recycling",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "typed deferred pool return",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "untyped deferred pool return",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "typed consume and re-rent during MoveNext",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "untyped consume and re-rent during MoveNext",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "typed held-worker pool deferral",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "untyped held-worker pool deferral",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "execution context flow on/off/suppressed and safe await",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "AsyncLocal isolation and synchronization context restoration",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "thread-pool switch and main-thread return",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "thread-pool typed/untyped outcomes and completion threads",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "thread-pool execution context on/off/suppressed",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "typed array WhenAny mixed sources and late losers",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "untyped array WhenAny worker winner and late losers",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "external cancellation token identity and late producer faults",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "cancellation suppression and faulted OCE status",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "injected timing phases and rendered frame distances",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "paused fixed cancellation and reentrant Update deferral",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "legacy runner retirement preserves tokens and native operation",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "legacy active predicate retirement and replacement",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "timeout four shapes and producer fault/cancellation identity",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "timeout paused clocks and worker/reentrant timing",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "headless EOF rejection before precancellation",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "finite native await foreach, covariance and cleanup precedence",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "finite native disposal settles pending move and shares cleanup",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "EveryUpdate on-demand, reentrant pass and worker disposal",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "BCL adapters real iterator, reusable ValueTask and actual outcomes",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "channel bounded FIFO, cancellation and faulted closure",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "channel ReadAll token pairs, disposal and actual foreach",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "await operators sequential filtering and actual delegate status",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "await operator pending disposal and upstream cleanup orders",
+            "passed": false,
+            "failure": "System.InvalidOperationException: Player smoke failed: await operator pending disposal and upstream cleanup orders ---> System.InvalidOperationException: Critical gate has no continuation.\r\n  at Onity.Benchmarks.OnityTaskPlayerSmokeRunner+CriticalGate.Complete () [0x0001f] in <f722f2612fe4413b80cd0cff77a03de7>:0 \r\n  at Onity.Benchmarks.OnityTaskPlayerSmokeRunner+<AwaitOperatorDisposalSmoke>d__40.<>m__Finally1 () [0x00007] in <f722f2612fe4413b80cd0cff77a03de7>:0 \r\n  at Onity.Benchmarks.OnityTaskPlayerSmokeRunner+<AwaitOperatorDisposalSmoke>d__40.System.IDisposable.Dispose () [0x00013] in <f722f2612fe4413b80cd0cff77a03de7>:0 \r\n  at Onity.Benchmarks.OnityTaskPlayerSmokeRunner+<AwaitOperatorDisposalSmoke>d__40.MoveNext () [0x003af] in <f722f2612fe4413b80cd0cff77a03de7>:0 \r\n  at Onity.Benchmarks.OnityTaskPlayerSmokeRunner+<Start>d__10.MoveNext () [0x00590] in <f722f2612fe4413b80cd0cff77a03de7>:0 \r\n   --- End of inner exception stack trace ---"
+        }
+    ]
+}

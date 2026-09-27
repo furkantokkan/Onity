@@ -1,0 +1,38 @@
+[
+  {
+    "file": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3a-builder-playmode-release.xml",
+    "sha256": "CC10C372A134CE390E4E56255649F769E73C07537A391129E26732F274AD6FC0",
+    "result": "Passed",
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "file": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3a-existing-release.xml",
+    "sha256": "53D3A0A7818304CC6098432E2AA1B1948D7BE74E8AA68748AB80DB132C37276B",
+    "result": "Passed",
+    "total": 200,
+    "passed": 200,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "file": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3a-new-normal.xml",
+    "sha256": "B74F13F422E5882CEDD11B0CCF1A2200547E7889F96881398499E167B013B064",
+    "result": "Passed",
+    "total": 25,
+    "passed": 25,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "file": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3a-new-release.xml",
+    "sha256": "0CDC95B2B0224B2FB247200806FDC3FB2D06ECF64A872BF8FAC67E101C890851",
+    "result": "Passed",
+    "total": 25,
+    "passed": 25,
+    "failed": 0,
+    "skipped": 0
+  }
+]

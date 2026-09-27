@@ -1,0 +1,13 @@
+{
+  "generatedAtUtc": "2026-09-27T04:07:27.1981663Z",
+  "baseCommit": "3f098937e9198a17edcf72cd75e73bd5bc76e2fd",
+  "runtimeSha256": "17B9401ED7752847DF14C5FFA34FC60BC6A29F4E6B28E2C247088624B9405E29",
+  "runtimeSnapshot": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3d-runtime-snapshot/OnityAsync.cs",
+  "sourceManifest": "C:/Users/e-fur/.codex/worktrees/onity-fast-capture-f682b7c/Onity/docs/assets/benchmarks/onitytask-stage3d-playerloop-2026-09-27/source-hashes.json",
+  "primaryHarness": {
+    "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs",
+    "sha256": "650D24340CF614CBC00F451997A655986D743D2E0F69C6A88DA7290B6CFA234C",
+    "hostMatches": true
+  },
+  "purpose": "Unchanged primary harness before legacy retirement fix. Only plain NextFrame scheduling/GetResult allocation slices at 128/4096 are the focused comparison. Tick/full-cycle allocation and speed are unmeasured."
+}

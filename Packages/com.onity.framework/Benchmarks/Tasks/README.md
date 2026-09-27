@@ -52,11 +52,286 @@ player sees. Run the player build for any performance claim:
 - The command-line entry point is
   `Onity.Editor.Benchmarks.OnityTaskBenchmarkPlayerBuildRunner.BuildAndRunFromCommandLine`
   with `-onityTaskBenchmarkBackend Mono|IL2CPP` (default IL2CPP),
-  `-onityTaskBenchmarkSuite primary|threadswitch|smoke` (default primary),
+  `-onityTaskBenchmarkSuite primary|threadswitch|threadpool|jobs|whenall|whenany|timing|eof|finite|channels|smoke|fullcycle` (default primary),
   `-onityTaskBenchmarkBuildPath <exe>`, and `-onityTaskBenchmarkOutput <json>`;
   it may be combined with `-quit`. The player itself accepts
   `-onityRunTaskBenchmark`, the same suite and output arguments, and writes
   the report with `isEditor` false and the backend it was built with.
+
+### Worker-only thread-pool probes
+
+Select `-onityTaskBenchmarkSuite threadpool` with the Player build entry point
+above, or launch an already built Player:
+
+```text
+OnityTaskBenchmarkPlayer.exe -batchmode -nographics -onityRunTaskBenchmark -onityTaskBenchmarkSuite threadpool -onityTaskBenchmarkOutput <absolute-json-path> -logFile <absolute-log-path>
+```
+
+- This separate suite preserves the original seven `threadswitch` scenarios.
+  It compares raw `SwitchToThreadPool().GetAwaiter().UnsafeOnCompleted(...)`,
+  `RunOnThreadPool(Action, false)`, and `RunOnThreadPool(Func<int>, false)` with
+  UniTask 2.5.11. Raw registration is context-free; Action/Func cases label Onity
+  flow-off and flow-on separately. Only flow-off matches UniTask's nonflowing
+  builder semantics; flow-on measures additional context preservation.
+- Every cohort has 128 operations and preallocated callback/delegate slots.
+  Two warmup cohorts per library precede eight samples, each containing two
+  measured cohorts per library with alternating order. Every native task is
+  consumed once on a worker, typed results must be 42, and callback faults or
+  invalid completion counts reject the run. Main waits are bounded to 30 seconds
+  per cohort and never pump Unity frames or the main-thread dispatcher.
+- A shared harness gate keeps worker callbacks/delegates pending until all
+  consumers register. Submission elapsed time ends before opening the gate;
+  completion latency ends at the last worker consumption and includes the gate,
+  thread-pool latency and harness overhead. Neither metric is a thread CPU-time
+  counter or a compute workload. These probes never return work to the main
+  thread and make no main-return/frame-latency comparison.
+- Two real frames after every completed cohort are outside both measured slices
+  and permit IL2CPP deferred returns to drain before the next cohort. This is an
+  explicit reuse policy, not the primary suite's immediate-reuse workload.
+- Submission bytes use only a calibrated main-thread per-thread allocation
+  counter. Worker allocation is excluded. IL2CPP skips that counter; heap/frame
+  fallbacks cannot isolate concurrent workers, so unavailable values are -1
+  with the reason retained. Full cross-worker lifecycle allocation is always
+  unmeasured, never inferred as zero from the submitting thread.
+- The report captures build/runtime context evidence and per-case effective
+  flow settings. Tracking and stack traces are off, runner retention is 128;
+  original settings restore in finally before the completion callback. Run the
+  correctness smoke suite separately and use repeated Release Player processes
+  before interpreting scheduling differences.
+
+### Jobs and Burst probes
+
+Select `-onityTaskBenchmarkSuite jobs` with the same Player build entry point.
+This suite keeps the default non-development Release build; no deep profiling
+flags are needed. Use a host with the already installed Unity Burst and Collections
+packages, and retain their package-lock versions with the results.
+
+```text
+Unity.exe -batchmode -nographics -quit -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkPlayerBuildRunner.BuildAndRunFromCommandLine -onityTaskBenchmarkBackend IL2CPP -onityTaskBenchmarkSuite jobs -onityTaskBenchmarkBuildPath <release-exe> -onityTaskBenchmarkOutput <jobs-json> -logFile <build-log>
+```
+
+An existing Release Player accepts `-onityRunTaskBenchmark
+-onityTaskBenchmarkSuite jobs -onityTaskBenchmarkOutput <jobs-json>`; pass
+`-onityTaskBenchmarkBuildMetadata <release-exe>.build.json` to retain its sidecar.
+The default report name is `onity-task-jobs-player-latest.json`. Errors fail the
+Player exit code; an explicitly unavailable pending adapter panel is a successful
+compute run with its reason retained.
+
+- The compute panel applies one identical 32-round uint xorshift/add kernel to
+  1,024 and 65,536 elements: a serial C# loop, plain `IJobParallelFor`, and Burst
+  `IJobParallelFor` with batch size 64. Three warmups per variant precede eight
+  samples of two runs each, rotating variant order. Serial timing covers the
+  loop; job timing covers Schedule through Complete. Every execution checks all
+  output elements and four fixed golden values outside timing.
+- A `BurstDiscard` ref-bool sentinel proves the expected execution path on every
+  run, including adapters. Wrong sentinels or output fail the run. The report
+  records Burst enabled state and assembly identity, not a guessed package
+  version. IL2CPP compiles serial/plain C# to native code too; these labels do
+  not imply a managed-versus-native comparison.
+- The adapter panel uses the same 65,536-element Burst job, one outstanding at
+  a time, comparing `JobHandle.AsOnityTask()` with UniTask 2.5.11
+  `ToUniTask(PlayerLoopTiming.Update)`. Both the handle before registration and
+  returned awaiter must be incomplete. Two eligible warmups and sixteen eligible
+  measured cohorts per library are required, with alternating library order.
+  At most three extra attempts per library are allowed across the entire panel.
+  A fourth exclusion exhausts replacements; the paired panel becomes unavailable
+  and retains actual exclusions and all successful raw observations. Already
+  completed work is safely completed/consumed, never forced to stay pending.
+- Registration elapsed time and calibrated main-thread per-thread bytes are
+  separate from Schedule-to-native-consumption wall time and frame indices.
+  Cached native callbacks consume once on the main thread. Missing allocation
+  evidence produces -1 and its reason; cross-worker lifecycle allocation is
+  always unmeasured. Onity's MonoBehaviour Update and UniTask's injected Update
+  occupy different PlayerLoop positions, so wall latency is not scheduler CPU
+  superiority. Two real drain frames are outside measurements; pending waits
+  fail after 30 seconds.
+- Persistent NativeArrays are reused; outstanding jobs Complete before disposal
+  even on failure. Context flow is enabled, tracking and stack traces are disabled,
+  and runner retention is 128. The report captures effective environment/build
+  evidence before measurement, and original flags restore in finally.
+
+### Pending typed WhenAll construction
+
+Select `-onityTaskBenchmarkSuite whenall` with the Player build entry point above.
+It uses the default non-development Release build for either Mono or IL2CPP.
+The default JSON is `onity-task-whenall-player-latest.json`.
+
+```text
+Unity.exe -batchmode -nographics -quit -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkPlayerBuildRunner.BuildAndRunFromCommandLine -onityTaskBenchmarkBackend IL2CPP -onityTaskBenchmarkSuite whenall -onityTaskBenchmarkBuildPath <release-exe> -onityTaskBenchmarkOutput <whenall-json> -logFile <build-log>
+```
+
+- Compare 2, 8 and 16 unique pending built-in `OnityTaskCompletionSource<int>`
+  inputs per aggregate, with 128 aggregates per cohort. Sources, input arrays and
+  output holders are fresh and prepared before each measured slice. No input is
+  reused between aggregates or paths. Three warmup cohorts per path precede eight
+  samples of two runs, alternating path order. The cohort fits the native
+  coordinator pool's capacity of 256.
+- The new path calls `OnityTask.WhenAll(inputs)`. The exact old path allocates
+  `Task<int>[]`, calls each input's `AsTask()`, then uses
+  `OnityTask<int[]>.FromTask(OnityAsync.WhenAll<int>(taskArray))`, retaining the
+  original tracker label. Tracking/stack traces are off for both; context flow
+  is on, runner retention is 128, and original flags restore in finally.
+- Stopwatch and allocation slices cover only the 128 aggregate factory calls.
+  Counter readings end before any completion. Inputs complete in reverse order;
+  every aggregate and every ordered result is checked outside timing. Original
+  Task bridges can dispatch framework completion on workers, so all outputs have
+  a bounded 30-second drain before the next cohort. Two additional real drain
+  frames are outside measurement. Failure cleanup completes every prepared source,
+  observes outputs, and attaches fault observers if the bounded drain times out.
+- Allocation uses the shared calibrated per-thread, profiler-counter, then heap
+  chain on a synchronous single-thread construction slice. Reports include the
+  positive/empty controls, rejected candidates, eight raw sample values and valid
+  sample counts. Collection-interrupted or negative-delta samples are invalid;
+  no calibrated/valid evidence means unavailable bytes (-1), with the reason.
+  Each raw sample sums two cohorts; mean/median milliseconds cover that sample,
+  while nanoseconds/bytes per aggregate divide by 256 aggregate constructions.
+- **Construction allocation only:** the new retained result array allocates
+  during construction, while the old path can allocate its result array during
+  completion. These values do not measure or imply full-lifecycle allocation.
+  Private source fields are not reflected in Player timing; independent tests
+  supply structural bridge evidence. Build sidecar/environment metadata records
+  the backend and native compiler settings.
+
+### Array WhenAny synthetic composition
+
+Select `-onityTaskBenchmarkSuite whenany` with the same Player build entry point.
+This suite requires a non-development Release Player, with either Mono or IL2CPP.
+The default JSON is `onity-task-whenany-player-latest.json`.
+
+```text
+Unity.exe -batchmode -nographics -quit -projectPath <benchmark-host> -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkPlayerBuildRunner.BuildAndRunFromCommandLine -onityTaskBenchmarkBackend IL2CPP -onityTaskBenchmarkSuite whenany -onityTaskBenchmarkBuildPath <release-exe> -onityTaskBenchmarkOutput <whenany-json> -logFile <build-log>
+```
+
+- Twelve rows compare typed and untyped array calls at 2, 16 and 32 inputs with
+  pinned UniTask 2.5.11. Each cohort prepares 128 independent groups of fresh
+  public completion sources. Source objects, input arrays, output holders and
+  winner/value storage allocate before the slice. Explicit array arguments select
+  Onity's array overload rather than its existing two-input overload.
+- **Synthetic composition slice:** construct all 128 outputs, complete every
+  producer synchronously in reverse order, then consume each output exactly once
+  and store its index/value. All three phases are inside timing and allocation
+  readings. Every stored winner must be the last input index; every typed result
+  must match that group's expected value. Assertions are outside the slice.
+  The measurement includes public source completion and loser observation; it is
+  not isolated scheduler CPU or the allocation of caller-prepared inputs.
+- Three warmup cohorts per library precede eight samples of two cohorts each,
+  alternating library order. Two real drain frames are outside measurements.
+  Cleanup settles all prepared producers and consumes each constructed output at
+  most once. Unexpected pending outputs retain one fault observer and fail the
+  run. Original Onity flags restore in finally. Tracking/stack traces are off,
+  context flow is on and runner retention is 128. UniTask's pinned tracker calls
+  are conditional on UNITY_EDITOR and absent in Player builds.
+- Reports retain the calibrated allocation-counter chain, positive/empty controls,
+  rejected candidates, eight raw sample arrays and valid sample counts. Invalid
+  collection/delta samples are excluded; missing evidence is -1 with a reason.
+  Mean/median milliseconds cover two cohorts, while per-group values divide by
+  256 compositions. Build/environment metadata includes native compiler settings.
+- This success-only public shareable-source workload does not establish native
+  single-consumer, cancellation or general performance superiority. Onity retains
+  sources for up to 16 inputs; the 32-input path is unpooled. Run each Release
+  Player twice and retain raw reports before interpreting differences.
+
+### Injected Update allocation bracket
+
+Select `-onityTaskBenchmarkSuite timing` in a non-development Release Player.
+This checks the warmed, no-token `Yield(OnityPlayerLoopTiming.Update)` path;
+it is not a UniTask speed comparison or coverage of every timing/cancellation
+variant.
+
+- Cached benchmark nodes bracket the actual Onity Update node. Before the
+  drain, schedule 128 waits and register preallocated native callbacks. The
+  callbacks consume each result once during the real drain. End readings in
+  the adjacent After node, before validation or report construction.
+- Three warmup cohorts precede eight samples of two cohorts each. Scheduling,
+  registration, queue draining, consumption and pool return are inside the
+  measured bracket. Holder/delegate construction and loop installation are
+  outside it; there is no Task bridge or worker in the slice.
+- Empty and retained 64 KiB positive controls use the same bracket layout,
+  supplementing the shared counter's calibration. Failed controls or samples
+  leave allocation unverified with an explicit reason. With HeapDelta, zero
+  means **no measured heap growth**, not proof of zero GC allocation.
+- Missing After callbacks and teardown close the measurement window. Cleanup
+  removes only benchmark markers from the current loop, preserving foreign
+  nodes. Run each backend twice and retain raw samples/environment metadata.
+
+### Rendering end-of-frame verification
+
+Select `-onityTaskBenchmarkSuite eof` with the Player build entry point. This
+functional suite is verified on Mono/IL2CPP; it does not measure speed or
+allocation. Build once for each backend. For example:
+
+```text
+unity run <benchmark-host> --editor-path <Unity.exe> --timeout 1800 --non-interactive --json -- -nographics -releaseCodeOptimization -executeMethod Onity.Editor.Benchmarks.OnityTaskBenchmarkPlayerBuildRunner.BuildAndRunFromCommandLine -onityTaskBenchmarkBackend Mono -onityTaskBenchmarkSuite eof -onityTaskBenchmarkBuildPath <release-exe> -onityTaskBenchmarkOutput <eof-json>
+```
+
+- The build Editor may be headless. Only the `eof` Player launch omits both
+  `-batchmode` and `-nographics` and uses a 320x240 window. It requires a real
+  graphics device and a non-development Player. The launcher passes the
+  expected backend and GUID from the successful BuildReport; the Player and
+  report validator reject missing/mismatched identities.
+- Six groups check alternating-color pixels after the owned camera renders,
+  Update/LateUpdate/EOF ordering, callback-created later waits, stopped-pump
+  worker cancellation, same-source reuse, manual host replacement and global
+  close/failed-repair cleanup. Reflection or graphics failures fail the run.
+  Each case has a 10-second wall deadline; the suite has 60 seconds. Ordinary
+  Update drives these deadlines independently of the rendering coroutine.
+- The default report is `onity-task-eof-player-latest.json`. After successful
+  graphics verification, the launcher runs ordinary headless smoke from the
+  **same binary**, writing a separate `.smoke.json` report, log and trace.
+  Existing fresh-report, entry-handshake, exit-code and external watchdog
+  checks apply. Direct graphics launches must also supply
+  `-onityTaskExpectedBackend` and `-onityTaskExpectedBuildGuid` from that build.
+- The suite restores its active render target, retires its private host and
+  releases owned camera/texture resources. A controlled stopped coroutine
+  proves cancellation during a stall, not actual Editor Scene-view behavior.
+  Headless rejection is checked separately and never counted as render proof.
+
+### Finite async-stream iteration
+
+Select `-onityTaskBenchmarkSuite finite` with the same Release Player build
+entry point. The default report is `onity-async-enumerable-player-latest.json`;
+the launcher then runs the 35-case smoke suite from the same binary and writes
+its separate `.smoke.json` report.
+
+- Measure `Range` and a `Select/Where/Take` pipeline. Each fresh enumerator is
+  primed with one successful move and Current read **before** measurement so
+  lazy upstream construction is excluded. Priming values are -1 and -4.
+- Each measured bracket includes 4,096 successful moves, GetResult and Current
+  reads, one final false, and automatic Take cleanup. Explicit final disposal,
+  description creation and priming remain outside. Checksums are 8,386,560 and
+  33,546,240. Three warmups precede two runs of eight raw windows per scenario
+  in one Player process; these are not independent process repetitions.
+- Per-scenario empty and retained 64 KiB controls must pass. Frame counters are
+  excluded from this synchronous slice. GC mode, context flow and tracker flags
+  are restored. The build gate checks work/priming counts, controls, samples and
+  the fresh Release backend/build GUID.
+- HeapDelta zero means no measured retained-heap increase in this bracket.
+  A zero allocated-byte claim requires a supported calibrated per-thread counter.
+  Descriptions, linked tokens, pending moves and array consumers are outside this
+  probe. Timings include traversal accounting and are not a UniTask comparison.
+
+### Bounded channel buffered operations
+
+Select `-onityTaskBenchmarkSuite channels` with the Release Player entry point.
+The launcher also runs the 35-case smoke suite from the same fresh binary and
+writes a separate `.smoke.json` report.
+
+- Capacities 1 and 128 each run 4,096 fill/drain cycles per window: respectively
+  4,096 and 524,288 accepted items, with the same number of writes and reads.
+  Values follow acceptance order, and validation checks every value, operation
+  count and the long checksum outside the allocation bracket.
+- Construction, a full-ring priming fill/drain, sample storage and validation
+  remain outside measurement. The bracket contains only immediate TryWrite /
+  TryRead calls, loops and scalar accounting. There are no pending waiters.
+- Three warmups precede two internal runs of eight raw windows per capacity
+  in one Player process. These are not independent process repetitions.
+- Empty and retained 64 KiB controls use the same calibrated counter. Frame
+  counters are excluded. GC mode, context flow and tracking are restored;
+  the build gate validates priming, counts, checksums, controls, samples,
+  backend and build GUID before accepting both reports.
+- HeapDelta zero does not prove zero allocated bytes. Pending waits,
+  cancellation registrations, ReadAll descriptions and unbounded growth are
+  outside this slice. Timings include bookkeeping and have no UniTask baseline.
 
 ### Player startup and smoke verification
 
@@ -68,11 +343,31 @@ player sees. Run the player build for any performance claim:
   its own 15-minute limit. The launcher stops reading the trace during measurement
   and includes the final startup evidence on failure. Exit zero still requires a
   handshake and a report written after this process launched.
-- Select `smoke` in a separate Player process before timing. Its 13 cases cover
+- Select `smoke` in a separate Player process before timing. Onity 0.4.0's
+  35 cases cover
   synchronous completion, critical/safe typed and untyped suspension, native and
   bridge consumer exclusivity, stale tokens, bridge recycling, real-frame pool
   return, consume/re-rent during MoveNext, held-worker IL2CPP deferral, and
   execution-context flow, suppression, isolation, and synchronization context.
+  They also cover thread-pool work, typed/untyped array WhenAny, external
+  cancellation, cancellation-result suppression, injected phase/frame ordering
+  and paused/reentrant cancellation, plus legacy runner retirement, replacement,
+  token ownership and continued underlying Unity operation completion. Timeout
+  checks add typed/untyped result forms, producer fault/cancellation identity,
+  scaled/unscaled clocks and callback-created timer ordering. A separate EOF
+  guard checks headless rejection before pre-cancellation. Finite-stream groups
+  add real await-foreach cleanup, covariance, finite operators and pending native,
+  preserved and Task-backed move/disposal ownership. Update/BCL adapter groups
+  add idle/reentrant Update behavior, worker disposal, real compiler async
+  iterators and reusable ValueTask consumption on both Player backends.
+  Channel groups add bounded FIFO/backpressure, canceled-writer promotion,
+  faulted-OCE closure, ReadAll token/lease ownership and actual await-foreach
+  break/throw cleanup without closing the shared channel.
+  Awaitable-operator groups cover sequential SelectAwait/WhereAwait/ForEachAsync,
+  long filters, actual fault/cancellation status, suspended delegates and both
+  delegate/upstream cleanup completion orders.
+  Historical reports below
+  retain the case count of their measured source revision.
   Failure identifies the case in JSON and the persistent trace. No reflective
   dispatcher drain or benchmark timing occurs in this suite.
 - Primary runs save and restore tracking, stack traces, flow, and runner capacity.

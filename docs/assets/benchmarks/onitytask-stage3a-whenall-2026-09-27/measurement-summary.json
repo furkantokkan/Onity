@@ -1,0 +1,134 @@
+[
+  {
+    "Backend": "mono",
+    "Run": 1,
+    "InputCount": 2,
+    "NativeNs": 1244.04296875,
+    "BridgeNs": 1188.2324218749998,
+    "BridgeOverNative": 0.9551377659156918,
+    "NativeHeapBytes": 194.0,
+    "BridgeHeapBytes": 514.0,
+    "HeapReductionPercent": 62.2568093385214
+  },
+  {
+    "Backend": "mono",
+    "Run": 1,
+    "InputCount": 8,
+    "NativeNs": 1786.62109375,
+    "BridgeNs": 3135.15625,
+    "BridgeOverNative": 1.7547963924569554,
+    "NativeHeapBytes": 232.0,
+    "BridgeHeapBytes": 1774.0,
+    "HeapReductionPercent": 86.92220969560316
+  },
+  {
+    "Backend": "mono",
+    "Run": 1,
+    "InputCount": 16,
+    "NativeNs": 3451.953125,
+    "BridgeNs": 6354.98046875,
+    "BridgeOverNative": 1.840981102183999,
+    "NativeHeapBytes": 256.0,
+    "BridgeHeapBytes": 3370.0,
+    "HeapReductionPercent": 92.40356083086053
+  },
+  {
+    "Backend": "mono",
+    "Run": 2,
+    "InputCount": 2,
+    "NativeNs": 823.33984375,
+    "BridgeNs": 873.4375,
+    "BridgeOverNative": 1.060846874629344,
+    "NativeHeapBytes": 200.0,
+    "BridgeHeapBytes": 506.0,
+    "HeapReductionPercent": 60.474308300395265
+  },
+  {
+    "Backend": "mono",
+    "Run": 2,
+    "InputCount": 8,
+    "NativeNs": 1460.0585937499998,
+    "BridgeNs": 2651.4648437499995,
+    "BridgeOverNative": 1.815998929837469,
+    "NativeHeapBytes": 232.0,
+    "BridgeHeapBytes": 1706.0,
+    "HeapReductionPercent": 86.40093786635404
+  },
+  {
+    "Backend": "mono",
+    "Run": 2,
+    "InputCount": 16,
+    "NativeNs": 3627.0019531250005,
+    "BridgeNs": 7432.373046874999,
+    "BridgeOverNative": 2.0491781209192115,
+    "NativeHeapBytes": 232.0,
+    "BridgeHeapBytes": 3378.0,
+    "HeapReductionPercent": 93.1320307874482
+  },
+  {
+    "Backend": "il2cpp",
+    "Run": 1,
+    "InputCount": 2,
+    "NativeNs": 1232.080078125,
+    "BridgeNs": 780.419921875,
+    "BridgeOverNative": 0.6334165576824,
+    "NativeHeapBytes": 204.0,
+    "BridgeHeapBytes": 576.0,
+    "HeapReductionPercent": 64.58333333333333
+  },
+  {
+    "Backend": "il2cpp",
+    "Run": 1,
+    "InputCount": 8,
+    "NativeNs": 3345.3613281249995,
+    "BridgeNs": 2838.6718749999995,
+    "BridgeOverNative": 0.8485396931969115,
+    "NativeHeapBytes": 256.0,
+    "BridgeHeapBytes": 1972.0,
+    "HeapReductionPercent": 87.0182555780933
+  },
+  {
+    "Backend": "il2cpp",
+    "Run": 1,
+    "InputCount": 16,
+    "NativeNs": 5286.42578125,
+    "BridgeNs": 4680.859375000001,
+    "BridgeOverNative": 0.8854488020246432,
+    "NativeHeapBytes": 280.0,
+    "BridgeHeapBytes": 3630.0,
+    "HeapReductionPercent": 92.28650137741047
+  },
+  {
+    "Backend": "il2cpp",
+    "Run": 2,
+    "InputCount": 2,
+    "NativeNs": 1439.9902343749998,
+    "BridgeNs": 834.8144531250001,
+    "BridgeOverNative": 0.5797361907022484,
+    "NativeHeapBytes": 214.0,
+    "BridgeHeapBytes": 608.0,
+    "HeapReductionPercent": 64.80263157894737
+  },
+  {
+    "Backend": "il2cpp",
+    "Run": 2,
+    "InputCount": 8,
+    "NativeNs": 3884.6679687500005,
+    "BridgeNs": 3125.537109375,
+    "BridgeOverNative": 0.8045828200809472,
+    "NativeHeapBytes": 262.0,
+    "BridgeHeapBytes": 1960.0,
+    "HeapReductionPercent": 86.6326530612245
+  },
+  {
+    "Backend": "il2cpp",
+    "Run": 2,
+    "InputCount": 16,
+    "NativeNs": 5786.669921874999,
+    "BridgeNs": 5628.076171875,
+    "BridgeOverNative": 0.9725932613850192,
+    "NativeHeapBytes": 278.0,
+    "BridgeHeapBytes": 3718.0,
+    "HeapReductionPercent": 92.52286175363098
+  }
+]

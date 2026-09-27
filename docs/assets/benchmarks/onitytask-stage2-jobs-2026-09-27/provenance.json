@@ -1,0 +1,106 @@
+{
+  "baseCommit": "3f098937e9198a17edcf72cd75e73bd5bc76e2fd",
+  "candidate": "Uncommitted Plan13 Stage1 and Stage2; package version remains 0.3.14",
+  "sourceRoot": "C:/Users/e-fur/.codex/worktrees/onity-fast-capture-f682b7c/Onity",
+  "verificationRoot": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity",
+  "unity": "2022.3.62f2",
+  "cli": "1.0.0-beta.11",
+  "processor": "AMD Ryzen 9 5900X, 12 cores / 24 logical processors",
+  "burst": "1.8.29",
+  "collections": "2.6.8",
+  "entities": "1.4.8",
+  "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "sourceManifest": "source-hashes.json",
+  "testSummary": "test-results-summary.json",
+  "logs": [
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage2-editmode-normal-verified.log",
+      "sha256": "8C28B4B914CB2EADC2892F47CB48551254AF1001121BB221273E640F65DDC052"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage2-editmode-release-verified.log",
+      "sha256": "BA7F83E0FE951B2BD9E233ADD770226255B02CCCBEB05E3CB2206CA562776117"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage2-playmode-normal-verified.log",
+      "sha256": "804B405868544AAD5E2B397646AD690E1DB762021CF09D0A76546E8D981079AB"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage2-playmode-release-verified.log",
+      "sha256": "2EE8B0D869CFFEA09F4AD23E3D5720D098E8AC2C4D1853A6D2D12AA3D512CD71"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-il2cpp-build-verified.log",
+      "sha256": "A7FC150A05A99F0915A491C1543CCD0B57E7618FA6D4ECC81858C6DA7D1621CE"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-il2cpp-jobs-1.player.log",
+      "sha256": "E2785BFB66E198CB7C98761E97D3BCD5A18CF85F73478C548D4E4E51E5E7CFAB"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-il2cpp-jobs-1.startup.log",
+      "sha256": "26034763E915A61BCA346E51B7125AD8CDDDCABB203F7FF3F7389E182AC8E571"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-il2cpp-jobs-2.player.log",
+      "sha256": "FEA9411FA9EC4E365BE361C7811C5946BB94290C377E7462A2577F0107F74E21"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-il2cpp-jobs-2.startup.log",
+      "sha256": "A14ED876CE361F586E3E2FE9B8D7A070E886FE8F4883FCB6531CF6CE47FE0729"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-il2cpp-smoke.player.log",
+      "sha256": "B83DB7E4F541C8BED73B19E61338A8CDAB81CE85885D1F4840A71CF58A2E2C85"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-il2cpp-smoke.startup.log",
+      "sha256": "A8282A67263AA946D85F98AE8AE5044CA63FBE05DE68232EFA3D110BB4F798E6"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-mono-build-verified.log",
+      "sha256": "C553F9CB20E7DB5D8BB3D1EE7F55D873558FA9E2656951A26257BDD807DF89E9"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-mono-jobs-1.player.log",
+      "sha256": "2F720EEAADC61AFFD77AC0AF19E396C827EB6E74532ED9DD7F264A83AD9A5FE3"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-mono-jobs-1.startup.log",
+      "sha256": "1795C951C64B077DBDDD5199159FE9D76F7D814680371E20DD0902FDC849550B"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-mono-jobs-2.player.log",
+      "sha256": "E362CFFF7953E7241CFEF645CBFCEBF69FA34442E7541EA53463F88144BD2470"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-mono-jobs-2.startup.log",
+      "sha256": "34CE84AA7ED0FD765AA3439D045F8EAF4B6F62DA4DD504C7CF69F9983E14098E"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-mono-smoke.player.log",
+      "sha256": "8568CF64773E61CD94D1548387F0C3430815CA9B225AD819E6E3A30F2360ED3D"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage2-mono-smoke.startup.log",
+      "sha256": "EE42DB4F176595618FD171FBBBA285AE08265A69A746615C5099D19155DBB1F2"
+    }
+  ],
+  "settings": [
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "restoredSha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33"
+    },
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "restoredSha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880"
+    },
+    {
+      "path": "ProjectSettings/EditorSettings.asset",
+      "restoredSha256": "962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34"
+    }
+  ],
+  "temporarySceneAbsent": true,
+  "allocationVerified": false,
+  "measurementLimit": "Unrelated Unity Editor remained active; execution sidecars retain CPU counters. Allocation unavailable. No broad scheduler superiority claim."
+}

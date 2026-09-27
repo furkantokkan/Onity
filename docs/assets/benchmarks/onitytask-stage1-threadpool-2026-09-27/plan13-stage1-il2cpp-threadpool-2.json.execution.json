@@ -1,0 +1,17 @@
+{
+  "StartedUtc": "2026-09-27T00:47:32.9952834Z",
+  "FinishedUtc": "2026-09-27T00:47:33.9715615Z",
+  "Backend": "IL2CPP",
+  "Run": 2,
+  "ExitCode": 0,
+  "BackgroundBefore": {
+    "Id": 45732,
+    "CPU": 44736.09375,
+    "WorkingSet64": 4201918464
+  },
+  "BackgroundAfter": {
+    "Id": 45732,
+    "CPU": 44738.03125,
+    "WorkingSet64": 4201992192
+  }
+}

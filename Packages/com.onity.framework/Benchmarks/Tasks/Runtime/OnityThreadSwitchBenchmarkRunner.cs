@@ -52,6 +52,8 @@ namespace Onity.Benchmarks
         private string m_latestJson;
         private Action<string, Exception> m_completed;
         private string m_codeOptimization;
+        private bool m_threadPool;
+        private Exception m_failure;
         private bool m_workerAllocationAvailable = true;
         private string m_workerAllocationCounter = "Not measured";
 
@@ -64,10 +66,12 @@ namespace Onity.Benchmarks
         /// Editor code optimization mode recorded with the report, because the Debug mode disables
         /// JIT inlining and register allocation and changes per-item dispatch cost.
         /// </param>
+        /// <param name="threadPool">Run the separate worker-only thread-pool suite.</param>
         public static void Run(
             string latestJson,
             Action<string, Exception> completed = null,
-            string codeOptimization = null)
+            string codeOptimization = null,
+            bool threadPool = false)
         {
             if (string.IsNullOrWhiteSpace(latestJson))
             {
@@ -85,10 +89,65 @@ namespace Onity.Benchmarks
             runner.m_latestJson = Path.GetFullPath(latestJson);
             runner.m_completed = completed;
             runner.m_codeOptimization = string.IsNullOrEmpty(codeOptimization) ? "Unknown" : codeOptimization;
+            runner.m_threadPool = threadPool;
             s_isRunning = true;
         }
 
         private IEnumerator Start()
+        {
+            bool oldFlow = OnityTask.FlowExecutionContext;
+            int oldCapacity = OnityTask.RunnerPoolCapacity;
+            bool oldTracker = OnityTaskTracker.IsEnabled;
+            bool oldStackTrace = OnityTaskTracker.EnableStackTrace;
+            try
+            {
+                if (m_threadPool)
+                {
+                    OnityTask.FlowExecutionContext = true;
+                    OnityTask.RunnerPoolCapacity = 128;
+                    OnityTaskTracker.IsEnabled = false;
+                    OnityTaskTracker.EnableStackTrace = false;
+                }
+
+                IEnumerator benchmarks = RunBenchmarks();
+                try
+                {
+                    while (benchmarks.MoveNext())
+                    {
+                        yield return benchmarks.Current;
+                    }
+                }
+                finally
+                {
+                    (benchmarks as IDisposable)?.Dispose();
+                }
+            }
+            finally
+            {
+                if (m_threadPool)
+                {
+                    OnityTask.FlowExecutionContext = oldFlow;
+                    OnityTask.RunnerPoolCapacity = oldCapacity;
+                    OnityTaskTracker.IsEnabled = oldTracker;
+                    OnityTaskTracker.EnableStackTrace = oldStackTrace;
+                }
+
+                s_mainCounter?.Dispose();
+                s_mainCounter = null;
+                s_isRunning = false;
+            }
+
+            try
+            {
+                m_completed?.Invoke(m_latestJson, m_failure);
+            }
+            finally
+            {
+                Destroy(gameObject);
+            }
+        }
+
+        private IEnumerator RunBenchmarks()
         {
             yield return null;
             Exception failure = null;
@@ -97,7 +156,10 @@ namespace Onity.Benchmarks
             try
             {
                 report = CreateReport();
-                RunSynchronousBenchmarks(report);
+                if (!m_threadPool)
+                {
+                    RunSynchronousBenchmarks(report);
+                }
             }
             catch (Exception exception)
             {
@@ -107,26 +169,33 @@ namespace Onity.Benchmarks
             if (failure == null)
             {
                 // This iterator yields only null, so every measured batch is inside this guard.
-                IEnumerator frameBenchmarks = RunQueuedBenchmarks(report);
-                while (true)
+                IEnumerator frameBenchmarks = m_threadPool ? RunThreadPoolBenchmarks(report) : RunQueuedBenchmarks(report);
+                try
                 {
-                    bool hasNext;
-                    try
+                    while (true)
                     {
-                        hasNext = frameBenchmarks.MoveNext();
-                    }
-                    catch (Exception exception)
-                    {
-                        failure = exception;
-                        break;
-                    }
+                        bool hasNext;
+                        try
+                        {
+                            hasNext = frameBenchmarks.MoveNext();
+                        }
+                        catch (Exception exception)
+                        {
+                            failure = exception;
+                            break;
+                        }
 
-                    if (!hasNext)
-                    {
-                        break;
-                    }
+                        if (!hasNext)
+                        {
+                            break;
+                        }
 
-                    yield return null;
+                        yield return null;
+                    }
+                }
+                finally
+                {
+                    (frameBenchmarks as IDisposable)?.Dispose();
                 }
             }
 
@@ -150,17 +219,7 @@ namespace Onity.Benchmarks
                 Debug.LogException(failure, this);
             }
 
-            s_mainCounter?.Dispose();
-            s_mainCounter = null;
-            try
-            {
-                m_completed?.Invoke(m_latestJson, failure);
-            }
-            finally
-            {
-                s_isRunning = false;
-                Destroy(gameObject);
-            }
+            m_failure = failure;
         }
 
         private void OnDestroy()
@@ -172,7 +231,8 @@ namespace Onity.Benchmarks
         {
             ThreadSwitchBenchmarkReport report = new ThreadSwitchBenchmarkReport
             {
-                schemaVersion = 2,
+                schemaVersion = m_threadPool ? 3 : 2,
+                suite = m_threadPool ? "threadpool" : "threadswitch",
                 generatedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
                 unityVersion = Application.unityVersion,
                 platform = Application.platform.ToString(),
@@ -193,24 +253,53 @@ namespace Onity.Benchmarks
                     + "trip spans starting N async methods on the main thread until the last one resumes after a "
                     + "thread-pool hop and a switch; thread-pool latency and frame waits are included. Raw times "
                     + "include harness overhead; no baseline subtraction or overall winner is inferred.",
-                scenarios = new ThreadSwitchScenarioReport[k_scenarioCount]
+                scenarios = new ThreadSwitchScenarioReport[m_threadPool ? 10 : k_scenarioCount]
             };
 
-            CalibrateMainThreadAllocationCounter(report);
+            if (m_threadPool)
+            {
+                report.environment = OnityTaskBenchmarkEnvironment.Capture();
+                if (report.environment.executionContextPath == "Unknown")
+                {
+                    throw new InvalidOperationException("Thread-pool benchmark requires runtime context-path evidence.");
+                }
+                report.warmupIterations = 2;
+                report.batchesPerSample = 2;
+                report.measurementScope = "128 gated worker-only operations per cohort; two warmup cohorts, "
+                    + "eight samples with two measured cohorts per library. Submission elapsed time covers factory/awaiter "
+                    + "creation and native callback registration; completion latency starts at first submission and ends "
+                    + "at the last worker consumption, including a shared harness release gate. Main waits without Unity "
+                    + "frames; two real frames after every cohort are outside both timing slices for deferred return. "
+                    + "Submission allocations cover the main submitting thread only, not cross-worker lifecycle. "
+                    + "Onity flow-off matches UniTask no-flow; flow-on measures extra context preservation and is not "
+                    + "a matched speed comparison. No main-return work or compute benchmark is included.";
+                m_workerAllocationAvailable = false;
+                m_workerAllocationCounter = "Unavailable: cross-worker lifecycle allocations are not measured.";
+            }
+
+            CalibrateMainThreadAllocationCounter(report, m_threadPool);
             return report;
         }
 
-        private static void CalibrateMainThreadAllocationCounter(ThreadSwitchBenchmarkReport report)
+        private static void CalibrateMainThreadAllocationCounter(ThreadSwitchBenchmarkReport report, bool threadPool)
         {
             // Candidates are calibrated in order on the main thread; the Editor does not support
             // changing the collector mode, so its heap delta discards slices that saw a collection.
             s_mainCounter?.Dispose();
             s_mainCounter = OnityBenchmarkAllocationCounter.Create(
-                allowProfilerCounter: true,
-                allowCollectorModeSwitch: !Application.isEditor);
+                allowProfilerCounter: !threadPool,
+                allowCollectorModeSwitch: !threadPool && !Application.isEditor);
             report.allocationCounterKind = s_mainCounter.Kind;
-            report.mainThreadAllocationsAvailable = s_mainCounter.IsAvailable;
+            report.mainThreadAllocationsAvailable = threadPool
+                ? s_mainCounter.Kind == OnityBenchmarkAllocationCounter.k_kindPerThread : s_mainCounter.IsAvailable;
             report.mainThreadAllocationCounter = s_mainCounter.Description;
+            report.allocationRejectionReason = s_mainCounter.RejectedCandidates;
+            if (threadPool && !report.mainThreadAllocationsAvailable)
+            {
+                report.mainThreadAllocationCounter = "Unavailable: submission requires a calibrated per-thread counter; "
+                    + "the selected " + s_mainCounter.Kind + " counter cannot isolate concurrent workers. "
+                    + s_mainCounter.RejectedCandidates;
+            }
             report.mainThreadAllocationCalibrationBytes = s_mainCounter.CalibrationBytes;
             report.mainThreadEmptyAllocationDeltaBytes = s_mainCounter.EmptyDeltaBytes;
         }
@@ -374,6 +463,335 @@ namespace Onity.Benchmarks
             while (roundTrip.MoveNext())
             {
                 yield return null;
+            }
+        }
+
+        private IEnumerator RunThreadPoolBenchmarks(ThreadSwitchBenchmarkReport report)
+        {
+            for (int probe = 0; probe < 5; probe++)
+            {
+                int operation = probe == 0 ? 0 : probe <= 2 ? 1 : 2;
+                bool flow = probe == 2 || probe == 4;
+                OnityTask.FlowExecutionContext = flow;
+                OnityTaskBenchmarkEnvironment environment = OnityTaskBenchmarkEnvironment.Capture();
+                string context = operation == 0 ? "Context-free raw registration; flow setting not applicable"
+                    : flow ? "Onity flow-on vs UniTask no-flow; additional context feature cost"
+                    : "Onity flow-off vs UniTask no-flow; matched context semantics";
+                string name = operation == 0 ? "Raw SwitchToThreadPool"
+                    : operation == 1 ? "RunOnThreadPool Action" : "RunOnThreadPool Func<int>";
+                SampleSet[] submission = { new SampleSet(), new SampleSet() };
+                SampleSet[] completion = { new SampleSet(), new SampleSet() };
+                ThreadPoolCohort[] cohorts =
+                {
+                    new ThreadPoolCohort(operation, 0), new ThreadPoolCohort(operation, 1)
+                };
+                try
+                {
+                    for (int warmup = 0; warmup < 2; warmup++)
+                    {
+                        for (int library = 0; library < 2; library++)
+                        {
+                            MeasureThreadPoolCohort(cohorts[library], null, null, 0,
+                                report.mainThreadAllocationsAvailable);
+                            yield return null;
+                            yield return null;
+                        }
+                    }
+
+                    for (int sample = 0; sample < k_samplesPerCase; sample++)
+                    {
+                        ForceFullGc();
+                        for (int batch = 0; batch < 2; batch++)
+                        {
+                            for (int turn = 0; turn < 2; turn++)
+                            {
+                                int library = (sample + batch + turn) & 1;
+                                MeasureThreadPoolCohort(cohorts[library], submission[library],
+                                    completion[library], sample, report.mainThreadAllocationsAvailable);
+                                yield return null;
+                                yield return null;
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    cohorts[0].Dispose();
+                    cohorts[1].Dispose();
+                }
+
+                int operations = k_steadyConcurrency * 2;
+                ThreadSwitchScenarioReport scheduling = BuildScenario(name + " submission elapsed", context,
+                    k_steadyConcurrency, operations, submission[0], submission[1], true,
+                    report.mainThreadAllocationsAvailable);
+                ThreadSwitchScenarioReport latency = BuildScenario(name + " completion latency", context,
+                    k_steadyConcurrency, operations, completion[0], completion[1], false, false);
+                scheduling.environment = environment;
+                latency.environment = environment;
+                scheduling.allocationThread = "Submitting main thread only";
+                latency.allocationThread = "Unavailable: cross-worker lifecycle not measured";
+                report.scenarios[probe * 2] = scheduling;
+                report.scenarios[probe * 2 + 1] = latency;
+                string onityLabel = operation == 0 ? "OnityTask raw no-capture"
+                    : flow ? "OnityTask flow-on" : "OnityTask flow-off";
+                scheduling.results[0].library = onityLabel;
+                latency.results[0].library = onityLabel;
+                scheduling.results[1].library = "UniTask no-flow";
+                latency.results[1].library = "UniTask no-flow";
+            }
+        }
+
+        private static void MeasureThreadPoolCohort(
+            ThreadPoolCohort cohort, SampleSet submission, SampleSet completion, int sample, bool allocationsAvailable)
+        {
+            cohort.Reset();
+            long bytes = allocationsAvailable ? s_mainCounter.Read() : 0;
+            long started = Stopwatch.GetTimestamp();
+            long submitted;
+            long allocated;
+            try
+            {
+                cohort.Submit();
+                submitted = Stopwatch.GetTimestamp();
+                allocated = allocationsAvailable ? s_mainCounter.Read() - bytes : 0;
+            }
+            finally
+            {
+                // Workers cannot complete before their native consumers have all registered.
+                cohort.Release();
+            }
+
+            cohort.Wait();
+            if (submission != null)
+            {
+                submission.ticks[sample] += submitted - started;
+                AddAllocationSample(submission, sample, allocated, allocationsAvailable && allocated >= 0);
+                completion.ticks[sample] += cohort.CompletedTimestamp - started;
+            }
+        }
+
+        private sealed class ThreadPoolCohort : IDisposable
+        {
+            private readonly ManualResetEventSlim m_release = new ManualResetEventSlim(false);
+            private readonly ThreadPoolSlot[] m_slots = new ThreadPoolSlot[k_steadyConcurrency];
+            private readonly Action m_action;
+            private readonly Func<int> m_function;
+            private readonly int m_operation;
+            private readonly int m_library;
+            private int m_completed;
+            private int m_done;
+            private Exception m_failure;
+
+            public long CompletedTimestamp;
+
+            public ThreadPoolCohort(int operation, int library)
+            {
+                m_operation = operation;
+                m_library = library;
+                m_action = WaitForRelease;
+                m_function = ReturnResult;
+                for (int i = 0; i < m_slots.Length; i++)
+                {
+                    m_slots[i] = new ThreadPoolSlot(this);
+                }
+            }
+
+            public void Reset()
+            {
+                m_release.Reset();
+                m_completed = 0;
+                m_done = 0;
+                m_failure = null;
+                CompletedTimestamp = 0;
+                for (int i = 0; i < m_slots.Length; i++)
+                {
+                    m_slots[i].Reset();
+                }
+            }
+
+            public void Submit()
+            {
+                for (int i = 0; i < m_slots.Length; i++)
+                {
+                    m_slots[i].Submit();
+                }
+            }
+
+            public void Release()
+            {
+                m_release.Set();
+            }
+
+            public void Wait()
+            {
+                long deadline = Stopwatch.GetTimestamp() + Stopwatch.Frequency * 30;
+                while (Volatile.Read(ref m_done) == 0)
+                {
+                    if (Stopwatch.GetTimestamp() >= deadline)
+                    {
+                        throw new TimeoutException("Thread-pool cohort did not complete: "
+                            + Volatile.Read(ref m_completed) + "/" + k_steadyConcurrency + ".");
+                    }
+
+                    Thread.Sleep(1);
+                }
+
+                if (Volatile.Read(ref m_completed) != k_steadyConcurrency)
+                {
+                    throw new InvalidOperationException("Thread-pool cohort completion count was invalid.");
+                }
+
+                Exception failure = Volatile.Read(ref m_failure);
+                if (failure != null)
+                {
+                    throw new InvalidOperationException("Thread-pool cohort failed native consumption.", failure);
+                }
+            }
+
+            public void Dispose()
+            {
+                m_release.Set();
+                // A timed-out worker may still be using the gate. Its callbacks retain this cohort;
+                // leave that gate alive instead of disposing underneath an outstanding worker.
+                if (Volatile.Read(ref m_done) != 0)
+                {
+                    m_release.Dispose();
+                }
+            }
+
+            private void WaitForRelease()
+            {
+                m_release.Wait();
+            }
+
+            private int ReturnResult()
+            {
+                WaitForRelease();
+                return 42;
+            }
+
+            private sealed class ThreadPoolSlot
+            {
+                private readonly ThreadPoolCohort m_owner;
+                private readonly Action m_callback;
+                private int m_consumed;
+                private OnityTaskThreadPoolSwitchAwaiter m_onitySwitch;
+                private SwitchToThreadPoolAwaitable.Awaiter m_uniSwitch;
+                private OnityTaskAwaiter m_onityAction;
+                private UniTask.Awaiter m_uniAction;
+                private OnityTaskAwaiter<int> m_onityFunction;
+                private UniTask<int>.Awaiter m_uniFunction;
+
+                public ThreadPoolSlot(ThreadPoolCohort owner)
+                {
+                    m_owner = owner;
+                    m_callback = Consume;
+                }
+
+                public void Reset()
+                {
+                    m_consumed = 0;
+                }
+
+                public void Submit()
+                {
+                    if (m_owner.m_library == 0)
+                    {
+                        if (m_owner.m_operation == 0)
+                        {
+                            m_onitySwitch = OnityTask.SwitchToThreadPool().GetAwaiter();
+                            m_onitySwitch.UnsafeOnCompleted(m_callback);
+                        }
+                        else if (m_owner.m_operation == 1)
+                        {
+                            m_onityAction = OnityTask.RunOnThreadPool(m_owner.m_action, false).GetAwaiter();
+                            m_onityAction.UnsafeOnCompleted(m_callback);
+                        }
+                        else
+                        {
+                            m_onityFunction = OnityTask.RunOnThreadPool(m_owner.m_function, false).GetAwaiter();
+                            m_onityFunction.UnsafeOnCompleted(m_callback);
+                        }
+                    }
+                    else if (m_owner.m_operation == 0)
+                    {
+                        m_uniSwitch = UniTask.SwitchToThreadPool().GetAwaiter();
+                        m_uniSwitch.UnsafeOnCompleted(m_callback);
+                    }
+                    else if (m_owner.m_operation == 1)
+                    {
+                        m_uniAction = UniTask.RunOnThreadPool(m_owner.m_action, false).GetAwaiter();
+                        m_uniAction.UnsafeOnCompleted(m_callback);
+                    }
+                    else
+                    {
+                        m_uniFunction = UniTask.RunOnThreadPool(m_owner.m_function, false).GetAwaiter();
+                        m_uniFunction.UnsafeOnCompleted(m_callback);
+                    }
+                }
+
+                private void Consume()
+                {
+                    if (Interlocked.Exchange(ref m_consumed, 1) != 0)
+                    {
+                        Interlocked.CompareExchange(ref m_owner.m_failure,
+                            new InvalidOperationException("A thread-pool callback ran more than once."), null);
+                        return;
+                    }
+
+                    try
+                    {
+                        if (!Thread.CurrentThread.IsThreadPoolThread)
+                        {
+                            throw new InvalidOperationException("Native consumption did not run on a pool worker.");
+                        }
+
+                        if (m_owner.m_operation == 0)
+                        {
+                            m_owner.WaitForRelease();
+                            if (m_owner.m_library == 0)
+                            {
+                                m_onitySwitch.GetResult();
+                            }
+                            else
+                            {
+                                m_uniSwitch.GetResult();
+                            }
+                        }
+                        else if (m_owner.m_operation == 1)
+                        {
+                            if (m_owner.m_library == 0)
+                            {
+                                m_onityAction.GetResult();
+                            }
+                            else
+                            {
+                                m_uniAction.GetResult();
+                            }
+                        }
+                        else
+                        {
+                            int result = m_owner.m_library == 0
+                                ? m_onityFunction.GetResult() : m_uniFunction.GetResult();
+                            if (result != 42)
+                            {
+                                throw new InvalidOperationException("Thread-pool function returned an invalid result.");
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        Interlocked.CompareExchange(ref m_owner.m_failure, exception, null);
+                    }
+                    finally
+                    {
+                        if (Interlocked.Increment(ref m_owner.m_completed) == k_steadyConcurrency)
+                        {
+                            m_owner.CompletedTimestamp = Stopwatch.GetTimestamp();
+                            Volatile.Write(ref m_owner.m_done, 1);
+                        }
+                    }
+                }
             }
         }
 
@@ -789,7 +1207,8 @@ namespace Onity.Benchmarks
             Directory.CreateDirectory(directory);
             string stamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
             string json = JsonUtility.ToJson(report, true);
-            File.WriteAllText(Path.Combine(directory, $"onity-thread-switch-benchmark-{stamp}.json"), json, Encoding.UTF8);
+            string prefix = report.suite == "threadpool" ? "onity-thread-pool-benchmark" : "onity-thread-switch-benchmark";
+            File.WriteAllText(Path.Combine(directory, $"{prefix}-{stamp}.json"), json, Encoding.UTF8);
             File.WriteAllText(latestJson, json, Encoding.UTF8);
             File.WriteAllText(Path.ChangeExtension(latestJson, ".csv"), BuildCsv(report), Encoding.UTF8);
             File.WriteAllText(Path.ChangeExtension(latestJson, ".md"), BuildMarkdown(report), Encoding.UTF8);
@@ -826,7 +1245,8 @@ namespace Onity.Benchmarks
         private static string BuildMarkdown(ThreadSwitchBenchmarkReport report)
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("# OnityTask thread-switch benchmark");
+            builder.AppendLine(report.suite == "threadpool"
+                ? "# OnityTask thread-pool benchmark" : "# OnityTask thread-switch benchmark");
             builder.AppendLine();
             builder.AppendLine($"- Generated (UTC): {report.generatedAtUtc}");
             builder.AppendLine($"- Unity: {report.unityVersion} ({report.platform}, {report.scriptingBackend})");
@@ -836,6 +1256,13 @@ namespace Onity.Benchmarks
             builder.AppendLine($"- Main-thread allocation counter: {report.mainThreadAllocationCounter}");
             builder.AppendLine($"- Worker allocation counter: {report.workerAllocationCounter}");
             builder.AppendLine($"- Scope: {report.measurementScope}");
+            if (report.environment != null)
+            {
+                builder.AppendLine($"- Build GUID: {report.environment.buildGuid}; development: {report.environment.isDevelopment}");
+                builder.AppendLine($"- Context path: {report.environment.executionContextPath}; {report.environment.executionContextEvidence}");
+                builder.AppendLine($"- Tracker: {report.environment.trackerEnabled}; stack trace: {report.environment.trackerStackTraceEnabled}; "
+                    + $"runner pool capacity: {report.environment.runnerPoolCapacity}");
+            }
             builder.AppendLine();
             builder.AppendLine("| Scenario | Concurrency | Library | Mean ns/op | Bytes/op | Allocation thread | Stddev ms |");
             builder.AppendLine("| --- | ---: | --- | ---: | ---: | --- | ---: |");
@@ -916,6 +1343,9 @@ namespace Onity.Benchmarks
         private sealed class ThreadSwitchBenchmarkReport
         {
             public int schemaVersion;
+            public string suite;
+            public OnityTaskBenchmarkEnvironment environment;
+            public string allocationRejectionReason;
             public string generatedAtUtc;
             public string unityVersion;
             public string platform;
@@ -944,6 +1374,7 @@ namespace Onity.Benchmarks
         [Serializable]
         private sealed class ThreadSwitchScenarioReport
         {
+            public OnityTaskBenchmarkEnvironment environment;
             public string displayName;
             public string workload;
             public int concurrency;

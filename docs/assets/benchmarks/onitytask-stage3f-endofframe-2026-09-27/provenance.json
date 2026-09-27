@@ -1,0 +1,141 @@
+{
+  "generatedAtUtc": "2026-09-27T05:53:07.2793284Z",
+  "sourceRoot": "C:/Users/e-fur/.codex/worktrees/onity-fast-capture-f682b7c/Onity",
+  "verificationHost": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity",
+  "sourceHead": "3f098937e9198a17edcf72cd75e73bd5bc76e2fd",
+  "unityVersion": "2022.3.62f2",
+  "cliVersion": "1.0.0-beta.11",
+  "sourceManifestFileCount": 520,
+  "editorRuntimeAndFixtureFileCount": 479,
+  "settings": [
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "sha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/EditorSettings.asset",
+      "sha256": "962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "sha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33",
+      "restored": true
+    }
+  ],
+  "temporarySceneRemoved": true,
+  "players": [
+    {
+      "backend": "mono",
+      "buildGuid": "3f884a8ad0ae4e40b53f4ace09425b97",
+      "graphicsCases": 6,
+      "smokeCases": 27,
+      "graphicsReportSha256": "EEC4141A58EDD5B98EB827F9579777DDD778D8A4068AD4FE155B04EA890B690D",
+      "smokeSha256": "81DE37B61B17C2426325F42ECFEE718638D4D6A1E1B533052D3021AE1390B5DD",
+      "environment": {
+        "buildGuid": "3f884a8ad0ae4e40b53f4ace09425b97",
+        "isDevelopment": false,
+        "scriptingBackend": "Mono",
+        "trackerEnabled": true,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-27T05:49:49.2127048Z",
+          "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+          "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Disabled",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.14",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      },
+      "graphicsApi": "Direct3D11",
+      "graphicsDevice": "NVIDIA GeForce RTX 3090",
+      "pipeline": "Built-in (no active pipeline asset)",
+      "colorSpace": "Linear"
+    },
+    {
+      "backend": "il2cpp",
+      "buildGuid": "31d9505a34bb4011be31659b6d4714a3",
+      "graphicsCases": 6,
+      "smokeCases": 27,
+      "graphicsReportSha256": "8474E25E26584B0E7A50B0799837E078C66C2AE56A99EE2FC6A0D011CCD1876D",
+      "smokeSha256": "80EE0E4C880FD28C60067C5F1D08EF2C174DAD36C4699C5C398124F99B83E077",
+      "environment": {
+        "buildGuid": "31d9505a34bb4011be31659b6d4714a3",
+        "isDevelopment": false,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": true,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-27T05:52:08.4170773Z",
+          "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+          "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.14",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      },
+      "graphicsApi": "Direct3D11",
+      "graphicsDevice": "NVIDIA GeForce RTX 3090",
+      "pipeline": "Built-in (no active pipeline asset)",
+      "colorSpace": "Linear"
+    }
+  ],
+  "logs": [
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3f-il2cpp-build-verified.log",
+      "sha256": "A0F1AD5A544FC0C5EB6B1B178F47C8D1C3D4C7462A52A7BF5ABBF00B238EC906"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3f-il2cpp-eof.player.log",
+      "sha256": "BB8E9F7F29936443ECC7A1A73718818A19106525CA22719BF7DCA923685AC0E2"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3f-il2cpp-eof.smoke.player.log",
+      "sha256": "8E9910AA8EAE7CEAC1DBB920434C5005E71462354737D1F0C0062F8FB3F8A710"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3f-il2cpp-eof.smoke.startup.log",
+      "sha256": "6C87DBB2A2A8EAEE788162E30FD61D78E232F0DD09D5C33B249D1324C24E0E80"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3f-il2cpp-eof.startup.log",
+      "sha256": "A928751EE59A489A27A25F9852E121F8B6B222C25400CF03FE172F719519B12F"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3f-mono-build-verified.log",
+      "sha256": "A76AE5FAEA1635EF9EB0C505802E907377C1F000D1ACF3BCA13CF33E570D9FA2"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3f-mono-eof.player.log",
+      "sha256": "06AD64997BE130DF65AA053F519DAE7B028DA1BA64B153D083A7BA952AB52118"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3f-mono-eof.smoke.player.log",
+      "sha256": "C9462A0333BB954AF063E20207F3926199164CCE61B527D390C30A1E52C5546E"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3f-mono-eof.smoke.startup.log",
+      "sha256": "8ACB6F96E8CD07514DE6D5F053484A3962EB35328CF5C876EDCFFB3AEF3C1D07"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3f-mono-eof.startup.log",
+      "sha256": "FE5987EEB1A2BA57BE5289BEE89E3420B0305458DA4206D51BED1C57FCB88D07"
+    }
+  ],
+  "testFreshness": "Final full suites use identical frozen runtime and Edit/Play fixtures; subsequent Player-only tooling additions were semantically compiled and built into both Release Players. Each binary ran graphics EOF followed by headless smoke."
+}

@@ -1,0 +1,73 @@
+{
+  "generatedAtUtc": "2026-09-27T04:40:22.0875699Z",
+  "sourceRoot": "C:/Users/e-fur/.codex/worktrees/onity-fast-capture-f682b7c/Onity",
+  "verificationHost": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity",
+  "sourceHead": "3f098937e9198a17edcf72cd75e73bd5bc76e2fd",
+  "unityVersion": "2022.3.62f2",
+  "cliVersion": "1.0.0-beta.11",
+  "beforeRuntimeSha256": "17B9401ED7752847DF14C5FFA34FC60BC6A29F4E6B28E2C247088624B9405E29",
+  "afterRuntimeSha256": "4A615505640474C48B07331319CEE8CBFC30D1C959E5C1A3036C3A8BEA5E40CF",
+  "primaryHarnessSha256": "650D24340CF614CBC00F451997A655986D743D2E0F69C6A88DA7290B6CFA234C",
+  "sourceManifestFileCount": 500,
+  "settings": [
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "sha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/EditorSettings.asset",
+      "sha256": "962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "sha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33",
+      "restored": true
+    }
+  ],
+  "temporarySceneRemoved": true,
+  "logs": [
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-legacy-mono-build-verified.log",
+      "sha256": "C5E2A479A7C29FDD72F37632F7E3F61B367F54022A9125529E04F4DA6972AE14"
+    },
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-legacy-mono-smoke.player.log",
+      "sha256": "6CEC87BB7DC0E85075AF1E8964CE41375FB729100F69335196972DACB31DACF8"
+    },
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-legacy-mono-smoke.startup.log",
+      "sha256": "A284DD0EB7A132B8E7513907A3430CC1B1DCBA0A45821BE74B51AB556BA113D4"
+    },
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-legacy-after-mono-primary.player.log",
+      "sha256": "15FF0FA8B2E496D30C25BD98DB6A45D24EA86E242F64DD6D4AB17262AD834BAC"
+    },
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-legacy-before-mono-primary.player.log",
+      "sha256": "EBD09338488C41115B5D5553BBF6BC6B9034AEEB4F5C6AB4090B71543E86CAA8"
+    },
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-legacy-il2cpp-build-verified.log",
+      "sha256": "335FD4E954163AF4A23AF8F56A11BB909953CE25820C2B9F6D970FF307BED5CA"
+    },
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-legacy-il2cpp-smoke.player.log",
+      "sha256": "E52EBDD303FF0DBE4959EF36C5997CBA5C89C79422B61D6A59C4D5872A5F1B84"
+    },
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-legacy-il2cpp-smoke.startup.log",
+      "sha256": "6F17DCBADCC39E8E8E39C29B78053CA53433E0DFB6985644EC1FD7531777ADC6"
+    },
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-legacy-after-il2cpp-primary.player.log",
+      "sha256": "CF975C8E7994BB58BA550FD472728A5B05C468125B8FDC49027639399075326F"
+    },
+    {
+      "path": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-legacy-before-il2cpp-primary.player.log",
+      "sha256": "F91B0314D7F54C754568B50C408E93E15E74A720927E9031B62F649E9D02CF85"
+    }
+  ],
+  "initialTestFailure": "Internal Tick gained owner argument; 11 stale reflection call sites caused 10 failed existing EditMode cases. Test helpers updated to pass null for standalone frame sources; assertions unchanged. All final suites include the correction."
+}

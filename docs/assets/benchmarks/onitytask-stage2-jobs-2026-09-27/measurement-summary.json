@@ -1,0 +1,146 @@
+[
+  {
+    "File": "plan13-stage2-il2cpp-jobs-1.json",
+    "Backend": "IL2CPP",
+    "BuildGuid": "63e687261b8b49dfb5bbb1ec1ae2319f",
+    "BurstEnabled": true,
+    "AllocationAvailable": false,
+    "AllocationCounter": "Unavailable: registration requires a calibrated per-thread counter; selected HeapDelta cannot isolate concurrent worker allocation. per-thread counter skipped on IL2CPP after the DI harness observed crashes",
+    "SerialOverBurst": 14.429615052835883,
+    "PlainJobsOverBurst": 1.213715764502911,
+    "Adapters": [
+      {
+        "Library": "OnityTask",
+        "Samples": 16,
+        "MeanRegistrationNs": 13831.25,
+        "MeanCompletionMs": 0.25872500000000004,
+        "MinFrames": 1.0,
+        "MaxFrames": 11.0,
+        "Exclusions": 1,
+        "RegistrationBytes": [
+          -1
+        ]
+      },
+      {
+        "Library": "UniTask",
+        "Samples": 16,
+        "MeanRegistrationNs": 1287.5000000000002,
+        "MeanCompletionMs": 0.26010625,
+        "MinFrames": 1.0,
+        "MaxFrames": 7.0,
+        "Exclusions": 0,
+        "RegistrationBytes": [
+          -1
+        ]
+      }
+    ]
+  },
+  {
+    "File": "plan13-stage2-il2cpp-jobs-2.json",
+    "Backend": "IL2CPP",
+    "BuildGuid": "63e687261b8b49dfb5bbb1ec1ae2319f",
+    "BurstEnabled": true,
+    "AllocationAvailable": false,
+    "AllocationCounter": "Unavailable: registration requires a calibrated per-thread counter; selected HeapDelta cannot isolate concurrent worker allocation. per-thread counter skipped on IL2CPP after the DI harness observed crashes",
+    "SerialOverBurst": 14.083835845896148,
+    "PlainJobsOverBurst": 1.2481574539363485,
+    "Adapters": [
+      {
+        "Library": "OnityTask",
+        "Samples": 16,
+        "MeanRegistrationNs": 1749.9999999999998,
+        "MeanCompletionMs": 0.24896875,
+        "MinFrames": 1.0,
+        "MaxFrames": 9.0,
+        "Exclusions": 1,
+        "RegistrationBytes": [
+          -1
+        ]
+      },
+      {
+        "Library": "UniTask",
+        "Samples": 16,
+        "MeanRegistrationNs": 1343.75,
+        "MeanCompletionMs": 0.2402625,
+        "MinFrames": 1.0,
+        "MaxFrames": 9.0,
+        "Exclusions": 0,
+        "RegistrationBytes": [
+          -1
+        ]
+      }
+    ]
+  },
+  {
+    "File": "plan13-stage2-mono-jobs-1.json",
+    "Backend": "Mono",
+    "BuildGuid": "b4c5fd2e79394bcea47583d3ab4e2641",
+    "BurstEnabled": true,
+    "AllocationAvailable": false,
+    "AllocationCounter": "Unavailable: registration requires a calibrated per-thread counter; selected HeapDelta cannot isolate concurrent worker allocation. per-thread counter read 0 / 0 bytes for the 64 KiB and empty controls",
+    "SerialOverBurst": 14.335128927292118,
+    "PlainJobsOverBurst": 1.3500861338218808,
+    "Adapters": [
+      {
+        "Library": "OnityTask",
+        "Samples": 16,
+        "MeanRegistrationNs": 1087.5000000000002,
+        "MeanCompletionMs": 0.24291875000000002,
+        "MinFrames": 1.0,
+        "MaxFrames": 7.0,
+        "Exclusions": 2,
+        "RegistrationBytes": [
+          -1
+        ]
+      },
+      {
+        "Library": "UniTask",
+        "Samples": 16,
+        "MeanRegistrationNs": 799.9999999999998,
+        "MeanCompletionMs": 0.23981875000000002,
+        "MinFrames": 1.0,
+        "MaxFrames": 7.0,
+        "Exclusions": 0,
+        "RegistrationBytes": [
+          -1
+        ]
+      }
+    ]
+  },
+  {
+    "File": "plan13-stage2-mono-jobs-2.json",
+    "Backend": "Mono",
+    "BuildGuid": "b4c5fd2e79394bcea47583d3ab4e2641",
+    "BurstEnabled": true,
+    "AllocationAvailable": false,
+    "AllocationCounter": "Unavailable: registration requires a calibrated per-thread counter; selected HeapDelta cannot isolate concurrent worker allocation. per-thread counter read 0 / 0 bytes for the 64 KiB and empty controls",
+    "SerialOverBurst": 14.463396526580933,
+    "PlainJobsOverBurst": 1.354447832427416,
+    "Adapters": [
+      {
+        "Library": "OnityTask",
+        "Samples": 16,
+        "MeanRegistrationNs": 1150.0,
+        "MeanCompletionMs": 0.25848750000000004,
+        "MinFrames": 1.0,
+        "MaxFrames": 6.0,
+        "Exclusions": 2,
+        "RegistrationBytes": [
+          -1
+        ]
+      },
+      {
+        "Library": "UniTask",
+        "Samples": 16,
+        "MeanRegistrationNs": 950.0,
+        "MeanCompletionMs": 0.26034375000000004,
+        "MinFrames": 1.0,
+        "MaxFrames": 7.0,
+        "Exclusions": 0,
+        "RegistrationBytes": [
+          -1
+        ]
+      }
+    ]
+  }
+]
