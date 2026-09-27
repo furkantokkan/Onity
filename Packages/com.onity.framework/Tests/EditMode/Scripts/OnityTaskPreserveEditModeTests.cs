@@ -51,7 +51,7 @@ namespace Onity.Tests.EditMode
             Assert.Throws<InvalidOperationException>(() => original.Preserve());
             Assert.Throws<InvalidOperationException>(() => original.GetAwaiter().OnCompleted(() => { }));
 
-            Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
+Assert.That(tick.Invoke(source, new object[] { null, 0f, 0f }), Is.EqualTo(true));
             await Task.WhenAll(first, second, third, fourth, bridge);
             await Observe(shared);
             Assert.DoesNotThrow(() => shared.GetAwaiter().GetResult());
@@ -103,7 +103,7 @@ namespace Onity.Tests.EditMode
                 lockHeld = Monitor.IsEntered(retainedSource);
             });
 
-            Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
+            Assert.That(tick.Invoke(source, new object[] { null, 0f, 0f }), Is.EqualTo(true));
             Assert.That(called, Is.True);
             Assert.That(lockHeld, Is.False);
             Assert.DoesNotThrow(() => shared.GetAwaiter().GetResult());
@@ -113,7 +113,7 @@ namespace Onity.Tests.EditMode
         public void Preserve_AlreadyCompletedNativeTask_KeepsItsResult()
         {
             (OnityTask original, object source, MethodInfo tick) = NewStandaloneFrameTask();
-            Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
+            Assert.That(tick.Invoke(source, new object[] { null, 0f, 0f }), Is.EqualTo(true));
 
             OnityTask shared = original.Preserve();
 
@@ -256,7 +256,7 @@ namespace Onity.Tests.EditMode
             Task bridge = original.AsTask();
 
             Assert.Throws<InvalidOperationException>(() => original.Preserve());
-            Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
+            Assert.That(tick.Invoke(source, new object[] { null, 0f, 0f }), Is.EqualTo(true));
             Assert.DoesNotThrow(() => bridge.GetAwaiter().GetResult());
         }
 
@@ -268,7 +268,7 @@ namespace Onity.Tests.EditMode
             original.GetAwaiter().OnCompleted(() => called = true);
 
             Assert.Throws<InvalidOperationException>(() => original.Preserve());
-            Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
+            Assert.That(tick.Invoke(source, new object[] { null, 0f, 0f }), Is.EqualTo(true));
             Assert.That(called, Is.True);
             Assert.DoesNotThrow(() => original.GetAwaiter().GetResult());
         }
@@ -281,7 +281,7 @@ namespace Onity.Tests.EditMode
             OnityTask<int> race = OnityTask.WhenAny(shared, shared);
 
             Assert.That(race.IsCompleted, Is.False);
-            Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
+            Assert.That(tick.Invoke(source, new object[] { null, 0f, 0f }), Is.EqualTo(true));
             Assert.That(race.GetAwaiter().GetResult(), Is.EqualTo(0));
             Assert.DoesNotThrow(() => shared.GetAwaiter().GetResult());
         }
@@ -291,7 +291,7 @@ namespace Onity.Tests.EditMode
         {
             (OnityTask original, object source, MethodInfo tick) = NewStandaloneFrameTask();
             OnityTask shared = original.Preserve();
-            Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
+            Assert.That(tick.Invoke(source, new object[] { null, 0f, 0f }), Is.EqualTo(true));
 
             FieldInfo poolField = source.GetType().GetField(
                 "s_pool",
@@ -305,7 +305,7 @@ namespace Onity.Tests.EditMode
             Assert.That(next.IsCompleted, Is.False);
             Assert.DoesNotThrow(() => shared.GetAwaiter().GetResult());
             Assert.Throws<InvalidOperationException>(() => original.GetAwaiter().GetResult());
-            Assert.That(tick.Invoke(reusedSource, new object[] { 0f, 0f }), Is.EqualTo(true));
+            Assert.That(tick.Invoke(reusedSource, new object[] { null, 0f, 0f }), Is.EqualTo(true));
             Assert.DoesNotThrow(() => next.GetAwaiter().GetResult());
             Assert.DoesNotThrow(() => shared.GetAwaiter().GetResult());
         }

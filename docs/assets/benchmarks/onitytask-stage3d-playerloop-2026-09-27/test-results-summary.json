@@ -1,0 +1,84 @@
+[
+  {
+    "file": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-editmode-normal-verified.xml",
+    "sha256": "F8D05E1A074E4760068C57086E6E252F253AFEE36BAC5C67DCD044CD5456B0E4",
+    "result": "Passed",
+    "total": 780,
+    "passed": 780,
+    "failed": 0,
+    "skipped": 0,
+    "failures": []
+  },
+  {
+    "file": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-editmode-release-verified.xml",
+    "sha256": "A59541B5392BC965104D2AB447632F6F3482A01A1832699F8E6BD3D7D72F0C5C",
+    "result": "Passed",
+    "total": 780,
+    "passed": 780,
+    "failed": 0,
+    "skipped": 0,
+    "failures": []
+  },
+  {
+    "file": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-existing-playmode-release.xml",
+    "sha256": "0994DFDF3CBF1E4BAEC5788130DF004A3DC35DB1208596C143A2B23B2AC73ACE",
+    "result": "Passed",
+    "total": 54,
+    "passed": 54,
+    "failed": 0,
+    "skipped": 0,
+    "failures": []
+  },
+  {
+    "file": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-new-editmode-release.xml",
+    "sha256": "367AADBE5CEEE0FE95632F500D8C967BCBCA910BA048B2BEF7A57C8FD98B2C9F",
+    "result": "Failed(Child)",
+    "total": 3,
+    "passed": 2,
+    "failed": 1,
+    "skipped": 0,
+    "failures": [
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskPlayerLoopEditModeTests.ActualReloadDisabledPlayEditPlay_PreservesAwakeAndRetiresObservedAndUnawaitedWaits",
+        "message": "  Lifecycle probe disappeared across a reload-disabled transition.\n  Expected: True\n  But was:  False\n",
+        "stack": "at Onity.Tests.EditMode.OnityTaskPlayerLoopEditModeTests.Read[T] (UnityEngine.Component probe, System.String name) [0x00000] in .\\Packages\\com.onity.framework\\Tests\\EditMode\\Scripts\\OnityTaskPlayerLoopEditModeTests.cs:121\nat Onity.Tests.EditMode.OnityTaskPlayerLoopEditModeTests+<ActualReloadDisabledPlayEditPlay_PreservesAwakeAndRetiresObservedAndUnawaitedWaits>d__3.MoveNext () [0x00219] in .\\Packages\\com.onity.framework\\Tests\\EditMode\\Scripts\\OnityTaskPlayerLoopEditModeTests.cs:92\nat UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0003a] in .\\Library\\PackageCache\\com.unity.test-framework@1.4.6\\UnityEngine.TestRunner\\NUnitExtensions\\Attributes\\TestEnumerator.cs:44\n"
+      }
+    ]
+  },
+  {
+    "file": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-playmode-normal-initial.xml",
+    "sha256": "34E754D6E9D38F18EF54290248EAB7D2D1D030DA1584679C26B7007A4EF8B1ED",
+    "result": "Failed(Child)",
+    "total": 64,
+    "passed": 63,
+    "failed": 1,
+    "skipped": 0,
+    "failures": [
+      {
+        "name": "Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests.LegacyRunnerDestruction_DoesNotRetireInjectedPendingWait",
+        "message": "System.InvalidOperationException : OnityTask is not completed.",
+        "stack": "  at Onity.Unity.Async.OnityTaskSourceBase.GetResultCore (System.Int32 token, Onity.Unity.Async.IOnityPreservedTaskContinuation continuation) [0x00092] in .\\Packages\\com.onity.framework\\Runtime\\Unity\\Scripts\\Async\\OnityAsync.cs:2485 \n  at Onity.Unity.Async.OnityTaskSourceBase.GetResult (System.Int32 token) [0x00001] in .\\Packages\\com.onity.framework\\Runtime\\Unity\\Scripts\\Async\\OnityAsync.cs:2444 \n  at Onity.Unity.Async.OnityTaskAwaiter.GetResultSlow (System.Object state, System.Int32 token) [0x00011] in .\\Packages\\com.onity.framework\\Runtime\\Unity\\Scripts\\Async\\OnityAsync.cs:2010 \n  at Onity.Unity.Async.OnityTaskAwaiter.GetResult () [0x00013] in .\\Packages\\com.onity.framework\\Runtime\\Unity\\Scripts\\Async\\OnityAsync.cs:2002 \n  at Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests+<LegacyRunnerDestruction_DoesNotRetireInjectedPendingWait>d__8.MoveNext () [0x001bc] in .\\Packages\\com.onity.framework\\Tests\\PlayMode\\OnityTaskPlayerLoopPlayModeTests.cs:459 \n  at UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0004e] in .\\Library\\PackageCache\\com.unity.test-framework@1.4.6\\UnityEngine.TestRunner\\NUnitExtensions\\Attributes\\TestEnumerator.cs:44 "
+      }
+    ]
+  },
+  {
+    "file": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-playmode-normal-verified.xml",
+    "sha256": "BD7510E63BD8014DFB0C39CCC04DF28A02D920F6EFDDE57E9DC9437BD664919B",
+    "result": "Passed",
+    "total": 64,
+    "passed": 64,
+    "failed": 0,
+    "skipped": 0,
+    "failures": []
+  },
+  {
+    "file": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-playmode-release-verified.xml",
+    "sha256": "32F215780797CB0C4342AFA65B38F329E17C91BEED7DF4AE39779C487E344B94",
+    "result": "Passed",
+    "total": 64,
+    "passed": 64,
+    "failed": 0,
+    "skipped": 0,
+    "failures": []
+  }
+]

@@ -1,0 +1,32 @@
+{
+  "startedAtUtc": "2026-09-27T04:39:16.2526701Z",
+  "endedAtUtc": "2026-09-27T04:39:26.4830324Z",
+  "ownedPlayerPid": 125648,
+  "ownedPlayerExitCode": 0,
+  "backgroundBefore": [
+    {
+      "Id": 45732,
+      "ProcessName": "Unity",
+      "CPU": 55245.328125
+    },
+    {
+      "Id": 88984,
+      "ProcessName": "unity",
+      "CPU": 0.84375
+    }
+  ],
+  "backgroundAfter": [
+    {
+      "Id": 45732,
+      "ProcessName": "Unity",
+      "CPU": 55245.5625
+    },
+    {
+      "Id": 88984,
+      "ProcessName": "unity",
+      "CPU": 0.84375
+    }
+  ],
+  "ownedBuildOrTestConcurrent": false,
+  "purpose": "Post-fix legacy comparison; only plain NextFrame scheduling/GetResult slices; Tick/full-cycle excluded."
+}

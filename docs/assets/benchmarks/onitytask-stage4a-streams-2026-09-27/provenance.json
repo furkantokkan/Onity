@@ -1,0 +1,166 @@
+{
+  "generatedAtUtc": "2026-09-27T06:43:59.9269140Z",
+  "sourceRoot": "C:/Users/e-fur/.codex/worktrees/onity-fast-capture-f682b7c/Onity",
+  "verificationHost": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity",
+  "sourceHead": "3f098937e9198a17edcf72cd75e73bd5bc76e2fd",
+  "unityVersion": "2022.3.62f2",
+  "cliVersion": "1.0.0-beta.11",
+  "sourceManifestFileCount": 540,
+  "editorRuntimeAndFixtureFileCount": 497,
+  "allSourceHashesMatchedAfterExecution": true,
+  "settings": [
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "sha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "sha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/EditorSettings.asset",
+      "sha256": "962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34",
+      "restored": true
+    }
+  ],
+  "temporarySceneRemoved": true,
+  "players": [
+    {
+      "backend": "mono",
+      "cliExit": 0,
+      "buildGuid": "36431f424b5a4f5ab384d37463f506e8",
+      "finiteReportSha256": "4296058289B5F356E17955EA5C3ED08CD7BFA2C58AABEBF05EDF3875F413390A",
+      "smokeReportSha256": "11BFC0704A38474BAE0678C1E1619DC6B7013C56483075948443DEA0C5C000E0",
+      "smokeCases": 29,
+      "environment": {
+        "buildGuid": "36431f424b5a4f5ab384d37463f506e8",
+        "isDevelopment": false,
+        "scriptingBackend": "Mono",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-27T06:39:16.9075531Z",
+          "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+          "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Disabled",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.14",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      },
+      "counterKind": "HeapDelta",
+      "buildLog": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-stage4a-mono-build-verified.log",
+      "buildLogSha256": "15043A02313388DCE86ACDCC66BB616566E4A41B950796C54259B1224492353C"
+    },
+    {
+      "backend": "il2cpp",
+      "cliExit": 0,
+      "buildGuid": "969bcd6a1e9c4c15901b524b813fae72",
+      "finiteReportSha256": "14CACC1BBAA4C384A1A11758474BB95C62C9E9DF76C9056755F5EC9FCB8520E4",
+      "smokeReportSha256": "5F3271556D7B987B6D183353112621FF92BD6C88CCA9CA88AFE1248B3E2879D1",
+      "smokeCases": 29,
+      "environment": {
+        "buildGuid": "969bcd6a1e9c4c15901b524b813fae72",
+        "isDevelopment": false,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-27T06:42:18.4303418Z",
+          "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+          "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.14",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      },
+      "counterKind": "HeapDelta",
+      "buildLog": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/BenchmarkResults/plan13-stage4a-il2cpp-build-verified.log",
+      "buildLogSha256": "A79A009D309B6D43DA8B4F15F1D6005969F83FDCE3D27F7C5F16B6E4FA1733EA"
+    }
+  ],
+  "editorFreshness": "Full Release EditMode preceded only the legacy PlayMode deadline and final Player-harness corrections; runtime and all EditMode fixtures were unchanged. Full normal EditMode and final PlayMode runs use the final fixture. The first builder-only run has XML evidence but its CLI exit was not retained.",
+  "retainedInitialFailure": {
+    "run": "plan13-stage4a-playmode-release-verified",
+    "passed": 85,
+    "failed": 1,
+    "case": "RealAsyncOperation_RetiresObservationOnly_AndProgressRetirementDefersActivePublication",
+    "caseDurationSeconds": 0.148062,
+    "initialFixtureSha256": "41F0238E1D8B49C8F58F71A1006EB8449F7CDA18BBAEC21DA83A0A83D8D9E410",
+    "finalFixtureSha256": "D5554BD60AA07BC12410EC53214A47B68768874B1B67D012DA7EB491D5502685",
+    "change": "Replace 240-frame polling budget with a five-second monotonic deadline, preserving predicates and assertions."
+  },
+  "harnessCorrection": {
+    "initialRunnerSha256": "34AB9B93F9D0442180E09C03C3D2EF74E9C5132E4E95DC72C79CEF622CCECE2C",
+    "finalRunnerSha256": "07FF64197F8A6981E659110A2A0FEA6FB102A8DA4A0E3FF98614D5F80EBF83FA",
+    "initialBuildRunnerSha256": "54DC2A9ED7411EB0FFE6C6239CF73AA58FF41DEF3D29BA0FFE8325A089F21195",
+    "finalBuildRunnerSha256": "F70760A0A6736E5DA92BCADDF154B27F0A581F2C6AB5C7696478EF6CD85C07D3",
+    "measurementsExecutedBeforeCorrection": false,
+    "change": "Prime each lazy pipeline outside Begin and strictly validate priming metadata."
+  },
+  "measurementStats": [
+    {
+      "backend": "mono",
+      "scenario": "Range",
+      "samples": 16,
+      "meanMs": 1.8450187500000002,
+      "minMs": 1.6611,
+      "maxMs": 2.2667,
+      "allRawBytesZero": true,
+      "zeroAllocationProven": false,
+      "emptyBytes": 0,
+      "positiveBytes": 69632
+    },
+    {
+      "backend": "mono",
+      "scenario": "Select/Where/Take",
+      "samples": 16,
+      "meanMs": 14.4206125,
+      "minMs": 13.1983,
+      "maxMs": 17.3317,
+      "allRawBytesZero": true,
+      "zeroAllocationProven": false,
+      "emptyBytes": 0,
+      "positiveBytes": 69632
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Range",
+      "samples": 16,
+      "meanMs": 2.5094624999999997,
+      "minMs": 2.435,
+      "maxMs": 2.8278,
+      "allRawBytesZero": true,
+      "zeroAllocationProven": false,
+      "emptyBytes": 0,
+      "positiveBytes": 69632
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Select/Where/Take",
+      "samples": 16,
+      "meanMs": 19.790975000000003,
+      "minMs": 18.3725,
+      "maxMs": 23.4798,
+      "allRawBytesZero": true,
+      "zeroAllocationProven": false,
+      "emptyBytes": 0,
+      "positiveBytes": 69632
+    }
+  ]
+}

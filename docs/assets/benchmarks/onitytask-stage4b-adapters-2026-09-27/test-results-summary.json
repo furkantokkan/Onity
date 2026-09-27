@@ -1,0 +1,133 @@
+[
+  {
+    "stem": "plan13-stage4b-existing-editmode-release",
+    "result": "Passed",
+    "total": 79,
+    "passed": 79,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 0.2912923,
+    "cliExitCode": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-existing-editmode-release.xml",
+    "xmlSha256": "5F7617F2036F7A1F71DD7DD30910AA17B9684B4002D006B275E01EE1327929F4",
+    "logPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-existing-editmode-release.log",
+    "logSha256": "BCBB9A97D56980D429E7CB8DA0AD4C8A96D98185CD35B2CE0E7CCF567E530978",
+    "failures": []
+  },
+  {
+    "stem": "plan13-stage4b-new-editmode-release",
+    "result": "Failed(Child)",
+    "total": 28,
+    "passed": 26,
+    "failed": 2,
+    "skipped": 0,
+    "durationSeconds": 1.0831408,
+    "cliExitCode": 1,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-new-editmode-release.xml",
+    "xmlSha256": "6A14918C6263D22C82A84FAED4B70CA5D3E9EA7708CFCFB2098832BC2EB7D00A",
+    "logPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-new-editmode-release.log",
+    "logSha256": "5EEF9041F421A1AB366EFC7AAB640F56FD5CC2E5FD0B34611FDFA9C19B6DE148",
+    "failures": [
+      {
+        "name": "Onity.Tests.EditMode.OnityAsyncEnumerableAdapterEditModeTests.ActualReloadDisabledEveryUpdateSessions_RegisterInAwake_AndRetirePendingMove",
+        "message": "  Expected: null\n  But was:  \"System.InvalidOperationException: Onity timing waits require an active Play/player session.\n  at Onity.Unity.Async.OnityTaskPlayerLoop.ValidateContext () [0x00043] in .\\Packages\\com.onity.framework\\Runtime\\Unity\\Scripts\\Async\\OnityTaskPlayerLoop.cs:182 \n  at Onity.Unity.Async.OnityTaskPlayerLoop.Initialize () [0x00000] in .\\Packages\\com.onity.framework\\Runtime\\Unity\\Scripts\\Async\\OnityTaskPlayerLoop.cs:99 \n  at Onity.Tests.PlayMode.OnityAsyncEnumerableAdapterSessionProbe.RepairAfterFailure () [0x0000f] in .\\Packages\\com.onity.framework\\Tests\\PlayMode\\OnityAsyncEnumerableAdapterSessionProbe.cs:109 \n  at Onity.Tests.PlayMode.OnityAsyncEnumerableAdapterSessionProbe.OnDestroy () [0x00000] in .\\Packages\\com.onity.framework\\Tests\\PlayMode\\OnityAsyncEnumerableAdapterSessionProbe.cs:118 \"\n",
+        "stack": "at Onity.Tests.EditMode.OnityAsyncEnumerableAdapterEditModeTests+<ActualReloadDisabledEveryUpdateSessions_RegisterInAwake_AndRetirePendingMove>d__17.MoveNext () [0x00252] in .\\Packages\\com.onity.framework\\Tests\\EditMode\\Scripts\\OnityAsyncEnumerableAdapterEditModeTests.cs:699\nat UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0003a] in .\\Library\\PackageCache\\com.unity.test-framework@1.4.6\\UnityEngine.TestRunner\\NUnitExtensions\\Attributes\\TestEnumerator.cs:44\n"
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityAsyncEnumerableAdapterEditModeTests.ReusableValueTask_StatusIsReadBeforeGetResult_AndVersionsAreConsumedExactlyOnce(True)",
+        "message": "  Expected: same as <System.OperationCanceledException: real faulted OCE\n  at Onity.Tests.EditMode.OnityAsyncEnumerableAdapterEditModeTests+ValueSource.GetResult (System.Int16 token) [0x00060] in .\\Packages\\com.onity.framework\\Tests\\EditMode\\Scripts\\OnityAsyncEnumerableAdapterEditModeTests.cs:944 \n  at Onity.Unity.Async.OnityBclStreamMove.ReadCore () [0x0000c] in .\\Packages\\com.onity.framework\\Runtime\\Unity\\Scripts\\Async\\OnityAsyncEnumerableAdapters.cs:215 >\n  But was:  <System.OperationCanceledException: The operation was canceled.\n  at Onity.Unity.Async.OnityTaskCompletionSource`1[T].GetResult (System.Int32 token) [0x00044] in .\\Packages\\com.onity.framework\\Runtime\\Unity\\Scripts\\Async\\OnityTaskCompletionSource.cs:312 \n  at Onity.Unity.Async.OnityTaskCompletionSource`1[T].Onity.Unity.Async.IOnityTaskSource<T>.GetResult (System.Int32 token) [0x00000] in .\\Packages\\com.onity.framework\\Runtime\\Unity\\Scripts\\Async\\OnityTaskCompletionSource.cs:259 \n  at Onity.Unity.Async.OnityTaskAwaiter`1[T].GetResultSlow (System.Object state, System.Int32 token) [0x0000a] in .\\Packages\\com.onity.framework\\Runtime\\Unity\\Scripts\\Async\\OnityAsync.cs:2131 \n  at Onity.Tests.EditMode.OnityAsyncEnumerableAdapterEditModeTests.Read[T] (Onity.Unity.Async.OnityTask`1[T] task) [0x00011] in .\\Packages\\com.onity.framework\\Tests\\EditMode\\Scripts\\OnityAsyncEnumerableAdapterEditModeTests.cs:788 \n  at Onity.Tests.EditMode.OnityAsyncEnumerableAdapterEditModeTests+<>c__DisplayClass5_0.<ReusableValueTask_StatusIsReadBeforeGetResult_AndVersionsAreConsumedExactlyOnce>b__1 () [0x00000] in .\\Packages\\com.onity.framework\\Tests\\EditMode\\Scripts\\OnityAsyncEnumerableAdapterEditModeTests.cs:157 \n  at Onity.Tests.EditMode.OnityAsyncEnumerableAdapterEditModeTests.Catch (System.Action action) [0x00000] in .\\Packages\\com.onity.framework\\Tests\\EditMode\\Scripts\\OnityAsyncEnumerableAdapterEditModeTests.cs:817 >\n",
+        "stack": "at Onity.Tests.EditMode.OnityAsyncEnumerableAdapterEditModeTests.ReusableValueTask_StatusIsReadBeforeGetResult_AndVersionsAreConsumedExactlyOnce (System.Boolean canceled) [0x000bb] in .\\Packages\\com.onity.framework\\Tests\\EditMode\\Scripts\\OnityAsyncEnumerableAdapterEditModeTests.cs:157\n"
+      }
+    ]
+  },
+  {
+    "stem": "plan13-stage4b-new-editmode-release-corrected",
+    "result": "Passed",
+    "total": 28,
+    "passed": 28,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 1.6089544,
+    "cliExitCode": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-new-editmode-release-corrected.xml",
+    "xmlSha256": "5503C166D04FFBB0CF41E2ACAC98149B82910CA8C8D3197CB653B83868FBE2B3",
+    "logPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-new-editmode-release-corrected.log",
+    "logSha256": "A6280D51B6E35A89CCB7E003DBB75886700113F51247A4199A2DB83432E789E8",
+    "failures": []
+  },
+  {
+    "stem": "plan13-stage4b-new-playmode-release",
+    "result": "Passed",
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 0.0839318,
+    "cliExitCode": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-new-playmode-release.xml",
+    "xmlSha256": "FA68F182C1EC92748DDF86D21AC96A9699292FE9DEAC4B6E0888785B8A2DA2C3",
+    "logPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-new-playmode-release.log",
+    "logSha256": "E9E5AB71751735C8DF4F0CA53B3465D0B9FF331E036CB7780CFC68462C83772A",
+    "failures": []
+  },
+  {
+    "stem": "plan13-stage4b-editmode-release-final",
+    "result": "Passed",
+    "total": 879,
+    "passed": 879,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 29.2625338,
+    "cliExitCode": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-editmode-release-final.xml",
+    "xmlSha256": "1DAEEBCAA5119EB6FA0414885E343C49ADC2D4D441C8FDE705E35057CEC47CB7",
+    "logPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-editmode-release-final.log",
+    "logSha256": "8020CEBF55B038380C229532AC3D47D806D24673B8F025C83B42176EA35F4B43",
+    "failures": []
+  },
+  {
+    "stem": "plan13-stage4b-playmode-release-final",
+    "result": "Passed",
+    "total": 90,
+    "passed": 90,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 0.8940505,
+    "cliExitCode": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-playmode-release-final.xml",
+    "xmlSha256": "AC79CECCD17AEEF6B7983F7EA5134B9435A1F05C95EA7B40F10057859E5C823F",
+    "logPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-playmode-release-final.log",
+    "logSha256": "D18712243D05EDA11C18CED541FB673684AE224690DF1EF91472E7161630B64A",
+    "failures": []
+  },
+  {
+    "stem": "plan13-stage4b-editmode-normal-final",
+    "result": "Passed",
+    "total": 879,
+    "passed": 879,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 34.3034106,
+    "cliExitCode": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-editmode-normal-final.xml",
+    "xmlSha256": "0DB111807F7E730B8186304220C958430184EBD1D016B547E3C485DD2D712B60",
+    "logPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-editmode-normal-final.log",
+    "logSha256": "138378366C156714E3132E589E1C460106CFEBFF3AA0264C74A739DA427FDCDA",
+    "failures": []
+  },
+  {
+    "stem": "plan13-stage4b-playmode-normal-final",
+    "result": "Passed",
+    "total": 90,
+    "passed": 90,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 1.0073968,
+    "cliExitCode": 0,
+    "xmlPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-playmode-normal-final.xml",
+    "xmlSha256": "BA6E73E9B7BCCFD1C4606D955B7118709B23D55826EB67388FD2006E3F04FBAD",
+    "logPath": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage4b-playmode-normal-final.log",
+    "logSha256": "8CB6A3272EFB37E07D10A77CCB60512A95C28D8BCFE007AFDB51797711055E84",
+    "failures": []
+  }
+]

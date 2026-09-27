@@ -1,0 +1,41 @@
+{
+  "BaseCommit": "3f098937e9198a17edcf72cd75e73bd5bc76e2fd",
+  "Candidate": "Uncommitted Stage1 additions; package version remains 0.3.14",
+  "Unity": "2022.3.62f2",
+  "SourceRoot": "C:/Users/e-fur/.codex/worktrees/onity-fast-capture-f682b7c/Onity",
+  "VerificationRoot": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity",
+  "SourceHostMatched": [
+    {
+      "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs",
+      "Sha256": "B9DBD93E84BC0C53AABF7B1006B21CB506943AAA0350F64863E44D31FC616D68"
+    },
+    {
+      "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskThreadPoolSwitch.cs",
+      "Sha256": "63F7D3357347D8C6ABBF279A794CE34329AE3296BBF045C71488FB36000BCE61"
+    },
+    {
+      "Path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskThreadPoolEditModeTests.cs",
+      "Sha256": "563671C3970AC48F0264A163C3CE8A2F03046D213060A6E679FB4547AC3B2C65"
+    },
+    {
+      "Path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskThreadPoolPlayModeTests.cs",
+      "Sha256": "E6C948E5AEC19862FED112676EF14270435F4DAB1AB803537D600DA27FF11708"
+    },
+    {
+      "Path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskPlayerSmokeRunner.cs",
+      "Sha256": "F2B2DF6111CCA71322EA9C106D64C2AD318C617469D0AE52BC87C307D6EA9D2F"
+    },
+    {
+      "Path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityThreadSwitchBenchmarkRunner.cs",
+      "Sha256": "26A7E1ABB526B7948A9A28C5406DDDE1979B995A60394056392359A03034543F"
+    },
+    {
+      "Path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkPlayerRunner.cs",
+      "Sha256": "2B7FD8BAAC4040C6680EBF6B86E50FEE4852575FD6D0CD7C71A508FD2868B63A"
+    },
+    {
+      "Path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkPlayerBuildRunner.cs",
+      "Sha256": "8F27525629E434542B1431B0289AA432A1F549AD795E305EA1CB97ED23713F80"
+    }
+  ]
+}

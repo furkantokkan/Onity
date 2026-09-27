@@ -720,6 +720,51 @@ runner and a frame source, and it is not a zero-allocation result. The
 scheduling gap that remains sits in the pooled runner and source path
 itself, not in the context flow.
 
+## Thread-pool additions - 2026-09-27
+
+Onity 0.4.0 adds `SwitchToThreadPool` and
+`RunOnThreadPool(Action/Func<T>)`, with optional main-thread return. All four
+Editor suites passed (682 EditMode + 46 PlayMode per optimization); Mono and
+IL2CPP Release Players each passed 16 smoke cases. Two processes per backend
+measured submission and worker cohort completion separately.
+
+Matched flow-off submission ratios (Onity/UniTask) were 1.16–1.23 for Mono
+Action/Func workloads and 0.98–1.14 for IL2CPP. IL2CPP cohort completion favored
+Onity in these runs, while Mono generally favored UniTask. This is not an
+overall async speed result. Allocation values are unavailable because the
+per-thread counters failed calibration; process-wide counters cannot isolate
+concurrent worker allocation. Flow-on remains the default and is a different
+context contract from UniTask. See the [full report and raw samples](../assets/benchmarks/onitytask-stage1-threadpool-2026-09-27.md).
+
+## Jobs and Burst additions - 2026-09-27
+
+The 0.4.0 `JobHandle.AsOnityTask()` adapter completes accepted jobs before
+publishing results and preserves caller ownership of native containers. Normal
+and Release suites each passed 690 EditMode and 50 PlayMode cases; both Release
+Players passed 16 smoke cases and two independent jobs runs.
+
+At 65,536 elements, the same kernel ran 14.08–14.46 times faster with Jobs/Burst
+than serial C#, and 1.21–1.35 times faster than plain parallel Jobs. This is
+compute evidence. The separate adapter registration measurements favored
+UniTask; completion wall time was similar at different Update positions.
+Allocation was unavailable and an IL2CPP timing outlier is retained. See the
+[full report and raw samples](../assets/benchmarks/onitytask-stage2-jobs-2026-09-27.md).
+
+## Array `WhenAny` in 0.4.0
+
+Onity 0.4.0 passes 744 EditMode and 52 PlayMode cases in both
+optimization modes, plus 18 smoke cases on each Release Player backend.
+Two runs per backend compare typed/untyped arrays at 2, 16 and 32 inputs.
+Measured Onity/UniTask mean time is 1.008–1.664x on Mono and 1.416–2.142x on
+IL2CPP. The near-parity Mono case is not evidence of a material difference.
+
+At 2/16 inputs Onity reported no measurable heap growth; at 32 its unpooled
+path measured about 6.4 kB/group on Mono and 7.5 kB/group on IL2CPP, exceeding
+UniTask. Coarse process-wide HeapDelta zeros do not prove zero allocation.
+Another Editor used CPU during these measurements. The slice includes producer
+completion and loser observation; it does not isolate scheduler CPU. See the
+[method, limits and raw evidence](../assets/benchmarks/onitytask-stage3b-whenany-2026-09-27.md).
+
 ## Feature coverage
 
 | Capability | OnityTask status |
@@ -727,17 +772,25 @@ itself, not in the context flow.
 | Frame, fixed-frame, and late-frame waits; scaled and unscaled delays; predicate waits | Available with cancellation and single-consumer pooled sources. |
 | Scene, `AsyncOperation`, and web-request bridges | Available. Deferred scene loads require the caller to activate a started operation, even after cancellation. |
 | `async OnityTask` and `async OnityTask<T>` | Synchronous success stores the result inline; synchronous faults and cancellations are Task-backed. A suspended method uses a pooled native runner holding the state machine by value and a cached continuation delegate; its task is single-consumer. Execution context flows by default through the internal capture/run pair, with a public fallback. Disabling `OnityTask.FlowExecutionContext` changes ambient-context semantics. Both Mono and IL2CPP passed the 13-case Player smoke suite at `528d52c` with the internal pair active. See the latest Player table above for measured scheduling costs and allocation limits. |
-| `WhenAll` | Available, including typed ordered results. Already successful two-input untyped and eligible typed calls avoid Task bridges. Pending two-input untyped calls whose inputs are completion sources without a bridge or unclaimed single-consumer native sources, including suspended async methods, use a pooled coordinator and a Task-backed output. Pending calls with Task-backed, preserved, bridged, or already awaited inputs, duplicate single-consumer native inputs, and larger native typed sets use the Task bridge path. |
-| Native `WhenAny` | Available for two untyped inputs (winner index) and two inputs of the same result type (winner index and value). Both inputs are consumed; the loser is observed without cancellation. Duplicate single-consumer native inputs are rejected. The typed result source is nonpooled and allocates; the untyped source and two delegates allocate per call. Typed Editor/Mono results are reported above. |
+| `WhenAll` | Available, including typed ordered results. Already successful two-input untyped and eligible typed calls avoid Task bridges. Pending two-input untyped calls whose inputs are completion sources without a bridge or unclaimed single-consumer native sources use a pooled coordinator and Task-backed output. Onity 0.4.0 also removes input bridges for 1–16 unique exact built-in typed completion sources without preexisting bridges, mixed with inline/default values. Other pending typed inputs retain the prior fallback. [Construction measurements](../assets/benchmarks/onitytask-stage3a-whenall-2026-09-27.md) show lower heap growth and an IL2CPP construction regression; they do not establish end-to-end speed. |
+| Native `WhenAny` | Pair overloads return winner index or same-type index/value and retain their previous allocation behavior. Onity 0.4.0 adds nonempty arbitrary arrays, snapshots before registration, rejects duplicate single-consumer identities before claiming inputs, and observes every loser without canceling it. Array outputs are native single-consumer tasks with bounded pooling for up to 16 inputs; larger/error paths allocate. Pending callbacks race by observation. Completion-source subclasses and later bridges retain fault observation. Array performance is measured separately from the historical pair results above. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
+| External cancellation and suppression | Onity 0.4.0 adds typed/untyped `AttachExternalCancellation` and `SuppressCancellationThrow`. Pending producers remain observed, winning tokens are preserved and faulted OCE remains faulted. Pending native wrappers allocate and are unpooled; speed/allocation quantities are unmeasured. Both optimization modes pass 777 EditMode/54 PlayMode cases and each Release Player passes 20 smoke cases. [Verification and limits](../assets/benchmarks/onitytask-stage3c-cancellation-2026-09-27.md). |
 | Native task sharing | `Preserve()` retains typed or untyped pooled completion for multiple pending and late consumers. Pending typed conversion measured 120 B/task in Editor/Mono at `c2f9358`; see the follow-up above. |
-| Main-thread switch | `OnityTask.SwitchToMainThread` completes synchronously on the main thread and queues worker-thread continuations for the Update phase. Cancellation is observed at `GetResult` on the destination thread; Edit Mode dispatch and Play Mode session isolation are defined in the [contract](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/10-OnityTask-MainThreadSwitch.md). Thread-pool switching and timing selection are not available. In the Editor/Mono comparison above the synchronous switch is within noise of UniTask, large worker enqueues and, after the array-backed drain, callback dispatch favored Onity in both runs, and the 128-continuation enqueue and round trip have no winner. Allocations are unmeasured. |
-| Selectable PlayerLoop phases and immediate cancellation | Limited to the supported runner phases and next-tick cancellation. |
-| `await foreach` async enumerable | Not yet available. |
+| Timeouts | Onity 0.4.0 adds typed/untyped `Timeout` and `TimeoutWithoutException`, with validated seconds, completed-input precedence, scaled/unscaled private timers and late producer observation. Producer faults and cancellation remain distinct from timeout. Both optimizations pass 812 EditMode/82 PlayMode tests, plus 26 smoke cases per Release Player. Wrappers/timer entries allocate; allocation quantities and speed are unmeasured. [Verification and limits](../assets/benchmarks/onitytask-stage3e-timeout-2026-09-27.md). |
+| Main-thread switch | `OnityTask.SwitchToMainThread` completes synchronously on the main thread and queues worker-thread continuations for the Update phase. Cancellation is observed at `GetResult` on the destination thread; Edit Mode dispatch and Play Mode session isolation are defined in the [contract](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/10-OnityTask-MainThreadSwitch.md). Timing selection remains limited. In the Editor/Mono comparison above the synchronous switch is within noise of UniTask, large worker enqueues and, after the array-backed drain, callback dispatch favored Onity in both runs, and the 128-continuation enqueue and round trip have no winner. Allocations are unmeasured. |
+| Thread-pool switch and background work | Available in Onity 0.4.0, verified on Windows Mono/IL2CPP. Switch always queues; synchronous Action/Func overloads support cancellation and optional session-aware main-thread return. WebGL Players reject explicitly. Async-delegate/state-argument overloads remain follow-up work. |
+| Jobs/Burst bridge | `JobHandle.AsOnityTask()` accepts handles on the main thread, completes them before publication, and settles accepted work during teardown. No cancellation overload or container ownership transfer. Verified on Mono/IL2CPP with actual Burst compute; this does not compile the managed async scheduler with Burst. |
+| Selectable PlayerLoop phases and immediate cancellation | Onity 0.4.0 adds Update/FixedUpdate/LateUpdate after script callbacks, with Yield occurrence and strict rendered-frame NextFrame/DelayFrames semantics. Main-thread cancellation drains during Update even when fixed time is paused; immediate cancellation remains unsupported. Current-loop repair, ECS coexistence and session teardown pass 780 EditMode/64 PlayMode cases in both optimizations, plus 22 smoke cases per Release Player. Repeated warmed no-token Update Yield brackets show no measured heap growth under calibrated HeapDelta, not exact zero GC or general speed superiority. [Verification and limits](../assets/benchmarks/onitytask-stage3d-playerloop-2026-09-27.md). |
+| `await foreach` async enumerable | Onity 0.4.0 adds native covariant interfaces, Empty/Return/Range, synchronous Select/Where/Take, WithCancellation and First/ToArray consumers. The finite-stream checkpoint passed 851 EditMode/86 PlayMode cases in both optimizations and 29 smoke cases per Release Player. Primed finite iteration read zero calibrated HeapDelta in 16 windows per scenario/backend, without proving exact zero allocation or speed superiority. [Verification and limits](../assets/benchmarks/onitytask-stage4a-streams-2026-09-27.md). |
+| Sequential awaitable operators | Onity 0.4.0 adds cancellation-aware SelectAwait, WhereAwait and ForEachAsync with exact observation and shared cleanup. Full suites pass 947 EditMode/94 PlayMode in both optimizations; both Release Players pass 35 smoke cases. Pending state allocates; allocation quantity and comparative speed are unmeasured. [Verification and limits](../assets/benchmarks/onitytask-stage4c-await-operators-2026-09-27.md). |
+| Update streams and BCL adapters | Onity 0.4.0 adds on-demand EveryUpdate and both native/BCL async-enumerable adapters, including compiler-generated async iterators and reusable ValueTask sources. Both optimizations pass 879 EditMode/90 PlayMode cases and each Release Player passes 31 smoke cases. Pending adapters allocate; speed and allocation quantities are unmeasured. [Verification and limits](../assets/benchmarks/onitytask-stage4b-adapters-2026-09-27.md). |
+| Channels | Onity 0.4.0 adds bounded/unbounded FIFO channels with multiple producers, a single consumer lease, waiting writes, cancellation and ReadAll cleanup. Full suites pass 913 EditMode/92 PlayMode in both optimizations, with a strengthened 34-case fixture also passing both; each Release Player passes 33 smoke cases. Warmed buffered Try operations show zero HeapDelta in 16 windows per capacity/backend. Exact zero allocation, pending-operation cost and comparative speed are unproven. [Verification and limits](../assets/benchmarks/onitytask-stage4c-channels-2026-09-27.md). |
+| Real rendering end of frame | Onity 0.4.0 uses one shared Unity coroutine, with Update cancellation during stalls and isolated host/session retirement. Both optimizations pass 814 EditMode/84 PlayMode tests; Mono and IL2CPP each pass six graphics groups with pixel/frame proof and 27 paired headless cases. Actual Scene-view interaction, allocation quantities and speed are unmeasured. [Verification and limits](../assets/benchmarks/onitytask-stage3f-endofframe-2026-09-27.md). |
 
 OnityTask is useful for common Unity flows today, but it is **not a full
 UniTask replacement**. Player startup and the scoped semantic suite are now
-verified on both backends, with full-cycle IL2CPP attribution completed. The next
-bounded investigation is native source synchronization while preserving bridge
-and shared-task semantics; source-based composition and broader API coverage
-remain separate work.
+verified on both backends, with full-cycle IL2CPP attribution completed. The
+current staged work adds native composition, cancellation helpers, explicit
+timing and async streams while preserving bridge and shared-task semantics.
+Each capability remains a gap until its implementation and tests are complete.

@@ -1,0 +1,17 @@
+{
+  "StartedUtc": "2026-09-27T00:47:31.657282Z",
+  "FinishedUtc": "2026-09-27T00:47:32.9431151Z",
+  "Backend": "Mono",
+  "Run": 2,
+  "ExitCode": 0,
+  "BackgroundBefore": {
+    "Id": 45732,
+    "CPU": 44733.4375,
+    "WorkingSet64": 4201840640
+  },
+  "BackgroundAfter": {
+    "Id": 45732,
+    "CPU": 44736.046875,
+    "WorkingSet64": 4201918464
+  }
+}

@@ -60,7 +60,10 @@ using Onity.Unity.Async;
 | `UniTask.FromResult(value)` | `OnityTask.FromResult(value)` |
 | `await UniTask.NextFrame(ct)` | `await OnityTask.NextFrame(ct)` |
 | `await UniTask.DelayFrame(count, cancellationToken: ct)` | `await OnityTask.DelayFrames(count, ct)` |
+| `await UniTask.Yield(timing, ct)` | 0.4.0: `await OnityTask.Yield(onityTiming, ct)`; Update, FixedUpdate or LateUpdate after script callbacks |
+| Explicit-phase next-frame waits | 0.4.0: `OnityTask.NextFrame(onityTiming, ct)` / `DelayFrames(count, onityTiming, ct)`; rendered-frame distance |
 | `await UniTask.WaitForFixedUpdate(ct)` | `await OnityTask.NextFixedFrame(ct)` |
+| Real rendering end-of-frame wait | 0.4.0: `await OnityTask.WaitForEndOfFrame(ct)`; shared coroutine, main-thread Play/player calls, Editor batch/null graphics rejected |
 | `await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: ct)` | `await OnityTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: ct)` |
 | `await UniTask.WaitUntil(predicate, cancellationToken: ct)` | `await OnityTask.WaitUntil(predicate, ct)` |
 | `await SceneManager.LoadSceneAsync("Game").ToUniTask(...)` | `await OnityTask.LoadScene("Game", onProgress, ct)` |
@@ -68,11 +71,21 @@ using Onity.Unity.Async;
 | `await request.SendWebRequest().ToUniTask(...)` | `await OnityTask.Send(request, onProgress, ct)` |
 | `task.Forget()` | `task.Forget()` |
 | `await UniTask.SwitchToMainThread(ct)` | `await OnityTask.SwitchToMainThread(ct)` |
+| `await UniTask.SwitchToThreadPool()` | 0.4.0: `await OnityTask.SwitchToThreadPool(ct)`; WebGL Players reject explicitly |
 | `T[] values = await UniTask.WhenAll(typedTasks)` | `T[] values = await OnityTask.WhenAll(typedTasks)` |
 | `await UniTask.WhenAll(first, second)` for two untyped inputs | `await OnityTask.WhenAll(first, second)` |
 | `int winner = await UniTask.WhenAny(first, second)` for two untyped inputs | `int winner = await OnityTask.WhenAny(first, second)` |
 | First completed input from two `UniTask<T>` values | `(int winnerIndex, T result) = await OnityTask.WhenAny(first, second)` for two `OnityTask<T>` values |
+| `await UniTask.WhenAny(taskArray)` | 0.4.0: `await OnityTask.WhenAny(onityTaskArray)`; untyped index or same-type index/value |
+| `task.AttachExternalCancellation(ct)` | 0.4.0: same extension on `OnityTask` / `OnityTask<T>`; stops waiting and still observes the producer |
+| `task.SuppressCancellationThrow()` | 0.4.0: bool / `(bool isCanceled, T result)`; actual canceled status becomes a result, faults remain faults |
+| `task.Timeout(...)` | 0.4.0: `task.Timeout(seconds, useUnscaledTime: true)`; finite nonnegative float seconds; the producer continues and is observed |
+| `task.TimeoutWithoutException(...)` | 0.4.0: bool / `(bool isTimeout, T result)`; only the wrapper's own timeout becomes a flag, producer faults/cancellation propagate |
 | `await observable.FirstAsync(ct)` | `await observable.FirstOnityTask(ct)` |
+| Finite async streams and synchronous operators | 0.4.0: `OnityAsyncEnumerable.Empty/Return/Range`, `Select/Where/Take/WithCancellation`, native `await foreach`, `FirstAsync` and `ToArrayAsync`; [ownership and limits](../guide/onitytask.md#finite-async-streams) |
+| Update streams and BCL async iterators | 0.4.0: pull-based `OnityAsyncEnumerable.EveryUpdate()`, BCL `AsOnityAsyncEnumerable()` and native `AsAsyncEnumerable()`; [cancellation, cleanup and allocation limits](../guide/onitytask.md#update-streams-and-bcl-async-iterators) |
+| Channels | 0.4.0: `OnityChannel.CreateBounded<T>(capacity)` / `CreateUnbounded<T>()`, Reader/Writer handles, FIFO backpressure and `ReadAllAsync`; one consumer lease, multiple producers, no drop modes or separate Completion task. [Ownership and limits](../guide/onitytask.md#channels) |
+| Sequential async stream operators | 0.4.0: `SelectAwait`, `WhereAwait` and `ForEachAsync` with `(value, CancellationToken) => OnityTask` delegates; one item at a time, owned delegate cancellation and shared cleanup. [Semantics and example](../guide/onitytask.md#sequential-awaitable-operators) |
 | `await asyncPublisher.PublishAsync(message, ct).AsTask()` | `await asyncPublisher.PublishOnityTask(message, ct)` |
 
 For two untyped `OnityTaskCompletionSource` inputs, `WhenAll` can observe
@@ -82,6 +95,13 @@ and keeps the output shareable. For pending calls, an input with a preexisting
 `AsTask()` bridge or another source type uses the existing Task-based composition.
 Preserve or bridge a pooled single-consumer operation when multiple consumers
 need its result; do not pass the same pooled value twice.
+
+The 0.4.0 typed `WhenAll<T>` path can also avoid input bridges for 1–16
+unique exact built-in completion sources without existing bridges, mixed with
+inline/default values. Its output remains shareable and Task-backed. Other
+pending typed inputs keep the existing fallback. This saves construction heap
+growth in the recorded probes but regresses IL2CPP construction time; see the
+[scoped report](../assets/benchmarks/onitytask-stage3a-whenall-2026-09-27.md).
 
 Typed `WhenAny<T>` takes two inputs with the same result type and returns the
 winner's index and value. It consumes both inputs once and observes the loser
@@ -93,15 +113,29 @@ If the next step needs Unity's main thread, await its `AsTask()` bridge from the
 Unity context instead. The typed result source allocates; this mapping makes
 no performance equivalence claim with UniTask.
 
+The 0.4.0 array overloads extend this behavior to any positive input count.
+They snapshot before registration and reject duplicate single-consumer identities
+before claiming any input. Already-completed inputs favor the lowest index;
+pending callbacks race by observation. Every loser is observed, including faults
+on completion-source subclasses and their later Task bridges. Outputs remain
+single-consumer unless preserved or bridged. Bounded pooling covers up to 16
+inputs; larger arrays are unpooled. Pair overloads keep their previous behavior.
+The [array comparison](../assets/benchmarks/onitytask-stage3b-whenany-2026-09-27.md)
+favors UniTask in measured time and shows a substantial Onity allocation increase
+at 32 inputs; do not infer performance equivalence from this API mapping.
+
 `OnityTask.SwitchToMainThread` completes synchronously on the main thread and
 queues a worker-thread continuation for the Update phase of a following frame.
 Cancellation is observed at `GetResult` on the destination thread. Outside Play
 Mode the Editor drains the queue from its update loop, and continuations
 queued in an earlier Play Mode session are discarded when the next session
-starts. There is no `PlayerLoopTiming` argument and no
-`UniTask.SwitchToThreadPool` counterpart yet; use `Task.Run` or
-`ObserveOnThreadPool` for worker work. No thread-switch performance comparison
-has been measured.
+starts. Timing selection remains limited. Onity 0.4.0 adds
+`SwitchToThreadPool(ct)` and synchronous `RunOnThreadPool(Action/Func<T>,
+returnToMainThread, ct)` overloads. Cancellation cannot interrupt a running
+delegate; faults take precedence, and optional main-thread returns belong to
+the originating session. WebGL Players reject thread-pool use. Repeated Mono
+and IL2CPP [thread-pool measurements](../assets/benchmarks/onitytask-stage1-threadpool-2026-09-27.md)
+do not establish an overall performance winner.
 
 ## Scene Loading
 

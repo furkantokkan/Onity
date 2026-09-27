@@ -7,6 +7,100 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-27
+
+This release includes Plan 13 through the verified Stage 4c awaitable operators.
+Reactive stream adapters, WhenEach and additional Unity adapters remain planned.
+It does not claim full UniTask parity or overall speed superiority. Historical
+measurement records retain their tested 0.3.14 metadata and source hashes.
+
+### Fixed
+
+- Legacy runner destruction now retires accepted waits, preserving tokens,
+  caller-owned operations and replacement runners through callback reentrancy
+  and pooled source reuse. Both optimizations pass 782 EditMode/73 PlayMode
+  cases; both Release Players pass 24 smoke cases. Focused scheduling and
+  GetResult slices show no measured allocation increase, while scheduling
+  means increased 9–18% in one before/after run per backend. Full-cycle cost
+  remains unmeasured; this is a lifecycle correction, not a speedup.
+
+### Changed
+
+- Pending typed `WhenAll<T>` can reuse a bounded coordinator for 1–16 unique
+  built-in completion sources without existing bridges, preserving shareable
+  output, tracking, ordered faults and cancellation precedence. Other inputs
+  retain the previous fallback. Focused normal/Release tests and both Player
+  smoke suites pass. Repeated construction measurements show 60–93% lower
+  heap-delta estimates, Mono improvements at 8/16 inputs, and slower IL2CPP
+  construction; full-lifecycle performance remains unmeasured.
+
+### Added
+
+- Added sequential async-stream SelectAwait, WhereAwait and ForEachAsync with
+  owned delegate cancellation, exact task observation and shared cleanup.
+  Both optimizations pass 947 EditMode/94 PlayMode cases; both Release Players
+  pass 35 smoke cases. Initial fixture failures and their corrections are
+  retained in the report. Pending state allocates; no speed claim is made.
+- Added bounded/unbounded channels with FIFO backpressure, cancellation,
+  single-consumer leases and ReadAll cleanup. Full suites pass 913 EditMode/
+  92 PlayMode cases in both optimizations; the strengthened channel fixture
+  passes 34 cases in each, and both Release Players pass 33 smoke cases.
+  Warmed buffered operations show no retained-heap increase in calibrated
+  windows; exact zero allocation and comparative speed remain unproven.
+- Added pull-based `EveryUpdate` and native/BCL async-enumerable adapters with
+  exact ValueTask consumption, cancellation ownership and shared cleanup.
+  Both optimizations pass 879 EditMode/90 PlayMode cases; Mono and IL2CPP
+  Release Players each pass 31 smoke cases. Pending adapter state allocates;
+  no comparative speed or allocation quantity is claimed.
+- Added native finite async streams with await-foreach cleanup, cancellation,
+  Select/Where/Take and First/ToArray consumers. Both optimizations pass 851
+  EditMode/86 PlayMode cases; each Release Player passes 29 smoke cases.
+  Primed finite iteration shows no retained-heap increase in calibrated
+  HeapDelta windows; exact allocation and comparative speed are not established.
+- Added real `WaitForEndOfFrame` through one shared Unity coroutine, with
+  Update-driven cancellation and safe host/session retirement. Both Editor
+  optimizations pass 814 EditMode/84 PlayMode tests. Mono and IL2CPP Release
+  Players each pass six graphics groups with rendered pixel proof and 27
+  paired headless checks. Allocation and speed remain unmeasured.
+- Added typed/untyped `Timeout` and `TimeoutWithoutException`, preserving
+  late producer observation, cancellation tokens and producer faults. Private
+  scaled/unscaled timers share the explicit PlayerLoop session. Both
+  optimizations pass 812 EditMode/82 PlayMode tests and each Release Player
+  passes 26 smoke cases. Wrappers and timer entries are unpooled; allocation
+  quantities and speed remain unmeasured.
+- Added explicit Update/FixedUpdate/LateUpdate task timing with a separate
+  session owner, current-loop repair and reentrant cancellation safeguards.
+  Both optimizations pass 780 EditMode/64 PlayMode cases; Release Mono/IL2CPP
+  pass 22 smoke cases each. Repeated warmed tokenless Update Yield brackets
+  show no measured heap growth under calibrated HeapDelta; exact zero GC,
+  other timing variants and general speed superiority are not established.
+- Added typed/untyped `AttachExternalCancellation` and
+  `SuppressCancellationThrow`, preserving producer observation, winning tokens
+  and faulted cancellation exceptions. Pending native wrappers are unpooled.
+  Both optimization modes pass 777 EditMode and 54 PlayMode cases; Release
+  Mono/IL2CPP pass 20 smoke cases each. Allocation and speed are unmeasured.
+- Added typed and untyped array `WhenAny`, with native outputs, input snapshots,
+  duplicate single-consumer rejection and observation of every loser. Corrected
+  fault observation for public completion-source subclasses and later bridges.
+  Both optimization modes pass 744 EditMode and 52 PlayMode cases; Release
+  Mono/IL2CPP pass 18 smoke cases each. Repeated composition benchmarks favor
+  UniTask in time; Onity has no measurable heap growth at 2/16 inputs under the
+  coarse counter, but the unpooled 32-input path allocates substantially more.
+- Added native `JobHandle.AsOnityTask()` observation with main-thread registration,
+  completion before data access, and cleanup of accepted jobs during runner or
+  session teardown. Caller-owned native containers remain with the caller.
+  Verified with 690 EditMode and 50 PlayMode tests in both normal and Release
+  optimizations, including actual reload-disabled Play/Edit/Play transitions.
+- Added a separate Jobs benchmark with serial C#, plain Jobs and Burst compute
+  rows, checked output/Burst proof, and independently reported Onity/UniTask
+  adapter registration and completion measurements.
+- Added `OnityTask.SwitchToThreadPool` and synchronous `RunOnThreadPool`
+  action/result overloads, with explicit cancellation, execution-context and
+  originating-session return semantics. WebGL Players fail promptly as
+  unsupported. Verified with 682 EditMode and 46 PlayMode tests in both
+  optimizations, plus 16-case Mono/IL2CPP smoke suites. Separate repeated
+  thread-pool measurements do not establish an overall performance winner.
+
 ## [0.3.14] - 2026-09-27
 
 ### Added
@@ -740,6 +834,7 @@ allocation. The core uses no `System.Linq`.
   unreliable and need a corrected in-editor re-measure; a transient resolve still
   allocates the instance it returns.
 
+[0.4.0]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.4.0
 [0.3.14]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.14
 [0.3.13]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.13
 [0.3.12]: https://github.com/FurkanTokkan/Onity/releases/tag/v0.3.12

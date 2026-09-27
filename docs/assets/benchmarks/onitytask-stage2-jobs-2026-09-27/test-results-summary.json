@@ -1,0 +1,42 @@
+[
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage2-editmode-normal-verified.xml",
+    "sha256": "EBF2D15EE8E876E2AD05F03AA2EAFA28C55F29E6AD4C7E1CB089FCA2DEB1E0D2",
+    "result": "Passed",
+    "total": 690,
+    "passed": 690,
+    "failed": 0,
+    "skipped": 0,
+    "actualReloadDisabledCase": "Passed"
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage2-playmode-normal-verified.xml",
+    "sha256": "66C67E28274C8CF8DAE1AD4AE93D3B6D6B6D12EC982ABFF16BA829BDE7312194",
+    "result": "Passed",
+    "total": 50,
+    "passed": 50,
+    "failed": 0,
+    "skipped": 0,
+    "actualReloadDisabledCase": "EditMode-only"
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage2-editmode-release-verified.xml",
+    "sha256": "8ABD7DFC037829A488979D80D8A8A6D67F32633205715ABDCA756102BCE9E9A5",
+    "result": "Passed",
+    "total": 690,
+    "passed": 690,
+    "failed": 0,
+    "skipped": 0,
+    "actualReloadDisabledCase": "Passed"
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage2-playmode-release-verified.xml",
+    "sha256": "96014A86ED90AFFAF5C482CAAD92A6DAF981E62D4B27CA45B75A28B0A4F6F78A",
+    "result": "Passed",
+    "total": 50,
+    "passed": 50,
+    "failed": 0,
+    "skipped": 0,
+    "actualReloadDisabledCase": "EditMode-only"
+  }
+]

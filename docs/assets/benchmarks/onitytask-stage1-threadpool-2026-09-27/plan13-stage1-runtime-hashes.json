@@ -1,0 +1,506 @@
+[
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Composition/Scripts/OnityCompositionExtensions.cs",
+    "Sha256": "7735D8775976C0BACA6963E39FEE23FEDBAE62550B4D055C8BAF922AD766F0FF"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Core/Scripts/DisposableAction.cs",
+    "Sha256": "E7E2E805F202ECD531AFB35C2E1C5FAB1847D7EBAAD054D23FEF9E865CDB1D52"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Core/Scripts/Lifetime.cs",
+    "Sha256": "E4F4BBCCFDD6B5B1E9E1BB78F7832F83F3A2053B8FD16D511F4A91FDEE52DFF7"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Core/Scripts/Unit.cs",
+    "Sha256": "3A62456335024C8149B5E387410041C42C1B48277CE1B5384AA52421C5A68A3F"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/InjectAttribute.cs",
+    "Sha256": "0E2029593F297E043DD69AAA3F88BC37085124154AC3F5807E409984DE89ECFB"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/IResolver.cs",
+    "Sha256": "07F411F851921DE5A560C7AD28D6D919AE83942720C7FD7A3F9E910F56CBA20E"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/MultiTypeBindingBuilder.cs",
+    "Sha256": "6E59F863A46AD6DBC0A9825138DC1E541F504FA02D68418CE9BA0297D08D73DA"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityBindingException.cs",
+    "Sha256": "54452C1BDF075DF1D14A8C6B20A87C53FDEE1F74618FAECE6BADEA2970390398"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityContainer.cs",
+    "Sha256": "F4D7620A5EBB7F8DA1FF83F65F09FA48E402C39B77CE55FBA4E6C70021A54AF2"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityGenerateActivatorAttribute.cs",
+    "Sha256": "9F843EAD162BFC50E006D51CBB97E4FC2C2009A6E9AD4DAB8EA336E168BEBE5C"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityLifecycle.cs",
+    "Sha256": "B1B50FCC277EE2D30B807BBF2CE3BF288E840938EA86DF4AB7EB827118997DD0"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityResolveException.cs",
+    "Sha256": "8DF5A2D16B5D3856933E43F1F7706C674334F795A040196BD84143AF61A1867D"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/RuntimeTypeBindingBuilder.cs",
+    "Sha256": "4638073A01A5DD1F0385E2F07EB4CDB2CC729EF47C9E2D46B6583454124CFDC6"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/TypeBindingBuilder.cs",
+    "Sha256": "5056FC10C4344AC5E4D2C86E093F02E49DA1C223E96FC76A58DF4DB50409DE6D"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/ActivatorCompiler.cs",
+    "Sha256": "0E76D41BC95972BC2DB38E50CCCFB112175748DD065605A2DC4FE92AF4857F10"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/BakedGraph.cs",
+    "Sha256": "AB86F569C31EC09418879E83F69607C9D8B61AA825BC686F4E5478BAD333B27C"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/GeneratedActivators.cs",
+    "Sha256": "27D11F55CF592691A984FB5DDB3B404590DBEE96034F97EE128E2B479057F599"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/MemberSetterCompiler.cs",
+    "Sha256": "CC4F906BA23AC4F6EE07C106648AB985C5ED73E16D0F3F45894215219FDC283B"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/RuntimeCompileSupport.cs",
+    "Sha256": "E880E5466BBA762DB73AF16A1E22717361A5A03BC184BDD80A55E9BCE0405394"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/TypeIdRegistry.cs",
+    "Sha256": "878A942E1A58AFC0163D5EB5490D3518AF7AFC83AFF302D0CC3B1623CAE0FDC9"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsIntEventAsync.cs",
+    "Sha256": "F325C24E74B56B3D45631635ABBF14D35D1E7D5D4F98447E2A771A0249A24C8D"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsIntEventBridge.cs",
+    "Sha256": "8F40A942CA1261819B9F9469C48994FCA604A78868E88DBCB04967E6B9AA5F91"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsIntEventQueue.cs",
+    "Sha256": "19C91A49EF3FD21905C677AEFBED7EA456874F884902A6F82A4947272420932B"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsPoolEntityUtils.cs",
+    "Sha256": "9C27A128C54B8137CFF9613F78C9893B42C3C1662B94FA331758EB5C058A9E84"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsSessionBridge.cs",
+    "Sha256": "08B5DC900AACCBCB595314F55F77728667EB18E3BC62D7574EED8373FF5B00F5"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsSystemGroups.cs",
+    "Sha256": "2A1305674BAEB3F289E8C872CFC1A8908AEDC94D238FD8BA58E4E37630223675"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Factory/Scripts/IFactory.cs",
+    "Sha256": "2587D17177C6629CF9F60AF0ED733620BD1DCA0587CBAD50D4A451BFB70C706A"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/AsyncMessageChannel.cs",
+    "Sha256": "41BEF96ABF81ED2698A3B59848C7900571974767A537CBD37A66C8BAC84BF6A5"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IAsyncPublisher.cs",
+    "Sha256": "6C1EB8E5CB15EEC54578F821716CAAD062443368CA1FCD29C454E53DBE6EF5DA"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IAsyncSubscriber.cs",
+    "Sha256": "B5E6CB029A5CA19C96B579CC8FCA7ED5496FC09FC091F4600949148435505964"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IKeyedPublisher.cs",
+    "Sha256": "86E61B9650629B601927595D42BA2C950CFDCE20F0DC143AB552EF03254A975B"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IKeyedSubscriber.cs",
+    "Sha256": "E4358807201D1E65B1BFA0BEF93C1CF9B584DFF7DE79C53878370A173AFACE96"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IMessageBroker.cs",
+    "Sha256": "8709009FF00EF567FD7EB9322E47BC07668A3CA8E60368D81BDA2FAFD2F76682"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IPublisher.cs",
+    "Sha256": "6EB0B05E2865CC3EEC62E5F7F0E4E4E28CC4FC3482C03605DDAAC3F740D08CB1"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/ISubscriber.cs",
+    "Sha256": "707AB3B8D3B8913739C449FEC92DB93B88830508CD1C1EDD76378ADEFB6CD5E1"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/KeyedMessageChannel.cs",
+    "Sha256": "179C06D3165834EA61A8A46EE3A370ADA1968FC9C98F7568234D5B23078A4A8F"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/MessageBroker.cs",
+    "Sha256": "E47BC8D8BBC456744125146CF66C01C2451EA88F39446F4B5CE5300ECEA481FC"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/MessageBrokerExtensions.cs",
+    "Sha256": "F2F58507E70118464F39D8A2E2EA19108F07C7CF6E009F3024EB8C80A2E9802F"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/MessageChannel.cs",
+    "Sha256": "12744E1A6C94E65D2EB36DA8661E2FFD49C0ACC9E53CB89EA8704E203F8DF9B3"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/MessageHandler.cs",
+    "Sha256": "58B3689DC68D863E6746BBDBC33FCAB6E56BBC2B8A57D54E267865869EBA499B"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/OnityMessagingException.cs",
+    "Sha256": "D3E90A2C821027D78E6D913A1FA0776D7889C6D7B32A31410FDD6E8ADF7382AF"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/IPool.cs",
+    "Sha256": "030AC58F4B3C57428D3F0D5BBEE9B4FA4B608FD3006B18C68C4EDB60FB3B2D76"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/IPoolHooks.cs",
+    "Sha256": "ADF9813146BB37682B2385E5F18D2A2704BAAD4FE24D60B19349F9AE5835DED2"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/OnityObjectPool.cs",
+    "Sha256": "2E632597B9E901569CB05E54D34D48C9E962C35D907D70B5CEC7675099E59DE2"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/OnityPoolDiagnosticsRegistry.cs",
+    "Sha256": "1E292F34FA6A8C8E39035749CDE6C7EE23BB0C5615E624A82A47F8A621DC132C"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/PrefabComponentPool.cs",
+    "Sha256": "CEB043C705CFAE471762B8B175F90EC81E75A197ED5AE80EE4ACBF260982212C"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/CompositeDisposable.cs",
+    "Sha256": "930D83D5C3D21C6759DD37B741D87CD3309F04983DFE564E33DAE6084A5AC749"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/IOnityObservable.cs",
+    "Sha256": "808828F6EDBB1876BDAF3C637ABED2564C683D53BFAC8606E2F9C3BD1A75D9D4"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/IOnityObservableV2.cs",
+    "Sha256": "1159131A039BA60FAA96E3F058DFE440E2870ADAA1B98545597CD13AD3FB659E"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/IReadOnlyReactiveProperty.cs",
+    "Sha256": "91897ECEAB2E4DD7D1C430E33DFAC8EBA70B5D1CCFE66DC3A49645F7D564EC4F"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Observer.cs",
+    "Sha256": "38594B7C2295F2A557B36E0F0CB6421C11AF91112D83CA794C5DF783E8C19C94"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityDisposableExtensions.cs",
+    "Sha256": "09C38E5B0ACA26FED3B0D49CE452B04336420C5AA761024EC49D88441925C4DC"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservable.cs",
+    "Sha256": "4F41E15E6305F7AD21B0833A89FE9FF02D12164A9B37D72D951FB46716EE68B2"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableAdapters.cs",
+    "Sha256": "121B1ADB1250E8811857DECFE3985AE4709E95CB210BA6E60FC3A0094D21EC68"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableAsyncExtensions.cs",
+    "Sha256": "55831992C7E0A53CF27BCE86CBABDDE7123B248A796A131A4815E4EC7AD39A9C"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableExceptionHandler.cs",
+    "Sha256": "4D18C580B2EC5C4B557059C374F062A168CAAAAE587D97BB42D6518C7E30ECE8"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableExtensions.cs",
+    "Sha256": "E12FB99CAF52552BB8E32779C9E0814C1DC5FD11A5C12C928908A16BB093FECE"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableTracker.cs",
+    "Sha256": "80A28A18023D85056A713B5C848ACF99F16514ACB62ACECCE175876D1365ED23"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableV2.cs",
+    "Sha256": "B355277C0B87717EABC1FDDCE4A0732D4BB295031639CFC6895DBF35A8EAFF8B"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObserver.cs",
+    "Sha256": "4B747E1664F002BA012680402F04BE08595087D4C2D467C5DD1A10BE9450108E"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityProviders.cs",
+    "Sha256": "963485223AFF9727ED7E54DD443A91533BD5ED80061725DB88325C385DA4F35A"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityReactiveException.cs",
+    "Sha256": "9C8D32365361A1E3C496232D76DF7CA90912282DD71B84CE6678A1F0A652BFE9"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityResult.cs",
+    "Sha256": "EF4A6CFDB9AE7E53824ED3F4471BFCB56EA676764769672ED8F1C035EEEE9A6D"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/ReactiveProperty.cs",
+    "Sha256": "13F59989911568991166F7A6DA203D55FC7BDC1043DC2505B9BD99163FE442C2"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Subject.cs",
+    "Sha256": "82BD139A6E3FDCD1525CEA37DAAE9217032201CF4BE6ACE1B833E2138D898383"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableCombineLatest.cs",
+    "Sha256": "B29FA5901E344E7609CBD2A86670755E438D11996823B70DB4402C93A7103AB5"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableMerge.cs",
+    "Sha256": "A68DE49B8D4AE17B1E278AFC8070E4508BE6F987B1908CD0567F57658173CD96"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableObserveOn.cs",
+    "Sha256": "971DFDE9D43FF1D7846E48ABCDA955D06B9AFB7831BDC41F6E0B47728F839C7E"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservablePairwise.cs",
+    "Sha256": "579E80803A576C9CA96C62D27A845DBF35E06B05E8EE0B2A237BECCED1EAEE40"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableSample.cs",
+    "Sha256": "818DC263231023069804467EBBF72844A7249ADD17B11969DA4AF3C82EA3C864"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableScan.cs",
+    "Sha256": "4254679D02BE231A681819D0816E5E4425243E99640865EB06197A76F6F61108"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableThreadPool.cs",
+    "Sha256": "076BFFA0D1D39CBB6AE12EAE961C3C806924E6AA73BFFEB74B9DD9F8C2EDADD2"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableThrottleBuffer.cs",
+    "Sha256": "E6BDCBE13CF2D89EF838CCEF3CA16FF255F7645382B3864D189E2351C25E2A81"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/OnityEvent.cs",
+    "Sha256": "0B277BC13A7A4EF76E84409B8CD8C652BC7CDBAB6ADE4811FFD18B62F3C17A3B"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs",
+    "Sha256": "B9DBD93E84BC0C53AABF7B1006B21CB506943AAA0350F64863E44D31FC616D68"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncOperationExtensions.cs",
+    "Sha256": "A77BE25CAD73F3836E4533303FCD0A841BAA0F4658B374D82259A77BBA88FA85"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncStateMachineRunner.cs",
+    "Sha256": "C3D8E3D9266EE660F6B0D867CA6B51202D5C4669FF4D5E2DA24B0FB953D3DC23"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityCancellationTokenSourceExtensions.cs",
+    "Sha256": "7A06CE9D458F9A8B48A97E5893A1F8EA56EEF88534A48D47FD8A8860EC510969"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnitySceneLoader.cs",
+    "Sha256": "B7F9F12B7A7165DFCDBFEDB449A2ACFB9812E146FD57643998D9CCE6A8205F62"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCompletionSource.cs",
+    "Sha256": "1BA90462B7ADB5ECBC860E90CFC1D7071BAC09B8F56D3D5B60AD280F7B6DDF12"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskExtensions.cs",
+    "Sha256": "F6815ABFB0B3330A275892D3AD70FCDFE2F6619EE623BEF5DF8400BC49FE6549"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskThreadPoolSwitch.cs",
+    "Sha256": "63F7D3357347D8C6ABBF279A794CE34329AE3296BBF045C71488FB36000BCE61"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskThreadSwitch.cs",
+    "Sha256": "CBB4B6666538DB2AE9F0CB206192F8D450BBDD579294956A6F680F2C2FE1C8CA"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskTracker.cs",
+    "Sha256": "79EE52DDF9EA5B3F661E0AA9BEDC30AF7FE3145285C03F95A07C373435FAC146"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTimeoutController.cs",
+    "Sha256": "9855CE38D9985462DE37D4514D3072255A9722E3668F16D62954B23664A21E79"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/GameObjectContext.cs",
+    "Sha256": "900E47DFE33F0E5147219D86A603887F31B370D929A29EF05DFA8AAA499D6777"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/OnityContext.cs",
+    "Sha256": "8BF0C374337F03F80DC8461419CBDB98D574E4AFB8DAC237CE341F6A29DE9369"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/ProjectContext.cs",
+    "Sha256": "B843A59A07AB237224E05473DE2089CD5534F41D1FB9730C701347CF092B7D7E"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/ProjectContextBootstrap.cs",
+    "Sha256": "F66680FFE5AAEAF062E3C31852A5B92DB4D4EA17C885EA7A1B64B9BD4681C053"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/SceneContext.cs",
+    "Sha256": "DE987FF3282F46187FDC1880CD45D2241AF19FE2E292D14A79C81D0F52C2B2B0"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Input/OnityInputActionKey.cs",
+    "Sha256": "DB705F774C0C879D55BAA267C5CEFD14595361B10AE4B1E7428553956CAF87EB"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Input/OnityInputActionReactiveExtensions.cs",
+    "Sha256": "C9F836316A17671ED8436485F98BC034CD8745D14A46EB741619DC3A7C4DBDFC"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Input/OnityReactiveInputPlayer.cs",
+    "Sha256": "B46F57FCA438C1ACB3E2CD55818B4CAF6CFB1BE536860C12556D5891C79E15F4"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Installers/MonoInstaller.cs",
+    "Sha256": "165D7D5091327A8E13BC6D3CD96D965A324CA52CC0501040FD90FBFC800BC3DB"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging/OnityEventComponentExtensions.cs",
+    "Sha256": "01057623CD158AA2210A90ADDB45415180F607CDC053EA08EC8A4824DE6D4878"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging/OnityEventHub.cs",
+    "Sha256": "1B93816279F5221BA555E0B9423E7A404596BEB1E3E93CF732E7B1DA01BF9F36"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging/OnityMessageBindingExtensions.cs",
+    "Sha256": "3CC63438520D8CD13CE3278BCFA62EBE2319FF8683477AC8F884F569E84A741C"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging/OnityMessageReactiveExtensions.cs",
+    "Sha256": "DA4AC47A8AD358C18C41AC66290BB71D8991B1C4ECD93F49196FA1150958EE81"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Physics/OnityNonAllocPhysics.cs",
+    "Sha256": "B2A468849AEF16D1C1FB4DEC029B0995209BED525B482E034738654303864E26"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Physics/OnityRaycastCommandBatch.cs",
+    "Sha256": "DC82B4CEE0699659CC6B6B8152369D3A91549FFA099B55BF2D6239B2F9CA8234"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityCountdownTimer.cs",
+    "Sha256": "5F702FA0299FF07491834E907199F71517CE453C33044C23A322F00034B25830"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityIntervalTimer.cs",
+    "Sha256": "4EEACAAFF6746ABA10DD5A239CFAFF786D82C20EF1791E79D537D86E063F528C"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityLifetimeNotifier.cs",
+    "Sha256": "C0D220DAADB31D20380037E635709092D073D3682F34B7E7824CD7A32F383EA0"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityStopwatchTimer.cs",
+    "Sha256": "941C50ECEDEC2B3688B346EC92FE4ED569A52D9476B37567F6630DB8704A9D2C"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityTimer.cs",
+    "Sha256": "D46A4E725964717A8B6219602FD75F979A6CF15EF956AAF5FF490AC2400B5667"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityTimerRunner.cs",
+    "Sha256": "367074FBA0F136932104161ECD66C1D24525A11E8C8000E8B69A9D30AA9B1F10"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityUnityObservable.cs",
+    "Sha256": "24C226E98D3A73480CD5E2995CE5DCE3666BA26349C6AFB25830A8B05EF8F9B3"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityUnityObservableExtensions.cs",
+    "Sha256": "A693FB2B61D68135C516821990EE91FAABF6A09DBD5B13FB291FB93DDDA482E2"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityUnityProviders.cs",
+    "Sha256": "E1F84A56AC533A4EC14B4A44D0B7AFD1E14C338DC73FFD2BF36D248ED0C883F4"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/ReactiveLifetimeExtensions.cs",
+    "Sha256": "1BFA8A6D6F8EE8B8DB51E1F8C7C26AE9BFC61E09E8F1C8E9F3D24B2958DDE0DD"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/IOnitySceneEnterData.cs",
+    "Sha256": "F2FEA199136AA212225C9901D64E7EB8197E933EDF52C1334D2AB0FF57948114"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnityBootstrapSceneInitiator.cs",
+    "Sha256": "8F96396EE6AF2A0C28A8C9A53B0DCD01C4C63C140E35A85DBB210A0BE7F47810"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnityLoadingSceneInitiator.cs",
+    "Sha256": "B34F4FDAB098547BEE0998EFB5FC47DB3D31BC1C3585FDCEF789BC4479DEB12B"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnityLoadingView.cs",
+    "Sha256": "A5A837681DD05A01A6285DE4FE16680D649AF35A2A50D114EAF4C2FB99E0B1B6"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlow.cs",
+    "Sha256": "91077554CD7958089269B9B94900C994EB2D64D539F1ACD33BC6CC0BA2C691B2"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlowProfile.cs",
+    "Sha256": "19F6EC5CEA669703E0B5B49535203BA367D06C9E76CEAD877D43D10A95D333C4"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlowStateId.cs",
+    "Sha256": "C6859AD7790884539B004A28F985C012F7068D1F3F9BD10AC3A4B3E8235EB0E1"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlowStateMachine.cs",
+    "Sha256": "49C3D02B543EC79FC1926C1BC2F4970928B56B9535711128776B97A5C81D16A6"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlowTransitionPlan.cs",
+    "Sha256": "E6A94581B6E9D9FBF0E2A6355F6C7F70F7FD21A0DEE3DC9AB8C3C9A1E2AF4690"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneInitiator.cs",
+    "Sha256": "9A7DEE0D75A13A1A33A89AAB1418C0FD2D1CA8ADE3804EAED0555EE217C51031"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneTransitionStore.cs",
+    "Sha256": "D77768A308D96C074EA6906C2445811A9ADD32E5BFB64BE8FBE3AB02A353AA30"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiInjectAttribute.cs",
+    "Sha256": "732920781CE6D4F8714FF442C16A66E99D8394FF24B0FA9AB67331D36D4214FC"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiPresenter.cs",
+    "Sha256": "7C95077DC7588426840DDF7DCE9BF8D21B555E8CA18B87A7308127092019B898"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiPresenterFactory.cs",
+    "Sha256": "ADFCBD10C5E905ABA1D72658790FD69CAAEAE388A8D65B5EDC4893607409AB8E"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiResolverBridge.cs",
+    "Sha256": "78814F40A618908D6702CE6AA20079EACE219362B569BC811564227D16DECE08"
+  },
+  {
+    "Path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiServiceLocator.cs",
+    "Sha256": "B42B56749226679F01F196DD45A65AC98A9AEC64FA8FC805AAC86AAE12CC3566"
+  }
+]
