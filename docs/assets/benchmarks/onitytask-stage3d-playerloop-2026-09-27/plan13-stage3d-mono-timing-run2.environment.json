@@ -1,0 +1,31 @@
+{
+  "startedAtUtc": "2026-09-27T03:59:25.0966604Z",
+  "endedAtUtc": "2026-09-27T03:59:26.0200692Z",
+  "ownedPlayerPid": 126376,
+  "ownedPlayerExitCode": 0,
+  "backgroundBefore": [
+    {
+      "Id": 45732,
+      "ProcessName": "Unity",
+      "CPU": 55209.734375
+    },
+    {
+      "Id": 118424,
+      "ProcessName": "unity",
+      "CPU": 0.625
+    }
+  ],
+  "backgroundAfter": [
+    {
+      "Id": 45732,
+      "ProcessName": "Unity",
+      "CPU": 55209.75
+    },
+    {
+      "Id": 118424,
+      "ProcessName": "unity",
+      "CPU": 0.625
+    }
+  ],
+  "ownedBuildOrTestConcurrent": false
+}

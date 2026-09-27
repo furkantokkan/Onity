@@ -1,0 +1,77 @@
+[
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3c-existing-release.xml",
+    "sha256": "CCC267645285E2B8AF9447A03B7DE96A984FD4EC9C56F88C6526AD46985E5019",
+    "result": "Passed",
+    "total": 71,
+    "passed": 71,
+    "failed": 0,
+    "skipped": 0,
+    "failures": []
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3c-new-editmode-release.xml",
+    "sha256": "8C84235AA692D2921BE2B5D97A1C687D61BFAE3027559666B965690DAAB3C4F0",
+    "result": "Passed",
+    "total": 31,
+    "passed": 31,
+    "failed": 0,
+    "skipped": 0,
+    "failures": []
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3c-playmode-normal-initial.xml",
+    "sha256": "EB00F0AAB5A3DD39896A977596828E3BAC3813A343C39D0C5766602AB3815B9E",
+    "result": "Failed(Child)",
+    "total": 54,
+    "passed": 53,
+    "failed": 1,
+    "skipped": 0,
+    "failures": [
+      {
+        "name": "Onity.Tests.PlayMode.OnityTaskCancellationPlayModeTests.ExplicitCancellationAndSuppressionBridges_ReturnToUnityContext",
+        "message": "  Expected: <System.OperationCanceledException>\n  But was:  <System.Threading.Tasks.TaskCanceledException>\nat Onity.Tests.PlayMode.OnityTaskCancellationPlayModeTests+<ExplicitCancellationAndSuppressionBridges_ReturnToUnityContext>d__1.MoveNext () [0x001b8] in .\\Packages\\com.onity.framework\\Tests\\PlayMode\\OnityTaskCancellationPlayModeTests.cs:94\nat UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0004e] in .\\Library\\PackageCache\\com.unity.test-framework@1.4.6\\UnityEngine.TestRunner\\NUnitExtensions\\Attributes\\TestEnumerator.cs:44\n"
+      }
+    ]
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3c-editmode-normal-verified.xml",
+    "sha256": "0CD01DA2865A1D26C1C7C7585EA991BC8424BE12EE071336952512BA1C562D38",
+    "result": "Passed",
+    "total": 777,
+    "passed": 777,
+    "failed": 0,
+    "skipped": 0,
+    "failures": []
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3c-playmode-normal-verified.xml",
+    "sha256": "922A17988E02DE7564E54227200A27C79D3B1D9532CED35E07EDB82D2F964A46",
+    "result": "Passed",
+    "total": 54,
+    "passed": 54,
+    "failed": 0,
+    "skipped": 0,
+    "failures": []
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3c-editmode-release-verified.xml",
+    "sha256": "C385A814F7DA8726D7C8B013B1C6B977847076CEEDB882A3A12EC4404C6681CE",
+    "result": "Passed",
+    "total": 777,
+    "passed": 777,
+    "failed": 0,
+    "skipped": 0,
+    "failures": []
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3c-playmode-release-verified.xml",
+    "sha256": "E210E339A8CF85AAFC5D4271A28E3AE71C12F98EC1E18D5F47561885B440125D",
+    "result": "Passed",
+    "total": 54,
+    "passed": 54,
+    "failed": 0,
+    "skipped": 0,
+    "failures": []
+  }
+]

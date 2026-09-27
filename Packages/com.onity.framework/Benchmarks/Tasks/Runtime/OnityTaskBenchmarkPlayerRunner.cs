@@ -11,7 +11,12 @@ namespace Onity.Benchmarks
     /// Player-side entry point for the task benchmarks. A player started with
     /// <c>-onityRunTaskBenchmark</c> runs the primary suite, or the thread-switch suite when
     /// <c>-onityTaskBenchmarkSuite threadswitch</c> is passed, or the standalone correctness smoke
-    /// suite with <c>-onityTaskBenchmarkSuite smoke</c>, writes the report to
+    /// suite with <c>-onityTaskBenchmarkSuite smoke</c>, or worker-only performance probes with
+    /// <c>-onityTaskBenchmarkSuite threadpool</c>, or Jobs/Burst probes with
+    /// <c>-onityTaskBenchmarkSuite jobs</c>, or pending composition construction with
+    /// <c>-onityTaskBenchmarkSuite whenall</c>, or array composition cycles with
+    /// <c>-onityTaskBenchmarkSuite whenany</c>, or explicit Update timing allocation with
+    /// <c>-onityTaskBenchmarkSuite timing</c>. Each suite writes the report to
     /// <c>-onityTaskBenchmarkOutput</c>, persists startup stages to
     /// <c>-onityTaskBenchmarkStartupTrace</c> (default: report path with a .startup.log extension),
     /// and quits with exit code 0 on success or 1 on failure.
@@ -61,18 +66,35 @@ namespace Onity.Benchmarks
                 string suite = GetArgumentValue(args, k_suiteArgument);
                 suite = string.IsNullOrEmpty(suite) ? "primary" : suite.ToLowerInvariant();
                 bool threadSwitch = suite == k_threadSwitchSuite;
+                bool threadPool = suite == "threadpool";
                 bool smoke = suite == "smoke";
                 bool fullCycle = suite == "fullcycle";
-                if (!threadSwitch && !smoke && !fullCycle && suite != "primary")
+                bool jobs = suite == "jobs";
+                bool whenAll = suite == "whenall";
+                bool whenAny = suite == "whenany";
+                bool timing = suite == "timing";
+                bool endOfFrame = suite == "eof";
+                bool finite = suite == "finite";
+                bool channels = suite == "channels";
+                if (!threadSwitch && !threadPool && !smoke && !fullCycle && !jobs
+                    && !whenAll && !whenAny && !timing && !endOfFrame && !finite && !channels && suite != "primary")
                 {
-                    throw new ArgumentException("Task benchmark suite must be primary, threadswitch, smoke, or fullcycle.");
+                    throw new ArgumentException("Task benchmark suite must be primary, threadswitch, threadpool, jobs, whenall, whenany, timing, eof, finite, channels, smoke, or fullcycle.");
                 }
                 string latestJson = GetArgumentValue(args, k_outputArgument);
                 if (string.IsNullOrEmpty(latestJson))
                 {
                     latestJson = Path.Combine(
                         Application.persistentDataPath,
-                        fullCycle ? "onity-task-fullcycle-player-latest.json"
+                        endOfFrame ? "onity-task-eof-player-latest.json"
+                            : channels ? "onity-channels-player-latest.json"
+                            : finite ? "onity-async-enumerable-player-latest.json"
+                            : fullCycle ? "onity-task-fullcycle-player-latest.json"
+                            : jobs ? "onity-task-jobs-player-latest.json"
+                            : whenAll ? "onity-task-whenall-player-latest.json"
+                            : whenAny ? "onity-task-whenany-player-latest.json"
+                            : timing ? "onity-task-timing-player-latest.json"
+                            : threadPool ? "onity-thread-pool-benchmark-player-latest.json"
                             : smoke ? "onity-task-smoke-player-latest.json"
                             : threadSwitch ? k_latestThreadSwitchJsonFileName : k_latestJsonFileName);
                 }
@@ -85,17 +107,45 @@ namespace Onity.Benchmarks
                 // This is outside the benchmark's scheduling/GetResult timing slices.
                 WriteStartupMarker("benchmark-entry", suite);
 
-                if (fullCycle)
+                if (channels)
+                {
+                    OnityChannelBenchmarkRunner.Run(latestJson, Quit);
+                }
+                else if (finite)
+                {
+                    OnityAsyncEnumerableBenchmarkRunner.Run(latestJson, Quit);
+                }
+                else if (endOfFrame)
+                {
+                    OnityTaskEndOfFramePlayerRunner.Run(latestJson, Quit);
+                }
+                else if (fullCycle)
                 {
                     OnityTaskFullCycleProfileRunner.Run(latestJson, Quit);
+                }
+                else if (timing)
+                {
+                    OnityTaskPlayerLoopBenchmarkRunner.Run(latestJson, Quit);
+                }
+                else if (whenAny)
+                {
+                    OnityTaskWhenAnyBenchmarkRunner.Run(latestJson, Quit);
+                }
+                else if (whenAll)
+                {
+                    OnityTaskWhenAllBenchmarkRunner.Run(latestJson, Quit);
+                }
+                else if (jobs)
+                {
+                    OnityTaskJobBenchmarkRunner.Run(latestJson, Quit);
                 }
                 else if (smoke)
                 {
                     OnityTaskPlayerSmokeRunner.Run(latestJson, Quit);
                 }
-                else if (threadSwitch)
+                else if (threadSwitch || threadPool)
                 {
-                    OnityThreadSwitchBenchmarkRunner.Run(latestJson, Quit, "Player");
+                    OnityThreadSwitchBenchmarkRunner.Run(latestJson, Quit, "Player", threadPool);
                 }
                 else
                 {

@@ -12,6 +12,12 @@
 
 **Repository Editor version:** Unity `2022.3.62f2`. The package supports Unity 2022.3 LTS or newer.
 
+**0.4.0:** OnityTask now includes thread-pool work, a JobHandle bridge, explicit
+PlayerLoop timing, cancellation/timeout composition, native async streams,
+channels and sequential awaitable operators. The verified release boundary
+passes 947 EditMode / 94 PlayMode tests in both optimization modes and 35 checks
+in each Windows Release Player. See the [release verification and limits](docs/assets/benchmarks/onity-0.4.0-release-2026-09-27.md).
+
 **📖 [Documentation, guides & API reference](https://furkantokkan.github.io/Onity/)**  ·  [Install](#install)  ·  [OnityTask](docs/guide/onitytask.md)  ·  [AI usage guide](docs/Onity-AI-Usage-Guide.md)  ·  [Onity vs VContainer / Zenject](docs/Onity-vs-VContainer-Zenject.md)
 
 ---
@@ -170,7 +176,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.3.14
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.4.0
 ```
 
 …or in `Packages/manifest.json`:
@@ -183,7 +189,7 @@ https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.
 }
 ```
 
-(`#upm` tracks the latest package; use the `?path=/Packages/com.onity.framework#v0.3.14` form to pin a specific release.)
+(`#upm` tracks the latest package; use the `?path=/Packages/com.onity.framework#v0.4.0` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 

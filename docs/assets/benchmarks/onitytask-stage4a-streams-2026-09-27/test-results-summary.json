@@ -1,0 +1,125 @@
+[
+  {
+    "name": "plan13-stage4a-editmode-normal-final",
+    "cliExit": 0,
+    "result": "Passed",
+    "total": 851,
+    "passed": 851,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage4a-editmode-normal-final.xml",
+    "xmlSha256": "BA411644174764F25978A19E91982BCF9F41E30F8FA937906C0EC0851466E547",
+    "logSha256": "D60CE7BFDE6CE0A041CE834C369A608F16B7608EABC0F5C81C83D3CBF89D470A",
+    "failures": []
+  },
+  {
+    "name": "plan13-stage4a-editmode-release-verified",
+    "cliExit": 0,
+    "result": "Passed",
+    "total": 851,
+    "passed": 851,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage4a-editmode-release-verified.xml",
+    "xmlSha256": "A14E27BBE4ABEDF64D75C8CC905C444138018D5CFAADF0FD6B456AB9F3D528AD",
+    "logSha256": "85AE93181DF9D84E0CCD1F6A60ECAC5C8596C9BFE479BA9DCD4C91915E730B5D",
+    "failures": []
+  },
+  {
+    "name": "plan13-stage4a-existing-builder-editmode-release",
+    "cliExit": null,
+    "result": "Passed",
+    "total": 42,
+    "passed": 42,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage4a-existing-builder-editmode-release.xml",
+    "xmlSha256": "9E06A1402A5A6D56AA29FA1941959B10A1833513C2E8CCC0217AE4AC2BA96365",
+    "logSha256": "040B2A5D7AB6D791014ECA7E69C87AC45EA9C177863FE750827057C4AD1B1E17",
+    "failures": []
+  },
+  {
+    "name": "plan13-stage4a-new-editmode-release",
+    "cliExit": 0,
+    "result": "Passed",
+    "total": 37,
+    "passed": 37,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage4a-new-editmode-release.xml",
+    "xmlSha256": "B89CB7A2AFBF648C6A85487EAF33D6BB1E7315381C2BD8383A64E8DA4FAB4E9E",
+    "logSha256": "09C13F0B6185B9430FCF23E9C17F4DD0AD43A35AF61BCD72D92225F4C454CB3B",
+    "failures": []
+  },
+  {
+    "name": "plan13-stage4a-new-playmode-release",
+    "cliExit": 0,
+    "result": "Passed",
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage4a-new-playmode-release.xml",
+    "xmlSha256": "1107F0A42E628643A9138509A147D4EF523BB9E8FA63FEBA017D85CE0417BF40",
+    "logSha256": "BE58E518D3DD1DDCA9059864FFCAB2F935956ACC0DD351607F9297EE45959DDD",
+    "failures": []
+  },
+  {
+    "name": "plan13-stage4a-playmode-normal-final",
+    "cliExit": 0,
+    "result": "Passed",
+    "total": 86,
+    "passed": 86,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage4a-playmode-normal-final.xml",
+    "xmlSha256": "822C3D5781C14C651E59ECDF02ED50A040072D6FA6E9CC9B67480E47EBF46933",
+    "logSha256": "02334616A25475D7EF1F0BF6E6AF06FDFEB740010A90693B9ECE0C6986BB0C91",
+    "failures": []
+  },
+  {
+    "name": "plan13-stage4a-playmode-release-final",
+    "cliExit": 0,
+    "result": "Passed",
+    "total": 86,
+    "passed": 86,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage4a-playmode-release-final.xml",
+    "xmlSha256": "0739D1AA0BBBDEB0A2CE762DFF5A0FAC215D2F54586C24808E8D91ECAB185B58",
+    "logSha256": "AA3A9CF868B26DD431BC8F07771800DD3992631261F66C27AEE586A0531B2F90",
+    "failures": []
+  },
+  {
+    "name": "plan13-stage4a-playmode-release-verified",
+    "cliExit": 8,
+    "result": "Failed(Child)",
+    "total": 86,
+    "passed": 85,
+    "failed": 1,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage4a-playmode-release-verified.xml",
+    "xmlSha256": "B8008DDEA52936972DFC5488F95C75C4A43EFF595C3370C14712BC4039D532B0",
+    "logSha256": "8066C6FE6610B3EA9253C2BBD2A5627166BAF70B31E147618DDD310770409B6A",
+    "failures": [
+      {
+        "name": "Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests.RealAsyncOperation_RetiresObservationOnly_AndProgressRetirementDefersActivePublication",
+        "durationSeconds": 0.148062,
+        "message": "  Retirement check timed out.\n  Expected: True\n  But was:  False\n"
+      }
+    ]
+  },
+  {
+    "name": "plan13-stage4a-retirement-stream-playmode-release",
+    "cliExit": 0,
+    "result": "Passed",
+    "total": 11,
+    "passed": 11,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage4a-retirement-stream-playmode-release.xml",
+    "xmlSha256": "A857B6EDA4899913C422B6EC45B837A494B6447CC28740F2ECFE0C23D99EADE7",
+    "logSha256": "B0EC16DFB4DAABBDD12EA72B2ECB030C0F47304B15C19C4D5C543EDCD38B6686",
+    "failures": []
+  }
+]

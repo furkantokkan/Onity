@@ -1,0 +1,130 @@
+{
+  "generatedAtUtc": "2026-09-27T04:02:58.3206430Z",
+  "candidate": "Unreleased Plan 13 Stage 3d",
+  "baseCommit": "3f098937e9198a17edcf72cd75e73bd5bc76e2fd",
+  "sourceRoot": "C:/Users/e-fur/.codex/worktrees/onity-fast-capture-f682b7c/Onity",
+  "verificationRoot": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity",
+  "unity": "2022.3.62f2",
+  "cli": "1.0.0-beta.11",
+  "sourceManifest": "source-hashes.json",
+  "testSummary": "test-results-summary.json",
+  "verificationNotes": [
+    "Normal EditMode preceded new PlayMode fixture/smoke staging; runtime and EditMode sources match final manifest.",
+    "Final PlayMode and Release EditMode use corrected fixtures. Benchmark-only additions were staged afterward for Player builds.",
+    "Initial lifecycle failure: a destroyed Unity component fake-null check after ExitPlayMode; managed result snapshot corrected.",
+    "Initial PlayMode compilation: two SystemBase.Time shadowing errors corrected with UnityEngine.Time qualification.",
+    "Initial PlayMode 63/64: separate preexisting legacy runner orphaned-wait gap. Fixture setup completed before runner destruction to isolate explicit timing independence.",
+    "Four independent timing processes validate 384 warmup and 2048 measured waits each; all eight allocation samples per process valid. HeapDelta does not prove zero GC allocation."
+  ],
+  "initialEditFixtureSha256": "80E617F4ACC8ED4E2761453ACA8CD105654CA71000732BBCCC2BFC401D08DD82",
+  "initialPlayFixtureSha256": "A90EC7195AEB1FB842A874FA82A91E6687BB40642935D1A9EA8F99E4661F4BF7",
+  "firstCompiledPlayFixtureSha256": "E80B41068DE69EE188FCE723CE7D29018696BFD9F36F64B1705ED33FD181D303",
+  "settings": [
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "sha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/EditorSettings.asset",
+      "sha256": "962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "sha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33",
+      "restored": true
+    }
+  ],
+  "temporarySceneRemoved": true,
+  "logs": [
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-il2cpp-build-verified.log",
+      "sha256": "308329C77516A205D1C67CF1616B0E0F3CA25C0DC5604E73BF279575C918A9EB"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-il2cpp-smoke.player.log",
+      "sha256": "A7F13CE1B2A94095F390B3006EE9C8B48F4449E45FE4F1F407462F0F64D566B1"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-il2cpp-smoke.startup.log",
+      "sha256": "5C7BE1A8A461EAF50897EE8C2419EAD7BE015A736D6C832212498144E1FCA365"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-il2cpp-timing-run1.player.log",
+      "sha256": "F23AFC38A007228EA495DCBCD6E7B45C6BA0560C70943240EC62B3693FF9AE92"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-il2cpp-timing-run1.startup.log",
+      "sha256": "6F22E86B6BF81BC18C5BC6EB033FB75444865A597513114489564632819D2292"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-il2cpp-timing-run2.player.log",
+      "sha256": "27B20D79507D087A30F5C304C2119311675FD57FA0D7C2CC3D2488AB7BB77DE2"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-il2cpp-timing-run2.startup.log",
+      "sha256": "665E7376B9EC3EBD185639DC1A9A9205484198E84995483A00014C8A7D79E463"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-mono-build-verified.log",
+      "sha256": "A4A59D8884D04F09C6C6215B8FE6BC4B428CD126F8D42951A020E25666D5B52E"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-mono-smoke.player.log",
+      "sha256": "90C16F6F9AFF60E99921E843641C2A8A93B848BAF0528D6F917B336BC9AD3703"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-mono-smoke.startup.log",
+      "sha256": "56C82EC233D288AF1D5379CF57955F38303373C81C4867A26FC5E4535B9B2D11"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-mono-timing-run1.player.log",
+      "sha256": "FC40601F74F7F72CE54C93DBE35C2CF1C597AAFF7AD3624B756E7EA9531DF5E5"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-mono-timing-run1.startup.log",
+      "sha256": "E37E966085B19668830B86B231342212A8F0326FC6E9E7A487E7B1F12CD938FE"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-mono-timing-run2.player.log",
+      "sha256": "78D5BE0E1C28CFA466B224DE11839D5FB69E430C2503839148CB469C94FCBAB9"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3d-mono-timing-run2.startup.log",
+      "sha256": "7F6CA373A3AC6E7A5A88E6421018654041036C77F3B3FAD549BD2DA329F190AD"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-editmode-normal-verified.log",
+      "sha256": "C2A1D2C234BC8AD50143AA075363817F0542BDD94C89E31A049DABFC8EDE6E1A"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-editmode-release-verified.log",
+      "sha256": "117D9E74157EE2947395DD5AD95BC61F943A5E2CB93B788A8E860CC5CA6F05FA"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-existing-playmode-release.log",
+      "sha256": "ACBED2C07BCA445BD15B4851CCE8077D99796F3245D5D328BCA4E5E55C9F0BB0"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-new-editmode-release.log",
+      "sha256": "80AD9FE2B597C7AD57EA981EB2467C9C4EEAF3CA9D08D2E1F2BBEBB263314F26"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-playmode-normal-compile-initial.log",
+      "sha256": "5941C1730BCBFDBA99F862297030CBABD99A87C47E7F4B3F8087C76067B90421"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-playmode-normal-initial.log",
+      "sha256": "AA6AB2657CBC3BEAEB54C22B5E92442126009D399BD7D50080097A63952A5708"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-playmode-normal-verified.log",
+      "sha256": "D6F1586909FF625045AA1E55A03E31DBD56D5F794CC4D21D50F947E2B288BE8F"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3d-playmode-release-verified.log",
+      "sha256": "634DA0EF9A6542DC36D0E682BCA07CDD95794006848FC9AB59D48B7B11CE3A52"
+    }
+  ]
+}

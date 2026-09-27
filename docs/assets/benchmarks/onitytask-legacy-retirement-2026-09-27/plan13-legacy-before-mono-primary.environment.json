@@ -1,0 +1,22 @@
+{
+  "startedAtUtc": "2026-09-27T04:05:59.0861718Z",
+  "endedAtUtc": "2026-09-27T04:06:07.8585298Z",
+  "ownedPlayerPid": 125540,
+  "ownedPlayerExitCode": 0,
+  "backgroundBefore": [
+    {
+      "Id": 45732,
+      "ProcessName": "Unity",
+      "CPU": 55215.5
+    }
+  ],
+  "backgroundAfter": [
+    {
+      "Id": 45732,
+      "ProcessName": "Unity",
+      "CPU": 55215.734375
+    }
+  ],
+  "ownedBuildOrTestConcurrent": false,
+  "purpose": "Pre-fix legacy baseline; interpretation limited to plain NextFrame scheduling/GetResult slices; actual Tick excluded."
+}

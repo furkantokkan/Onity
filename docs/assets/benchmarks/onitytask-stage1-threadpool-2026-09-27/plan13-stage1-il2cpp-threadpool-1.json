@@ -1,0 +1,834 @@
+﻿{
+    "schemaVersion": 3,
+    "suite": "threadpool",
+    "environment": {
+        "buildGuid": "1535396fcc824167973fe9a6a3a17910",
+        "isDevelopment": false,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+            "generatedAtUtc": "2026-09-27T00:46:48.1610021Z",
+            "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+            "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+            "il2CppCompilerConfiguration": "Release",
+            "managedStrippingLevel": "Minimal",
+            "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+            "onityVersion": "0.3.14",
+            "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+            "uniTaskVersion": "2.5.11"
+        }
+    },
+    "allocationRejectionReason": "per-thread counter skipped on IL2CPP after the DI harness observed crashes",
+    "generatedAtUtc": "2026-09-27T00:47:31.0551876Z",
+    "unityVersion": "2022.3.62f2",
+    "platform": "WindowsPlayer",
+    "isEditor": false,
+    "scriptingBackend": "IL2CPP",
+    "codeOptimization": "Player",
+    "gcIncremental": true,
+    "uniTaskAssembly": "UniTask, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "stopwatchFrequency": 10000000,
+    "timerResolutionNanoseconds": 100.0,
+    "samplesPerCase": 8,
+    "warmupIterations": 2,
+    "batchesPerSample": 2,
+    "measurementScope": "128 gated worker-only operations per cohort; two warmup cohorts, eight samples with two measured cohorts per library. Submission elapsed time covers factory/awaiter creation and native callback registration; completion latency starts at first submission and ends at the last worker consumption, including a shared harness release gate. Main waits without Unity frames; two real frames after every cohort are outside both timing slices for deferred return. Submission allocations cover the main submitting thread only, not cross-worker lifecycle. Onity flow-off matches UniTask no-flow; flow-on measures extra context preservation and is not a matched speed comparison. No main-return work or compute benchmark is included.",
+    "allocationCounterKind": "HeapDelta",
+    "mainThreadAllocationsAvailable": false,
+    "mainThreadAllocationCounter": "Unavailable: submission requires a calibrated per-thread counter; the selected HeapDelta counter cannot isolate concurrent workers. per-thread counter skipped on IL2CPP after the DI harness observed crashes",
+    "mainThreadAllocationCalibrationBytes": 69632,
+    "mainThreadEmptyAllocationDeltaBytes": 0,
+    "workerAllocationsAvailable": false,
+    "workerAllocationCounter": "Unavailable: cross-worker lifecycle allocations are not measured.",
+    "synchronousHarnessBaseline": {
+        "library": "",
+        "meanMilliseconds": 0.0,
+        "medianMilliseconds": 0.0,
+        "minMilliseconds": 0.0,
+        "maxMilliseconds": 0.0,
+        "standardDeviationMilliseconds": 0.0,
+        "nanosecondsPerOperation": 0.0,
+        "allocatedBytesPerOperation": 0.0,
+        "allocationSamplesValid": 0,
+        "sampleMilliseconds": [],
+        "sampleAllocatedBytes": [],
+        "sampleAllocationValid": []
+    },
+    "scenarios": [
+        {
+            "environment": {
+                "buildGuid": "1535396fcc824167973fe9a6a3a17910",
+                "isDevelopment": false,
+                "scriptingBackend": "IL2CPP",
+                "trackerEnabled": false,
+                "trackerStackTraceEnabled": false,
+                "flowExecutionContext": false,
+                "runnerPoolCapacity": 128,
+                "executionContextPath": "InternalPair",
+                "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+                "build": {
+                    "generatedAtUtc": "2026-09-27T00:46:48.1610021Z",
+                    "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+                    "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+                    "il2CppCompilerConfiguration": "Release",
+                    "managedStrippingLevel": "Minimal",
+                    "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+                    "onityVersion": "0.3.14",
+                    "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+                    "uniTaskVersion": "2.5.11"
+                }
+            },
+            "displayName": "Raw SwitchToThreadPool submission elapsed",
+            "workload": "Context-free raw registration; flow setting not applicable",
+            "concurrency": 128,
+            "iterationsPerSample": 256,
+            "allocationThread": "Submitting main thread only",
+            "results": [
+                {
+                    "library": "OnityTask raw no-capture",
+                    "meanMilliseconds": 0.5573,
+                    "medianMilliseconds": 0.531,
+                    "minMilliseconds": 0.4359,
+                    "maxMilliseconds": 0.7375,
+                    "standardDeviationMilliseconds": 0.08431401129112529,
+                    "nanosecondsPerOperation": 2176.953125,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.7375,
+                        0.5359,
+                        0.5063,
+                        0.5261,
+                        0.5196,
+                        0.6186,
+                        0.5785,
+                        0.4359
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                },
+                {
+                    "library": "UniTask no-flow",
+                    "meanMilliseconds": 0.5513375,
+                    "medianMilliseconds": 0.5459,
+                    "minMilliseconds": 0.4742,
+                    "maxMilliseconds": 0.6324,
+                    "standardDeviationMilliseconds": 0.04198532295636177,
+                    "nanosecondsPerOperation": 2153.662109375,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.5794,
+                        0.5543,
+                        0.5363,
+                        0.4742,
+                        0.5615,
+                        0.6324,
+                        0.5375,
+                        0.5351
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                }
+            ]
+        },
+        {
+            "environment": {
+                "buildGuid": "1535396fcc824167973fe9a6a3a17910",
+                "isDevelopment": false,
+                "scriptingBackend": "IL2CPP",
+                "trackerEnabled": false,
+                "trackerStackTraceEnabled": false,
+                "flowExecutionContext": false,
+                "runnerPoolCapacity": 128,
+                "executionContextPath": "InternalPair",
+                "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+                "build": {
+                    "generatedAtUtc": "2026-09-27T00:46:48.1610021Z",
+                    "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+                    "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+                    "il2CppCompilerConfiguration": "Release",
+                    "managedStrippingLevel": "Minimal",
+                    "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+                    "onityVersion": "0.3.14",
+                    "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+                    "uniTaskVersion": "2.5.11"
+                }
+            },
+            "displayName": "Raw SwitchToThreadPool completion latency",
+            "workload": "Context-free raw registration; flow setting not applicable",
+            "concurrency": 128,
+            "iterationsPerSample": 256,
+            "allocationThread": "Unavailable: cross-worker lifecycle not measured",
+            "results": [
+                {
+                    "library": "OnityTask raw no-capture",
+                    "meanMilliseconds": 0.789975,
+                    "medianMilliseconds": 0.78085,
+                    "minMilliseconds": 0.6452,
+                    "maxMilliseconds": 0.9676,
+                    "standardDeviationMilliseconds": 0.08739866632277635,
+                    "nanosecondsPerOperation": 3085.83984375,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.9676,
+                        0.7953,
+                        0.7664,
+                        0.7444,
+                        0.7399,
+                        0.822,
+                        0.839,
+                        0.6452
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                },
+                {
+                    "library": "UniTask no-flow",
+                    "meanMilliseconds": 0.7933375,
+                    "medianMilliseconds": 0.77685,
+                    "minMilliseconds": 0.7231,
+                    "maxMilliseconds": 0.9013,
+                    "standardDeviationMilliseconds": 0.05102937726202428,
+                    "nanosecondsPerOperation": 3098.974609375,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.808,
+                        0.7653,
+                        0.8337,
+                        0.7713,
+                        0.7824,
+                        0.9013,
+                        0.7231,
+                        0.7616
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                }
+            ]
+        },
+        {
+            "environment": {
+                "buildGuid": "1535396fcc824167973fe9a6a3a17910",
+                "isDevelopment": false,
+                "scriptingBackend": "IL2CPP",
+                "trackerEnabled": false,
+                "trackerStackTraceEnabled": false,
+                "flowExecutionContext": false,
+                "runnerPoolCapacity": 128,
+                "executionContextPath": "InternalPair",
+                "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+                "build": {
+                    "generatedAtUtc": "2026-09-27T00:46:48.1610021Z",
+                    "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+                    "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+                    "il2CppCompilerConfiguration": "Release",
+                    "managedStrippingLevel": "Minimal",
+                    "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+                    "onityVersion": "0.3.14",
+                    "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+                    "uniTaskVersion": "2.5.11"
+                }
+            },
+            "displayName": "RunOnThreadPool Action submission elapsed",
+            "workload": "Onity flow-off vs UniTask no-flow; matched context semantics",
+            "concurrency": 128,
+            "iterationsPerSample": 256,
+            "allocationThread": "Submitting main thread only",
+            "results": [
+                {
+                    "library": "OnityTask flow-off",
+                    "meanMilliseconds": 0.6923375,
+                    "medianMilliseconds": 0.6695500000000001,
+                    "minMilliseconds": 0.5966,
+                    "maxMilliseconds": 0.8193,
+                    "standardDeviationMilliseconds": 0.07866876663422402,
+                    "nanosecondsPerOperation": 2704.443359375,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.5966,
+                        0.5989,
+                        0.686,
+                        0.6531,
+                        0.6472,
+                        0.8193,
+                        0.7784,
+                        0.7592
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                },
+                {
+                    "library": "UniTask no-flow",
+                    "meanMilliseconds": 0.6453,
+                    "medianMilliseconds": 0.6407499999999999,
+                    "minMilliseconds": 0.5146,
+                    "maxMilliseconds": 0.7418,
+                    "standardDeviationMilliseconds": 0.07017852235548995,
+                    "nanosecondsPerOperation": 2520.703125,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.6688,
+                        0.5871,
+                        0.5146,
+                        0.6351,
+                        0.6464,
+                        0.7418,
+                        0.7387,
+                        0.6299
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                }
+            ]
+        },
+        {
+            "environment": {
+                "buildGuid": "1535396fcc824167973fe9a6a3a17910",
+                "isDevelopment": false,
+                "scriptingBackend": "IL2CPP",
+                "trackerEnabled": false,
+                "trackerStackTraceEnabled": false,
+                "flowExecutionContext": false,
+                "runnerPoolCapacity": 128,
+                "executionContextPath": "InternalPair",
+                "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+                "build": {
+                    "generatedAtUtc": "2026-09-27T00:46:48.1610021Z",
+                    "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+                    "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+                    "il2CppCompilerConfiguration": "Release",
+                    "managedStrippingLevel": "Minimal",
+                    "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+                    "onityVersion": "0.3.14",
+                    "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+                    "uniTaskVersion": "2.5.11"
+                }
+            },
+            "displayName": "RunOnThreadPool Action completion latency",
+            "workload": "Onity flow-off vs UniTask no-flow; matched context semantics",
+            "concurrency": 128,
+            "iterationsPerSample": 256,
+            "allocationThread": "Unavailable: cross-worker lifecycle not measured",
+            "results": [
+                {
+                    "library": "OnityTask flow-off",
+                    "meanMilliseconds": 1.1272375000000002,
+                    "medianMilliseconds": 1.1521,
+                    "minMilliseconds": 0.9883,
+                    "maxMilliseconds": 1.2563,
+                    "standardDeviationMilliseconds": 0.08692544129166101,
+                    "nanosecondsPerOperation": 4403.271484375,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.9883,
+                        1.0145,
+                        1.1276,
+                        1.0814,
+                        1.1768,
+                        1.1766,
+                        1.1964,
+                        1.2563
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                },
+                {
+                    "library": "UniTask no-flow",
+                    "meanMilliseconds": 1.6765875000000004,
+                    "medianMilliseconds": 1.8164,
+                    "minMilliseconds": 1.3537,
+                    "maxMilliseconds": 1.9164,
+                    "standardDeviationMilliseconds": 0.24103688222707748,
+                    "nanosecondsPerOperation": 6549.169921875001,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        1.9164,
+                        1.366,
+                        1.3537,
+                        1.908,
+                        1.3871,
+                        1.8487,
+                        1.832,
+                        1.8008
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                }
+            ]
+        },
+        {
+            "environment": {
+                "buildGuid": "1535396fcc824167973fe9a6a3a17910",
+                "isDevelopment": false,
+                "scriptingBackend": "IL2CPP",
+                "trackerEnabled": false,
+                "trackerStackTraceEnabled": false,
+                "flowExecutionContext": true,
+                "runnerPoolCapacity": 128,
+                "executionContextPath": "InternalPair",
+                "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+                "build": {
+                    "generatedAtUtc": "2026-09-27T00:46:48.1610021Z",
+                    "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+                    "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+                    "il2CppCompilerConfiguration": "Release",
+                    "managedStrippingLevel": "Minimal",
+                    "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+                    "onityVersion": "0.3.14",
+                    "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+                    "uniTaskVersion": "2.5.11"
+                }
+            },
+            "displayName": "RunOnThreadPool Action submission elapsed",
+            "workload": "Onity flow-on vs UniTask no-flow; additional context feature cost",
+            "concurrency": 128,
+            "iterationsPerSample": 256,
+            "allocationThread": "Submitting main thread only",
+            "results": [
+                {
+                    "library": "OnityTask flow-on",
+                    "meanMilliseconds": 0.7053375,
+                    "medianMilliseconds": 0.6917500000000001,
+                    "minMilliseconds": 0.5718,
+                    "maxMilliseconds": 0.8424,
+                    "standardDeviationMilliseconds": 0.08088120822385137,
+                    "nanosecondsPerOperation": 2755.224609375,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.8424,
+                        0.6862,
+                        0.7502,
+                        0.6973,
+                        0.6656,
+                        0.7905,
+                        0.5718,
+                        0.6387
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                },
+                {
+                    "library": "UniTask no-flow",
+                    "meanMilliseconds": 0.6611250000000001,
+                    "medianMilliseconds": 0.6617500000000001,
+                    "minMilliseconds": 0.5628,
+                    "maxMilliseconds": 0.7898,
+                    "standardDeviationMilliseconds": 0.07182845449402346,
+                    "nanosecondsPerOperation": 2582.5195312500005,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.7413,
+                        0.6162,
+                        0.7898,
+                        0.5814,
+                        0.5628,
+                        0.6681,
+                        0.6554,
+                        0.674
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                }
+            ]
+        },
+        {
+            "environment": {
+                "buildGuid": "1535396fcc824167973fe9a6a3a17910",
+                "isDevelopment": false,
+                "scriptingBackend": "IL2CPP",
+                "trackerEnabled": false,
+                "trackerStackTraceEnabled": false,
+                "flowExecutionContext": true,
+                "runnerPoolCapacity": 128,
+                "executionContextPath": "InternalPair",
+                "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+                "build": {
+                    "generatedAtUtc": "2026-09-27T00:46:48.1610021Z",
+                    "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+                    "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+                    "il2CppCompilerConfiguration": "Release",
+                    "managedStrippingLevel": "Minimal",
+                    "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+                    "onityVersion": "0.3.14",
+                    "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+                    "uniTaskVersion": "2.5.11"
+                }
+            },
+            "displayName": "RunOnThreadPool Action completion latency",
+            "workload": "Onity flow-on vs UniTask no-flow; additional context feature cost",
+            "concurrency": 128,
+            "iterationsPerSample": 256,
+            "allocationThread": "Unavailable: cross-worker lifecycle not measured",
+            "results": [
+                {
+                    "library": "OnityTask flow-on",
+                    "meanMilliseconds": 1.1864375,
+                    "medianMilliseconds": 1.16275,
+                    "minMilliseconds": 1.047,
+                    "maxMilliseconds": 1.4024,
+                    "standardDeviationMilliseconds": 0.10035201713842132,
+                    "nanosecondsPerOperation": 4634.521484375,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        1.4024,
+                        1.1368,
+                        1.1887,
+                        1.1333,
+                        1.1964,
+                        1.2605,
+                        1.047,
+                        1.1264
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                },
+                {
+                    "library": "UniTask no-flow",
+                    "meanMilliseconds": 1.5712374999999999,
+                    "medianMilliseconds": 1.4959,
+                    "minMilliseconds": 0.8006,
+                    "maxMilliseconds": 2.7624,
+                    "standardDeviationMilliseconds": 0.6354779853336777,
+                    "nanosecondsPerOperation": 6137.646484374999,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        2.7624,
+                        2.3171,
+                        1.1072,
+                        1.6682,
+                        0.8006,
+                        0.9226,
+                        1.447,
+                        1.5448
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                }
+            ]
+        },
+        {
+            "environment": {
+                "buildGuid": "1535396fcc824167973fe9a6a3a17910",
+                "isDevelopment": false,
+                "scriptingBackend": "IL2CPP",
+                "trackerEnabled": false,
+                "trackerStackTraceEnabled": false,
+                "flowExecutionContext": false,
+                "runnerPoolCapacity": 128,
+                "executionContextPath": "InternalPair",
+                "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+                "build": {
+                    "generatedAtUtc": "2026-09-27T00:46:48.1610021Z",
+                    "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+                    "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+                    "il2CppCompilerConfiguration": "Release",
+                    "managedStrippingLevel": "Minimal",
+                    "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+                    "onityVersion": "0.3.14",
+                    "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+                    "uniTaskVersion": "2.5.11"
+                }
+            },
+            "displayName": "RunOnThreadPool Func<int> submission elapsed",
+            "workload": "Onity flow-off vs UniTask no-flow; matched context semantics",
+            "concurrency": 128,
+            "iterationsPerSample": 256,
+            "allocationThread": "Submitting main thread only",
+            "results": [
+                {
+                    "library": "OnityTask flow-off",
+                    "meanMilliseconds": 0.6413,
+                    "medianMilliseconds": 0.6223,
+                    "minMilliseconds": 0.5672,
+                    "maxMilliseconds": 0.7425,
+                    "standardDeviationMilliseconds": 0.056849494280952057,
+                    "nanosecondsPerOperation": 2505.078125,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.7138,
+                        0.5672,
+                        0.6345,
+                        0.6101,
+                        0.6086,
+                        0.5925,
+                        0.6612,
+                        0.7425
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                },
+                {
+                    "library": "UniTask no-flow",
+                    "meanMilliseconds": 0.652875,
+                    "medianMilliseconds": 0.64175,
+                    "minMilliseconds": 0.5367,
+                    "maxMilliseconds": 0.8281,
+                    "standardDeviationMilliseconds": 0.09418031575122266,
+                    "nanosecondsPerOperation": 2550.29296875,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.8281,
+                        0.5367,
+                        0.5584,
+                        0.5735,
+                        0.7521,
+                        0.6396,
+                        0.6907,
+                        0.6439
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                }
+            ]
+        },
+        {
+            "environment": {
+                "buildGuid": "1535396fcc824167973fe9a6a3a17910",
+                "isDevelopment": false,
+                "scriptingBackend": "IL2CPP",
+                "trackerEnabled": false,
+                "trackerStackTraceEnabled": false,
+                "flowExecutionContext": false,
+                "runnerPoolCapacity": 128,
+                "executionContextPath": "InternalPair",
+                "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+                "build": {
+                    "generatedAtUtc": "2026-09-27T00:46:48.1610021Z",
+                    "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+                    "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+                    "il2CppCompilerConfiguration": "Release",
+                    "managedStrippingLevel": "Minimal",
+                    "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+                    "onityVersion": "0.3.14",
+                    "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+                    "uniTaskVersion": "2.5.11"
+                }
+            },
+            "displayName": "RunOnThreadPool Func<int> completion latency",
+            "workload": "Onity flow-off vs UniTask no-flow; matched context semantics",
+            "concurrency": 128,
+            "iterationsPerSample": 256,
+            "allocationThread": "Unavailable: cross-worker lifecycle not measured",
+            "results": [
+                {
+                    "library": "OnityTask flow-off",
+                    "meanMilliseconds": 1.1542999999999999,
+                    "medianMilliseconds": 1.1771500000000002,
+                    "minMilliseconds": 0.9988,
+                    "maxMilliseconds": 1.2219,
+                    "standardDeviationMilliseconds": 0.07238283636332578,
+                    "nanosecondsPerOperation": 4508.984374999999,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        1.1056,
+                        0.9988,
+                        1.2144,
+                        1.1607,
+                        1.1936,
+                        1.1191,
+                        1.2219,
+                        1.2203
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                },
+                {
+                    "library": "UniTask no-flow",
+                    "meanMilliseconds": 1.8529250000000002,
+                    "medianMilliseconds": 1.89275,
+                    "minMilliseconds": 1.4038,
+                    "maxMilliseconds": 2.0957,
+                    "standardDeviationMilliseconds": 0.20005644047368235,
+                    "nanosecondsPerOperation": 7237.988281250001,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        1.955,
+                        1.4038,
+                        1.9451,
+                        1.7679,
+                        2.0957,
+                        1.8404,
+                        1.7911,
+                        2.0244
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                }
+            ]
+        },
+        {
+            "environment": {
+                "buildGuid": "1535396fcc824167973fe9a6a3a17910",
+                "isDevelopment": false,
+                "scriptingBackend": "IL2CPP",
+                "trackerEnabled": false,
+                "trackerStackTraceEnabled": false,
+                "flowExecutionContext": true,
+                "runnerPoolCapacity": 128,
+                "executionContextPath": "InternalPair",
+                "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+                "build": {
+                    "generatedAtUtc": "2026-09-27T00:46:48.1610021Z",
+                    "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+                    "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+                    "il2CppCompilerConfiguration": "Release",
+                    "managedStrippingLevel": "Minimal",
+                    "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+                    "onityVersion": "0.3.14",
+                    "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+                    "uniTaskVersion": "2.5.11"
+                }
+            },
+            "displayName": "RunOnThreadPool Func<int> submission elapsed",
+            "workload": "Onity flow-on vs UniTask no-flow; additional context feature cost",
+            "concurrency": 128,
+            "iterationsPerSample": 256,
+            "allocationThread": "Submitting main thread only",
+            "results": [
+                {
+                    "library": "OnityTask flow-on",
+                    "meanMilliseconds": 1.286425,
+                    "medianMilliseconds": 1.2595,
+                    "minMilliseconds": 0.6959,
+                    "maxMilliseconds": 1.9248,
+                    "standardDeviationMilliseconds": 0.5313398365217876,
+                    "nanosecondsPerOperation": 5025.09765625,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.7396,
+                        0.8616,
+                        0.6959,
+                        0.7552,
+                        1.9248,
+                        1.6574,
+                        1.7406,
+                        1.9163
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                },
+                {
+                    "library": "UniTask no-flow",
+                    "meanMilliseconds": 1.1987375,
+                    "medianMilliseconds": 1.2117,
+                    "minMilliseconds": 0.5997,
+                    "maxMilliseconds": 1.7825,
+                    "standardDeviationMilliseconds": 0.5138334261643067,
+                    "nanosecondsPerOperation": 4682.568359375,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        0.5997,
+                        0.7091,
+                        0.8337,
+                        0.6251,
+                        1.5897,
+                        1.7825,
+                        1.7678,
+                        1.6823
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                }
+            ]
+        },
+        {
+            "environment": {
+                "buildGuid": "1535396fcc824167973fe9a6a3a17910",
+                "isDevelopment": false,
+                "scriptingBackend": "IL2CPP",
+                "trackerEnabled": false,
+                "trackerStackTraceEnabled": false,
+                "flowExecutionContext": true,
+                "runnerPoolCapacity": 128,
+                "executionContextPath": "InternalPair",
+                "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+                "build": {
+                    "generatedAtUtc": "2026-09-27T00:46:48.1610021Z",
+                    "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+                    "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+                    "il2CppCompilerConfiguration": "Release",
+                    "managedStrippingLevel": "Minimal",
+                    "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+                    "onityVersion": "0.3.14",
+                    "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+                    "uniTaskVersion": "2.5.11"
+                }
+            },
+            "displayName": "RunOnThreadPool Func<int> completion latency",
+            "workload": "Onity flow-on vs UniTask no-flow; additional context feature cost",
+            "concurrency": 128,
+            "iterationsPerSample": 256,
+            "allocationThread": "Unavailable: cross-worker lifecycle not measured",
+            "results": [
+                {
+                    "library": "OnityTask flow-on",
+                    "meanMilliseconds": 1.9439750000000003,
+                    "medianMilliseconds": 1.86315,
+                    "minMilliseconds": 1.1252,
+                    "maxMilliseconds": 2.8558,
+                    "standardDeviationMilliseconds": 0.7109676095821806,
+                    "nanosecondsPerOperation": 7593.652343750001,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        1.2824,
+                        1.3566,
+                        1.1252,
+                        1.2212,
+                        2.6629,
+                        2.3697,
+                        2.678,
+                        2.8558
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                },
+                {
+                    "library": "UniTask no-flow",
+                    "meanMilliseconds": 2.5350125,
+                    "medianMilliseconds": 2.24665,
+                    "minMilliseconds": 1.6495,
+                    "maxMilliseconds": 3.7131,
+                    "standardDeviationMilliseconds": 0.7107801672062537,
+                    "nanosecondsPerOperation": 9902.392578125,
+                    "allocatedBytesPerOperation": -1.0,
+                    "allocationSamplesValid": 0,
+                    "sampleMilliseconds": [
+                        2.3452,
+                        1.6495,
+                        2.1481,
+                        1.9072,
+                        2.0449,
+                        3.0535,
+                        3.7131,
+                        3.4186
+                    ],
+                    "sampleAllocatedBytes": [],
+                    "sampleAllocationValid": []
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,2708 @@
+{
+  "generatedAtUtc": "2026-09-27T06:35:31.4917076Z",
+  "sourceHead": "3f098937e9198a17edcf72cd75e73bd5bc76e2fd",
+  "sourceRoot": "C:/Users/e-fur/.codex/worktrees/onity-fast-capture-f682b7c/Onity",
+  "verificationHost": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity",
+  "files": [
+    {
+      "path": "Packages/com.onity.framework/Runtime/Composition.meta",
+      "sha256": "F839A5B48CA4ACBD7F65E8C55D66E830BE4981BF3E0D5D471FD7D780092F77E9",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Composition/Onity.Composition.asmdef",
+      "sha256": "FE2ADBF638B59ADF664F46C5DFFAD10691E2323ACACC24E62E40BC3F47E2AFF6",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Composition/Onity.Composition.asmdef.meta",
+      "sha256": "1A0EBBD5B5F79EF4FE8304F1479F31F8F602043BEE916F8D115C062D3D593D35",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Composition/Scripts.meta",
+      "sha256": "463A9F0364896418D722077DFA285C0A598D04CC5FD6039CD162A2BE460A7433",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Composition/Scripts/OnityCompositionExtensions.cs",
+      "sha256": "7735D8775976C0BACA6963E39FEE23FEDBAE62550B4D055C8BAF922AD766F0FF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Composition/Scripts/OnityCompositionExtensions.cs.meta",
+      "sha256": "78C82CB7A2F4D38276E73C37285E3D0BDCDAA3A2966DA235E535B72C0DB283DC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Core.meta",
+      "sha256": "9867113F2224212C6649434D0624002ACCF06D11EBF652B8474BEE01E5A3BE0A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Core/Onity.Core.asmdef",
+      "sha256": "9123577D6B7C8FDBBDC9B05B9F88F0959E8E575D525C96648D540A90B340ADB9",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Core/Onity.Core.asmdef.meta",
+      "sha256": "F31FA2A5A3F0A1B35E98FE11D5F0101E3B12DC0CD29E31B7CFDDA47EEAFAC15B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Core/Scripts.meta",
+      "sha256": "2DCFC8B810C135EEB27E99860088AF6789F50BBEAF00A4D311B81DAA4AC47C4D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Core/Scripts/DisposableAction.cs",
+      "sha256": "E7E2E805F202ECD531AFB35C2E1C5FAB1847D7EBAAD054D23FEF9E865CDB1D52",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Core/Scripts/DisposableAction.cs.meta",
+      "sha256": "A573769A2A7F0C028178B68BA46A5B3F82E2B6AF52A71902E49626AF5DC394C9",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Core/Scripts/Lifetime.cs",
+      "sha256": "E4F4BBCCFDD6B5B1E9E1BB78F7832F83F3A2053B8FD16D511F4A91FDEE52DFF7",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Core/Scripts/Lifetime.cs.meta",
+      "sha256": "BA50BB4AC9CC96F1A6454B8941D832B204BA0291BF0570A0623FC3964593D515",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Core/Scripts/Unit.cs",
+      "sha256": "3A62456335024C8149B5E387410041C42C1B48277CE1B5384AA52421C5A68A3F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Core/Scripts/Unit.cs.meta",
+      "sha256": "7BE03C6139049EB26FEE7DC122089A891EC7F05C556458E641B723E3DB5404E3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI.meta",
+      "sha256": "DCCB8EC7B2F3F4F225C5F68848EC33404047B16AFCB5675EB09EE37DE8015452",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Onity.DI.asmdef",
+      "sha256": "1DC4AF05926B8B6805E414B929A33E6AFF58815FC51C28B77D76E40E7AFB1DB0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Onity.DI.asmdef.meta",
+      "sha256": "8590280DADEDE3FCC241D06F965FFB872EE4C8123B7D04F5439030D2F83552D5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts.meta",
+      "sha256": "71FCF0C99B16649F6AE449235734CF66555BDC348E4094A317F67B3978C19579",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/InjectAttribute.cs",
+      "sha256": "0E2029593F297E043DD69AAA3F88BC37085124154AC3F5807E409984DE89ECFB",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/InjectAttribute.cs.meta",
+      "sha256": "1680B10144A783BEB4D31E908AD34E02C3C2F2629D7593059B437CF1020CD152",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal.meta",
+      "sha256": "2969F0C60DD9786325ED1F683934F8FDC8CF1EA1A06E53EFA37EE2B1CCDC34FF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/ActivatorCompiler.cs",
+      "sha256": "0E76D41BC95972BC2DB38E50CCCFB112175748DD065605A2DC4FE92AF4857F10",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/ActivatorCompiler.cs.meta",
+      "sha256": "453413AE2467D3C63790ECFDB0657C370038715F7D5B8EE9C0E4038055405CF4",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/BakedGraph.cs",
+      "sha256": "AB86F569C31EC09418879E83F69607C9D8B61AA825BC686F4E5478BAD333B27C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/BakedGraph.cs.meta",
+      "sha256": "E79D01E42ED4F6C301C26D0A27FE7897A11125410F82828DD430FB16B628A9E3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/GeneratedActivators.cs",
+      "sha256": "27D11F55CF592691A984FB5DDB3B404590DBEE96034F97EE128E2B479057F599",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/GeneratedActivators.cs.meta",
+      "sha256": "E44D6447E9E3C1D7455FDFDECA15D7F4F976D9CA6FA8EBB490D56909005576CD",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/MemberSetterCompiler.cs",
+      "sha256": "CC4F906BA23AC4F6EE07C106648AB985C5ED73E16D0F3F45894215219FDC283B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/MemberSetterCompiler.cs.meta",
+      "sha256": "8DD27A577559C7EEC467474236C0369F40A91817863448591262E2537E91424A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/RuntimeCompileSupport.cs",
+      "sha256": "E880E5466BBA762DB73AF16A1E22717361A5A03BC184BDD80A55E9BCE0405394",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/RuntimeCompileSupport.cs.meta",
+      "sha256": "743F745206C81E52A279E25B1AB685A1522DA19754DD8204DED5A587809C6A80",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/TypeIdRegistry.cs",
+      "sha256": "878A942E1A58AFC0163D5EB5490D3518AF7AFC83AFF302D0CC3B1623CAE0FDC9",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/Internal/TypeIdRegistry.cs.meta",
+      "sha256": "E56E33208BACC1F3E466DA68B4D99E4A5B10BF0988F1A312114CFBFD89E9F615",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/IResolver.cs",
+      "sha256": "07F411F851921DE5A560C7AD28D6D919AE83942720C7FD7A3F9E910F56CBA20E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/IResolver.cs.meta",
+      "sha256": "CC8425672EB80DEC02A2447B07083AF2A3156D602BA0802C52EC3C752EF95603",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/MultiTypeBindingBuilder.cs",
+      "sha256": "6E59F863A46AD6DBC0A9825138DC1E541F504FA02D68418CE9BA0297D08D73DA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/MultiTypeBindingBuilder.cs.meta",
+      "sha256": "B65C5267A0A164044DD442F2E61E22CAF15FBD58E3FE1DBED14300AC984E9DA6",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityBindingException.cs",
+      "sha256": "54452C1BDF075DF1D14A8C6B20A87C53FDEE1F74618FAECE6BADEA2970390398",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityBindingException.cs.meta",
+      "sha256": "DBA42010F23F4FEE08F6E6B781F6398D916CC064AB97FA1AE2C2F4872F4E4D10",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityContainer.cs",
+      "sha256": "F4D7620A5EBB7F8DA1FF83F65F09FA48E402C39B77CE55FBA4E6C70021A54AF2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityContainer.cs.meta",
+      "sha256": "F76A60C1D5B875026171F13ECA6577AA3F4FB22458A43C2761F5948634A17669",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityGenerateActivatorAttribute.cs",
+      "sha256": "9F843EAD162BFC50E006D51CBB97E4FC2C2009A6E9AD4DAB8EA336E168BEBE5C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityGenerateActivatorAttribute.cs.meta",
+      "sha256": "24AA619291A962A8E750A5440565A8B2464DC8B896A1DC4ADDAB08BF1187FA68",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityLifecycle.cs",
+      "sha256": "B1B50FCC277EE2D30B807BBF2CE3BF288E840938EA86DF4AB7EB827118997DD0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityLifecycle.cs.meta",
+      "sha256": "7C45475259CF4CA24B9915550402301C788FE1269D18AE5DBE2DB19CF5E4DE57",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityResolveException.cs",
+      "sha256": "8DF5A2D16B5D3856933E43F1F7706C674334F795A040196BD84143AF61A1867D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/OnityResolveException.cs.meta",
+      "sha256": "7BF7A9EE713C78A08ED919E12ED5FDC942228905B1E83120DAEFD70237859B4C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/RuntimeTypeBindingBuilder.cs",
+      "sha256": "4638073A01A5DD1F0385E2F07EB4CDB2CC729EF47C9E2D46B6583454124CFDC6",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/RuntimeTypeBindingBuilder.cs.meta",
+      "sha256": "5739E1FD35ECBB8CF8C7FEB4C434C3DB08BB00BC18C6A4564B3CB1B100D8EE05",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/TypeBindingBuilder.cs",
+      "sha256": "5056FC10C4344AC5E4D2C86E093F02E49DA1C223E96FC76A58DF4DB50409DE6D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DI/Scripts/TypeBindingBuilder.cs.meta",
+      "sha256": "F65FCC3B919C587AC9F013B356C8479AB28F95D6FA23F2B6ABE0E84A539C5A79",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS.meta",
+      "sha256": "7934C49A00D1A48B0CFBE6D1F2645A5C5CE1CFC4CF7A39689FC0B90F5BC461EE",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Onity.DOTS.asmdef",
+      "sha256": "602919F904D05180FCC6C10C8F3163320508D42BA9E9DDEADFB7CBB3F8B8AB00",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Onity.DOTS.asmdef.meta",
+      "sha256": "F6829CFBD39F70716B9760DA4D44857F61449238CCF460F4CA9E5E32F2BD49BF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts.meta",
+      "sha256": "13B0AE2EB75E038DB0EE761FEF7D8DBF44FB9632506CB77997C59E319460F081",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsIntEventAsync.cs",
+      "sha256": "F325C24E74B56B3D45631635ABBF14D35D1E7D5D4F98447E2A771A0249A24C8D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsIntEventAsync.cs.meta",
+      "sha256": "87BE0604FA8407C93EF9367C87688B5BB84357E59CC925E60D366D11C036A89D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsIntEventBridge.cs",
+      "sha256": "8F40A942CA1261819B9F9469C48994FCA604A78868E88DBCB04967E6B9AA5F91",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsIntEventBridge.cs.meta",
+      "sha256": "4DB4ADD49D042092CE5FA84C8F0A93A8AE5A413327B3BF068DCDCBDA7FF5A86A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsIntEventQueue.cs",
+      "sha256": "19C91A49EF3FD21905C677AEFBED7EA456874F884902A6F82A4947272420932B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsIntEventQueue.cs.meta",
+      "sha256": "330C43591F47A7441D6545FF1C1140048A51629808055B79E4BE4A886175784A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsPoolEntityUtils.cs",
+      "sha256": "9C27A128C54B8137CFF9613F78C9893B42C3C1662B94FA331758EB5C058A9E84",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsPoolEntityUtils.cs.meta",
+      "sha256": "527430E34D24D5D96D015035B9400EBAE7E1009F73D16E5A385EF1E81DDD81E2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsSessionBridge.cs",
+      "sha256": "08B5DC900AACCBCB595314F55F77728667EB18E3BC62D7574EED8373FF5B00F5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsSessionBridge.cs.meta",
+      "sha256": "623ED1CE667B68F2CD44EEFCAD6AB176416893766EBD5801653E79B34230B446",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsSystemGroups.cs",
+      "sha256": "2A1305674BAEB3F289E8C872CFC1A8908AEDC94D238FD8BA58E4E37630223675",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/DOTS/Scripts/OnityDotsSystemGroups.cs.meta",
+      "sha256": "98CCDDB3C1D989302F3C2EBDC480E3E3EA1D0802B3DE90D65D72602DF44BC005",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Factory.meta",
+      "sha256": "A00A69D8726B38C69CF7685EA55CA8D4E376048DD19FDC9A188D23A1DFD6D09A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Factory/Onity.Factory.asmdef",
+      "sha256": "A66B34A99FB642DCBDA4F61D4473BCBEB499E6A9D2A61846E4CB88DAD321F2B4",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Factory/Onity.Factory.asmdef.meta",
+      "sha256": "B96825BE46C2B45B469C12C491C9A20D5CAD2D8FF45A7606A96B3B416248FD0E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Factory/Scripts.meta",
+      "sha256": "B5A372577B83AFFB5B6518800F54257606A10BB376179EF8002A9EDAE8860A50",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Factory/Scripts/IFactory.cs",
+      "sha256": "2587D17177C6629CF9F60AF0ED733620BD1DCA0587CBAD50D4A451BFB70C706A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Factory/Scripts/IFactory.cs.meta",
+      "sha256": "72FCA7C8BE5048D380BE55ECAA647693C136AAD40746F1301758B99E557C0C7B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging.meta",
+      "sha256": "C90FCA976F1BC6FF468560FF00E732E89FC55AE7E5E9FF7F443DFA260A8F1B04",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Onity.Messaging.asmdef",
+      "sha256": "1809010A5E20108AE2617A604E3C4D56E099126570ECAA9FBC819F8B45B83938",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Onity.Messaging.asmdef.meta",
+      "sha256": "0D32F80D0BAD42997D4E4D119EAD117ACD1AF31B1520209F4ED5CE07F11BFD23",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts.meta",
+      "sha256": "6100D73E80BE4DE3FEA64D2C80E6662BE716068E95331F3AA555C4F838729ECA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/AsyncMessageChannel.cs",
+      "sha256": "41BEF96ABF81ED2698A3B59848C7900571974767A537CBD37A66C8BAC84BF6A5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/AsyncMessageChannel.cs.meta",
+      "sha256": "9EE5CF1C5E4CB322CB6B800696973ECB2B3D80689760CA186E559064A5B8DAA7",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IAsyncPublisher.cs",
+      "sha256": "6C1EB8E5CB15EEC54578F821716CAAD062443368CA1FCD29C454E53DBE6EF5DA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IAsyncPublisher.cs.meta",
+      "sha256": "63B38D5A300DC08EF144ECF9EE404D79BB6D2BE888FB36087428FB040A72082A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IAsyncSubscriber.cs",
+      "sha256": "B5E6CB029A5CA19C96B579CC8FCA7ED5496FC09FC091F4600949148435505964",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IAsyncSubscriber.cs.meta",
+      "sha256": "8977EB1618CB433FC91E37461DDA012E9D3B364BD28FF77E6830728E571AC8D6",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IKeyedPublisher.cs",
+      "sha256": "86E61B9650629B601927595D42BA2C950CFDCE20F0DC143AB552EF03254A975B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IKeyedPublisher.cs.meta",
+      "sha256": "3C7CAB8E848121484B6854160887E8270C8DC966D8900AD2BFFEDCB41D3AA346",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IKeyedSubscriber.cs",
+      "sha256": "E4358807201D1E65B1BFA0BEF93C1CF9B584DFF7DE79C53878370A173AFACE96",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IKeyedSubscriber.cs.meta",
+      "sha256": "F154131E03DA525CB046EF4B0A2E311184370F3A67EC1A9843BEBD9B4EA75484",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IMessageBroker.cs",
+      "sha256": "8709009FF00EF567FD7EB9322E47BC07668A3CA8E60368D81BDA2FAFD2F76682",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IMessageBroker.cs.meta",
+      "sha256": "EA9DA0A313913781A03A7E0AFA5CDDE234610CB4A0F015EE0E8BFF48814A0192",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IPublisher.cs",
+      "sha256": "6EB0B05E2865CC3EEC62E5F7F0E4E4E28CC4FC3482C03605DDAAC3F740D08CB1",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/IPublisher.cs.meta",
+      "sha256": "B740951C5E97FF28C7C69B3BE0BB9C968DC93436E1C857ACAEC2D16BD1818B6C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/ISubscriber.cs",
+      "sha256": "707AB3B8D3B8913739C449FEC92DB93B88830508CD1C1EDD76378ADEFB6CD5E1",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/ISubscriber.cs.meta",
+      "sha256": "4D31A4652715207A8242C1EF105792D1B82B2D8F13D98576FCCF688C562CEE35",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/KeyedMessageChannel.cs",
+      "sha256": "179C06D3165834EA61A8A46EE3A370ADA1968FC9C98F7568234D5B23078A4A8F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/KeyedMessageChannel.cs.meta",
+      "sha256": "7F78E2E58B98645EAB4F2BFBB140C9C7E08F65683BFB0242A2A417BE2F22841C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/MessageBroker.cs",
+      "sha256": "E47BC8D8BBC456744125146CF66C01C2451EA88F39446F4B5CE5300ECEA481FC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/MessageBroker.cs.meta",
+      "sha256": "5D4E63B3E6F7F2BD274BFB985464E741B57E7026D13770E986935D3A90F11CB4",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/MessageBrokerExtensions.cs",
+      "sha256": "F2F58507E70118464F39D8A2E2EA19108F07C7CF6E009F3024EB8C80A2E9802F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/MessageBrokerExtensions.cs.meta",
+      "sha256": "156DB6935616D7902AE01A00AD68F9EEAB2467C2FDF1D009F60E4706C76DD4F1",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/MessageChannel.cs",
+      "sha256": "12744E1A6C94E65D2EB36DA8661E2FFD49C0ACC9E53CB89EA8704E203F8DF9B3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/MessageChannel.cs.meta",
+      "sha256": "1B4B0BB213CD289BB5DA36FD69DA474F29AE79EB57C51C941480E8BE7ACEED62",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/MessageHandler.cs",
+      "sha256": "58B3689DC68D863E6746BBDBC33FCAB6E56BBC2B8A57D54E267865869EBA499B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/MessageHandler.cs.meta",
+      "sha256": "A9EAB85F229F9217F020BF3BCC53D3634AA964330D85D4B78BDA9125A220DA78",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/OnityMessagingException.cs",
+      "sha256": "D3E90A2C821027D78E6D913A1FA0776D7889C6D7B32A31410FDD6E8ADF7382AF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Messaging/Scripts/OnityMessagingException.cs.meta",
+      "sha256": "8CB604BFFC65B4D02CC3BD374477AD096BEE26887BFE0FE63BF847968ED236F2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling.meta",
+      "sha256": "B60D14563842474EA8307CBAD955C8C9A668710140BD1CFEFEECFE238F30CA09",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Onity.Pooling.asmdef",
+      "sha256": "E259EF965FA193808A8755B384CD2154A021C4FA43F458C4B203E85EBA98BB50",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Onity.Pooling.asmdef.meta",
+      "sha256": "53BC1133779D685DCEF68D54CFC8FD80816949361DB0E86AD61D865CAADC9A78",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Scripts.meta",
+      "sha256": "473EDF113DC8DA0ECC67B7DEDFB67FB2A8AF8576DC8C302692A804360CCEC94A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/IPool.cs",
+      "sha256": "030AC58F4B3C57428D3F0D5BBEE9B4FA4B608FD3006B18C68C4EDB60FB3B2D76",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/IPool.cs.meta",
+      "sha256": "8A32708C0D0BB264FE586BF796B7DB60AFF512A4354BAC971806F1096633309A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/IPoolHooks.cs",
+      "sha256": "ADF9813146BB37682B2385E5F18D2A2704BAAD4FE24D60B19349F9AE5835DED2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/IPoolHooks.cs.meta",
+      "sha256": "52448E73A04F53A5609DD209ECE14C98C7080D4C1CCABC327BE93BCDBDCDE3F9",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/OnityObjectPool.cs",
+      "sha256": "2E632597B9E901569CB05E54D34D48C9E962C35D907D70B5CEC7675099E59DE2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/OnityObjectPool.cs.meta",
+      "sha256": "F7F5781143A85FEB500940BE7EC85B65A2371D8E510487893CDFCFC29D9519A3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/OnityPoolDiagnosticsRegistry.cs",
+      "sha256": "1E292F34FA6A8C8E39035749CDE6C7EE23BB0C5615E624A82A47F8A621DC132C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/OnityPoolDiagnosticsRegistry.cs.meta",
+      "sha256": "A9DB36BF7798A387AF8116DAB00ABD9A677D7E4FB581E87A0C92362B2C9F173C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/PrefabComponentPool.cs",
+      "sha256": "CEB043C705CFAE471762B8B175F90EC81E75A197ED5AE80EE4ACBF260982212C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Pooling/Scripts/PrefabComponentPool.cs.meta",
+      "sha256": "AFE0AE4D5358637F107D3600B4A60875F7BB1D812A02A22FFCE9BC085DA7DA72",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive.meta",
+      "sha256": "D7EB8520F48960F6152188036EC455E207068A977287C6BAE9BC5F2C450BB794",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Onity.Reactive.asmdef",
+      "sha256": "1EDE0AC961F3696B05B0896462C40E19523A7BBCC97749D139CF699BB72FD51C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Onity.Reactive.asmdef.meta",
+      "sha256": "6D813B709259970E82E24BA960A84C762A500B8D3714AABA85A4285E2A2AB8A2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts.meta",
+      "sha256": "027BC04C363DFFE8376B3AFE29D4B18B5472F379495C53EF1754BEC25B99A87C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/CompositeDisposable.cs",
+      "sha256": "930D83D5C3D21C6759DD37B741D87CD3309F04983DFE564E33DAE6084A5AC749",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/CompositeDisposable.cs.meta",
+      "sha256": "AEA0BBC7DE1614A2BE1377101134B56C19EC5071AA1547E1A8C8FFFF11B5DED0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/IOnityObservable.cs",
+      "sha256": "808828F6EDBB1876BDAF3C637ABED2564C683D53BFAC8606E2F9C3BD1A75D9D4",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/IOnityObservable.cs.meta",
+      "sha256": "F97DC5A38F8B9D239EB7E7BC7E3054F8E242CC2843010945157E607F5CF2DBA0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/IOnityObservableV2.cs",
+      "sha256": "1159131A039BA60FAA96E3F058DFE440E2870ADAA1B98545597CD13AD3FB659E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/IOnityObservableV2.cs.meta",
+      "sha256": "14D5EB4288FB359396F06C348F1D8019849636A1211751BD1F62FA1D8647AC4F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/IReadOnlyReactiveProperty.cs",
+      "sha256": "91897ECEAB2E4DD7D1C430E33DFAC8EBA70B5D1CCFE66DC3A49645F7D564EC4F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/IReadOnlyReactiveProperty.cs.meta",
+      "sha256": "A4BB064FBB4CF6A9BD63F18FC2525FAB0CE7E34FBF84D1FFD995B24F5105B2A5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Observer.cs",
+      "sha256": "38594B7C2295F2A557B36E0F0CB6421C11AF91112D83CA794C5DF783E8C19C94",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Observer.cs.meta",
+      "sha256": "E721BB99993DBED7E37C831E3DB054EEA12240B3D91F1EA984BBB42894D325C5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityDisposableExtensions.cs",
+      "sha256": "09C38E5B0ACA26FED3B0D49CE452B04336420C5AA761024EC49D88441925C4DC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityDisposableExtensions.cs.meta",
+      "sha256": "F658BC837536D3543067191771196AEC02EC1DA079A6D78934B2B84B835B6C60",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservable.cs",
+      "sha256": "4F41E15E6305F7AD21B0833A89FE9FF02D12164A9B37D72D951FB46716EE68B2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservable.cs.meta",
+      "sha256": "AD2470EC277F75CC1E54D98DE4E88CCBFC13A901C691537B99B29324F83AD480",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableAdapters.cs",
+      "sha256": "121B1ADB1250E8811857DECFE3985AE4709E95CB210BA6E60FC3A0094D21EC68",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableAdapters.cs.meta",
+      "sha256": "4862057BA16EDC025B641011E9FD26ED83B87E8B7BA239E3756C5A900E1EDCE2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableAsyncExtensions.cs",
+      "sha256": "55831992C7E0A53CF27BCE86CBABDDE7123B248A796A131A4815E4EC7AD39A9C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableAsyncExtensions.cs.meta",
+      "sha256": "38B920C57BB3A8F7042279E716B7DB8798623C3117BE36B2FAC979B91737A02C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableExceptionHandler.cs",
+      "sha256": "4D18C580B2EC5C4B557059C374F062A168CAAAAE587D97BB42D6518C7E30ECE8",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableExceptionHandler.cs.meta",
+      "sha256": "7CF5DAC272E4115A1268188C873D157B44CF0721B546AEB2EC5BA0F23B2F28D9",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableExtensions.cs",
+      "sha256": "E12FB99CAF52552BB8E32779C9E0814C1DC5FD11A5C12C928908A16BB093FECE",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableExtensions.cs.meta",
+      "sha256": "03B4E0655002027751C98F47A60B6CE9CD7B3304C6C790898A617B6825BA5DCF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableTracker.cs",
+      "sha256": "80A28A18023D85056A713B5C848ACF99F16514ACB62ACECCE175876D1365ED23",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableTracker.cs.meta",
+      "sha256": "C811431168C8E7C0366F6A5834C45BD5172DF1BD947733D576AA8497A5CCC5DB",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableV2.cs",
+      "sha256": "B355277C0B87717EABC1FDDCE4A0732D4BB295031639CFC6895DBF35A8EAFF8B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObservableV2.cs.meta",
+      "sha256": "8D21B866AF64D3F4CB5A7C53051167A479879706E86F3DDF712CEC05F3567091",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObserver.cs",
+      "sha256": "4B747E1664F002BA012680402F04BE08595087D4C2D467C5DD1A10BE9450108E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityObserver.cs.meta",
+      "sha256": "4686C499EED09E10653576DBC02B8592019B0638EF800B235C36BE76565A22C5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityProviders.cs",
+      "sha256": "963485223AFF9727ED7E54DD443A91533BD5ED80061725DB88325C385DA4F35A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityProviders.cs.meta",
+      "sha256": "B581E50354FB45F305455AC19E5677E4699B7E8C23A88FBADD3BF947DA6522F3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityReactiveException.cs",
+      "sha256": "9C8D32365361A1E3C496232D76DF7CA90912282DD71B84CE6678A1F0A652BFE9",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityReactiveException.cs.meta",
+      "sha256": "3C0F1B24420BF1DA9632C9523D4CCE959E4D89EEFAF7A44D999372A092682589",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityResult.cs",
+      "sha256": "EF4A6CFDB9AE7E53824ED3F4471BFCB56EA676764769672ED8F1C035EEEE9A6D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/OnityResult.cs.meta",
+      "sha256": "AA37F42B2803156C0AAB5445F390862DDCEE71D569F2E3759BB90F54D947AB86",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators.meta",
+      "sha256": "8C87D1AFBE0A10155AE31A049E3AFFAD7FD5B5A5ED3A89DE4DCDDAF992A26BFA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableCombineLatest.cs",
+      "sha256": "B29FA5901E344E7609CBD2A86670755E438D11996823B70DB4402C93A7103AB5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableCombineLatest.cs.meta",
+      "sha256": "5BF168CBE8ABA4F76050B13329E43E8806C86C677F870E6BE55941E532230ED9",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableMerge.cs",
+      "sha256": "A68DE49B8D4AE17B1E278AFC8070E4508BE6F987B1908CD0567F57658173CD96",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableMerge.cs.meta",
+      "sha256": "0784023A1E20AAAD25DC6AAD33BF87AFA4AB7CDE8FBA9458FFDB924AC1B9D184",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableObserveOn.cs",
+      "sha256": "971DFDE9D43FF1D7846E48ABCDA955D06B9AFB7831BDC41F6E0B47728F839C7E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableObserveOn.cs.meta",
+      "sha256": "5BAC33EB5BDEEB1588BCBFB85047C79B066B0AD03D24CC7B930661D7BA407138",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservablePairwise.cs",
+      "sha256": "579E80803A576C9CA96C62D27A845DBF35E06B05E8EE0B2A237BECCED1EAEE40",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservablePairwise.cs.meta",
+      "sha256": "16D5D989373EEE557075825ABF7898ECB2921D76F25F9C0BEEDC50FA4CFDD371",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableSample.cs",
+      "sha256": "818DC263231023069804467EBBF72844A7249ADD17B11969DA4AF3C82EA3C864",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableSample.cs.meta",
+      "sha256": "B4C6BF3722EF71E71A984E8B3587B2BFD7F3831E8BCABD8FAEFAB46CD72A6F87",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableScan.cs",
+      "sha256": "4254679D02BE231A681819D0816E5E4425243E99640865EB06197A76F6F61108",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableScan.cs.meta",
+      "sha256": "C7CE7035E38EDA7BCA7A5C502B90CAF8EEA6758895F1251B6F3194E945F83EC8",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableThreadPool.cs",
+      "sha256": "076BFFA0D1D39CBB6AE12EAE961C3C806924E6AA73BFFEB74B9DD9F8C2EDADD2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableThreadPool.cs.meta",
+      "sha256": "730171385FDBE1D2C6BBDC5FFB42A9BC8080175182F7A6D9BCC376C20FF38808",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableThrottleBuffer.cs",
+      "sha256": "E6BDCBE13CF2D89EF838CCEF3CA16FF255F7645382B3864D189E2351C25E2A81",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Operators/OnityObservableThrottleBuffer.cs.meta",
+      "sha256": "55DEADE1A86F2F045FF72EDB92BF28702E1EFA1D789DEE3880019DA574193075",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/ReactiveProperty.cs",
+      "sha256": "13F59989911568991166F7A6DA203D55FC7BDC1043DC2505B9BD99163FE442C2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/ReactiveProperty.cs.meta",
+      "sha256": "5BE723BC41ED7394C59A5D516EBDD84FD91CAB38310EF5B4F48E7EEFB649A7B9",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Subject.cs",
+      "sha256": "82BD139A6E3FDCD1525CEA37DAAE9217032201CF4BE6ACE1B833E2138D898383",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Reactive/Scripts/Subject.cs.meta",
+      "sha256": "D2882E2E6BCBFD2BF0416D09BAEF5140C9AD2FDAD013D10D2A0B0E07AF79F37E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity.meta",
+      "sha256": "FC51429A5924B9768BE80D599A9D61752EA681B334B53DB54F98CB813E4A7F1F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Onity.Unity.asmdef",
+      "sha256": "EC2FD5A9DE8400E11FF55C916C8DEADD433A5AF15DD378F833D8E244FE038232",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Onity.Unity.asmdef.meta",
+      "sha256": "C1F52ABD324985E69A94CDBACE07D67727F94E10D018C5D7BE1C9287D080BCB3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts.meta",
+      "sha256": "68999706224C5103911BB2363E292E352D58245C0694C982B2722A64F3199902",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async.meta",
+      "sha256": "B3EE4CAE82D9986A9D0F7209FC6F975C65A56F259A5A49255E3801B1C18BCC42",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/IOnityAsyncEnumerable.cs",
+      "sha256": "9F5C1C56B3E0BFA79A66DE33C96FB532D42994797ECE78095C52DB80D7100B29",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/IOnityAsyncEnumerable.cs.meta",
+      "sha256": "7859D01C23FBAAED8C76BC12366C0D48F06BD194569BA2C2F7E2FC63ED3AC90F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/IOnityAsyncEnumerator.cs",
+      "sha256": "A14E88001335F46668C6BC61887B7534592B52CF3509DFA14D94148DDFC5439B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/IOnityAsyncEnumerator.cs.meta",
+      "sha256": "616AAF0789CB6AA8A9EF518AF904A150FC073679570B434039D23DFA40DB9080",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs",
+      "sha256": "6591E6482B7F91D68AD9B92092113081CC63017833930035B66B61B667BBC574",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs.meta",
+      "sha256": "AB9CC195A51E99B57CD202EED7B31B7A74461CD683BE86A32CBAB19CB8974D6E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncEnumerable.cs",
+      "sha256": "BD7453ECA6AF0588513D581789ED88FA15C878B019206586D4099340957C6B7D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncEnumerable.cs.meta",
+      "sha256": "F0005665B03940A3F1DAFAF8D9EE5DB3E4A6613E1729BBF07A79397B9D19F115",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncEnumerableConsumers.cs",
+      "sha256": "E717B5AF4D86C30EDFAF77CF5688808EC077514F1A043AF5FE16A8BEE6402A3E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncEnumerableConsumers.cs.meta",
+      "sha256": "17CFC41B47710065029AA32A6A2F7A871FF5702DE1DA5C15CE5A5AE553185139",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncEnumerableExtensions.cs",
+      "sha256": "5BB1F7ECAFD5AB356506FF430A7A6EECB18A0AE0DB47A8E7483BEC1F9D9A2697",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncEnumerableExtensions.cs.meta",
+      "sha256": "A8B45951E52C5A2D46659277E4CC0FE323C5C3EB99FC4212519AEED427522429",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncEnumerableOperators.cs",
+      "sha256": "E9545047BFC574E831B633AB57BD7635DD6DC5610A04BB6CBBBC23BF1687B40B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncEnumerableOperators.cs.meta",
+      "sha256": "5F3F166997BCE6CE87ED250F67184827F5CACF8A433338E1C75D693AB2262C68",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncEnumeratorBase.cs",
+      "sha256": "EC636114EFE4D9DF3537FC3E0EEC3C4FE62B010919DCBA4B5DFE01FBBB79FB02",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncEnumeratorBase.cs.meta",
+      "sha256": "0D1040A8A3149EA8C8B4F49A1AD6097509E9154BCC2C1AD52A2BD8C5DD39433D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncOperationExtensions.cs",
+      "sha256": "A77BE25CAD73F3836E4533303FCD0A841BAA0F4658B374D82259A77BBA88FA85",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncOperationExtensions.cs.meta",
+      "sha256": "695B631CDC9C7E4BC3F6AC530D6B056BD346B3FD0117384A72F6F22D878539B0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncStateMachineRunner.cs",
+      "sha256": "C3D8E3D9266EE660F6B0D867CA6B51202D5C4669FF4D5E2DA24B0FB953D3DC23",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncStateMachineRunner.cs.meta",
+      "sha256": "2C1490B9A508E357A2442F08278D50FA3F9C2759D3021BC272C2D52D5F234C8E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityCancellationTokenSourceExtensions.cs",
+      "sha256": "7A06CE9D458F9A8B48A97E5893A1F8EA56EEF88534A48D47FD8A8860EC510969",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityCancellationTokenSourceExtensions.cs.meta",
+      "sha256": "6A03EC7F8F6845EBC7CE890B90432B7BAD5E5B45FFB9C5717B779CEEA93CFA56",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityEndOfFrameRunner.cs",
+      "sha256": "1FA70DF3681EE3CA52B6D3A732D99432674AA5EC07B6A5B34AC682C988F68297",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityEndOfFrameRunner.cs.meta",
+      "sha256": "89D2AE46D6C85605343DAE471C64F46575DB5D3F2EEDE853567C67B2C1B32591",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityEndOfFrameTaskSource.cs",
+      "sha256": "BB879CF159F695C4BF94FA5EFE74485CC501CBE2D57DA8E796E4F1E0D544C79A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityEndOfFrameTaskSource.cs.meta",
+      "sha256": "D3A25548370AB62C652BAD247764A4C20A3DB5309DD9C52DE1370B5D0246903A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityJobHandleExtensions.cs",
+      "sha256": "59F67315B8D86D80D1A578B8B75A9D4F4D4417710F8BDCC474898A481888A279",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityJobHandleExtensions.cs.meta",
+      "sha256": "38F75A50E270C753B31281E62E7E92C5DFA5E3724F03DD162C9439073DD51A5A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityPlayerLoopTaskSource.cs",
+      "sha256": "193658981C633C8E8E293CCB4B1AD03599DD5E9817315C92E96CECBE323CD7A7",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityPlayerLoopTaskSource.cs.meta",
+      "sha256": "64EE9A126490A74B5C9CFF713C3D31A047E4E2E4218DE7578C10DFD315F3A61F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnitySceneLoader.cs",
+      "sha256": "B7F9F12B7A7165DFCDBFEDB449A2ACFB9812E146FD57643998D9CCE6A8205F62",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnitySceneLoader.cs.meta",
+      "sha256": "4AD743BC2ADEA639D1F115FB6F9A0ACFFF293FE6020BC2E45332620E2EE90221",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCancellationSources.cs",
+      "sha256": "4ACA3C412059D16330AA9E9F7F483B29CF79E9588888C0C34289BAE87B765DFD",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCancellationSources.cs.meta",
+      "sha256": "8B796E8B893F1D323175F222B4ACD426B812BBB5D3A3BFDF8792DA877331AC93",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCompletionSource.cs",
+      "sha256": "0D2D7BEE33FEF48E790018502BC2C7B365E9800B8671AD243147D2F53FBE2E40",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskCompletionSource.cs.meta",
+      "sha256": "D96DF38C9B279BAF151D827FA625F846946998894EE77366D72E1DC8020C516C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskExtensions.cs",
+      "sha256": "0582ABA9FE8B86013CAA18C2B0C83E69F7EE1F0DCAE14EBFCA7A845C7B92E167",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskExtensions.cs.meta",
+      "sha256": "C8630C3D3F0EB9BF77A2F591E6F2230F07F56F6D329E4350A7E701EE30BE6ECE",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskPlayerLoop.cs",
+      "sha256": "9558149619BFD9E0CFC444F616072899F56459EBAC9F1ADF845AE0041D2A2EE2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskPlayerLoop.cs.meta",
+      "sha256": "BA50A5B764979E5977CC88C4C8BF54E563051FA6CD23F71E8B5561E0F5A5841B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskThreadPoolSwitch.cs",
+      "sha256": "63F7D3357347D8C6ABBF279A794CE34329AE3296BBF045C71488FB36000BCE61",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskThreadPoolSwitch.cs.meta",
+      "sha256": "0DF33C98783665265B9DA41EE04A0B5F7150007E410ECBC86365E23616302C27",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskThreadSwitch.cs",
+      "sha256": "CBB4B6666538DB2AE9F0CB206192F8D450BBDD579294956A6F680F2C2FE1C8CA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskThreadSwitch.cs.meta",
+      "sha256": "4A53FF29E3479DFD640F3D20EAF5E5E3863B921067E3562949864C9BFB34FABC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskTimeoutSources.cs",
+      "sha256": "B7C722CEA16C9EB6BF68B6C0FCE36D8CD5113C5C1E6229402E2D14658FADE463",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskTimeoutSources.cs.meta",
+      "sha256": "FF519F2607C8FB1EDABAC3F6B2E9E960BC98E21FC0E7690164B65699DEF5315E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskTracker.cs",
+      "sha256": "79EE52DDF9EA5B3F661E0AA9BEDC30AF7FE3145285C03F95A07C373435FAC146",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskTracker.cs.meta",
+      "sha256": "8ADF9A8F13C2BFF2498BCC18C5746D245E58FDE756C2BF8107C0DF31CACE01F2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTimeoutController.cs",
+      "sha256": "9855CE38D9985462DE37D4514D3072255A9722E3668F16D62954B23664A21E79",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTimeoutController.cs.meta",
+      "sha256": "A6DA93C2FC6BEC1FC1D0DE082D757323392AB71AACCF59F5DE04660BF7519853",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityWhenAllTypedCoordinator.cs",
+      "sha256": "5DD3B83084CE335E6A72A4A7079ECCC52DF5B5A12770888DD3F3F86524533BE0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityWhenAllTypedCoordinator.cs.meta",
+      "sha256": "78004ABD24F9534C5BDC31328418E7D2A00C721BA95CD6FD12A000B88CA31C00",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityWhenAnyArrayTaskSource.cs",
+      "sha256": "619426B8C2865EDF711650A11C909DF19FF4D7EBC5E544D2A67EB6CAC00FD509",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityWhenAnyArrayTaskSource.cs.meta",
+      "sha256": "459AE07E8ECB5D98D64FDF19DD768B8C7860D98E1418B6AB93835028514C3EFA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts.meta",
+      "sha256": "68CD482B87F2E595432A2E5C427CD398735997FD750A4B0450C1C372B6808AB2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/GameObjectContext.cs",
+      "sha256": "900E47DFE33F0E5147219D86A603887F31B370D929A29EF05DFA8AAA499D6777",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/GameObjectContext.cs.meta",
+      "sha256": "C55D59602667CC420AE2EEC4C9FDDB12903F37C0BD570A248F606BED8CBDDD8F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/OnityContext.cs",
+      "sha256": "8BF0C374337F03F80DC8461419CBDB98D574E4AFB8DAC237CE341F6A29DE9369",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/OnityContext.cs.meta",
+      "sha256": "AC4EFAD279BD8E2BBE81E3B0ACE52AF765616E1D83E9F66DF0D0C1DF6B894FFC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/ProjectContext.cs",
+      "sha256": "B843A59A07AB237224E05473DE2089CD5534F41D1FB9730C701347CF092B7D7E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/ProjectContext.cs.meta",
+      "sha256": "A98038DEF178F34F912EE1B41E56AC55B39BA4F9E42EA0564E44C7F6EB5B129D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/ProjectContextBootstrap.cs",
+      "sha256": "F66680FFE5AAEAF062E3C31852A5B92DB4D4EA17C885EA7A1B64B9BD4681C053",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/ProjectContextBootstrap.cs.meta",
+      "sha256": "FB1EE21E26CF9D44C6B0C0CC9632E727036CEED8E6A9F4E5313E4330A94D878B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/SceneContext.cs",
+      "sha256": "DE987FF3282F46187FDC1880CD45D2241AF19FE2E292D14A79C81D0F52C2B2B0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Contexts/SceneContext.cs.meta",
+      "sha256": "63A28F0F64406E93B65C86D22AA6FE22969EF8CF8D6E1673DD5455A16E92B711",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Input.meta",
+      "sha256": "1A283D73BB1B669E0BEAC99FD7347EE9CA310730CFF2ED99AA3196454D527D89",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Input/OnityInputActionKey.cs",
+      "sha256": "DB705F774C0C879D55BAA267C5CEFD14595361B10AE4B1E7428553956CAF87EB",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Input/OnityInputActionKey.cs.meta",
+      "sha256": "5F10B90513E19B568E03979EB2610971ECC7D249462136ADD628C6DD6A422D77",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Input/OnityInputActionReactiveExtensions.cs",
+      "sha256": "C9F836316A17671ED8436485F98BC034CD8745D14A46EB741619DC3A7C4DBDFC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Input/OnityInputActionReactiveExtensions.cs.meta",
+      "sha256": "5CB0B956CE33ECCF73FC4D8BA512A4AA881C2A4D2069122A4DBE6EFBCE5AF531",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Input/OnityReactiveInputPlayer.cs",
+      "sha256": "B46F57FCA438C1ACB3E2CD55818B4CAF6CFB1BE536860C12556D5891C79E15F4",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Input/OnityReactiveInputPlayer.cs.meta",
+      "sha256": "958BF8F431318DD0B1ACFFC08030CE4339509FF14C2301BF7E557ABA39D52C76",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Installers.meta",
+      "sha256": "40B5CC0A8A61BC08DD0D1C7638371D9F89EFCBB6B9A0D27E87D7F6B95A4FD520",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Installers/MonoInstaller.cs",
+      "sha256": "165D7D5091327A8E13BC6D3CD96D965A324CA52CC0501040FD90FBFC800BC3DB",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Installers/MonoInstaller.cs.meta",
+      "sha256": "399262380D8183075D87668B0A3D652A8B54458844260ADCC00CDA0CEDFCF999",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging.meta",
+      "sha256": "A4BCB5ACE3DE02927B68E27D854FDB91B28BE4EAE1789F3D25FC74870363E458",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging/OnityEventComponentExtensions.cs",
+      "sha256": "01057623CD158AA2210A90ADDB45415180F607CDC053EA08EC8A4824DE6D4878",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging/OnityEventComponentExtensions.cs.meta",
+      "sha256": "FEF31AAD18EEA4DFE4448FBBCA23D2FE52C5060EB2E9CF5C045358432222A512",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging/OnityEventHub.cs",
+      "sha256": "1B93816279F5221BA555E0B9423E7A404596BEB1E3E93CF732E7B1DA01BF9F36",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging/OnityEventHub.cs.meta",
+      "sha256": "D0B986A4E566953E2B114AF4F42BB59F91A6B46E1D0ED55391394FF45BA5394F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging/OnityMessageBindingExtensions.cs",
+      "sha256": "3CC63438520D8CD13CE3278BCFA62EBE2319FF8683477AC8F884F569E84A741C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging/OnityMessageBindingExtensions.cs.meta",
+      "sha256": "1CA850AD7772F5CA795E842480E33E5E11B17E62AEECE1468F9C1107FD12F3BF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging/OnityMessageReactiveExtensions.cs",
+      "sha256": "DA4AC47A8AD358C18C41AC66290BB71D8991B1C4ECD93F49196FA1150958EE81",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Messaging/OnityMessageReactiveExtensions.cs.meta",
+      "sha256": "71D9B5DB7FCBC69F3606ABDDA234A2CF7FDA32DC6089EFF212DBE553783F080C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/OnityEvent.cs",
+      "sha256": "0B277BC13A7A4EF76E84409B8CD8C652BC7CDBAB6ADE4811FFD18B62F3C17A3B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/OnityEvent.cs.meta",
+      "sha256": "CA1C91343433E50DDDD015E335F601669994BF516776A97B90E7B2B6F36725AA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Physics.meta",
+      "sha256": "61101C1A7BE6EE79873E0818083A8BE254B301919A50D91DC2B925ECD82C4508",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Physics/OnityNonAllocPhysics.cs",
+      "sha256": "B2A468849AEF16D1C1FB4DEC029B0995209BED525B482E034738654303864E26",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Physics/OnityNonAllocPhysics.cs.meta",
+      "sha256": "E5E1972882DC1F60C5AAFEE00BE49672B84D35146F841DD791E9B07A83BDD2DC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Physics/OnityRaycastCommandBatch.cs",
+      "sha256": "DC82B4CEE0699659CC6B6B8152369D3A91549FFA099B55BF2D6239B2F9CA8234",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Physics/OnityRaycastCommandBatch.cs.meta",
+      "sha256": "3CDF1CD7E27A395156862FEF2F53BFB0F135D545D8E1852491C9E741A0BF3F4E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive.meta",
+      "sha256": "1B8A5A57F95528B001DD014C26A6623FB4F18ABE1671F8BFF9769100E699F33F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityCountdownTimer.cs",
+      "sha256": "5F702FA0299FF07491834E907199F71517CE453C33044C23A322F00034B25830",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityCountdownTimer.cs.meta",
+      "sha256": "089A83AD39FF06F60C551F66B0FECF8313BED508BFE8649296E38FEBE8BEE38C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityIntervalTimer.cs",
+      "sha256": "4EEACAAFF6746ABA10DD5A239CFAFF786D82C20EF1791E79D537D86E063F528C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityIntervalTimer.cs.meta",
+      "sha256": "FE637457288DF7093E7B117FE98C84DF4CF04BF6F012E2E6C52F438CFCB32326",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityLifetimeNotifier.cs",
+      "sha256": "C0D220DAADB31D20380037E635709092D073D3682F34B7E7824CD7A32F383EA0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityLifetimeNotifier.cs.meta",
+      "sha256": "3B2B0DCAF7512316E7C1A20FE9D26D963E0B60176E4402DB5E6BDFF07F15D62E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityStopwatchTimer.cs",
+      "sha256": "941C50ECEDEC2B3688B346EC92FE4ED569A52D9476B37567F6630DB8704A9D2C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityStopwatchTimer.cs.meta",
+      "sha256": "13E660B5AB3FFF5269C6432625C5D292CF3357A390599479FA5AF42B01A23426",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityTimer.cs",
+      "sha256": "D46A4E725964717A8B6219602FD75F979A6CF15EF956AAF5FF490AC2400B5667",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityTimer.cs.meta",
+      "sha256": "429FFC8974E7CCD72C3C2FF548087B085A01D677B1DCD75B31B1705002CA5D7F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityTimerRunner.cs",
+      "sha256": "367074FBA0F136932104161ECD66C1D24525A11E8C8000E8B69A9D30AA9B1F10",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityTimerRunner.cs.meta",
+      "sha256": "EE629B3172BFEDDD39AF3B143FF6A043B3CFD30C33018333FF7C66745C75168B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityUnityObservable.cs",
+      "sha256": "24C226E98D3A73480CD5E2995CE5DCE3666BA26349C6AFB25830A8B05EF8F9B3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityUnityObservable.cs.meta",
+      "sha256": "AEC5E777AAFA85A0F157E53E15DB9665E068C6115582725A51DB1B9C801E80F1",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityUnityObservableExtensions.cs",
+      "sha256": "A693FB2B61D68135C516821990EE91FAABF6A09DBD5B13FB291FB93DDDA482E2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityUnityObservableExtensions.cs.meta",
+      "sha256": "335153CE0EBFF8B12338F30245787820D7C14477564B537C9B91450D4B0ABB90",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityUnityProviders.cs",
+      "sha256": "E1F84A56AC533A4EC14B4A44D0B7AFD1E14C338DC73FFD2BF36D248ED0C883F4",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/OnityUnityProviders.cs.meta",
+      "sha256": "A30252B840F0E43C2C22798D242CE6451ED577FC84B43A58F55407B9BB07AFBB",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/ReactiveLifetimeExtensions.cs",
+      "sha256": "1BFA8A6D6F8EE8B8DB51E1F8C7C26AE9BFC61E09E8F1C8E9F3D24B2958DDE0DD",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Reactive/ReactiveLifetimeExtensions.cs.meta",
+      "sha256": "E549A700300C8EB3E794C6B13D4B6B366EBD550C1AFAE23259901E07A0BB5721",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow.meta",
+      "sha256": "B1995B5CA954999ED78F71694DC6B30851AC4BC743C96322E0DC5E2AD07BC9FE",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/IOnitySceneEnterData.cs",
+      "sha256": "F2FEA199136AA212225C9901D64E7EB8197E933EDF52C1334D2AB0FF57948114",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/IOnitySceneEnterData.cs.meta",
+      "sha256": "1D7D26F0957A855184AD250C0E55CD96091C7C32774E044A4CCF89A0E7C492EC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnityBootstrapSceneInitiator.cs",
+      "sha256": "8F96396EE6AF2A0C28A8C9A53B0DCD01C4C63C140E35A85DBB210A0BE7F47810",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnityBootstrapSceneInitiator.cs.meta",
+      "sha256": "4AB5102EF1E402D722FAC87BA0ED257839C90496890876AA26B8B1AC8277F93A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnityLoadingSceneInitiator.cs",
+      "sha256": "B34F4FDAB098547BEE0998EFB5FC47DB3D31BC1C3585FDCEF789BC4479DEB12B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnityLoadingSceneInitiator.cs.meta",
+      "sha256": "AEA8D815C12D8BE1A64E2B4C2363A3A8E0F8FF463E62A7C3E3C4C7BEF7360DC0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnityLoadingView.cs",
+      "sha256": "A5A837681DD05A01A6285DE4FE16680D649AF35A2A50D114EAF4C2FB99E0B1B6",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnityLoadingView.cs.meta",
+      "sha256": "8CBEABCBCF7FDB0355374C8BB77C50F39E873BB0A986DA48A95BD9A9E2444CF4",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlow.cs",
+      "sha256": "91077554CD7958089269B9B94900C994EB2D64D539F1ACD33BC6CC0BA2C691B2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlow.cs.meta",
+      "sha256": "98B875BD26414CBAE2910854C401E2C5FF0CB5D2A82366ADD53E50BACF272542",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlowProfile.cs",
+      "sha256": "19F6EC5CEA669703E0B5B49535203BA367D06C9E76CEAD877D43D10A95D333C4",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlowProfile.cs.meta",
+      "sha256": "B87C1ADBB54F33B8FA793484A0D1D778A656418CC4A97743D2388E6F379CD1EC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlowStateId.cs",
+      "sha256": "C6859AD7790884539B004A28F985C012F7068D1F3F9BD10AC3A4B3E8235EB0E1",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlowStateId.cs.meta",
+      "sha256": "1774AAB7FC9AB9E67D6A8F10C30C1D8E09C63FDA6CAAEA47970B6789B0F2E8AA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlowStateMachine.cs",
+      "sha256": "49C3D02B543EC79FC1926C1BC2F4970928B56B9535711128776B97A5C81D16A6",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlowStateMachine.cs.meta",
+      "sha256": "6263ED66438719B195F256A032D6A8CF2D0D46B57B525B756524A86DAAAA688D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlowTransitionPlan.cs",
+      "sha256": "E6A94581B6E9D9FBF0E2A6355F6C7F70F7FD21A0DEE3DC9AB8C3C9A1E2AF4690",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneFlowTransitionPlan.cs.meta",
+      "sha256": "B8E92DF952F2A9836C209EFF373E9F63351988702F5C747680528467975A3AE4",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneInitiator.cs",
+      "sha256": "9A7DEE0D75A13A1A33A89AAB1418C0FD2D1CA8ADE3804EAED0555EE217C51031",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneInitiator.cs.meta",
+      "sha256": "C43D42CAF4AB7C7ABD54E0AB6AD586A45ADD9E4B2B002DBE9DB465F596E54D5A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneTransitionStore.cs",
+      "sha256": "D77768A308D96C074EA6906C2445811A9ADD32E5BFB64BE8FBE3AB02A353AA30",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/OnitySceneTransitionStore.cs.meta",
+      "sha256": "AEBDB5EAB9ECB5991B4168D0D107590B7032AE101B0160AED64B132321D95EC2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/UI.meta",
+      "sha256": "6CC199020EFFB1A6DA6967416BBE1B63871C6C6E2B27058BE1AA793B7627B74D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/UI/OnityDefaultLoading.uss.meta",
+      "sha256": "F56E31D7357F9534CE4141AFE93CACB618082695C3C3C4D087A3D8283A904569",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/SceneFlow/UI/OnityDefaultLoading.uxml.meta",
+      "sha256": "38A760F67B62794B5C394A498ABC5009B9C9C198845B8F4E40D60084E799DB0B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI.meta",
+      "sha256": "55709FB4DF54E25470D2B1FC2670C5DFA47042762716FFCC930250764857DCC1",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiInjectAttribute.cs",
+      "sha256": "732920781CE6D4F8714FF442C16A66E99D8394FF24B0FA9AB67331D36D4214FC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiInjectAttribute.cs.meta",
+      "sha256": "3E077048209DDCC2EE0EAD2B7EAAC4C95A1EE0FC0D1859A002642AC382EA8DC0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiPresenter.cs",
+      "sha256": "7C95077DC7588426840DDF7DCE9BF8D21B555E8CA18B87A7308127092019B898",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiPresenter.cs.meta",
+      "sha256": "B76ED0ECA34F17B19D62DCD8C1DC32EF3575AA7558A241EE4183EE4DCE3ECD4D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiPresenterFactory.cs",
+      "sha256": "ADFCBD10C5E905ABA1D72658790FD69CAAEAE388A8D65B5EDC4893607409AB8E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiPresenterFactory.cs.meta",
+      "sha256": "DA79FA6FEE9345DC3ABE683405713012FD09ABF4CBB6A6CD978709F9549A14F5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiResolverBridge.cs",
+      "sha256": "78814F40A618908D6702CE6AA20079EACE219362B569BC811564227D16DECE08",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiResolverBridge.cs.meta",
+      "sha256": "C807C99D5C57839B03DC28328A930C14CF3C556F77EF6E1E85931474C5155DB3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiServiceLocator.cs",
+      "sha256": "B42B56749226679F01F196DD45A65AC98A9AEC64FA8FC805AAC86AAE12CC3566",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/UI/OnityUiServiceLocator.cs.meta",
+      "sha256": "9408D56CBB6B6B3B1D8C39C67D68C85BFB1FB29F09BEB328DBE733971A08D5FA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode.meta",
+      "sha256": "9333AF06D49A5749EBB17D5D9D5E184E77FDDFD67858B68D40E774BB3671FE3A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Onity.Tests.EditMode.asmdef",
+      "sha256": "75BCA0397438A51D262B64AECA0139AC73CEC40FC18E052AD2E40CD281AE14B0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Onity.Tests.EditMode.asmdef.meta",
+      "sha256": "149585D564003485661A0FFF3B57BD42BC209D26B6E8BF4C8BB35AF26F90B59B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts.meta",
+      "sha256": "C35A3165FAFC0B9EA47BA31F7BB7FBF08F83D9314C86C0DB1CFB32279FC74050",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/DotsIntegrationTests.cs",
+      "sha256": "FA8D746AB9ED1250ACB490AF0AF25198A7A58A969389E8D91065E95274E50E08",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/DotsIntegrationTests.cs.meta",
+      "sha256": "05D706C6A291612CD6D56DD66352536406E6D563F71DDF36EDE43CE9557442F0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/MessageChannelTests.cs",
+      "sha256": "8A9BD398DDC7477A5303659B6DCC72E3521B08F67320EE15793AE5C2A9111859",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/MessageChannelTests.cs.meta",
+      "sha256": "65064765410FC8BAFE9916BE24F1C8446AB1F14C2C16E72E75BDA7DAFF3F1922",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/NonAllocPhysicsTests.cs",
+      "sha256": "7ACBBAEA48964A426761C93DEB5A6BC31232603E7369DF586595AACAB268F3E3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/NonAllocPhysicsTests.cs.meta",
+      "sha256": "A67A022D344D62F57358BAA98DF303BCA619EEB5E5E1B6B65A151C25D317919F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityAotFallbackTests.cs",
+      "sha256": "4F0AA01B8B81255CADEBA1614514F65070575991508A0213E4C2EAFEFE56DD2E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityAotFallbackTests.cs.meta",
+      "sha256": "2D6FCF9ABA05600F276C3E92E14C5F9F1B3DC4C681685CBB285896F18D3BADC1",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityAsyncEnumerableEditModeTests.cs",
+      "sha256": "F88969B86B61CCA55091AD056BBA6D5D666F9C12584E01B01F2F8CD14DD92F1B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityAsyncEnumerableEditModeTests.cs.meta",
+      "sha256": "7CF7DCA819120852CD2BDB5502EECC54E867A60BB9970D8E1E41613141C46ECE",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityAsyncMessagingTests.cs",
+      "sha256": "37195357357D2AF3EC8983E4ED20A829712BDB3093F27D12F5C19C2975399271",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityAsyncMessagingTests.cs.meta",
+      "sha256": "7F87E15E729CFA640B0FDD49D463ECD6E135AA78559351EEE5F34509E92D10EC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityAsyncTests.cs",
+      "sha256": "D54464E0C5B558939EB726A31AB958D4A50DCB55F720B41A9BB0D39F9F7A4274",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityAsyncTests.cs.meta",
+      "sha256": "F5EB133F89D07C9ABAFA90D1B6BC8D5C81169D1660815416F064322CC205982A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityBakedContainerTests.cs",
+      "sha256": "C683028AFAAEF10624C2FB135A0A6989ABE52D66E29F21E7477214B722B9E19F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityBakedContainerTests.cs.meta",
+      "sha256": "2B4CDD83DB756AAA789298FD3EFA5D8229C2BEBBA64119DFDEC7329532589736",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityBakedGraphParityTests.cs",
+      "sha256": "4946279CB870E27CBCD5154B38AC32DFA6DFFD4FBF8C8A6A641B6D6DE4A2426F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityBakedGraphParityTests.cs.meta",
+      "sha256": "99A29E1123FDA11712DAED4148DEBD32D3E3A4AD60ACACB0CA0DA5300629FAD6",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityCollectionInjectionTests.cs",
+      "sha256": "8645217072B2214C7C1AC740565948F1EA1DECAB999A48F2A00CADA360ADFF96",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityCollectionInjectionTests.cs.meta",
+      "sha256": "A543C69E88050C0E10AC9326D10445EBF8F03BD79AD992B7C8CDCC069B05E23A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityCompositionDslTests.cs",
+      "sha256": "A36207EBED038DDC5DA9211529D2FA516DA664C736A8B9E1FD816DB40020AD37",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityCompositionDslTests.cs.meta",
+      "sha256": "CD1641E4C83B19D088CDBED48D5A0CFC0976E141CCC0EDD678B106520AC839F9",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityContainerBehaviorParityTests.cs",
+      "sha256": "9B1F35D89CE45DADE5EB4660F71E480A134179D586FDEDD445121054B4DAFF37",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityContainerBehaviorParityTests.cs.meta",
+      "sha256": "553260FADDE9D125FA5731536F8C3FEEE72A70E58A55973FFBDD6B09AEB87F6C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityContainerEdgeCaseTests.cs",
+      "sha256": "E51780E19E9C5F730C458BB9074D917C3467825143D4564E5B80C173A178EBF5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityContainerEdgeCaseTests.cs.meta",
+      "sha256": "CF730145F2F91B4B426EAEC2E1B658246C2CC19616EC2F21ABDD62C68AA2B9D6",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityContainerTests.cs",
+      "sha256": "5D353BFA4946632C32863C2676111E4D1610E0150E36B49D07C7B43D75C11588",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityContainerTests.cs.meta",
+      "sha256": "5FA49F0EF84E26CF17F31FFF6FB01F5548B366A334873993F69AD57CE32662B1",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityErrorMessageTests.cs",
+      "sha256": "145C23EFF3E82BFA3EA5D3D19146D509DD19F26FCEFBDA117FAB436CEFBE7199",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityErrorMessageTests.cs.meta",
+      "sha256": "E41216EC8671600AF2CB28CB810A67EA4DC573AAE13B1CB3EE8F65162CD1A5DC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityEventShortcutTests.cs",
+      "sha256": "B86134B0EEAC7909A516A73209D299EE11EFC790ACDA583EE6F09557C144A7F3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityEventShortcutTests.cs.meta",
+      "sha256": "7DF7D72CD49AE97DFF1B3EE4BE5789A7A1747C884D113A17AB2DCE877CBFEE10",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityGeneratedActivatorTests.cs",
+      "sha256": "93ED93D61F419F3C973578B08F3D52EFAAE9C8EEACB5FA8104289D5BF4EC01E5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityGeneratedActivatorTests.cs.meta",
+      "sha256": "A1392DE575125D03F5DD8115FF20BC8D56F98042614F19F10068111718E38948",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityJobHandleEditModeTests.cs",
+      "sha256": "8184688A4F3FF91EDE10AB24454D877493FB060FBBDC3855127ED93D17064AEA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityJobHandleEditModeTests.cs.meta",
+      "sha256": "0CFD6D9B97825458923DBDA2D1DAFDE6F69102F2F3C5DAC6E355AEF2FA740AA0",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityKeyedMessagingTests.cs",
+      "sha256": "5C4B081D9B24F53D96EF045CD885D7151BAAE2D9866A557F93E4AC5C47E80EC1",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityKeyedMessagingTests.cs.meta",
+      "sha256": "0E615220B0C853C638F4619421C20D024BC1CBB5DCFB90D0A4E1B1315E755A19",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityLifecycleTests.cs",
+      "sha256": "98A7E1E9BB6D83C5607D37C2896A38778218CC422101CCCED0E61625DF4D12F8",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityLifecycleTests.cs.meta",
+      "sha256": "EBF2DDE8954EC2746CD456EF88511DFD3B0E60B6938D963E0BEE1379598D12A3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityMemberSetterTests.cs",
+      "sha256": "0F1E9365F6C7D9441BE69E1EB7EC6BA4ED8D25204B6CD3497A202B55AD97A2EF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityMemberSetterTests.cs.meta",
+      "sha256": "0ABD4A52090DF61C4E4E20F06099B23BF7D5B462695675E5FC76D2F15E789E02",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityOpenGenericTests.cs",
+      "sha256": "3E10C6E799A43BFA8D82175E5380399A4CE8B0AAE0B77916B22F50ECFFC2F332",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityOpenGenericTests.cs.meta",
+      "sha256": "39BC8B8DD51013AFF840BD5949683F4F2A1E70BB66D20D5C341A910AB0DFEA1F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityReactiveExceptionIsolationTests.cs",
+      "sha256": "E67B628266B8B9C5B9A81C89BD3D82F6F0911F66AF6218CAAD5D170E9A1B905A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityReactiveExceptionIsolationTests.cs.meta",
+      "sha256": "020B7BDAC3B2359577C91D1C3CCC0B9C0E76A8C37D70DBBAD72FDEBDD0680BE1",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityReactiveObserveOnTests.cs",
+      "sha256": "B3743D1CC0DECE75BA10D6A786389DC3365C373A168C1F8FE23D1F2AF4FBAF00",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityReactiveObserveOnTests.cs.meta",
+      "sha256": "E19162594916D96CEEE27A81F1ECEFFA9FDE1A998C5CAE375AF81913B80A0EBC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityReactiveOperatorTests.cs",
+      "sha256": "4A2D937277F95DA1521E0253DA7E2537B2A28CDFEBF03562DD75C8C28B20D500",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityReactiveOperatorTests.cs.meta",
+      "sha256": "F31680EDB6889443DB9CF262E5692D5AE1044F3C8F5CDAAD00C6AD0A306B7330",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityReactiveThreadPoolTests.cs",
+      "sha256": "D82B65294273B87F9EF4BD413A392F419ED200BD80074C0D291AFEF0A3B59A59",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityReactiveThreadPoolTests.cs.meta",
+      "sha256": "6F2004D21D116D15811FDA74596F1A24104ACA06CDBB0E8BAEFC57978F574580",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityReactiveThrottleBufferTests.cs",
+      "sha256": "4A717935BF4C58840C4522C695C48F461383BC73E7DD0E501E45E857CEC1D26A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityReactiveThrottleBufferTests.cs.meta",
+      "sha256": "06868B4987C802D71A29C18CC7D098255A2337ABD215A8AA7B1177C611FD52E5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnitySceneFlowLoadingViewTests.cs",
+      "sha256": "D90B85B35E181944187AA2A9093AE9885810F2E5AEC1953534A461AC1920F0BF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnitySceneFlowLoadingViewTests.cs.meta",
+      "sha256": "EA598DA3871831CDDA880ED5E5D46F4527B9CF950D8067142730B94B89E432F7",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnitySceneFlowStateMachineTests.cs",
+      "sha256": "E81871FB311C432312CB0CBB87C9C9C0605A5F670BDE273E5AC959CEB859FE39",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnitySceneFlowStateMachineTests.cs.meta",
+      "sha256": "9604566F42362FB022BD68485806F85F64E7255A4C7F8E5D5FB049FF2C137CBF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnitySceneTransitionStoreTests.cs",
+      "sha256": "62BC9A32C63E11DDD42F791475B9E8F403EF6F85625839C94DF83FC97CB4B621",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnitySceneTransitionStoreTests.cs.meta",
+      "sha256": "D06B2F954CC5A6D8177D2E043990B3C2CB9932898396EEFE912C12A5C8168DBB",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskAsyncBuilderEditModeTests.cs",
+      "sha256": "BC5DB32FD83AE8A60D47E6285480A97991FCAF647F631CAF3EA40D3B98F9B6EC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskAsyncBuilderEditModeTests.cs.meta",
+      "sha256": "5C85FADC38619D438E007A4AD48B3C4DE0712C23A58FFFDB0C28EF74187F13D9",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskBenchmarkPlayerWatchdogTests.cs",
+      "sha256": "5248CAF895B9CF8966493865414D3021E11E07DFE8F5FB5F2A5A4EEE810C99E2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskBenchmarkPlayerWatchdogTests.cs.meta",
+      "sha256": "065153FC35EEF54D0B2C6FCED865E6F13F2337D91A64A23440AEB76FD1813FE7",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskBuilderEditModeTests.cs",
+      "sha256": "BF700259C5766BA9FA703939E6F7F8993681D15608F62A1AA4CC327842B09F43",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskBuilderEditModeTests.cs.meta",
+      "sha256": "78DB5C593DA1D46FAA84F0726BD9DCE2B94BC1EBA3E70764673734066C6E7CFC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskCancellationEditModeTests.cs",
+      "sha256": "49BB95570AEAEBF7E241BA2FFCDD6BE3510D44A4B7BD09737CFE23B577075CC2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskCancellationEditModeTests.cs.meta",
+      "sha256": "235EF7414FA78FAE18FDA02F7CFC8B3CC2E61000DE76E61E004F39F6EA29EEF5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskCompletionSourceEditModeTests.cs",
+      "sha256": "0F0834EC2C8C87EAE5390A05C1BA54BB1543F3378C96ECB9A667604DD2B47EB2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskCompletionSourceEditModeTests.cs.meta",
+      "sha256": "5DFF7055523995122A131EEC6E7571DCD28030CBB477FE41189A74B4E27F0880",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskEndOfFrameEditModeTests.cs",
+      "sha256": "24C82E5F5637F8B4797D05F307D2BA5B6E57E432B0DC35F33816B8FBC472B6E3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskEndOfFrameEditModeTests.cs.meta",
+      "sha256": "26EB321F289B0B7775AA2E1C9B3291C6FDD409DE8641F00BD0080D000304F94C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskPlayerLoopEditModeTests.cs",
+      "sha256": "6768CABA370540D670C2D2346F1BCC8DABCD5E75C085352DBCE57931C136B700",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskPlayerLoopEditModeTests.cs.meta",
+      "sha256": "75D4D4E4078972D2C5EB491F05204A1EA83BBA585A5D244D4D46A6F6FEAA53A3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskPreserveEditModeTests.cs",
+      "sha256": "49C43286E4352939E216DC9B882D50B2ABD8C6B18BAA5B05AEB1E8BA0D035908",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskPreserveEditModeTests.cs.meta",
+      "sha256": "094FF695CE233D8637158C9AD9259A8E703B6283821E1627013CA46069828CEC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskRunnerRetirementEditModeTests.cs",
+      "sha256": "5B1226C3ADC27321EBD21F08A7E051C909960B459FA55A1D2AE42BF4ED225C44",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskRunnerRetirementEditModeTests.cs.meta",
+      "sha256": "AD792EF5767796D7116F47A4CB5603D74EB47F4CFF46561F89D6DDD31B9458AF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskThreadPoolEditModeTests.cs",
+      "sha256": "563671C3970AC48F0264A163C3CE8A2F03046D213060A6E679FB4547AC3B2C65",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskThreadPoolEditModeTests.cs.meta",
+      "sha256": "EF3BC3C075C02317B5DAEF5B05362041903907E82B52635BEEB37B1F9F69BDCD",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskThreadSwitchEditModeTests.cs",
+      "sha256": "96C396E4360D1FDB64446B79012CB7429CE18DBC4E63F2ECAEDF05D8DEAB89AB",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskThreadSwitchEditModeTests.cs.meta",
+      "sha256": "2665FA09E2B0BD37ABFB2B8CD550F752D204A6072AFBC34AE88E5CC142779DA6",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskThreadSwitchEditorLifecycleTests.cs",
+      "sha256": "D04AF1B9C34F654FA5B58730C3010CAAF07A44D5565ABBD2A0D7EA87A9EC3E26",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskThreadSwitchEditorLifecycleTests.cs.meta",
+      "sha256": "69AB47917602CD65574F36D3287DBBFE8767EF307EFCF4062D5F9A4C02F24AF3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskTimeoutEditModeTests.cs",
+      "sha256": "5DBCCE103B9BB2EBC3C66A9DFC15D2C39F8E0C7AFD0D8FAC62C3BEAA90D96A3A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskTimeoutEditModeTests.cs.meta",
+      "sha256": "21BAA38FF10B4F5086F90B0A635D36521C22451479FF4DBBC40E2900BDA6CEDC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskWhenAllTypedCoordinatorTests.cs",
+      "sha256": "FBDD21484F246EE69753BF68542916A027226815CAE777E845CC5F7CFD99C264",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskWhenAllTypedCoordinatorTests.cs.meta",
+      "sha256": "6CE7851F6F30F678544E3EEF653028309A6BE23293DF5F475EF722AAF12B1043",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskWhenAnyArrayEditModeTests.cs",
+      "sha256": "36453B61153F3EFA7B8908F1ADA67F1FCF6C5C9ECCCA71DF632B5C61785630CD",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskWhenAnyArrayEditModeTests.cs.meta",
+      "sha256": "A8275C2E8EF1F05608F9980195328DB77557EE8242B34EEA5090BD809507385B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityVContainerParityTests.cs",
+      "sha256": "24ED57071613BC9C41DD63E6251959413899AF84854DF192BF62FD380467A56D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityVContainerParityTests.cs.meta",
+      "sha256": "22A59895F542F61A67CF6BD1BDD1457180F1FFAA1F98DA48CAA4CB46FB5B658D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityWhenAnyEditModeTests.cs",
+      "sha256": "4B89E61133E06FBD4E7742950E71FBD7A173C43D8FB1A021A4BDD12278BA515F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityWhenAnyEditModeTests.cs.meta",
+      "sha256": "C27E5453797FA86039927091E8EABFF01A8B47B959B5F7CFE1187D45973129BB",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityZenjectBindFeaturesParityTests.cs",
+      "sha256": "EEFFAD0B05244E16137B3CB11B4EF9ED5CD62988972EBE548CF6F3085287ECA7",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityZenjectBindFeaturesParityTests.cs.meta",
+      "sha256": "A2E6B3E7E42F831E2B936AE4DE1A7216446DBF7337A0CD7D43F6DDD0416B60F9",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityZenjectBindingsParityTests.cs",
+      "sha256": "51FDBAB518D442DFF10CB1B517B687E8EEA2308E8C555DBC00752DF3072B381B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityZenjectBindingsParityTests.cs.meta",
+      "sha256": "472BE8460F6518305595A6142E450FF153DF76769C3B42775E641E3029E8E18C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityZenjectFactoryParityTests.cs",
+      "sha256": "D8E19B9FA15E1D168BEB8BCCB8444DBD31C510BCDE9E6BEB243ED974480E984F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityZenjectFactoryParityTests.cs.meta",
+      "sha256": "D324240E5A4896A0338D428F8B52C94DF71339DFF5AF26F6D9A0DC44DCD73915",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityZenjectInjectionParityTests.cs",
+      "sha256": "4E22B4AD1793EDEEC08C6CDC1C29DCDF9EFCE2CA397E6F5E8009CE26D9CB89BB",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityZenjectInjectionParityTests.cs.meta",
+      "sha256": "57A61C66116E6EBF1696CF4B5BA5A03E27DAF86293BFB43C84B92D83269E9E30",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityZenjectOtherParityTests.cs",
+      "sha256": "3A0D8F5E16BB5D8AC7E036F6F774789263FB3B330507F4F22EF27DF2ED2F35BB",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityZenjectOtherParityTests.cs.meta",
+      "sha256": "EC9D18E53552FE6072A6556E0F9EA3E766A351C5D00C819C5E3E3764841EFB95",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityZenjectParityTests.cs",
+      "sha256": "35F28CB206EF9CC1F9C597E99170B0D1908A9F035318906AB06801CB877939DD",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/OnityZenjectParityTests.cs.meta",
+      "sha256": "8E491765D2C505A6CA7C9A7D5591565B8F1CDD75B5E66DDE591BD0D7ECF17DF3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/PoolingTests.cs",
+      "sha256": "A69D618DBB00AEDB3BEE77E93F493C7B51D764F63FCBD8D5E096CB9266596F61",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/PoolingTests.cs.meta",
+      "sha256": "4CF028A1223EC452089FB7CC9452518C04A1D26B5BCBC21421D449AA499A8666",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/ReactiveTests.cs",
+      "sha256": "4AFF98A3CD4A6898B935411258E4DEF0978FB59E3FC21B0AFDB764EE31F94024",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/ReactiveTests.cs.meta",
+      "sha256": "DD6E0CBA0D49EAB5EE9D8A7E6FE747F77E90A5D0489D89035517F4D04BEE22BD",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/TimerTests.cs",
+      "sha256": "1C5F7814D79C1333B06686CA7E0A2BA229FBDCFEA29D8B78E8F78B4DFD90409F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/TimerTests.cs.meta",
+      "sha256": "80DA8841FF31FD779326F6E348B0C036674E0317A47E0ED184EF7681AE77F3EB",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/UiBridgeTests.cs",
+      "sha256": "C83C52221EC46C3331B4D84578FD53DB1CE5C0EFA9552E1264A1BE5BFFEB5E04",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/EditMode/Scripts/UiBridgeTests.cs.meta",
+      "sha256": "819194DB75C9B29F17A8044E3C190A2831003209E569F1072656173AEEE1BB4C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/Fixtures.meta",
+      "sha256": "F20F1C7183D0A9068ED41623DE4EC1C4885C3494A980052A9A4933F4B0B8002E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/Fixtures/OnityDeferredLoadFixture.unity.meta",
+      "sha256": "3B80D83970DD741D752A95508509EB4DDC24676F8E00C1AB7407E913BBA54E21",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode.meta",
+      "sha256": "983E05BB5B6897C7E90F05D69B78E8C402AA7392349AF5F9F2A7824C432242AC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/Onity.Tests.PlayMode.asmdef",
+      "sha256": "C6E90B43D5C6C803AC94A0DA3C5399BB268880FAEA7F9EEDCFEDBD07D542D795",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/Onity.Tests.PlayMode.asmdef.meta",
+      "sha256": "50DF47B3C9331B184CDD5467EEFB007801D7E4AADF8F20543B9107D64ABCB070",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityAsyncEnumerablePlayModeTests.cs",
+      "sha256": "C0752F269A5C987A98F12013EE73A0B5E8F538762AF5C4813796EECD8EB1AE3D",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityAsyncEnumerablePlayModeTests.cs.meta",
+      "sha256": "E5554D1098468EC7424E284FC3BB18626360D78DF71E11E62ED504FBB37A8440",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityContextLifecyclePlayModeTests.cs",
+      "sha256": "C6CBDF0E72DE39F84A3990C64DF40A3E0622D1372BF344BDFC9A9BA5C1F79BB6",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityContextLifecyclePlayModeTests.cs.meta",
+      "sha256": "524DB8BF85578A34B1701FD0F6A9E2038EE655943A72B79209828D967F2D8C8C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityJobHandleAwakeProbe.cs",
+      "sha256": "5DC71FE29954DADE1BC8C6C78EBA0A4823FF136D3CC4CEE6B6E6114E6A403694",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityJobHandleAwakeProbe.cs.meta",
+      "sha256": "61133129FAE0C6D30E2977A05B5387EE689E46ABD33598A5A67B454929669E01",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityJobHandlePlayModeTests.cs",
+      "sha256": "A25C44230025491BEB6150E1C56190DA1331B45198D2B840951E4B4F99625830",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityJobHandlePlayModeTests.cs.meta",
+      "sha256": "C6314B4C5C3C316CA6D6BBE7BC0D07BA74B383047A056026454D2C8DFEC8E1B2",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityResolveSoakPlayModeTests.cs",
+      "sha256": "162BFFC573226AC30274C5231C8BD8DD5BEFE7A56D92B6F862A1E120787FB2FC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityResolveSoakPlayModeTests.cs.meta",
+      "sha256": "AA84C975E00409B8AC979908A1574ACBB4058A13721811EC91131D9FE9277838",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnitySceneFlowContextReadinessPlayModeTests.cs",
+      "sha256": "D6618FE0FA25BDBA864D4063AAFF6EE0993D926B946EA562F8013E62679B4FAA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnitySceneFlowContextReadinessPlayModeTests.cs.meta",
+      "sha256": "A08FB65D5483B66F60548D6511DBC6ED11C77C75619776F1F9A7CAF50843F31E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskAsyncBuilderPlayModeTests.cs",
+      "sha256": "50CC29709EEA2AB61B2DF8FC94E4F611112C501D6FC3142B00B7DB7132BB5F49",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskAsyncBuilderPlayModeTests.cs.meta",
+      "sha256": "3657711C9E619CE60CBBE853B566CE316F04C8644CEF6EFDA84EE000FCF0F1AD",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskCancellationPlayModeTests.cs",
+      "sha256": "3C6B3161581253E19EC7CE4C47570294F8274942D09C8D553E85C19DCF3FE1CD",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskCancellationPlayModeTests.cs.meta",
+      "sha256": "814CB8F42DC55609BF9ACD70121FA015651CA7E6F0487C5E217C2F79306DA928",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskEndOfFrameAwakeProbe.cs",
+      "sha256": "598B048FED2383DCCDF383B7B314884CA87F89C2032DFA20BB354E48416ABEAE",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskEndOfFrameAwakeProbe.cs.meta",
+      "sha256": "B4E3156803E0A48B3FEA197BFBC493F98C1FBFC8284C7028626FFF9B26831349",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskEndOfFramePlayModeTests.cs",
+      "sha256": "102070D6C57A23DD6E133A549F555CBFC4319C06906520554AA8F230DD54BE34",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskEndOfFramePlayModeTests.cs.meta",
+      "sha256": "A0258F2FEF74349DFF7134DC9C597C628839FEF1C4B1C401989E1A777086FB93",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskPlayerLoopAwakeProbe.cs",
+      "sha256": "2915BFF591A1318FA6C3517B084AE4BDB41EDBB1960E6924F07B2F6E03BCBD77",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskPlayerLoopAwakeProbe.cs.meta",
+      "sha256": "A73CB3CA4736B4A42568901540CD9A6092BA72A4A0642E793A56CE5FFE8F810E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskPlayerLoopPlayModeTests.cs",
+      "sha256": "27F2BC7A96C8DC90C917738279C6DE94665A76C009F88E391E622046B300BE89",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskPlayerLoopPlayModeTests.cs.meta",
+      "sha256": "EE552BB7D02EED156EDC1C45066AE50B1AD699153F379300FAD313319D95E4DC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskRunnerRetirementAwakeProbe.cs",
+      "sha256": "82B936FFC07387C4B51D4824A3C59C3C7BF54AB473186EF0F8D41C2836E8B532",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskRunnerRetirementAwakeProbe.cs.meta",
+      "sha256": "8E202F4F9A4F28F3EC28B0C7A9CE3A13D2B4CD36037866A3A15DC59550213DEE",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskRunnerRetirementPlayModeTests.cs",
+      "sha256": "D5554BD60AA07BC12410EC53214A47B68768874B1B67D012DA7EB491D5502685",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskRunnerRetirementPlayModeTests.cs.meta",
+      "sha256": "C2FCC3185AD3786FA56ADFE12A80D91CE7D1230585D12C3BD8CC7654185E5612",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskSafetyPlayModeTests.cs",
+      "sha256": "DD83923FD4940A2DEE38BF2C4523A8C0ABB825ED809674DFBA176FFC6A2BEECC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskSafetyPlayModeTests.cs.meta",
+      "sha256": "43397861027FCEB291AA8878B1FF71DBDEA09BAE94BF055A60386740C481BD7A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskThreadPoolPlayModeTests.cs",
+      "sha256": "E6C948E5AEC19862FED112676EF14270435F4DAB1AB803537D600DA27FF11708",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskThreadPoolPlayModeTests.cs.meta",
+      "sha256": "91632274052BD8EE9931499F9CBE32A91E949C3B129252D499502F8468C468E1",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskThreadSwitchPlayModeTests.cs",
+      "sha256": "06A9E38EE9450B8C35688230B6E46988A269928E0A889D2BA372A55DB6994F20",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskThreadSwitchPlayModeTests.cs.meta",
+      "sha256": "F3D45AB107A4D09024338F11D325ADA45B9D956B555C7C2932DECD7B7CDAB6AC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskTimeoutAwakeProbe.cs",
+      "sha256": "6C944C4B80243B9125465CC340BEC5B56FC90A35382EEDF147126863456ACF41",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskTimeoutAwakeProbe.cs.meta",
+      "sha256": "39014146C75FC1060942FBA26A6CFEA7493A8532541CDD63D6A61E338B8AC40C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskTimeoutPlayModeTests.cs",
+      "sha256": "9556391A25168296192FB8C76A43F39776AF82F0B1B59C52F271ED09B99B7E41",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskTimeoutPlayModeTests.cs.meta",
+      "sha256": "88A0A046C4A70214481EC9E316718400D00FDC16A8D33B69E18F63735D629F4A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskWhenAnyArrayPlayModeTests.cs",
+      "sha256": "15E199D7FAF388DCA853F736C10954E5F97777F8F3242CD12EB64276DC027855",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Tests/PlayMode/OnityTaskWhenAnyArrayPlayModeTests.cs.meta",
+      "sha256": "BC7A02BCC2D3E237896ABFDED3DFFD1FE23C93AFD99BC953C2FAD58166D15C4E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor.meta",
+      "sha256": "C6F12BA622C1DDBC9DE0DCACF8A030132AEEA9F86E7C47727C6FD34ECCEC6E44",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/Onity.TaskBenchmarks.Editor.asmdef",
+      "sha256": "3D0C84D3CE30EF56C787D2AFE1D03DE2D75C65B5176DAF02D865F9F914BC3642",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/Onity.TaskBenchmarks.Editor.asmdef.meta",
+      "sha256": "01524A180035C73DB951A3D9D011FE3181C075BDE8B10C29F835ED17BA615E44",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkMenu.cs",
+      "sha256": "EE9C37A8675ABA621D1B0616A9CDCBCDB855D8F3F4C4536306420C3DA7AC4DCF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkMenu.cs.meta",
+      "sha256": "CEE18AADE8D229CBF1E5BBD8BA55C71C79F1FBC860B779339C8ED1AF3077D91E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkPlayerBuildRunner.cs",
+      "sha256": "F70760A0A6736E5DA92BCADDF154B27F0A581F2C6AB5C7696478EF6CD85C07D3",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkPlayerBuildRunner.cs.meta",
+      "sha256": "8F3EEF4C5A3241682A920012EF45001CFE132DD4C811ADDB43A10DE192BA81F5",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkPlayerWatchdog.cs",
+      "sha256": "CC3098E92E224367A7C57C1EA0867ED9140B4FB09ABA91CAEDAE5427AAC4433F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkPlayerWatchdog.cs.meta",
+      "sha256": "B822330FE3533FB8AC86D3FD7F678A135110D2419FFC21DD0B6C8A80BEFB4E4B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskFullCycleProfileExporter.cs",
+      "sha256": "DE346F2066269BAEF4E66ED225BFADB73A2E123023074CF94A9FA40C9AEFB027",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskFullCycleProfileExporter.cs.meta",
+      "sha256": "85C978EED6BC332C3D33004A5A7FD95BEDDEDD1DC4CA1280DA20D3AD2F7071EA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityThreadSwitchBenchmarkMenu.cs",
+      "sha256": "B174A9CBE37F14EB71A34F2C34702F86CA1ABBE3DEA6B95BDA83A6782AAABC63",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityThreadSwitchBenchmarkMenu.cs.meta",
+      "sha256": "AC353CDF05B030A39B9E842E2A079DD0AA9516F2AE8B0431DAE3B5D6AE2049DA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/README.md.meta",
+      "sha256": "EC4346591CFCDDE1347F0FFEB08C0504EF5E93531C1C9D42F76D37F2578C0718",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime.meta",
+      "sha256": "CA806135F73CCCF141CC09D7B155DF7F961D721692A7744A336A82C5EE090E6B",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/Onity.TaskBenchmarks.asmdef",
+      "sha256": "925201C16BD81D857B4AEC4FF34C48E7868E6BBC4FC54C350FA78687A5B6938F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/Onity.TaskBenchmarks.asmdef.meta",
+      "sha256": "607C2852DC1454362710D81F21D134718304542D0503A43CB76F9822D382C72A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityAsyncEnumerableBenchmarkRunner.cs",
+      "sha256": "07FF64197F8A6981E659110A2A0FEA6FB102A8DA4A0E3FF98614D5F80EBF83FA",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityAsyncEnumerableBenchmarkRunner.cs.meta",
+      "sha256": "ED9BC5A55947C0EFDD73B545C8CB950188F00C43CDA72CB79333D9746BBED76F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityBenchmarkAllocationCounter.cs",
+      "sha256": "5C76872B9A517964994F70E6D0AF3EAB3BBC46C6571E9DE2743E07FFED74B538",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityBenchmarkAllocationCounter.cs.meta",
+      "sha256": "27D48A954D0B7DB876FBE051443F5579CC9B844B236741BF6A539982822F8F50",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkEnvironment.cs",
+      "sha256": "671C32CA748C112CCE9D50CE0A79B5DCD55D3E19430346C6FECAE575D2052B62",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkEnvironment.cs.meta",
+      "sha256": "8C425E67E200AFE81F5E13C94FCCBE3BD382597D61BB5D70D41539BDF527A6AC",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkPlayerRunner.cs",
+      "sha256": "73B173A2DFA675BF34D19EAC6E99A574323D359BA3187D27411F8EA73F4FA63F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkPlayerRunner.cs.meta",
+      "sha256": "48E7E98CE4A863D75C972FCFCA8D47A5609087FA3ED680D905B094D96F7F8191",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs",
+      "sha256": "650D24340CF614CBC00F451997A655986D743D2E0F69C6A88DA7290B6CFA234C",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkRunner.cs.meta",
+      "sha256": "20553971EC5C4D5467717EF45631A06DD1D8254FEFEFD3654626709AC151CA8A",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskEndOfFramePlayerRunner.cs",
+      "sha256": "E1BA412106820D0A39316C90BCC02224A2ABFFF4E0DD2909042ACDF0050268C7",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskEndOfFramePlayerRunner.cs.meta",
+      "sha256": "0111E1BB010DDAAE57C67C33D4608129BE135396279BF7FCAB80F2BB2451A436",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskFullCycleProfileRunner.cs",
+      "sha256": "7C0FE3490B04E8A7987299A41DEAE6C1BFD97AA9F3FE065DA22E05B8C105E79E",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskFullCycleProfileRunner.cs.meta",
+      "sha256": "F938E3DDD3E11685204411388EB07817969A38C2227B3F6E9CB69415188164DF",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskJobBenchmarkRunner.cs",
+      "sha256": "3A6156B27FC9E274E116F8FE634C85C80605E0D165B08AC14E128414C435A024",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskJobBenchmarkRunner.cs.meta",
+      "sha256": "A6857C2F5D0A3E0D351B7362DAB355E78257B7675360B565F5A4325EB4206E17",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskPlayerLoopBenchmarkRunner.cs",
+      "sha256": "0788CA935752C32B61307405F7F1E6D646A8D39BEC5DF9AA525CB5D137330C43",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskPlayerLoopBenchmarkRunner.cs.meta",
+      "sha256": "3AAA97A71CFF621973F52CF913E29A3B0A04712509654EB198AFC68B1493C294",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskPlayerSmokeRunner.cs",
+      "sha256": "06BE32364990CBE105783E84F487CACD510C386B89519A87B0768B48627E12B7",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskPlayerSmokeRunner.cs.meta",
+      "sha256": "E61601863BFA6C359F62F6CC635E579E9B9F9077A95AE66913BB58D587798870",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskWhenAllBenchmarkRunner.cs",
+      "sha256": "8DBFCA5CF7920DD29F3CA107C282A14EFE0C96AC51C273D3799E2A6B144FE133",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskWhenAllBenchmarkRunner.cs.meta",
+      "sha256": "3236A65AFFC1075CC7378FF7DEE0132252AEC224C8383893F170705389BFD264",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskWhenAnyBenchmarkRunner.cs",
+      "sha256": "2B5B13A5F3998AAB0B8A9CB3E489D313C99911D48CB0F8DE0F3C2E5C75D2DCC4",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskWhenAnyBenchmarkRunner.cs.meta",
+      "sha256": "C821583FC2FBFB4AE7E23F0F4F250AB23890B00A7329AD49685B6CAECE518EA6",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityThreadSwitchBenchmarkRunner.cs",
+      "sha256": "26A7E1ABB526B7948A9A28C5406DDDE1979B995A60394056392359A03034543F",
+      "hostMatches": true
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityThreadSwitchBenchmarkRunner.cs.meta",
+      "sha256": "A87E3D858CD9D59A3C8AD54D1366C8297BA33CC888319C581FF157804E17332F",
+      "hostMatches": true
+    }
+  ]
+}

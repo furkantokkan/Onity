@@ -1,0 +1,31 @@
+{
+  "StartedUtc": "2026-09-27T02:44:44.0625124Z",
+  "FinishedUtc": "2026-09-27T02:44:45.7909244Z",
+  "Backend": "Mono",
+  "Run": 1,
+  "ExitCode": 0,
+  "BackgroundBefore": [
+    {
+      "Id": 45732,
+      "ProcessName": "Unity",
+      "CPU": 54160.3125
+    },
+    {
+      "Id": 112612,
+      "ProcessName": "unity",
+      "CPU": 0.34375
+    }
+  ],
+  "BackgroundAfter": [
+    {
+      "Id": 45732,
+      "ProcessName": "Unity",
+      "CPU": 54163.546875
+    },
+    {
+      "Id": 112612,
+      "ProcessName": "unity",
+      "CPU": 0.34375
+    }
+  ]
+}

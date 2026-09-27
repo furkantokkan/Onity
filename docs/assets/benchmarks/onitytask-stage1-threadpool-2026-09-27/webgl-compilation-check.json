@@ -1,0 +1,7 @@
+{
+  "Compiler": "Unity Roslyn 4.3",
+  "Configuration": "UNITY_WEBGL without UNITY_EDITOR; managed compilation only",
+  "ThrowsPlatformNotSupported": true,
+  "QueueCallsGuard": true,
+  "QueueCallsThreadPool": false
+}

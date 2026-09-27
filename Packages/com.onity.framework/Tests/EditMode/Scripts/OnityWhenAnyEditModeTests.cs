@@ -115,7 +115,7 @@ namespace Onity.Tests.EditMode
 
             Assert.That(race.GetAwaiter().GetResult(), Is.EqualTo(0));
             Assert.That(loser.IsCompleted, Is.False);
-            Assert.That(tick.Invoke(source, new object[] { 0f, 0f }), Is.EqualTo(true));
+Assert.That(tick.Invoke(source, new object[] { null, 0f, 0f }), Is.EqualTo(true));
             Assert.Throws<InvalidOperationException>(() => loser.GetAwaiter().GetResult());
         }
 
@@ -125,7 +125,7 @@ namespace Onity.Tests.EditMode
             (OnityTask task, object source, MethodInfo tick) = NewStandaloneFrameTask();
 
             Assert.Throws<ArgumentException>(() => OnityTask.WhenAny(task, task));
-            tick.Invoke(source, new object[] { 0f, 0f });
+            tick.Invoke(source, new object[] { null, 0f, 0f });
             Assert.DoesNotThrow(() => task.GetAwaiter().GetResult());
         }
 
@@ -231,7 +231,7 @@ namespace Onity.Tests.EditMode
                 Task bridge = task.AsTask();
 
                 await RaceBridgeWithCompletion(
-                    () => tick.Invoke(source, new object[] { 0f, 0f }),
+                    () => tick.Invoke(source, new object[] { null, 0f, 0f }),
                     () => task.AsTask(),
                     bridge);
 

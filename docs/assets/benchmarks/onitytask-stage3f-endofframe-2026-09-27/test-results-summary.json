@@ -1,0 +1,90 @@
+[
+  {
+    "name": "plan13-eof-editmode-normal-verified",
+    "result": "Passed",
+    "total": 814,
+    "passed": 814,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-eof-editmode-normal-verified.xml",
+    "xmlSha256": "7DEF0483028E7D67E2375D5AEDE150A9A348D8B8C8E085E7927A8F65D08C27CE",
+    "logSha256": "62A605C724D71ECEB18EE7B9089969C0C008A13AECEE2DCBDF72A2BEA87767CD"
+  },
+  {
+    "name": "plan13-eof-editmode-release-verified",
+    "result": "Passed",
+    "total": 814,
+    "passed": 814,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-eof-editmode-release-verified.xml",
+    "xmlSha256": "1E635035957D85F15CC521948BB750B8A499FFF04A8F5CD41F97198A2929FFDE",
+    "logSha256": "246B25A5757131184468A2731995CC056D6FBA402E96B723CCC88FB90289F80B"
+  },
+  {
+    "name": "plan13-eof-existing-editmode-release",
+    "result": "Passed",
+    "total": 33,
+    "passed": 33,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-eof-existing-editmode-release.xml",
+    "xmlSha256": "60116FADB2D82D3671D6066CE1E4524516A281FFCA687CE145E67A91BB142761",
+    "logSha256": "8CABBEE45B8276A3B37D2523B37E096BD9BE27E2318A5A5077EF61AC62A9DC68"
+  },
+  {
+    "name": "plan13-eof-existing-playmode-release",
+    "result": "Passed",
+    "total": 19,
+    "passed": 19,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-eof-existing-playmode-release.xml",
+    "xmlSha256": "BC3DE65A3E51FEB3206DD60D746B01EED159082C771004FE2D6CEFFA06D33714",
+    "logSha256": "EC72BDF511B29F183A6D6FE82DE4F47C3C21C23329423F8A7D369888CE40528A"
+  },
+  {
+    "name": "plan13-eof-new-editmode-release",
+    "result": "Passed",
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-eof-new-editmode-release.xml",
+    "xmlSha256": "0631511375BF5B7E0AD8409ADB7076E7C105A73AF3480B502CABB8C7C20EDF90",
+    "logSha256": "C6C16D2CDD6FB2AE64A7E078D7129F0B2C44D50FDCC1B775C4A398EC36F65718"
+  },
+  {
+    "name": "plan13-eof-new-playmode-release",
+    "result": "Passed",
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-eof-new-playmode-release.xml",
+    "xmlSha256": "FB5DA4FA427E3ED1258C783747FDE38FACF306AD72876F08AC88FCC0E882B51D",
+    "logSha256": "0F45E9D27ABFC3FE90A37F58FE34E7CB93285A0494B43368D9FA52F9A07FB475"
+  },
+  {
+    "name": "plan13-eof-playmode-normal-verified",
+    "result": "Passed",
+    "total": 84,
+    "passed": 84,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-eof-playmode-normal-verified.xml",
+    "xmlSha256": "9D5EBC8B7B580955D26A5556822FAFBC90B65A71AF145B28B8DC566680306A1E",
+    "logSha256": "A35A5D03D116E59518344465F36E7F657173101D401AE81249896B36269F0889"
+  },
+  {
+    "name": "plan13-eof-playmode-release-verified",
+    "result": "Passed",
+    "total": 84,
+    "passed": 84,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-eof-playmode-release-verified.xml",
+    "xmlSha256": "ADDAD6537F0405AAB2C9E4EF7B798B33FB365FB5CD37DD1F55F0D28F053968B1",
+    "logSha256": "C14F6BC1819C788E25A3696DB2CED915AF145204558BA21488B1F665D69F93C9"
+  }
+]

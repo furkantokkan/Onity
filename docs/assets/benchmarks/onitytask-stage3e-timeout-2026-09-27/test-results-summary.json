@@ -1,0 +1,108 @@
+[
+  {
+    "name": "plan13-stage3e-editmode-normal-verified",
+    "result": "Passed",
+    "total": 812,
+    "passed": 812,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3e-editmode-normal-verified.xml",
+    "xmlSha256": "EF14698838624B40E3CF9298688E97A0A22620375F4480A9BB2F3CD2FE955D37",
+    "logSha256": "6B54471540A9FBDB5DF528DFB3F300BD5D5DF36116F2AF33AD02011C04DDCAF4",
+    "failures": []
+  },
+  {
+    "name": "plan13-stage3e-editmode-release-verified",
+    "result": "Passed",
+    "total": 812,
+    "passed": 812,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3e-editmode-release-verified.xml",
+    "xmlSha256": "5177ED8598541C57E3CE28A0C419989CB8F8697F74FBF980A49E1F3EACC74C14",
+    "logSha256": "83854F32D78D46FFE33C3C8B4727180ED42E247CC2590DE4CC51D75AE990F8BF",
+    "failures": []
+  },
+  {
+    "name": "plan13-stage3e-new-editmode-release-verified",
+    "result": "Failed(Child)",
+    "total": 30,
+    "passed": 29,
+    "failed": 1,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3e-new-editmode-release-verified.xml",
+    "xmlSha256": "3DA7A0FABABCAB0731C7D16D9C0AD72F7FD58196AB9192C319136E5704FAF72A",
+    "logSha256": "2329EF8BE5BBD882456D70989858C2E3232DD8B907031353F3D0F127D1CA4E76",
+    "failures": [
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskTimeoutEditModeTests.FactoryVersusProducer_PublicRaceHasOneLegalOutcomeAndObservesAnyLoser",
+        "message": "  Expected: True\n  But was:  False\n"
+      }
+    ]
+  },
+  {
+    "name": "plan13-stage3e-new-editmode-release",
+    "result": "Failed(Child)",
+    "total": 30,
+    "passed": 26,
+    "failed": 4,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3e-new-editmode-release.xml",
+    "xmlSha256": "B12FF3C70C31E944EE17C20FB6D4AE640261C80B3A1B68A8D33D48C72E809E38",
+    "logSha256": "031A7C834A2E0DA5698F941856174443E32109544A6E13D61D58D0F199C85D88",
+    "failures": [
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskTimeoutEditModeTests.PendingZero_NativePreservedAndTaskInputs_OutputPreserveAndBridgeFollowConsumerContract(0)",
+        "message": "System.InvalidOperationException : OnityTask has already been materialized and released."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskTimeoutEditModeTests.PendingZero_NativePreservedAndTaskInputs_OutputPreserveAndBridgeFollowConsumerContract(1)",
+        "message": "System.InvalidOperationException : OnityTask has already been materialized and released."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskTimeoutEditModeTests.PendingZero_NativePreservedAndTaskInputs_OutputPreserveAndBridgeFollowConsumerContract(2)",
+        "message": "System.InvalidOperationException : OnityTask has already been materialized and released."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskTimeoutEditModeTests.PendingZero_NativePreservedAndTaskInputs_OutputPreserveAndBridgeFollowConsumerContract(3)",
+        "message": "System.InvalidOperationException : OnityTask has already been materialized and released."
+      }
+    ]
+  },
+  {
+    "name": "plan13-stage3e-new-playmode-release",
+    "result": "Passed",
+    "total": 9,
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3e-new-playmode-release.xml",
+    "xmlSha256": "3D3E7072FB25B359084BEE801BA0682E4FC53CA4D35AA898EB4249100B017AE5",
+    "logSha256": "43A05C513F3EFCE038F2F817CD9AF6E9FAE55DC5E12F692E19C6BBD176D5C700",
+    "failures": []
+  },
+  {
+    "name": "plan13-stage3e-playmode-normal-verified",
+    "result": "Passed",
+    "total": 82,
+    "passed": 82,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3e-playmode-normal-verified.xml",
+    "xmlSha256": "681B9A32DC2262C21FAEA6ABE9114927EE12ED1A42CE3F443B794120C1FAB99A",
+    "logSha256": "AE178E9840F07F83776204DB7EA8E8FD12D49BF272E7AB7AAD1C7383EC41168E",
+    "failures": []
+  },
+  {
+    "name": "plan13-stage3e-playmode-release-verified",
+    "result": "Passed",
+    "total": 82,
+    "passed": 82,
+    "failed": 0,
+    "skipped": 0,
+    "xmlPath": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\TestResults\\plan13-stage3e-playmode-release-verified.xml",
+    "xmlSha256": "5ABFF9FB6B9727E41546D10EBCB568FF07F6E3AF8A4FDB866E583CBB03623693",
+    "logSha256": "ABEB06180BCEACFF8A3529D3D09720575A7EC04E7CF6C4DE2ADC34FD4EFD032E",
+    "failures": []
+  }
+]

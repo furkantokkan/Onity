@@ -1,0 +1,112 @@
+{
+    "schemaVersion": 1,
+    "generatedAtUtc": "2026-09-27T00:46:49.1017276Z",
+    "unityVersion": "2022.3.62f2",
+    "expectedCaseCount": 16,
+    "passed": true,
+    "failure": "",
+    "environment": {
+        "buildGuid": "1535396fcc824167973fe9a6a3a17910",
+        "isDevelopment": false,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+            "generatedAtUtc": "2026-09-27T00:46:48.1610021Z",
+            "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+            "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+            "il2CppCompilerConfiguration": "Release",
+            "managedStrippingLevel": "Minimal",
+            "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+            "onityVersion": "0.3.14",
+            "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+            "uniTaskVersion": "2.5.11"
+        }
+    },
+    "cases": [
+        {
+            "name": "synchronous typed/untyped",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "critical typed/untyped suspension and stale tokens",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "safe typed/untyped suspension",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "typed native/bridge exclusivity and bridge recycling",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "untyped native/bridge exclusivity and bridge recycling",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "typed deferred pool return",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "untyped deferred pool return",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "typed consume and re-rent during MoveNext",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "untyped consume and re-rent during MoveNext",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "typed held-worker pool deferral",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "untyped held-worker pool deferral",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "execution context flow on/off/suppressed and safe await",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "AsyncLocal isolation and synchronization context restoration",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "thread-pool switch and main-thread return",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "thread-pool typed/untyped outcomes and completion threads",
+            "passed": true,
+            "failure": ""
+        },
+        {
+            "name": "thread-pool execution context on/off/suppressed",
+            "passed": true,
+            "failure": ""
+        }
+    ]
+}

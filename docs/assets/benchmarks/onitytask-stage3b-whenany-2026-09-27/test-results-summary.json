@@ -1,0 +1,62 @@
+[
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3b-derived-red.xml",
+    "sha256": "A7C14A9CC9200D3D6CF34B477D5CCC1C45613715A0014A0FF03C8DFD6C16A12B",
+    "result": "Failed(Child)",
+    "total": 29,
+    "passed": 26,
+    "failed": 3,
+    "skipped": 0,
+    "phase": "Reproduction before two-reader fix: three expected derived-source failures"
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3b-derived-green.xml",
+    "sha256": "EE5E693270908FA704DB324405B9ECAE51B379E71FC6A76BB6F17CF7D00FCACE",
+    "result": "Passed",
+    "total": 29,
+    "passed": 29,
+    "failed": 0,
+    "skipped": 0,
+    "phase": "Verification after two-reader fix"
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3b-editmode-normal-verified.xml",
+    "sha256": "008B9EF52AEEB049844BF9A94053067086C5F133C48194B9A2F9C85185511978",
+    "result": "Passed",
+    "total": 744,
+    "passed": 744,
+    "failed": 0,
+    "skipped": 0,
+    "phase": "Verification after two-reader fix"
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3b-editmode-release-verified.xml",
+    "sha256": "9F03F49B15F0C60CE76AFB1DC67364BEF5073B7889A02079614A8E84FB7DC93B",
+    "result": "Passed",
+    "total": 744,
+    "passed": 744,
+    "failed": 0,
+    "skipped": 0,
+    "phase": "Verification after two-reader fix"
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3b-playmode-normal-verified.xml",
+    "sha256": "A750207F17D85614C6F6D434636E299196131100CB9FEC56FE6152AD4983B521",
+    "result": "Passed",
+    "total": 52,
+    "passed": 52,
+    "failed": 0,
+    "skipped": 0,
+    "phase": "Verification after two-reader fix"
+  },
+  {
+    "file": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/TestResults/plan13-stage3b-playmode-release-verified.xml",
+    "sha256": "77E7B1B2CF376B42B0E11CFF3349542C9283E28DB39FDF6368E98E955777B974",
+    "result": "Passed",
+    "total": 52,
+    "passed": 52,
+    "failed": 0,
+    "skipped": 0,
+    "phase": "Verification after two-reader fix"
+  }
+]

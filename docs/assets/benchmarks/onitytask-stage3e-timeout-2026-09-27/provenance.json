@@ -1,0 +1,115 @@
+{
+  "generatedAtUtc": "2026-09-27T05:23:56.4595284Z",
+  "sourceRoot": "C:/Users/e-fur/.codex/worktrees/onity-fast-capture-f682b7c/Onity",
+  "verificationHost": "C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity",
+  "sourceHead": "3f098937e9198a17edcf72cd75e73bd5bc76e2fd",
+  "unityVersion": "2022.3.62f2",
+  "cliVersion": "1.0.0-beta.11",
+  "sourceManifestFileCount": 508,
+  "settings": [
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "sha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/EditorSettings.asset",
+      "sha256": "962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34",
+      "restored": true
+    },
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "sha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33",
+      "restored": true
+    }
+  ],
+  "temporarySceneRemoved": true,
+  "players": [
+    {
+      "backend": "mono",
+      "buildGuid": "46a15d2088f6457a9df7f82f9edc8797",
+      "count": 26,
+      "smokeSha256": "601D948DF857D75EECF9B4CC4710521E8571AAB40BF76D49A2BBC5D798C6516D",
+      "environment": {
+        "buildGuid": "46a15d2088f6457a9df7f82f9edc8797",
+        "isDevelopment": false,
+        "scriptingBackend": "Mono",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-27T05:21:18.8142582Z",
+          "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+          "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Disabled",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.14",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    },
+    {
+      "backend": "il2cpp",
+      "buildGuid": "3da5993ee43845f485cef7c929e5a40c",
+      "count": 26,
+      "smokeSha256": "5C10287F2164DA05E4A97DB03952A8E9C9E27160133C20A74E15A0EB0F0346DD",
+      "environment": {
+        "buildGuid": "3da5993ee43845f485cef7c929e5a40c",
+        "isDevelopment": false,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+          "generatedAtUtc": "2026-09-27T05:23:17.879134Z",
+          "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+          "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+          "il2CppCompilerConfiguration": "Release",
+          "managedStrippingLevel": "Minimal",
+          "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+          "onityVersion": "0.3.14",
+          "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+          "uniTaskVersion": "2.5.11"
+        }
+      }
+    }
+  ],
+  "logs": [
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3e-il2cpp-build-verified.log",
+      "sha256": "386AB34B31AC31B7E7A7C2C0B8A275C9BDF1512EE0BE260DBE0DDD925500E630"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3e-il2cpp-smoke.player.log",
+      "sha256": "D93B02D30DDFC9BBED8A5F32496AE34B8A061585739CEF266917A64129173EE1"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3e-il2cpp-smoke.startup.log",
+      "sha256": "39426CB3279662A5AAC0CC367D4EC6E489B7B5FA9B736FD060A1865D98304EDF"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3e-mono-build-verified.log",
+      "sha256": "871D59B450F855DA1CCFBF91433D372F915116961384F00A96D5BEA7FA3B8121"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3e-mono-smoke.player.log",
+      "sha256": "EB3A223709C27E9F48F3FFD6200BC799B90DC1C53B171E834A4A78BE1B9589D3"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\plan13-stage3e-mono-smoke.startup.log",
+      "sha256": "EF46B9B91EE61B8C41CBDA4E5CE3AD8298030B2A7341E7AEB12CBD8E621D5F87"
+    }
+  ],
+  "initialEditFixtureSha256": "A16C9B5C01AA2F9AD772379C53A515EAB0333C04CE3B77801579ECD5D6A3738E",
+  "secondEditFixtureSha256": "8F11635F9EC78DB2894E6B267E716051CD8AAA2460CDE030AB89C1B0AB3EB250",
+  "finalEditFixtureSha256": "5DBCCE103B9BB2EBC3C66A9DFC15D2C39F8E0C7AFD0D8FAC62C3BEAA90D96A3A",
+  "testFreshness": "Final full normal/Release suites use identical final runtime and Edit/Play fixtures. Player-only smoke expansion followed full suites, then both backends rebuilt. Source manifest captures the final Player candidate."
+}
