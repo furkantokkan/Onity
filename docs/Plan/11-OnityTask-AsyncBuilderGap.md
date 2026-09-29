@@ -484,3 +484,8 @@ remaining structural difference is the three monitor acquisitions against
 UniTask's interlocked core, which a later change could remove for the native
 consumption path while keeping the locks for the bridge and preserved paths.
 
+Update 2026-09-29: the three monitor acquisitions were removed from every
+source-base path, bridge and preserved included; the packed-state design, its
+desktop before/after numbers and the verification are recorded in
+[plan 12](12-OnityTask-PlayerVerification.md#native-synchronization-reduction---2026-09-29).
+
