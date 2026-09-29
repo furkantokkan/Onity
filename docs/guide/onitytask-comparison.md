@@ -54,7 +54,7 @@ bottleneck percentage. See the [verification report and raw samples](../assets/b
 for startup diagnosis, allocation sites, build settings, test freshness and limits.
 That investigation is now implemented: the source bases keep one packed state
 word and enter no monitor on any path. The desktop-Mono before/after numbers
-are in [plan 12](../Plan/12-OnityTask-PlayerVerification.md#native-synchronization-reduction---2026-09-29);
+are in [plan 12](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/12-OnityTask-PlayerVerification.md#native-synchronization-reduction---2026-09-29);
 the Player suites have not yet been rerun on that build, so the ratios above
 remain the latest Player evidence.
 
