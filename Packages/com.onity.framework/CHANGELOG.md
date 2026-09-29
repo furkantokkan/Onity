@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The pooled native task sources (suspended `async OnityTask` methods, frame,
+  delay, predicate, player-loop, end-of-frame, job-handle, timeout,
+  cancellation and `WhenAny` sources) keep their token version, completion
+  claim, consumption mode and lifecycle bits in one packed state word and
+  publish the terminal status with one volatile write after a compare-and-swap
+  claim. Registration, completion, the `AsTask()` bridge and result
+  consumption no longer enter a monitor; a stale token is rejected by the same
+  compare-and-swap that would have changed a later cycle, and a misuse such as
+  two consumers or `AsTask()` racing `GetResult()` still throws
+  `InvalidOperationException`. Eight new EditMode cases cover stale tokens
+  after reuse, registration racing completion, `AsTask()` racing completion
+  and runner cancellation with a retired version. On the desktop Mono harness
+  (not a Unity measurement) a suspended-method cycle at 128 concurrent
+  operations fell from 197 to 127 ns with `FlowExecutionContext` off and from
+  260 to 193 ns with it on, against UniTask's 88 ns; the Editor and Player
+  suites are not yet rerun on this change.
+
 ## [0.4.0] - 2026-09-27
 
 This release includes Plan 13 through the verified Stage 4c awaitable operators.

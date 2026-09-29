@@ -793,6 +793,14 @@ rethrown as the same instance with its stack trace, and an
 `OperationCanceledException` thrown after a suspension cancels the task and is
 rethrown as the same instance.
 
+Inside a pooled source the token version, the completion claim, the
+consumption mode and the lifecycle bits share one state word, and every
+transition is a single compare-and-swap that validates the version it read.
+Registering, completing and consuming a native task therefore take no lock; a
+stale token, a second awaiter, or `AsTask()` racing `GetResult()` is rejected
+with `InvalidOperationException` by the same compare-and-swap that would
+otherwise have changed a later cycle of the reused source.
+
 By default the builder flows the execution context across awaits, so
 `AsyncLocal<T>` values set before an await are visible after it, and a value
 written after an await does not leak into the resuming thread. The capture

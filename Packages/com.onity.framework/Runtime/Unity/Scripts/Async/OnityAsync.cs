@@ -79,6 +79,14 @@ namespace Onity.Unity.Async
             m_token = source.Version;
         }
 
+        /// <summary>Binds a source whose current token the caller already holds.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal OnityTask(IOnityTaskSource source, int token)
+        {
+            m_state = source;
+            m_token = token;
+        }
+
         /// <summary>
         /// Completed Onity task.
         /// </summary>
@@ -1447,6 +1455,15 @@ namespace Onity.Unity.Async
             m_token = source.Version;
         }
 
+        /// <summary>Binds a source whose current token the caller already holds.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal OnityTask(IOnityTaskSource<T> source, int token)
+        {
+            m_state = source;
+            m_result = default;
+            m_token = token;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal OnityTask(T result)
         {
@@ -2278,114 +2295,192 @@ namespace Onity.Unity.Async
         }
     }
 
+    /// <summary>
+    /// Packed state word shared by the pooled source bases: the token version in the high 32 bits
+    /// and the completion claim, consumption mode, consumed, bridge and released bits in the low
+    /// bits. Every transition is one compare-and-swap that validates the version it read, so a
+    /// stale task value can never mutate a later cycle of the same pooled source, and no monitor
+    /// is needed on the native await path. The terminal status lives in its own field, which the
+    /// claim winner publishes with one volatile write once the outcome fields are in place.
+    /// </summary>
+    internal static class OnityTaskSourceState
+    {
+        public const int k_modeNone = 0;
+        public const int k_modeNative = 1;
+        public const int k_modeTask = 2;
+        public const int k_modePreserved = 3;
+
+        private const long k_claimedBit = 1L << 0;
+        private const int k_modeShift = 3;
+        private const long k_modeMask = 0x3L << k_modeShift;
+        private const long k_consumedBit = 1L << 5;
+        private const long k_materializedBit = 1L << 6;
+        private const long k_releasedBit = 1L << 7;
+        private const int k_versionShift = 32;
+
+        public static int Version(long state) => (int)(state >> k_versionShift);
+
+        /// <summary>True once a completer won the cycle; its status follows in the status field.</summary>
+        public static bool Claimed(long state) => (state & k_claimedBit) != 0;
+
+        public static int Mode(long state) => (int)((state & k_modeMask) >> k_modeShift);
+
+        public static bool Consumed(long state) => (state & k_consumedBit) != 0;
+
+        public static bool Materialized(long state) => (state & k_materializedBit) != 0;
+
+        public static bool Released(long state) => (state & k_releasedBit) != 0;
+
+        public static long WithClaimed(long state) => state | k_claimedBit;
+
+        public static long WithMode(long state, int mode) => (state & ~k_modeMask) | ((long)mode << k_modeShift);
+
+        public static long WithConsumed(long state) => state | k_consumedBit;
+
+        public static long WithMaterialized(long state) => state | k_materializedBit;
+
+        /// <summary>The released word, with the version retired in the same compare-and-swap.</summary>
+        public static long WithReleased(long state) => WithNextVersion(state | k_releasedBit);
+
+        /// <summary>A pending, unclaimed word carrying the version that follows <paramref name="state"/>.</summary>
+        public static long NextCycle(long state) => (long)NextVersion(Version(state)) << k_versionShift;
+
+        /// <summary>The same word with the version that follows its current one; zero is skipped.</summary>
+        public static long WithNextVersion(long state) =>
+            (state & 0xFFFFFFFFL) | ((long)NextVersion(Version(state)) << k_versionShift);
+
+        private static int NextVersion(int version)
+        {
+            int next = unchecked(version + 1);
+            return next == 0 ? 1 : next;
+        }
+    }
+
     internal abstract class OnityTaskSourceBase : IOnityTaskSource, IOnityPreservedTaskSource
     {
-        private const int k_noConsumption = 0;
-        private const int k_nativeConsumption = 1;
-        private const int k_taskConsumption = 2;
-        private const int k_preservedConsumption = 3;
-
         private static readonly Action<object> s_cancelCallback = CancelFromToken;
+        private static readonly object s_completedSentinel = new object();
 
-        private Action m_continuation;
+        private long m_state;
+        private int m_status;
+        private object m_continuation;
         private object m_completionState;
+        private TaskCompletionSource<bool> m_taskBridge;
         private CancellationTokenRegistration m_cancellationRegistration;
         private CancellationToken m_cancellationToken;
         private Exception m_exception;
-        private int m_status;
-        private int m_version;
-        private int m_consumptionMode;
-        private int m_consumed;
         private int m_cancellationRequested;
-        private int m_taskMaterialized;
-        private int m_released;
 
-        public int Version => Volatile.Read(ref m_version);
+        public int Version => OnityTaskSourceState.Version(Volatile.Read(ref m_state));
 
         public bool IsCancellationRequested => Volatile.Read(ref m_cancellationRequested) != 0;
 
         /// <summary>
         /// True once a native awaiter, a preserved continuation, or a .NET task bridge has claimed
-        /// the source, or after its result was consumed. Read without the lock: a caller that
-        /// registers afterwards still goes through the locked checks.
+        /// the source, or after its result was consumed. A caller that registers afterwards still
+        /// goes through the versioned compare-and-swap checks.
         /// </summary>
-        internal bool HasConsumer =>
-            Volatile.Read(ref m_consumptionMode) != k_noConsumption
-            || Volatile.Read(ref m_consumed) != 0;
+        internal bool HasConsumer
+        {
+            get
+            {
+                long state = Volatile.Read(ref m_state);
+                return OnityTaskSourceState.Mode(state) != OnityTaskSourceState.k_modeNone
+                    || OnityTaskSourceState.Consumed(state);
+            }
+        }
 
         protected bool IsPending => Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Pending;
 
         public OnityTaskSourceStatus GetStatus(int token)
         {
-            int versionBefore = Volatile.Read(ref m_version);
-            if (token != versionBefore)
+            // The status is read before the word: a version that still matches afterwards proves
+            // the status belongs to the caller's cycle, because a reset clears the status first.
+            int status = Volatile.Read(ref m_status);
+            if (OnityTaskSourceState.Version(Volatile.Read(ref m_state)) != token)
             {
                 ThrowInvalidToken();
             }
 
-            OnityTaskSourceStatus status = (OnityTaskSourceStatus)Volatile.Read(ref m_status);
-            if (token != Volatile.Read(ref m_version))
-            {
-                ThrowInvalidToken();
-            }
-
-            return status;
+            return (OnityTaskSourceStatus)status;
         }
 
         public Task AsTask(int token)
         {
-            Task task;
-            bool releaseSource;
-
-            lock (this)
+            TaskCompletionSource<bool> bridge = null;
+            TaskCompletionSource<bool> taskCompletionSource = null;
+            long snapshot = 0;
+            while (true)
             {
-                ValidateToken(token);
+                long state = Volatile.Read(ref m_state);
+                if (OnityTaskSourceState.Version(state) != token)
+                {
+                    ThrowInvalidToken();
+                }
 
-                if (m_consumed != 0)
+                if (OnityTaskSourceState.Consumed(state))
                 {
                     throw new InvalidOperationException("OnityTask has already been consumed.");
                 }
 
-                if (m_released != 0)
+                if (OnityTaskSourceState.Released(state))
                 {
                     throw new InvalidOperationException("OnityTask has already been materialized and released.");
                 }
 
-                if (m_consumptionMode == k_nativeConsumption ||
-                    m_consumptionMode == k_preservedConsumption)
+                int mode = OnityTaskSourceState.Mode(state);
+                if (mode == OnityTaskSourceState.k_modeNative || mode == OnityTaskSourceState.k_modePreserved)
                 {
                     throw new InvalidOperationException(
                         "OnityTask is already being consumed by its native awaiter.");
                 }
 
-                m_consumptionMode = k_taskConsumption;
-                Volatile.Write(ref m_taskMaterialized, 1);
-
-                TaskCompletionSource<bool> taskCompletionSource =
-                    m_completionState as TaskCompletionSource<bool>;
-                if (taskCompletionSource == null)
+                if (mode == OnityTaskSourceState.k_modeTask)
                 {
-                    taskCompletionSource = OnityAsyncExecutionContext.CreateTaskBridge<bool>();
-                    m_completionState = taskCompletionSource;
-                    ApplyStatusToTask(taskCompletionSource);
+                    // An earlier call materialized the bridge; the release that clears the field
+                    // can only follow the released bit checked above, so a null here means the
+                    // cycle was released between the two reads.
+                    taskCompletionSource = Volatile.Read(ref m_taskBridge);
+                    if (taskCompletionSource == null)
+                    {
+                        throw new InvalidOperationException(
+                            "OnityTask has already been materialized and released.");
+                    }
+
+                    break;
                 }
 
-                task = taskCompletionSource.Task;
-                releaseSource = m_status != (int)OnityTaskSourceStatus.Pending
-                    && TryClaimTaskReleaseUnsafe();
-
-                if (releaseSource)
+                // The bridge is stored before the claim is published, so a completer that sees the
+                // materialized bit always finds it. The stored bridge is kept from the exchange
+                // rather than read back: a completer that wins the claim may release and clear the
+                // field before this call returns.
+                if (bridge == null)
                 {
-                    ClearCompletionReferencesUnsafe();
+                    bridge = OnityAsyncExecutionContext.CreateTaskBridge<bool>();
+                    taskCompletionSource = Interlocked.CompareExchange(ref m_taskBridge, bridge, null) ?? bridge;
+                }
+
+                long claimed = OnityTaskSourceState.WithMaterialized(
+                    OnityTaskSourceState.WithMode(state, OnityTaskSourceState.k_modeTask));
+                if (Interlocked.CompareExchange(ref m_state, claimed, state) == state)
+                {
+                    snapshot = state;
+                    break;
                 }
             }
 
-            if (releaseSource)
+            // The claim order on the shared word decides who finishes the bridge: a completer that
+            // claimed before this call cannot see the bridge, so this call waits for its status and
+            // applies it; a completer that claims later finds the materialized bit and applies it.
+            if (OnityTaskSourceState.Claimed(snapshot)
+                && TryClaimBridgeRelease(OnityTaskSourceState.Version(snapshot)))
             {
+                ApplyStatusToTask(taskCompletionSource, WaitForPublishedStatus());
+                ClearCompletionReferences();
                 ReleaseSource();
             }
 
-            return task;
+            return taskCompletionSource.Task;
         }
 
         public void OnCompleted(Action continuation, int token)
@@ -2395,33 +2490,8 @@ namespace Onity.Unity.Async
                 throw new ArgumentNullException(nameof(continuation));
             }
 
-            bool invokeNow;
-            lock (this)
-            {
-                ValidateToken(token);
-
-                if (m_consumed != 0)
-                {
-                    throw new InvalidOperationException("OnityTask has already been consumed.");
-                }
-
-                if (m_consumptionMode != k_noConsumption)
-                {
-                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
-                }
-
-                m_consumptionMode = k_nativeConsumption;
-                invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
-                if (invokeNow == false)
-                {
-                    m_continuation = continuation;
-                }
-            }
-
-            if (invokeNow)
-            {
-                continuation();
-            }
+            ClaimConsumption(token, OnityTaskSourceState.k_modeNative);
+            RegisterContinuation(continuation);
         }
 
         public void OnCompleted(IOnityPreservedTaskContinuation continuation, int token)
@@ -2431,30 +2501,9 @@ namespace Onity.Unity.Async
                 throw new ArgumentNullException(nameof(continuation));
             }
 
-            bool invokeNow;
-            lock (this)
-            {
-                ValidateToken(token);
-
-                if (m_consumed != 0)
-                {
-                    throw new InvalidOperationException("OnityTask has already been consumed.");
-                }
-
-                if (m_consumptionMode != k_noConsumption)
-                {
-                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
-                }
-
-                m_consumptionMode = k_preservedConsumption;
-                invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
-                m_completionState = continuation;
-            }
-
-            if (invokeNow)
-            {
-                continuation.Complete();
-            }
+            ClaimConsumption(token, OnityTaskSourceState.k_modePreserved);
+            Volatile.Write(ref m_completionState, continuation);
+            RegisterContinuation(continuation);
         }
 
         public void GetResult(int token)
@@ -2473,43 +2522,10 @@ namespace Onity.Unity.Async
             int token,
             IOnityPreservedTaskContinuation continuation)
         {
-            Exception exception;
-
-            lock (this)
-            {
-                ValidateToken(token);
-
-                if (m_consumed != 0)
-                {
-                    throw new InvalidOperationException("OnityTask has already been consumed.");
-                }
-
-                if (m_consumptionMode == k_preservedConsumption)
-                {
-                    if (!ReferenceEquals(m_completionState, continuation))
-                    {
-                        throw new InvalidOperationException(
-                            "OnityTask is already being consumed through Preserve().");
-                    }
-                }
-                else if (continuation != null || m_consumptionMode == k_taskConsumption)
-                {
-                    throw new InvalidOperationException(
-                        "OnityTask is already being consumed through AsTask().");
-                }
-
-                if (m_status == (int)OnityTaskSourceStatus.Pending)
-                {
-                    throw new InvalidOperationException("OnityTask is not completed.");
-                }
-
-                m_consumptionMode = k_nativeConsumption;
-                m_consumed = 1;
-                exception = GetCompletionExceptionUnsafe();
-                ClearCompletionReferencesUnsafe();
-            }
-
-            ReleaseAfterResult();
+            int status = ClaimResult(token, continuation);
+            Exception exception = GetCompletionException(status);
+            ClearCompletionReferences();
+            ReleaseSource();
 
             if (exception != null)
             {
@@ -2529,63 +2545,55 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
-        /// Retires the current token so every later use of an old task value throws, before the
-        /// source is reused. Called once per cycle by the single releasing thread after the
-        /// consumed flag was published under the lock, so a stale caller that still passes the
-        /// token check is rejected as consumed.
+        /// Retires the current token so every later use of an old task value fails its versioned
+        /// compare-and-swap, before the source is reused.
         /// </summary>
         protected void InvalidateVersion()
         {
-            int nextVersion = unchecked(m_version + 1);
-            Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
+            while (true)
+            {
+                long state = Volatile.Read(ref m_state);
+                if (Interlocked.CompareExchange(ref m_state, OnityTaskSourceState.WithNextVersion(state), state) == state)
+                {
+                    return;
+                }
+            }
         }
 
         /// <summary>
-        /// Prepares a source that <see cref="InvalidateVersion"/> retired and no other thread can
-        /// reach yet for a new cycle without cancellation, without taking the lock.
+        /// Starts a new cycle without cancellation on a source that no other thread can reach: its
+        /// release retired the version and cleared the outcome fields, so only the continuation
+        /// slot, the status and the cancellation flag are reset before the pending word with the
+        /// next version is published.
         /// </summary>
         protected void ResetRetired()
         {
             m_continuation = null;
-            m_completionState = null;
-            m_cancellationToken = default;
-            m_cancellationRegistration = default;
-            m_exception = null;
-            m_consumptionMode = k_noConsumption;
-            m_consumed = 0;
-            m_cancellationRequested = 0;
-            m_taskMaterialized = 0;
-            m_released = 0;
             m_status = (int)OnityTaskSourceStatus.Pending;
-            int nextVersion = unchecked(m_version + 1);
-            Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
+            Volatile.Write(ref m_cancellationRequested, 0);
+            Volatile.Write(ref m_state, OnityTaskSourceState.NextCycle(Volatile.Read(ref m_state)));
         }
 
+        /// <summary>
+        /// Starts a new cycle. The fields are cleared first and the new pending word, with the next
+        /// version, is published last, so a stale caller either fails its version check or sees the
+        /// complete new cycle.
+        /// </summary>
         protected void Reset(CancellationToken cancellationToken)
         {
-            lock (this)
-            {
-                m_continuation = null;
-                m_completionState = null;
-                m_cancellationToken = cancellationToken;
-                m_exception = null;
-                int nextVersion = unchecked(m_version + 1);
-                Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
-                Volatile.Write(ref m_status, (int)OnityTaskSourceStatus.Pending);
-                m_consumptionMode = k_noConsumption;
-                m_consumed = 0;
-                Volatile.Write(ref m_cancellationRequested, 0);
-                Volatile.Write(ref m_taskMaterialized, 0);
-                Volatile.Write(ref m_released, 0);
-            }
+            m_continuation = null;
+            m_completionState = null;
+            m_taskBridge = null;
+            m_cancellationRegistration = default;
+            m_cancellationToken = cancellationToken;
+            m_exception = null;
+            m_status = (int)OnityTaskSourceStatus.Pending;
+            Volatile.Write(ref m_cancellationRequested, 0);
+            Volatile.Write(ref m_state, OnityTaskSourceState.NextCycle(Volatile.Read(ref m_state)));
 
             if (cancellationToken.CanBeCanceled)
             {
                 m_cancellationRegistration = cancellationToken.Register(s_cancelCallback, this);
-            }
-            else
-            {
-                m_cancellationRegistration = default;
             }
         }
 
@@ -2622,58 +2630,200 @@ namespace Onity.Unity.Async
 
         private bool TrySetStatus(OnityTaskSourceStatus status, Exception exception, int? expectedVersion = null)
         {
-            Action continuation;
-            IOnityPreservedTaskContinuation preservedContinuation;
-            TaskCompletionSource<bool> taskCompletionSource;
-            bool releaseSource;
-
-            lock (this)
+            if (!TryClaimCompletion(expectedVersion, out long claimed))
             {
-                if ((expectedVersion.HasValue && m_version != expectedVersion.Value)
-                    || m_status != (int)OnityTaskSourceStatus.Pending)
-                {
-                    return false;
-                }
-
-                m_exception = exception;
-                continuation = m_continuation;
-                object completionState = m_completionState;
-                preservedContinuation = m_consumptionMode == k_preservedConsumption
-                    ? (IOnityPreservedTaskContinuation)completionState : null;
-                taskCompletionSource = m_consumptionMode == k_taskConsumption
-                    ? (TaskCompletionSource<bool>)completionState : null;
-                m_continuation = null;
-                m_cancellationRegistration.Dispose();
-                m_cancellationRegistration = default;
-                Volatile.Write(ref m_status, (int)status);
-                ApplyStatusToTask(taskCompletionSource);
-                releaseSource = TryClaimTaskReleaseUnsafe();
+                return false;
             }
 
-            if (releaseSource)
-            {
-                lock (this)
-                {
-                    ClearCompletionReferencesUnsafe();
-                }
+            m_exception = exception;
+            m_cancellationRegistration.Dispose();
+            m_cancellationRegistration = default;
 
+            // The continuation slot is passed before the status is published: once the status is
+            // visible a bridge holder may release and reuse the source, after which only
+            // version-validated compare-and-swaps may touch it.
+            object continuation = Interlocked.Exchange(ref m_continuation, s_completedSentinel);
+            Volatile.Write(ref m_status, (int)status);
+
+            if (OnityTaskSourceState.Materialized(claimed)
+                && TryClaimBridgeRelease(OnityTaskSourceState.Version(claimed)))
+            {
+                ApplyStatusToTask(Volatile.Read(ref m_taskBridge), (int)status);
+                ClearCompletionReferences();
                 ReleaseSource();
             }
 
-            if (preservedContinuation == null)
+            if (continuation is Action action)
             {
-                OnityTaskContinuation.Invoke(continuation);
+                OnityTaskContinuation.Invoke(action);
             }
-            else
+            else if (continuation is IOnityPreservedTaskContinuation preserved)
             {
-                OnityTaskContinuation.Invoke(preservedContinuation);
+                OnityTaskContinuation.Invoke(preserved);
             }
+
             return true;
         }
 
-        private void ApplyStatusToTask(TaskCompletionSource<bool> taskCompletionSource)
+        /// <summary>
+        /// Claims the cycle for one completer, validating the expected version in the same
+        /// compare-and-swap. The word the claim replaced is returned, so the caller can tell whether
+        /// a bridge was materialized before the claim.
+        /// </summary>
+        private bool TryClaimCompletion(int? expectedVersion, out long claimed)
         {
+            while (true)
+            {
+                long state = Volatile.Read(ref m_state);
+                if (OnityTaskSourceState.Claimed(state)
+                    || (expectedVersion.HasValue && OnityTaskSourceState.Version(state) != expectedVersion.Value))
+                {
+                    claimed = state;
+                    return false;
+                }
+
+                if (Interlocked.CompareExchange(ref m_state, OnityTaskSourceState.WithClaimed(state), state) == state)
+                {
+                    claimed = state;
+                    return true;
+                }
+            }
+        }
+
+        /// <summary>Waits for the status the claim winner is about to publish.</summary>
+        private int WaitForPublishedStatus()
+        {
+            SpinWait spinner = default;
+            while (true)
+            {
+                int status = Volatile.Read(ref m_status);
+                if (status != (int)OnityTaskSourceStatus.Pending)
+                {
+                    return status;
+                }
+
+                spinner.SpinOnce();
+            }
+        }
+
+        /// <summary>
+        /// Claims the source for one consumption mode from the unclaimed state, validating the token
+        /// in the same compare-and-swap.
+        /// </summary>
+        private void ClaimConsumption(int token, int mode)
+        {
+            while (true)
+            {
+                long state = Volatile.Read(ref m_state);
+                if (OnityTaskSourceState.Version(state) != token)
+                {
+                    ThrowInvalidToken();
+                }
+
+                if (OnityTaskSourceState.Consumed(state))
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (OnityTaskSourceState.Mode(state) != OnityTaskSourceState.k_modeNone)
+                {
+                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
+                }
+
+                if (Interlocked.CompareExchange(ref m_state, OnityTaskSourceState.WithMode(state, mode), state) == state)
+                {
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Stores the continuation, or runs it now when the completer already passed the slot.
+        /// </summary>
+        private void RegisterContinuation(object continuation)
+        {
+            object previous = Interlocked.CompareExchange(ref m_continuation, continuation, null);
+            if (previous == null)
+            {
+                return;
+            }
+
+            if (!ReferenceEquals(previous, s_completedSentinel))
+            {
+                throw new InvalidOperationException("OnityTask supports only one native awaiter.");
+            }
+
+            // The completer passes the slot just before it publishes the status; wait for that
+            // publication so the continuation observes a completed source.
+            WaitForPublishedStatus();
+            if (continuation is Action action)
+            {
+                action();
+            }
+            else
+            {
+                ((IOnityPreservedTaskContinuation)continuation).Complete();
+            }
+        }
+
+        /// <summary>
+        /// Validates the token and consumption mode, requires a published completion, and claims the
+        /// consumed and released bits with the next version in one compare-and-swap, so the token is
+        /// retired the instant the result is taken. Returns the published status.
+        /// </summary>
+        private int ClaimResult(int token, IOnityPreservedTaskContinuation continuation)
+        {
+            // Read before the word, for the reason given in GetStatus.
             int status = Volatile.Read(ref m_status);
+            while (true)
+            {
+                long state = Volatile.Read(ref m_state);
+                if (OnityTaskSourceState.Version(state) != token)
+                {
+                    ThrowInvalidToken();
+                }
+
+                if (OnityTaskSourceState.Consumed(state))
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                int mode = OnityTaskSourceState.Mode(state);
+                if (mode == OnityTaskSourceState.k_modePreserved)
+                {
+                    if (!ReferenceEquals(Volatile.Read(ref m_completionState), continuation))
+                    {
+                        throw new InvalidOperationException(
+                            "OnityTask is already being consumed through Preserve().");
+                    }
+                }
+                else if (continuation != null || mode == OnityTaskSourceState.k_modeTask)
+                {
+                    throw new InvalidOperationException(
+                        "OnityTask is already being consumed through AsTask().");
+                }
+
+                if (status == (int)OnityTaskSourceStatus.Pending)
+                {
+                    status = Volatile.Read(ref m_status);
+                    if (status == (int)OnityTaskSourceStatus.Pending)
+                    {
+                        throw new InvalidOperationException("OnityTask is not completed.");
+                    }
+                }
+
+                long claimed = OnityTaskSourceState.WithReleased(
+                    OnityTaskSourceState.WithConsumed(
+                        OnityTaskSourceState.WithMode(state, OnityTaskSourceState.k_modeNative)));
+                if (Interlocked.CompareExchange(ref m_state, claimed, state) == state)
+                {
+                    return status;
+                }
+            }
+        }
+
+        private void ApplyStatusToTask(TaskCompletionSource<bool> taskCompletionSource, int status)
+        {
             if (taskCompletionSource == null || status == (int)OnityTaskSourceStatus.Pending)
             {
                 return;
@@ -2696,9 +2846,8 @@ namespace Onity.Unity.Async
             }
         }
 
-        private Exception GetCompletionExceptionUnsafe()
+        private Exception GetCompletionException(int status)
         {
-            int status = m_status;
             if (status == (int)OnityTaskSourceStatus.Canceled)
             {
                 return m_exception as OperationCanceledException
@@ -2708,43 +2857,39 @@ namespace Onity.Unity.Async
             return status == (int)OnityTaskSourceStatus.Faulted ? m_exception : null;
         }
 
-        private void ValidateToken(int token)
-        {
-            if (token != m_version)
-            {
-                ThrowInvalidToken();
-            }
-        }
-
         private static void ThrowInvalidToken()
         {
             throw new InvalidOperationException(
                 "The OnityTask source is no longer valid. Pooled OnityTask instances can be awaited only once.");
         }
 
-        private void ReleaseAfterResult()
+        /// <summary>
+        /// Claims the single release of a bridged source and retires its version in the same
+        /// compare-and-swap; false when the cycle moved on, without a bridge, or when taken.
+        /// </summary>
+        private bool TryClaimBridgeRelease(int version)
         {
-            if (Volatile.Read(ref m_taskMaterialized) == 0
-                && Interlocked.Exchange(ref m_released, 1) == 0)
+            while (true)
             {
-                ReleaseSource();
+                long state = Volatile.Read(ref m_state);
+                if (OnityTaskSourceState.Version(state) != version
+                    || !OnityTaskSourceState.Materialized(state)
+                    || OnityTaskSourceState.Released(state))
+                {
+                    return false;
+                }
+
+                if (Interlocked.CompareExchange(ref m_state, OnityTaskSourceState.WithReleased(state), state) == state)
+                {
+                    return true;
+                }
             }
         }
 
-        private bool TryClaimTaskReleaseUnsafe()
-        {
-            if (m_taskMaterialized == 0 || m_released != 0)
-            {
-                return false;
-            }
-
-            m_released = 1;
-            return true;
-        }
-
-        private void ClearCompletionReferencesUnsafe()
+        private void ClearCompletionReferences()
         {
             m_completionState = null;
+            m_taskBridge = null;
             m_cancellationRegistration = default;
             m_cancellationToken = default;
             m_exception = null;
@@ -2753,104 +2898,130 @@ namespace Onity.Unity.Async
 
     internal abstract class OnityTaskSourceBase<T> : IOnityTaskSource<T>, IOnityPreservedTaskSource
     {
-        private const int k_noConsumption = 0;
-        private const int k_nativeConsumption = 1;
-        private const int k_taskConsumption = 2;
-        private const int k_preservedConsumption = 3;
-
         private static readonly Action<object> s_cancelCallback = CancelFromToken;
+        private static readonly object s_completedSentinel = new object();
 
-        private Action m_continuation;
+        private long m_state;
+        private int m_status;
+        private object m_continuation;
         private object m_completionState;
+        private TaskCompletionSource<T> m_taskBridge;
         private CancellationTokenRegistration m_cancellationRegistration;
         private CancellationToken m_cancellationToken;
         private Exception m_exception;
-        private int m_status;
         private T m_result;
-        private int m_version;
-        private int m_consumptionMode;
-        private int m_consumed;
         private int m_cancellationRequested;
-        private int m_taskMaterialized;
-        private int m_released;
 
-        public int Version => Volatile.Read(ref m_version);
+        public int Version => OnityTaskSourceState.Version(Volatile.Read(ref m_state));
 
         public bool IsCancellationRequested => Volatile.Read(ref m_cancellationRequested) != 0;
+
+        /// <summary>
+        /// True once a native awaiter, a preserved continuation, or a .NET task bridge has claimed
+        /// the source, or after its result was consumed. A caller that registers afterwards still
+        /// goes through the versioned compare-and-swap checks.
+        /// </summary>
+        internal bool HasConsumer
+        {
+            get
+            {
+                long state = Volatile.Read(ref m_state);
+                return OnityTaskSourceState.Mode(state) != OnityTaskSourceState.k_modeNone
+                    || OnityTaskSourceState.Consumed(state);
+            }
+        }
 
         protected bool IsPending => Volatile.Read(ref m_status) == (int)OnityTaskSourceStatus.Pending;
 
         public OnityTaskSourceStatus GetStatus(int token)
         {
-            int versionBefore = Volatile.Read(ref m_version);
-            if (token != versionBefore)
+            // The status is read before the word: a version that still matches afterwards proves
+            // the status belongs to the caller's cycle, because a reset clears the status first.
+            int status = Volatile.Read(ref m_status);
+            if (OnityTaskSourceState.Version(Volatile.Read(ref m_state)) != token)
             {
                 ThrowInvalidToken();
             }
 
-            OnityTaskSourceStatus status = (OnityTaskSourceStatus)Volatile.Read(ref m_status);
-            if (token != Volatile.Read(ref m_version))
-            {
-                ThrowInvalidToken();
-            }
-
-            return status;
+            return (OnityTaskSourceStatus)status;
         }
 
         public Task<T> AsTask(int token)
         {
-            Task<T> task;
-            bool releaseSource;
-
-            lock (this)
+            TaskCompletionSource<T> bridge = null;
+            TaskCompletionSource<T> taskCompletionSource = null;
+            long snapshot = 0;
+            while (true)
             {
-                ValidateToken(token);
+                long state = Volatile.Read(ref m_state);
+                if (OnityTaskSourceState.Version(state) != token)
+                {
+                    ThrowInvalidToken();
+                }
 
-                if (m_consumed != 0)
+                if (OnityTaskSourceState.Consumed(state))
                 {
                     throw new InvalidOperationException("OnityTask has already been consumed.");
                 }
 
-                if (m_released != 0)
+                if (OnityTaskSourceState.Released(state))
                 {
                     throw new InvalidOperationException("OnityTask has already been materialized and released.");
                 }
 
-                if (m_consumptionMode == k_nativeConsumption ||
-                    m_consumptionMode == k_preservedConsumption)
+                int mode = OnityTaskSourceState.Mode(state);
+                if (mode == OnityTaskSourceState.k_modeNative || mode == OnityTaskSourceState.k_modePreserved)
                 {
                     throw new InvalidOperationException(
                         "OnityTask is already being consumed by its native awaiter.");
                 }
 
-                m_consumptionMode = k_taskConsumption;
-                Volatile.Write(ref m_taskMaterialized, 1);
-
-                TaskCompletionSource<T> taskCompletionSource =
-                    m_completionState as TaskCompletionSource<T>;
-                if (taskCompletionSource == null)
+                if (mode == OnityTaskSourceState.k_modeTask)
                 {
-                    taskCompletionSource = OnityAsyncExecutionContext.CreateTaskBridge<T>();
-                    m_completionState = taskCompletionSource;
-                    ApplyStatusToTask(taskCompletionSource);
+                    // An earlier call materialized the bridge; the release that clears the field
+                    // can only follow the released bit checked above, so a null here means the
+                    // cycle was released between the two reads.
+                    taskCompletionSource = Volatile.Read(ref m_taskBridge);
+                    if (taskCompletionSource == null)
+                    {
+                        throw new InvalidOperationException(
+                            "OnityTask has already been materialized and released.");
+                    }
+
+                    break;
                 }
 
-                task = taskCompletionSource.Task;
-                releaseSource = m_status != (int)OnityTaskSourceStatus.Pending
-                    && TryClaimTaskReleaseUnsafe();
-
-                if (releaseSource)
+                // The bridge is stored before the claim is published, so a completer that sees the
+                // materialized bit always finds it. The stored bridge is kept from the exchange
+                // rather than read back: a completer that wins the claim may release and clear the
+                // field before this call returns.
+                if (bridge == null)
                 {
-                    ClearCompletionReferencesUnsafe();
+                    bridge = OnityAsyncExecutionContext.CreateTaskBridge<T>();
+                    taskCompletionSource = Interlocked.CompareExchange(ref m_taskBridge, bridge, null) ?? bridge;
+                }
+
+                long claimed = OnityTaskSourceState.WithMaterialized(
+                    OnityTaskSourceState.WithMode(state, OnityTaskSourceState.k_modeTask));
+                if (Interlocked.CompareExchange(ref m_state, claimed, state) == state)
+                {
+                    snapshot = state;
+                    break;
                 }
             }
 
-            if (releaseSource)
+            // The claim order on the shared word decides who finishes the bridge: a completer that
+            // claimed before this call cannot see the bridge, so this call waits for its status and
+            // applies it; a completer that claims later finds the materialized bit and applies it.
+            if (OnityTaskSourceState.Claimed(snapshot)
+                && TryClaimBridgeRelease(OnityTaskSourceState.Version(snapshot)))
             {
+                ApplyStatusToTask(taskCompletionSource, WaitForPublishedStatus());
+                ClearCompletionReferences();
                 ReleaseSource();
             }
 
-            return task;
+            return taskCompletionSource.Task;
         }
 
         public void OnCompleted(Action continuation, int token)
@@ -2860,33 +3031,8 @@ namespace Onity.Unity.Async
                 throw new ArgumentNullException(nameof(continuation));
             }
 
-            bool invokeNow;
-            lock (this)
-            {
-                ValidateToken(token);
-
-                if (m_consumed != 0)
-                {
-                    throw new InvalidOperationException("OnityTask has already been consumed.");
-                }
-
-                if (m_consumptionMode != k_noConsumption)
-                {
-                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
-                }
-
-                m_consumptionMode = k_nativeConsumption;
-                invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
-                if (invokeNow == false)
-                {
-                    m_continuation = continuation;
-                }
-            }
-
-            if (invokeNow)
-            {
-                continuation();
-            }
+            ClaimConsumption(token, OnityTaskSourceState.k_modeNative);
+            RegisterContinuation(continuation);
         }
 
         public void OnCompleted(IOnityPreservedTaskContinuation continuation, int token)
@@ -2896,30 +3042,9 @@ namespace Onity.Unity.Async
                 throw new ArgumentNullException(nameof(continuation));
             }
 
-            bool invokeNow;
-            lock (this)
-            {
-                ValidateToken(token);
-
-                if (m_consumed != 0)
-                {
-                    throw new InvalidOperationException("OnityTask has already been consumed.");
-                }
-
-                if (m_consumptionMode != k_noConsumption)
-                {
-                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
-                }
-
-                m_consumptionMode = k_preservedConsumption;
-                invokeNow = m_status != (int)OnityTaskSourceStatus.Pending;
-                m_completionState = continuation;
-            }
-
-            if (invokeNow)
-            {
-                continuation.Complete();
-            }
+            ClaimConsumption(token, OnityTaskSourceState.k_modePreserved);
+            Volatile.Write(ref m_completionState, continuation);
+            RegisterContinuation(continuation);
         }
 
         public T GetResult(int token)
@@ -2938,50 +3063,11 @@ namespace Onity.Unity.Async
             int token,
             IOnityPreservedTaskContinuation continuation)
         {
-            Exception exception;
-            T result;
-
-            lock (this)
-            {
-                ValidateToken(token);
-
-                if (m_consumed != 0)
-                {
-                    throw new InvalidOperationException("OnityTask has already been consumed.");
-                }
-
-                if (m_consumptionMode == k_preservedConsumption)
-                {
-                    if (!ReferenceEquals(m_completionState, continuation))
-                    {
-                        throw new InvalidOperationException(
-                            "OnityTask is already being consumed through Preserve().");
-                    }
-                }
-                else if (continuation != null || m_consumptionMode == k_taskConsumption)
-                {
-                    throw new InvalidOperationException(
-                        "OnityTask is already being consumed through AsTask().");
-                }
-
-                int status = m_status;
-                if (status == (int)OnityTaskSourceStatus.Pending)
-                {
-                    throw new InvalidOperationException("OnityTask is not completed.");
-                }
-
-                m_consumptionMode = k_nativeConsumption;
-                m_consumed = 1;
-                exception = status == (int)OnityTaskSourceStatus.Canceled
-                    ? m_exception ?? new OperationCanceledException(m_cancellationToken)
-                    : status == (int)OnityTaskSourceStatus.Faulted
-                        ? m_exception
-                        : null;
-                result = m_result;
-                ClearCompletionReferencesUnsafe();
-            }
-
-            ReleaseAfterResult();
+            int status = ClaimResult(token, continuation);
+            Exception exception = GetCompletionException(status);
+            T result = m_result;
+            ClearCompletionReferences();
+            ReleaseSource();
 
             if (exception != null)
             {
@@ -3003,69 +3089,56 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
-        /// Retires the current token so every later use of an old task value throws, before the
-        /// source is reused.
-        /// </summary>
-        /// <summary>
-        /// Retires the current token so every later use of an old task value throws, before the
-        /// source is reused. Called once per cycle by the single releasing thread after the
-        /// consumed flag was published under the lock, so a stale caller that still passes the
-        /// token check is rejected as consumed.
+        /// Retires the current token so every later use of an old task value fails its versioned
+        /// compare-and-swap, before the source is reused.
         /// </summary>
         protected void InvalidateVersion()
         {
-            int nextVersion = unchecked(m_version + 1);
-            Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
+            while (true)
+            {
+                long state = Volatile.Read(ref m_state);
+                if (Interlocked.CompareExchange(ref m_state, OnityTaskSourceState.WithNextVersion(state), state) == state)
+                {
+                    return;
+                }
+            }
         }
 
         /// <summary>
-        /// Prepares a source that <see cref="InvalidateVersion"/> retired and no other thread can
-        /// reach yet for a new cycle without cancellation, without taking the lock.
+        /// Starts a new cycle without cancellation on a source that no other thread can reach: its
+        /// release retired the version and cleared the outcome fields, so only the continuation
+        /// slot, the status and the cancellation flag are reset before the pending word with the
+        /// next version is published.
         /// </summary>
         protected void ResetRetired()
         {
             m_continuation = null;
-            m_completionState = null;
-            m_cancellationToken = default;
-            m_cancellationRegistration = default;
-            m_exception = null;
-            m_result = default;
-            m_consumptionMode = k_noConsumption;
-            m_consumed = 0;
-            m_cancellationRequested = 0;
-            m_taskMaterialized = 0;
-            m_released = 0;
             m_status = (int)OnityTaskSourceStatus.Pending;
-            int nextVersion = unchecked(m_version + 1);
-            Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
+            Volatile.Write(ref m_cancellationRequested, 0);
+            Volatile.Write(ref m_state, OnityTaskSourceState.NextCycle(Volatile.Read(ref m_state)));
         }
 
+        /// <summary>
+        /// Starts a new cycle. The fields are cleared first and the new pending word, with the next
+        /// version, is published last, so a stale caller either fails its version check or sees the
+        /// complete new cycle.
+        /// </summary>
         protected void Reset(CancellationToken cancellationToken)
         {
-            lock (this)
-            {
-                m_continuation = null;
-                m_completionState = null;
-                m_cancellationToken = cancellationToken;
-                m_exception = null;
-                m_result = default;
-                int nextVersion = unchecked(m_version + 1);
-                Volatile.Write(ref m_version, nextVersion == 0 ? 1 : nextVersion);
-                Volatile.Write(ref m_status, (int)OnityTaskSourceStatus.Pending);
-                m_consumptionMode = k_noConsumption;
-                m_consumed = 0;
-                Volatile.Write(ref m_cancellationRequested, 0);
-                Volatile.Write(ref m_taskMaterialized, 0);
-                Volatile.Write(ref m_released, 0);
-            }
+            m_continuation = null;
+            m_completionState = null;
+            m_taskBridge = null;
+            m_cancellationRegistration = default;
+            m_cancellationToken = cancellationToken;
+            m_exception = null;
+            m_result = default;
+            m_status = (int)OnityTaskSourceStatus.Pending;
+            Volatile.Write(ref m_cancellationRequested, 0);
+            Volatile.Write(ref m_state, OnityTaskSourceState.NextCycle(Volatile.Read(ref m_state)));
 
             if (cancellationToken.CanBeCanceled)
             {
                 m_cancellationRegistration = cancellationToken.Register(s_cancelCallback, this);
-            }
-            else
-            {
-                m_cancellationRegistration = default;
             }
         }
 
@@ -3104,59 +3177,201 @@ namespace Onity.Unity.Async
         private bool TrySetStatus(
             OnityTaskSourceStatus status, T result, Exception exception, int? expectedVersion = null)
         {
-            Action continuation;
-            IOnityPreservedTaskContinuation preservedContinuation;
-            TaskCompletionSource<T> taskCompletionSource;
-            bool releaseSource;
-
-            lock (this)
+            if (!TryClaimCompletion(expectedVersion, out long claimed))
             {
-                if ((expectedVersion.HasValue && m_version != expectedVersion.Value)
-                    || m_status != (int)OnityTaskSourceStatus.Pending)
-                {
-                    return false;
-                }
-
-                m_result = result;
-                m_exception = exception;
-                continuation = m_continuation;
-                object completionState = m_completionState;
-                preservedContinuation = m_consumptionMode == k_preservedConsumption
-                    ? (IOnityPreservedTaskContinuation)completionState : null;
-                taskCompletionSource = m_consumptionMode == k_taskConsumption
-                    ? (TaskCompletionSource<T>)completionState : null;
-                m_continuation = null;
-                m_cancellationRegistration.Dispose();
-                m_cancellationRegistration = default;
-                Volatile.Write(ref m_status, (int)status);
-                ApplyStatusToTask(taskCompletionSource);
-                releaseSource = TryClaimTaskReleaseUnsafe();
+                return false;
             }
 
-            if (releaseSource)
-            {
-                lock (this)
-                {
-                    ClearCompletionReferencesUnsafe();
-                }
+            m_result = result;
+            m_exception = exception;
+            m_cancellationRegistration.Dispose();
+            m_cancellationRegistration = default;
 
+            // The continuation slot is passed before the status is published: once the status is
+            // visible a bridge holder may release and reuse the source, after which only
+            // version-validated compare-and-swaps may touch it.
+            object continuation = Interlocked.Exchange(ref m_continuation, s_completedSentinel);
+            Volatile.Write(ref m_status, (int)status);
+
+            if (OnityTaskSourceState.Materialized(claimed)
+                && TryClaimBridgeRelease(OnityTaskSourceState.Version(claimed)))
+            {
+                ApplyStatusToTask(Volatile.Read(ref m_taskBridge), (int)status);
+                ClearCompletionReferences();
                 ReleaseSource();
             }
 
-            if (preservedContinuation == null)
+            if (continuation is Action action)
             {
-                OnityTaskContinuation.Invoke(continuation);
+                OnityTaskContinuation.Invoke(action);
             }
-            else
+            else if (continuation is IOnityPreservedTaskContinuation preserved)
             {
-                OnityTaskContinuation.Invoke(preservedContinuation);
+                OnityTaskContinuation.Invoke(preserved);
             }
+
             return true;
         }
 
-        private void ApplyStatusToTask(TaskCompletionSource<T> taskCompletionSource)
+        /// <summary>
+        /// Claims the cycle for one completer, validating the expected version in the same
+        /// compare-and-swap. The word the claim replaced is returned, so the caller can tell whether
+        /// a bridge was materialized before the claim.
+        /// </summary>
+        private bool TryClaimCompletion(int? expectedVersion, out long claimed)
         {
+            while (true)
+            {
+                long state = Volatile.Read(ref m_state);
+                if (OnityTaskSourceState.Claimed(state)
+                    || (expectedVersion.HasValue && OnityTaskSourceState.Version(state) != expectedVersion.Value))
+                {
+                    claimed = state;
+                    return false;
+                }
+
+                if (Interlocked.CompareExchange(ref m_state, OnityTaskSourceState.WithClaimed(state), state) == state)
+                {
+                    claimed = state;
+                    return true;
+                }
+            }
+        }
+
+        /// <summary>Waits for the status the claim winner is about to publish.</summary>
+        private int WaitForPublishedStatus()
+        {
+            SpinWait spinner = default;
+            while (true)
+            {
+                int status = Volatile.Read(ref m_status);
+                if (status != (int)OnityTaskSourceStatus.Pending)
+                {
+                    return status;
+                }
+
+                spinner.SpinOnce();
+            }
+        }
+
+        /// <summary>
+        /// Claims the source for one consumption mode from the unclaimed state, validating the token
+        /// in the same compare-and-swap.
+        /// </summary>
+        private void ClaimConsumption(int token, int mode)
+        {
+            while (true)
+            {
+                long state = Volatile.Read(ref m_state);
+                if (OnityTaskSourceState.Version(state) != token)
+                {
+                    ThrowInvalidToken();
+                }
+
+                if (OnityTaskSourceState.Consumed(state))
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                if (OnityTaskSourceState.Mode(state) != OnityTaskSourceState.k_modeNone)
+                {
+                    throw new InvalidOperationException("OnityTask supports only one native awaiter.");
+                }
+
+                if (Interlocked.CompareExchange(ref m_state, OnityTaskSourceState.WithMode(state, mode), state) == state)
+                {
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Stores the continuation, or runs it now when the completer already passed the slot.
+        /// </summary>
+        private void RegisterContinuation(object continuation)
+        {
+            object previous = Interlocked.CompareExchange(ref m_continuation, continuation, null);
+            if (previous == null)
+            {
+                return;
+            }
+
+            if (!ReferenceEquals(previous, s_completedSentinel))
+            {
+                throw new InvalidOperationException("OnityTask supports only one native awaiter.");
+            }
+
+            // The completer passes the slot just before it publishes the status; wait for that
+            // publication so the continuation observes a completed source.
+            WaitForPublishedStatus();
+            if (continuation is Action action)
+            {
+                action();
+            }
+            else
+            {
+                ((IOnityPreservedTaskContinuation)continuation).Complete();
+            }
+        }
+
+        /// <summary>
+        /// Validates the token and consumption mode, requires a published completion, and claims the
+        /// consumed and released bits with the next version in one compare-and-swap, so the token is
+        /// retired the instant the result is taken. Returns the published status.
+        /// </summary>
+        private int ClaimResult(int token, IOnityPreservedTaskContinuation continuation)
+        {
+            // Read before the word, for the reason given in GetStatus.
             int status = Volatile.Read(ref m_status);
+            while (true)
+            {
+                long state = Volatile.Read(ref m_state);
+                if (OnityTaskSourceState.Version(state) != token)
+                {
+                    ThrowInvalidToken();
+                }
+
+                if (OnityTaskSourceState.Consumed(state))
+                {
+                    throw new InvalidOperationException("OnityTask has already been consumed.");
+                }
+
+                int mode = OnityTaskSourceState.Mode(state);
+                if (mode == OnityTaskSourceState.k_modePreserved)
+                {
+                    if (!ReferenceEquals(Volatile.Read(ref m_completionState), continuation))
+                    {
+                        throw new InvalidOperationException(
+                            "OnityTask is already being consumed through Preserve().");
+                    }
+                }
+                else if (continuation != null || mode == OnityTaskSourceState.k_modeTask)
+                {
+                    throw new InvalidOperationException(
+                        "OnityTask is already being consumed through AsTask().");
+                }
+
+                if (status == (int)OnityTaskSourceStatus.Pending)
+                {
+                    status = Volatile.Read(ref m_status);
+                    if (status == (int)OnityTaskSourceStatus.Pending)
+                    {
+                        throw new InvalidOperationException("OnityTask is not completed.");
+                    }
+                }
+
+                long claimed = OnityTaskSourceState.WithReleased(
+                    OnityTaskSourceState.WithConsumed(
+                        OnityTaskSourceState.WithMode(state, OnityTaskSourceState.k_modeNative)));
+                if (Interlocked.CompareExchange(ref m_state, claimed, state) == state)
+                {
+                    return status;
+                }
+            }
+        }
+
+        private void ApplyStatusToTask(TaskCompletionSource<T> taskCompletionSource, int status)
+        {
             if (taskCompletionSource == null || status == (int)OnityTaskSourceStatus.Pending)
             {
                 return;
@@ -3179,12 +3394,15 @@ namespace Onity.Unity.Async
             }
         }
 
-        private void ValidateToken(int token)
+        private Exception GetCompletionException(int status)
         {
-            if (token != m_version)
+            if (status == (int)OnityTaskSourceStatus.Canceled)
             {
-                ThrowInvalidToken();
+                return m_exception as OperationCanceledException
+                    ?? new OperationCanceledException(m_cancellationToken);
             }
+
+            return status == (int)OnityTaskSourceStatus.Faulted ? m_exception : null;
         }
 
         private static void ThrowInvalidToken()
@@ -3193,29 +3411,33 @@ namespace Onity.Unity.Async
                 "The OnityTask source is no longer valid. Pooled OnityTask instances can be awaited only once.");
         }
 
-        private void ReleaseAfterResult()
+        /// <summary>
+        /// Claims the single release of a bridged source and retires its version in the same
+        /// compare-and-swap; false when the cycle moved on, without a bridge, or when taken.
+        /// </summary>
+        private bool TryClaimBridgeRelease(int version)
         {
-            if (Volatile.Read(ref m_taskMaterialized) == 0
-                && Interlocked.Exchange(ref m_released, 1) == 0)
+            while (true)
             {
-                ReleaseSource();
+                long state = Volatile.Read(ref m_state);
+                if (OnityTaskSourceState.Version(state) != version
+                    || !OnityTaskSourceState.Materialized(state)
+                    || OnityTaskSourceState.Released(state))
+                {
+                    return false;
+                }
+
+                if (Interlocked.CompareExchange(ref m_state, OnityTaskSourceState.WithReleased(state), state) == state)
+                {
+                    return true;
+                }
             }
         }
 
-        private bool TryClaimTaskReleaseUnsafe()
-        {
-            if (m_taskMaterialized == 0 || m_released != 0)
-            {
-                return false;
-            }
-
-            m_released = 1;
-            return true;
-        }
-
-        private void ClearCompletionReferencesUnsafe()
+        private void ClearCompletionReferences()
         {
             m_completionState = null;
+            m_taskBridge = null;
             m_cancellationRegistration = default;
             m_cancellationToken = default;
             m_exception = null;

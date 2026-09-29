@@ -363,7 +363,7 @@ namespace Onity.Unity.Async
 
         public Action MoveNextAction => m_moveNext;
 
-        public OnityTask Task => new OnityTask((IOnityTaskSource)this);
+        public OnityTask Task => new OnityTask((IOnityTaskSource)this, Version);
 
         public ref OnityAsyncStateMachineRunner<TStateMachine> NextPooled => ref m_nextPooled;
 
@@ -416,7 +416,7 @@ namespace Onity.Unity.Async
 
         protected override void ReleaseSource()
         {
-            InvalidateVersion();
+            // The base retired the version in the compare-and-swap that released the source.
 #if ENABLE_IL2CPP
             // IL2CPP may copy a struct back after a method call on it, so the state machine is
             // cleared and the runner pooled only after the producing MoveNext has unwound.
@@ -540,7 +540,7 @@ namespace Onity.Unity.Async
 
         public Action MoveNextAction => m_moveNext;
 
-        public OnityTask<T> Task => new OnityTask<T>((IOnityTaskSource<T>)this);
+        public OnityTask<T> Task => new OnityTask<T>((IOnityTaskSource<T>)this, Version);
 
         public ref OnityAsyncStateMachineRunner<TStateMachine, T> NextPooled => ref m_nextPooled;
 
@@ -591,7 +591,7 @@ namespace Onity.Unity.Async
 
         protected override void ReleaseSource()
         {
-            InvalidateVersion();
+            // The base retired the version in the compare-and-swap that released the source.
 #if ENABLE_IL2CPP
             OnityTaskMainThreadDispatcher.Enqueue(m_returnToPool, 0);
 #else
