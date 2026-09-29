@@ -342,7 +342,10 @@ Assert.That(tick.Invoke(source, new object[] { null, 0f, 0f }), Is.EqualTo(true)
         private static void PublishNativeSuccessWithoutCallback(object source)
         {
             // Reproduce the interval after terminal status is visible but before
-            // the preserved adapter receives its completion callback.
+            // the preserved adapter receives its completion callback. The source
+            // publishes its terminal status in a dedicated field once a completer
+            // has claimed the cycle; writing that field alone leaves the packed
+            // state word (version, mode and consumption bits) intact.
             source.GetType().BaseType.GetField(
                 "m_status",
                 BindingFlags.Instance | BindingFlags.NonPublic).SetValue(source, 1);

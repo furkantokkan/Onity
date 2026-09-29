@@ -172,3 +172,83 @@ new build, commit, push, or release was performed in this planning turn.
 - **Verification objective complete.** Superiority and the 1.2x performance
   milestone remain unmet. No commit, push or release was performed.
 - [Verification report and raw evidence](../assets/benchmarks/onitytask-player-verification-2026-09-27.md).
+
+## Native synchronization reduction - 2026-09-29
+
+Implemented on `claude/beautiful-keller-bkumzy` as the bounded task chosen
+above. Runtime changes are limited to the two pooled source bases in
+`OnityAsync.cs` and the two async state-machine runners.
+
+- Each source base keeps its token version, completion claim, consumption
+  mode, consumed, bridge-materialized and released bits in one 64-bit state
+  word. Registration (`OnCompleted`), completion (`TrySetStatus`), the .NET
+  bridge (`AsTask`) and result consumption (`GetResultCore`) each transition
+  with one compare-and-swap that validates the version it read, so a stale
+  token can no longer pass a check and then mutate a later cycle; the old
+  double-read fallback went away with the monitor.
+- The terminal status lives in its own field. The completer claims the cycle
+  with one compare-and-swap, writes the outcome fields, passes the
+  continuation slot with one exchange (a sentinel marks "completed", as in
+  UniTask's core) and publishes the status with one volatile write. A
+  registration that finds the sentinel waits for that publication before it
+  runs the continuation. The status is always read before the word, so a
+  version that still matches proves the status belongs to the caller's cycle.
+- `GetResult` claims the consumed and released bits and retires the version in
+  the same compare-and-swap, then returns the source; the runners no longer
+  invalidate the version separately, and a retired, cleared runner restarts
+  through a minimal reset (continuation slot, status, cancellation flag, next
+  version).
+- The bridge is finished by whichever party the claim order names: a completer
+  that saw the materialized bit applies the outcome and releases; otherwise
+  `AsTask` waits for the published status and does so. The released bit and
+  the retired version are set in one versioned compare-and-swap, so a late
+  completer can only touch the cycle it completed. Review of the first draft
+  found and fixed two races before commit: the completer exchanged the
+  continuation slot after publishing, when a bridge holder could already have
+  released and reused the source, and `AsTask` re-read the bridge field after
+  its claim, when a completer could already have cleared it.
+- Deliberately kept: the consume claim is one compare-and-swap rather than a
+  plain write, so a concurrent misuse (two consumers, or `AsTask` racing
+  `GetResult`) still throws instead of releasing a runner twice; the pool
+  policy, capacity 128 and the deferred IL2CPP return are unchanged, and
+  `FlowExecutionContext` stays on by default.
+
+Uncontended interlocked operations per awaited native cycle: pool pop 1,
+registration 2 (mode claim, continuation slot), completion 2 (claim,
+continuation slot), consumption 2 (claim, pool push): seven against UniTask's
+five, or five against four when nothing registers before completion. No
+monitor is entered on any source-base path.
+
+Desktop measurement, not a Unity measurement: the scratch harness compiles the
+Async layer against Mono 6.8's class library on the Linux build host and drives
+one `async` method per operation through a manual awaitable, reporting the
+minimum of seven runs of 2,000 batches after a warm-up pass (nanoseconds per
+operation at 128 concurrent operations, 0 B/op on every row):
+
+| Path | Schedule | Complete | Consume | Total |
+| --- | ---: | ---: | ---: | ---: |
+| Onity 0.4.0 (`8929214`), flow on | 71 | 117 | 72 | 260 |
+| Onity 0.4.0 (`8929214`), flow off | 56 | 67 | 74 | 197 |
+| Onity this change, flow on | 70 | 88 | 35 | 193 |
+| Onity this change, flow off | 54 | 38 | 35 | 127 |
+| UniTask 2.5.11 | 44 | 24 | 20 | 88 |
+
+Typed methods read within 5 ns of the untyped rows. At 4,096 concurrent
+operations both builds allocate the same 287-302 B/op in the schedule slice
+because the default pool cap is exceeded; the completion and consumption slices
+improve as at 128. The flow-on cost is unchanged: the class library's
+`FastCapture` and `RunInternal` pair costs about 15 ns at capture and 50 ns at
+resumption on this host, work UniTask does not perform, so the flow-on total
+cannot reach UniTask's on Mono by removing synchronization alone. Player
+numbers for this change are not yet measured; the Mono and IL2CPP primary
+suites and the Step 3.5 full-cycle profile are the next verification, and the
+2026-09-27 ratios above remain the last Player evidence.
+
+Verification on the build host: all 152 tests of the 14 EditMode fixtures the
+desktop harness can compile (the 2026-09-27 set plus eight new
+`OnityTaskSourceStateEditModeTests` cases for stale tokens after reuse,
+registration racing completion, `AsTask` racing completion and runner
+cancellation with a retired version) pass on three consecutive runs, and the
+Async layer, the test assemblies and the benchmark assemblies compile against
+the Unity stubs with the Editor/Mono and IL2CPP define sets. This is not a
+Unity test run; the Editor and Player suites are still to be run on this build.
