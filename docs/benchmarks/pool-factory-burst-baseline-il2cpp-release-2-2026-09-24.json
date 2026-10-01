@@ -1,0 +1,138 @@
+{
+    "status": "passed",
+    "utcRecordedAt": "2026-09-24T01:19:21.7604043Z",
+    "unityVersion": "2022.3.62f3",
+    "platform": "WindowsPlayer",
+    "backend": "IL2CPP",
+    "developmentBuild": false,
+    "profilerEnabled": false,
+    "stopwatchFrequency": 10000000,
+    "burstSize": 32,
+    "warmupBursts": 2000,
+    "measuredBurstsPerSample": 20000,
+    "sampleCount": 11,
+    "allocationSampleCount": 64,
+    "allocationMeasurementAvailable": false,
+    "totalBurstsPerArm": 222128,
+    "positiveAllocationEvents": -1,
+    "allocationEventsByArm": [
+        -1,
+        -1,
+        -1
+    ],
+    "factoryNanosecondsPerBurst": [
+        1325.845,
+        1303.57,
+        1291.405,
+        1327.295,
+        1309.655,
+        1272.665,
+        1350.23,
+        1286.72,
+        1283.52,
+        1295.525,
+        1283.895
+    ],
+    "directNanosecondsPerBurst": [
+        820.965,
+        811.23,
+        809.965,
+        796.955,
+        828.895,
+        872.52,
+        811.025,
+        801.765,
+        1032.64,
+        799.765,
+        809.915
+    ],
+    "unityNanosecondsPerBurst": [
+        746.175,
+        701.165,
+        713.785,
+        718.795,
+        701.94,
+        684.09,
+        723.125,
+        724.15,
+        722.495,
+        692.835,
+        689.15
+    ],
+    "factoryOverDirectRatios": [
+        1.6149835863891884,
+        1.606905563157181,
+        1.5943960541504879,
+        1.665457899128558,
+        1.5800010857828797,
+        1.4586083986613488,
+        1.6648438704108999,
+        1.6048592792152315,
+        1.2429501084598698,
+        1.6198820903640446,
+        1.5852219060024818
+    ],
+    "factoryOverUnityRatios": [
+        1.7768552953395654,
+        1.859148702516526,
+        1.809235273927023,
+        1.846555693904382,
+        1.8657648801891898,
+        1.860376558639945,
+        1.8672152117545376,
+        1.7768694331284956,
+        1.7765105640869488,
+        1.8698896562673653,
+        1.8630124065878256
+    ],
+    "factoryMedian": 1295.525,
+    "factoryQ1": 1283.895,
+    "factoryQ3": 1325.845,
+    "directMedian": 811.025,
+    "directQ1": 801.765,
+    "directQ3": 828.895,
+    "unityMedian": 713.785,
+    "unityQ1": 692.835,
+    "unityQ3": 723.125,
+    "factoryOverDirectMedian": 1.6048592792152315,
+    "factoryOverDirectQ1": 1.5800010857828797,
+    "factoryOverDirectQ3": 1.6198820903640446,
+    "factoryOverUnityMedian": 1.859148702516526,
+    "factoryOverUnityQ1": 1.7768694331284956,
+    "factoryOverUnityQ3": 1.8657648801891898,
+    "createdByArm": [
+        32,
+        32,
+        32
+    ],
+    "activeByArm": [
+        0,
+        0,
+        0
+    ],
+    "inactiveByArm": [
+        32,
+        32,
+        32
+    ],
+    "getCountByArm": [
+        7108129,
+        7108129,
+        7108129
+    ],
+    "releaseCountByArm": [
+        7108129,
+        7108129,
+        7108129
+    ],
+    "resetCountByArm": [
+        7108096,
+        7108096,
+        7108096
+    ],
+    "checksumByArm": [
+        26845067974144,
+        26845067974144,
+        26845067974144
+    ]
+}

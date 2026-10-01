@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="1" result="Passed" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-09-23 23:12:47Z" end-time="2026-09-23 23:12:48Z" duration="1.3610811">
+  <test-suite type="TestSuite" id="1000" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="474" result="Passed" start-time="2026-09-23 23:12:47Z" end-time="2026-09-23 23:12:48Z" duration="1.361081" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1514" name="Onity.Tests.EditMode.dll" fullname="C:/Users/e-fur/Documents/Repos/Onity/Library/ScriptAssemblies/Onity.Tests.EditMode.dll" runstate="Runnable" testcasecount="473" result="Passed" start-time="2026-09-23 23:12:47Z" end-time="2026-09-23 23:12:48Z" duration="1.340635" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="92940" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1515" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="473" result="Passed" start-time="2026-09-23 23:12:47Z" end-time="2026-09-23 23:12:48Z" duration="1.324563" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1516" name="Tests" fullname="Onity.Tests" runstate="Runnable" testcasecount="473" result="Passed" start-time="2026-09-23 23:12:47Z" end-time="2026-09-23 23:12:48Z" duration="1.308420" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1517" name="EditMode" fullname="Onity.Tests.EditMode" runstate="Runnable" testcasecount="473" result="Passed" start-time="2026-09-23 23:12:47Z" end-time="2026-09-23 23:12:48Z" duration="1.292896" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1458" name="PoolingTests" fullname="Onity.Tests.EditMode.PoolingTests" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" testcasecount="16" result="Passed" start-time="2026-09-23 23:12:47Z" end-time="2026-09-23 23:12:48Z" duration="1.273171" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1468" name="MeasureWarmedRentReturnAgainstZenject" fullname="Onity.Tests.EditMode.PoolingTests.MeasureWarmedRentReturnAgainstZenject" methodname="MeasureWarmedRentReturnAgainstZenject" classname="Onity.Tests.EditMode.PoolingTests" runstate="Explicit" seed="1825762898" result="Passed" start-time="2026-09-23 23:12:47Z" end-time="2026-09-23 23:12:48Z" duration="1.254187" asserts="0">
+                <properties>
+                  <property name="_SKIPREASON" value="Run by exact name to compare warmed Onity and Zenject pools in the Editor." />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Warmed GC.Alloc events per 64 pairs: Onity default 0, Onity checked 0, Zenject 0
+Onity pool (default): median 134.2 ns/pair, range 131.4-163.0
+Onity pool (collection check): median 138.8 ns/pair, range 134.9-167.5
+Zenject MemoryPool: median 139.1 ns/pair, range 135.2-164.2
+Onity checked/Zenject paired median: 1.00x
+Onity default/Zenject paired median: 0.97x
+Saving results to: C:/Users/e-fur/AppData/LocalLow/DefaultCompany/Onity\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

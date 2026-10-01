@@ -638,6 +638,9 @@ sources. Each returned `OnityTask` value is **single-consumer**:
 - Await the value once, or call `AsTask()` once.
 - Do not copy the value to several consumers.
 - Do not await it and then call `AsTask()` on the old copy.
+- Do not read `IsCompleted` or `IsCompletedSuccessfully` after the value was
+  consumed; the pooled source has retired its token and the read throws
+  `InvalidOperationException`. Keep the awaited result instead.
 - `WhenAll` and `WhenAny` consume their input task values; do not await those
   inputs separately. `WhenAny` does not cancel the loser, which is consumed
   when it eventually completes.

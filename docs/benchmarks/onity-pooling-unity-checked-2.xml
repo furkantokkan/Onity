@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="1" result="Passed" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-09-23 23:42:18Z" end-time="2026-09-23 23:42:19Z" duration="1.1519235">
+  <test-suite type="TestSuite" id="1000" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="475" result="Passed" start-time="2026-09-23 23:42:18Z" end-time="2026-09-23 23:42:19Z" duration="1.151924" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1515" name="Onity.Tests.EditMode.dll" fullname="C:/Users/e-fur/Documents/Repos/Onity/Library/ScriptAssemblies/Onity.Tests.EditMode.dll" runstate="Runnable" testcasecount="474" result="Passed" start-time="2026-09-23 23:42:18Z" end-time="2026-09-23 23:42:19Z" duration="1.127441" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="111724" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1516" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="474" result="Passed" start-time="2026-09-23 23:42:18Z" end-time="2026-09-23 23:42:19Z" duration="1.108693" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1517" name="Tests" fullname="Onity.Tests" runstate="Runnable" testcasecount="474" result="Passed" start-time="2026-09-23 23:42:18Z" end-time="2026-09-23 23:42:19Z" duration="1.088884" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1518" name="EditMode" fullname="Onity.Tests.EditMode" runstate="Runnable" testcasecount="474" result="Passed" start-time="2026-09-23 23:42:18Z" end-time="2026-09-23 23:42:19Z" duration="1.071776" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1458" name="PoolingTests" fullname="Onity.Tests.EditMode.PoolingTests" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" testcasecount="17" result="Passed" start-time="2026-09-23 23:42:18Z" end-time="2026-09-23 23:42:19Z" duration="1.050724" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1469" name="MeasureCheckedWarmedRentReturnAgainstUnity" fullname="Onity.Tests.EditMode.PoolingTests.MeasureCheckedWarmedRentReturnAgainstUnity" methodname="MeasureCheckedWarmedRentReturnAgainstUnity" classname="Onity.Tests.EditMode.PoolingTests" runstate="Explicit" seed="1444487064" result="Passed" start-time="2026-09-23 23:42:18Z" end-time="2026-09-23 23:42:19Z" duration="1.029887" asserts="0">
+                <properties>
+                  <property name="_SKIPREASON" value="Run by exact name to isolate checked Onity pool wrapper cost in the Editor." />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Unity pool (collection check)/Unity pool (collection check + diagnostic atomics) paired median: 0.967x, Q1-Q3 0.952-0.982, range 0.902-1.081
+Onity pool (collection check)/Unity pool (collection check + diagnostic atomics) paired median: 1.183x, Q1-Q3 1.159-1.203, range 1.076-1.282
+Unity pool (collection check): median 110.1 ns/pair, range 107.9-128.9
+Unity pool (collection check + diagnostic atomics): median 114.1 ns/pair, range 112.2-124.0
+Onity pool (collection check): median 134.7 ns/pair, range 132.8-147.4
+Profiler.enabled=False; warmed GC.Alloc events per 64 pairs: all three paths 0
+Saving results to: C:/Users/e-fur/AppData/LocalLow/DefaultCompany/Onity\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

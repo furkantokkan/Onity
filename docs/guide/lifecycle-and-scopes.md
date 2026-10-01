@@ -6,17 +6,18 @@ nav_order: 5
 
 # Lifecycle & Scopes
 
-Onity has two lifetimes (`Singleton`, `Transient`) and models everything VContainer expresses as `Lifetime.Scoped` with **child containers**. The automatic startup and per-frame lifecycle (the Zenject-style entry points) is opt-in by interface: bind a type that implements a lifecycle interface and the container wires it up — no separate registration call.
+Onity supports `AsSingle`, `AsScoped`, and `AsTransient`. `AsScoped` caches one instance per resolving container, including when the binding was declared in an ancestor. The automatic startup and per-frame lifecycle is opt-in by interface: bind a type that implements a lifecycle interface and the container wires it up — no separate registration call.
 
-## Child containers — the "scoped" lifetime
+## Child containers and scoped bindings
 
-There is no `Scoped` keyword. A per-scope instance is a child-container `AsSingle`. A child inherits the parent's bindings; a binding declared on the child **shadows** the parent only inside that child.
+A child inherits the parent's bindings; a binding declared on the child **shadows** the parent only inside that child. An `AsScoped` binding declared on the parent creates a separate instance for each resolving child and uses that child's dependencies.
 
 ```csharp
 using Onity.DI;
 
 using OnityContainer parent = new OnityContainer();
 parent.Bind<IDependency>().To<Dependency>().AsSingle();
+parent.Bind<IRequestState>().To<RequestState>().AsScoped();
 parent.Build();
 
 using OnityContainer child = new OnityContainer(parent);
@@ -25,6 +26,8 @@ child.Build();
 
 // child.Resolve<IDependency>()  -> AlternateDependency
 // parent.Resolve<IDependency>() -> Dependency (unchanged)
+// child.Resolve<IRequestState>() -> same child-owned instance on repeated calls
+// parent.Resolve<IRequestState>() -> a separate root-owned instance
 ```
 
 Mapping from other containers:
@@ -32,18 +35,18 @@ Mapping from other containers:
 | Other container | Onity equivalent |
 | --- | --- |
 | VContainer `Lifetime.Singleton` (root) | `AsSingle()` on the root container |
-| VContainer `Lifetime.Scoped` | child-container `AsSingle()` (`new OnityContainer(parent)`) |
+| VContainer `Lifetime.Scoped` | `AsScoped()` on the registration; resolve through a child container |
 | VContainer `Lifetime.Transient` | `AsTransient()` |
 
-Disposing a child container disposes the singletons it **owns** in reverse registration order; it does not dispose the parent.
+Disposing a child container disposes its own singletons and scoped instances; it does not dispose the parent.
 
 ## Disposal ownership
 
-`Dispose()` disposes the singletons a container created, in reverse registration order. Bound instances passed in via `BindInstance` are owned by the caller — the container does not dispose them. In a Unity scene, the context disposes its container automatically on `OnDestroy`, so you rarely call `Dispose()` by hand.
+`Dispose()` disposes a container's singletons, scoped instances, and installed sub-containers. Bound instances passed in via `BindInstance` are owned by the caller — the container does not dispose them. In a Unity scene, the context disposes its container automatically on `OnDestroy`, so you rarely call `Dispose()` by hand.
 
 ## The automatic lifecycle
 
-Implement a lifecycle interface (from `Onity.DI`) on a **singleton or bound instance**, bind it, and the owning container collects it at `Build()`. Transient bindings are not collected — there is no single stable instance to drive.
+Implement a lifecycle interface (from `Onity.DI`) on a **singleton, local scoped binding, or bound instance**, bind it, and the owning container collects it at `Build()`. Installed sub-containers run their own build and receive ticks from the requesting container. Transient bindings are not collected — there is no single stable instance to drive.
 
 | Interface | Method | When it runs |
 | --- | --- | --- |

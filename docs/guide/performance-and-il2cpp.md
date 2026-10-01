@@ -38,8 +38,9 @@ per-type construction plans keep the steady-state resolve path off the
 allocator. Standard generic `Resolve<T>()` uses a container-local dense type-id
 provider slot, avoiding a `Dictionary<Type, ...>` lookup for explicit local
 bindings. Dynamic `Resolve(Type)` and misses retain the general map/fallback
-path. The optional baked graph adds flat lifetime and singleton slots; both
-lanes produce identical results.
+path. The baked graph is enabled by default and adds flat lifetime and
+singleton slots for explicit local bindings; the parity suite checks that both
+lanes produce identical results, including registrations made after `Build()`.
 
 The reactive and messaging emit paths follow the same principle: `Subject<T>.OnNext`, `MessageChannel<T>.Publish`, `EveryUpdate()`, and steady-state subscription delivery are array-backed and designed to be allocation-free in steady state, allocating only at subscribe time.
 
@@ -49,11 +50,60 @@ The reactive and messaging emit paths follow the same principle: `Subject<T>.OnN
 
 The committed DI benchmark reports resolve **timing** (speed) numbers. Treat them as **indicative only**: they were measured on a Windows PC and are not a guaranteed result for every Unity version, scripting backend, or graph shape. They are useful for relative comparison of resolve paths within the same run, not as an absolute performance guarantee.
 
-| Run | Result |
+The current Editor/Mono and Windows IL2CPP reports include keyed and scoped
+singleton resolution along with the five original scenarios. The Editor's
+cumulative allocation byte counters failed a 1 MiB positive control, so the
+timing report marks inline bytes unavailable. Separate raw Profiler passes
+validated empty, 1 MiB, and 2 MiB controls before measuring `GC.Alloc` inside
+each marker. [Full run summary and raw reports](../benchmarks/advanced-di-summary-2026-09-23.md).
+
+| Environment | Result |
 | --- | --- |
-| Editor / Mono (`2026-07-12T13:31:37Z`) | Onity standard and baked lanes are faster than VContainer and Zenject on every measured timing path. |
-| Windows IL2CPP Player (`2026-07-12T13:34:55Z`, 10,000 iterations) | Both Onity lanes, with 19 generated activators registered for the benchmark graph, are faster than VContainer and Zenject on every measured timing path. |
+| Unity Editor / Mono (`2026-09-23`) | Onity baked was faster than VContainer and Zenject in all seven measured scenarios. [Raw timing report](../benchmarks/advanced-di-editor-mono-direct-keyed/di-benchmark-latest.json). |
+| Windows IL2CPP release Player (`2026-09-23`) | Onity baked was faster than VContainer and Zenject in all seven measured scenarios with `19` generated activators registered. [Raw timing report](../benchmarks/advanced-di-il2cpp-release.json). |
+| Windows IL2CPP release Player re-run (`2026-10-01`, three processes) | Onity baked was fastest in every scenario in every process; Onity/VContainer per-run ratios ranged from 0.23x to 0.57x. [Re-measurement](../benchmarks/remeasure-2026-10-01.md). |
 | Windows IL2CPP singleton gate (`2026-07-12T13:30:25Z`) | 1000 samples measured Onity standard at 18.80 ns/op versus VContainer at 94.39 ns/op. |
+
+In the Editor/Mono allocation pass, Onity baked and VContainer both used
+0, 16, 16, and 384 B per operation for singleton, transient, combined, and
+complex resolves. Keyed and scoped singleton resolves used 0 B in all three
+frameworks. Onity baked used 10,364 B for complex prepare/register versus
+VContainer's 15,296 B and Zenject's 23,166 B.
+
+A separate Windows IL2CPP Development player raw Profiler pass validated an
+empty marker at 0 B and 1 MiB / 2 MiB controls at 1,053,728 B / 2,102,304 B.
+Each case used three identical samples of 64 operations after warming the same
+container. Onity baked and VContainer both used 0, 16, 16, and 384 B per
+resolve operation; Zenject used 0, 200, 200, and 4,800 B. Keyed and scoped
+singleton resolves used 0 B in all three frameworks. Complex prepare/register
+used 10,424 B for Onity baked, 16,136 B for VContainer, and 23,405 B for
+Zenject. [Raw IL2CPP byte report](../benchmarks/advanced-di-il2cpp-allocation.json).
+Development profiling supplies allocation bytes; the release player supplies
+the timing comparison. The release report's allocation fields are unavailable.
+
+## Managed pooling and factory timing
+
+A separate Windows IL2CPP benchmark compared Onity's checked two-parameter
+pooled factory with Zenject `MemoryPool<int,int,int[]>` using 32 prewarmed
+items, fixed capacity, matching initialization/reset callbacks, and rotated
+bursts. In an interleaved Release confirmation, Onity/Zenject paired median
+ratios were **0.803x** and **0.776x**, or **19.7%** and **22.4%** less elapsed
+time in that workload. Development player runs recorded zero warmed
+`GC.Alloc` events with a positive control; Release allocation was unavailable.
+Both pools rejected duplicate returns and passed the final-state checks.
+
+`OnityObjectPool<T>` keeps its own array stack instead of wrapping Unity's
+`ObjectPool<T>`; the top of the stack is the checked-mode duplicate-return fast
+slot. In the checked single-item Editor/Mono test, which previously favored
+Zenject (**1.429x/1.566x**), two fresh runs measured Onity checked/Zenject
+paired medians of **0.590x/0.579x** and Onity default/Zenject **0.674x/0.559x**,
+with zero warmed allocation. In an old/new/new/old sequence of the 32-item
+IL2CPP Release burst, factory/Zenject moved from **0.796x/0.856x** to
+**0.738x/0.729x**. The Unity player control does not check duplicate returns and
+is not an equivalent checked comparison. These results do not rank prefab
+pools, VContainer pool adapters, or other workloads.
+[Method, raw reports, and binary hashes](../benchmarks/factory-pooling-2026-09-23.md);
+[own-stack pool measurements](../benchmarks/pool-own-stack-2026-10-01.md).
 
 ## IL2CPP checklist
 

@@ -12,6 +12,13 @@ using Onity.Factory;
 
 namespace Onity.DI
 {
+    internal enum BindingLifetime
+    {
+        Singleton,
+        Transient,
+        Scoped
+    }
+
     /// <summary>
     /// Lightweight dependency container with parent-scope support.
     /// </summary>
@@ -24,19 +31,17 @@ namespace Onity.DI
         private static bool s_diagnosticsCollectionEnabled;
         private static readonly int s_containerTypeId = TypeIdRegistry.Register(typeof(OnityContainer));
         private static readonly int s_resolverTypeId = TypeIdRegistry.Register(typeof(IResolver));
-        // Phase 1 baked-resolve flag. DEFAULTS TO FALSE so the proven reflection
-        // path stays the shipping path and the existing EditMode suite is
-        // unaffected. When true, Build() compiles a BakedGraph and Resolve takes a
+        // Baked resolve is the default. Build() compiles a BakedGraph and Resolve takes a
         // dense-id, array-indexed fast path that drops the per-resolve dictionary
         // lookup. The baked path only fast-paths explicit local bindings; every
         // other contract (parent, implicit concrete, unbound) defers to the same
         // reflection path, so results are identical under both flag values.
-        internal static bool s_useBakedResolve = false;
+        internal static bool s_useBakedResolve = true;
 
         /// <summary>
-        /// Internal Phase 1 toggle for the baked-resolve fast path. Defaults to
-        /// false so the reflection path stays the shipping default. Exposed for the
-        /// parity test suite that asserts identical results under both values.
+        /// Internal toggle for the baked-resolve fast path. Defaults to true.
+        /// Exposed for the parity test suite that asserts identical results
+        /// under both values.
         /// </summary>
         internal static bool UseBakedResolve
         {
@@ -68,6 +73,7 @@ namespace Onity.DI
         /// </summary>
         public static bool IsCompiledActivationSupported => RuntimeCompileSupport.IsExpressionCompileSupported;
         private static readonly DependencyResolution[] s_emptyDependencyResolutions = new DependencyResolution[0];
+        private const int k_initialBindingCapacity = 24;
         private const string k_unknownBindingSource = "Unknown Binding Source";
         private const string k_implicitBindingSource = "Implicit (Auto-Resolve)";
 
@@ -81,11 +87,12 @@ namespace Onity.DI
         private readonly List<Action<IResolver>> m_buildCallbacks;
         private readonly List<Func<IResolver, CancellationToken, Task>> m_asyncBuildCallbacks;
         private bool m_isBuildFinalized;
+        private bool m_lifecycleReady;
         private Task m_cachedBuildTask;
         private bool m_isDisposed;
         // Compiled, array-backed view of this scope's explicit local bindings.
-        // Non-null only after Build() runs while UseBakedResolve is true. Read on
-        // the Resolve hot path; never mutated after Build.
+        // Non-null after Build() runs while UseBakedResolve is true. Replaced when
+        // bindings change after Build() so the Resolve hot path sees current providers.
         private BakedGraph m_baked;
         // Bumped whenever an explicit provider is registered or replaced. Lets the
         // per-plan constructor-dependency resolution cache fast-path a same-scope
@@ -110,6 +117,19 @@ namespace Onity.DI
         // implementation is built and cached as a normal binding, so later resolves hit
         // the fast path. Never read on the single-resolve hot path.
         private Dictionary<Type, OpenGenericRegistration> m_openGenericMap;
+        // Tracks only closed providers generated from open registrations. An open
+        // rebind replaces these entries without overriding explicit closed binds.
+        private Dictionary<Type, IProvider> m_closedOpenGenericProviders;
+        // Identified and consumer-specific bindings never enter the unkeyed baked graph.
+        private Dictionary<BindingKey, List<ContextBinding>> m_contextBindings;
+        // Dense contract id -> direct unconditional keyed bindings. Built during
+        // registration; conditional keys stay on the full selection path.
+        private Dictionary<object, ContextBinding>[] m_directKeyedBindings;
+        private HashSet<IProvider> m_retiredProviders;
+        private Dictionary<IProvider, object> m_lifecycleInstances;
+        private Dictionary<IProvider, object> m_scopedInstances;
+        private Dictionary<SubContainerProvider, OnityContainer> m_subContainerScopes;
+        private List<OnityContainer> m_subContainerScopeList;
 
         /// <summary>
         /// Enables or disables runtime collection of resolve timing/count metrics used by editor diagnostics.
@@ -127,13 +147,15 @@ namespace Onity.DI
         public OnityContainer(OnityContainer parent = null)
         {
             m_parent = parent;
-            m_providerMap = new Dictionary<Type, IProvider>(128);
-            m_implicitProviderMap = new Dictionary<Type, IProvider>(32);
-            m_bindingSourceMap = new Dictionary<Type, BindingSourceRecord>(160);
-            m_planMap = new Dictionary<Type, TypeInjectionPlan>(128);
-            m_ownedProviders = new List<IProvider>(64);
-            m_buildCallbacks = new List<Action<IResolver>>(8);
-            m_asyncBuildCallbacks = new List<Func<IResolver, CancellationToken, Task>>(4);
+            // Common local scopes fit without growth; unused lookup tables keep
+            // their backing arrays empty until the first registration or resolve.
+            m_providerMap = new Dictionary<Type, IProvider>(k_initialBindingCapacity);
+            m_implicitProviderMap = new Dictionary<Type, IProvider>();
+            m_bindingSourceMap = new Dictionary<Type, BindingSourceRecord>(k_initialBindingCapacity);
+            m_planMap = new Dictionary<Type, TypeInjectionPlan>();
+            m_ownedProviders = new List<IProvider>(k_initialBindingCapacity);
+            m_buildCallbacks = new List<Action<IResolver>>();
+            m_asyncBuildCallbacks = new List<Func<IResolver, CancellationToken, Task>>();
             m_isBuildFinalized = false;
             m_cachedBuildTask = null;
         }
@@ -147,6 +169,124 @@ namespace Onity.DI
         {
             EnsureNotDisposed();
             return new TypeBindingBuilder<TContract>(this);
+        }
+
+        /// <summary>Replaces all local bindings for this contract and identifier when a lifetime is selected.</summary>
+        /// <typeparam name="TContract">Contract type.</typeparam>
+        /// <param name="id">Exact identifier to replace; null selects unkeyed bindings.</param>
+        /// <returns>A builder; existing bindings remain until successful registration.</returns>
+        public TypeBindingBuilder<TContract> Rebind<TContract>(object id = null)
+        {
+            EnsureNotDisposed();
+            return new TypeBindingBuilder<TContract>(this, true, id);
+        }
+
+        /// <summary>Replaces local bindings for a runtime contract and identifier when a lifetime is selected.</summary>
+        /// <param name="contractType">Contract type, optionally an open generic definition.</param>
+        /// <param name="id">Exact identifier to replace; null selects unkeyed bindings.</param>
+        /// <returns>A builder; existing bindings remain until successful registration.</returns>
+        public RuntimeTypeBindingBuilder Rebind(Type contractType, object id = null)
+        {
+            EnsureNotDisposed();
+
+            if (contractType == null)
+            {
+                throw new OnityBindingException("Contract type cannot be null.");
+            }
+
+            return new RuntimeTypeBindingBuilder(this, contractType, true, id);
+        }
+
+        /// <summary>Removes all local bindings for the exact contract and identifier, including conditions.</summary>
+        /// <typeparam name="TContract">Contract type.</typeparam>
+        /// <param name="id">Exact identifier; null removes only unkeyed bindings.</param>
+        /// <returns>True when a local registration was removed. Parent registrations are unchanged.</returns>
+        public bool Unbind<TContract>(object id = null)
+        {
+            return Unbind(typeof(TContract), id);
+        }
+
+        /// <summary>
+        /// Removes local registrations for an exact contract and identifier. Removed singleton instances
+        /// stop ticking but remain owned until disposal. Unbound concrete types may still auto-resolve.
+        /// </summary>
+        /// <param name="contractType">Contract type, optionally an open generic definition.</param>
+        /// <param name="id">Exact identifier; null removes only unkeyed bindings.</param>
+        /// <returns>True when a local registration was removed.</returns>
+        public bool Unbind(Type contractType, object id = null)
+        {
+            EnsureNotDisposed();
+
+            if (contractType == null)
+            {
+                throw new OnityBindingException("Contract type cannot be null.");
+            }
+
+            bool removed = m_contextBindings != null
+                && m_contextBindings.Remove(new BindingKey(contractType, id));
+            if (removed)
+            {
+                SetDirectKeyedBinding(contractType, id, null);
+            }
+
+            if (id == null)
+            {
+                removed |= RemoveLocalProvider(contractType);
+                m_bindingSourceMap.Remove(contractType);
+
+                if (m_multiProviderMap != null)
+                {
+                    removed |= m_multiProviderMap.Remove(contractType);
+                }
+
+                if (m_openGenericMap != null)
+                {
+                    removed |= m_openGenericMap.Remove(contractType);
+                }
+
+                if (m_closedOpenGenericProviders != null)
+                {
+                    m_closedOpenGenericProviders.Remove(contractType);
+
+                    if (contractType.IsGenericTypeDefinition)
+                    {
+                        List<Type> closedTypes = null;
+
+                        foreach (KeyValuePair<Type, IProvider> pair in m_closedOpenGenericProviders)
+                        {
+                            if (pair.Key.GetGenericTypeDefinition() == contractType)
+                            {
+                                (closedTypes ??= new List<Type>()).Add(pair.Key);
+                            }
+                        }
+
+                        if (closedTypes != null)
+                        {
+                            for (int i = 0; i < closedTypes.Count; i++)
+                            {
+                                Type closedType = closedTypes[i];
+                                IProvider provider = m_closedOpenGenericProviders[closedType];
+                                m_closedOpenGenericProviders.Remove(closedType);
+                                RemoveGeneratedProvider(closedType, provider);
+                                removed = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (removed)
+            {
+                m_bindingVersion++;
+                RetireUnboundProviders();
+
+                if (m_baked != null)
+                {
+                    m_baked = BuildBakedGraph();
+                }
+            }
+
+            return removed;
         }
 
         /// <summary>
@@ -215,6 +355,31 @@ namespace Onity.DI
             }
 
             RegisterProvider(typeof(TContract), new InstanceProvider(instance), false);
+        }
+
+        /// <summary>Binds a caller-owned instance with an identifier. The container does not dispose it.</summary>
+        /// <typeparam name="TContract">Contract type.</typeparam>
+        /// <param name="instance">Non-null instance.</param>
+        /// <param name="id">Identifier; null selects the ordinary unkeyed binding.</param>
+        public void BindInstance<TContract>(TContract instance, object id)
+        {
+            EnsureNotDisposed();
+
+            if (id == null)
+            {
+                BindInstance(instance);
+                return;
+            }
+
+            if (ReferenceEquals(instance, null))
+            {
+                throw new OnityBindingException("Cannot bind a null instance.");
+            }
+
+            IProvider provider = new InstanceProvider(instance);
+            m_ownedProviders.Add(provider);
+            AddContextBinding(typeof(TContract), id, new ContextBinding(provider, null));
+            RegisterLifecycleAfterBuild(provider);
         }
 
         /// <summary>
@@ -333,6 +498,7 @@ namespace Onity.DI
             }
 
             CollectAndInitializeLifecycle();
+            m_lifecycleReady = true;
         }
 
         /// <summary>
@@ -343,14 +509,22 @@ namespace Onity.DI
         /// </summary>
         public void Tick()
         {
-            if (m_tickables == null)
+            if (m_tickables != null)
+            {
+                for (int i = 0; i < m_tickables.Count; i++)
+                {
+                    m_tickables[i].Tick();
+                }
+            }
+
+            if (m_subContainerScopeList == null)
             {
                 return;
             }
 
-            for (int i = 0; i < m_tickables.Count; i++)
+            for (int i = 0; i < m_subContainerScopeList.Count; i++)
             {
-                m_tickables[i].Tick();
+                m_subContainerScopeList[i].Tick();
             }
         }
 
@@ -361,14 +535,22 @@ namespace Onity.DI
         /// </summary>
         public void FixedTick()
         {
-            if (m_fixedTickables == null)
+            if (m_fixedTickables != null)
+            {
+                for (int i = 0; i < m_fixedTickables.Count; i++)
+                {
+                    m_fixedTickables[i].FixedTick();
+                }
+            }
+
+            if (m_subContainerScopeList == null)
             {
                 return;
             }
 
-            for (int i = 0; i < m_fixedTickables.Count; i++)
+            for (int i = 0; i < m_subContainerScopeList.Count; i++)
             {
-                m_fixedTickables[i].FixedTick();
+                m_subContainerScopeList[i].FixedTick();
             }
         }
 
@@ -379,14 +561,22 @@ namespace Onity.DI
         /// </summary>
         public void LateTick()
         {
-            if (m_lateTickables == null)
+            if (m_lateTickables != null)
+            {
+                for (int i = 0; i < m_lateTickables.Count; i++)
+                {
+                    m_lateTickables[i].LateTick();
+                }
+            }
+
+            if (m_subContainerScopeList == null)
             {
                 return;
             }
 
-            for (int i = 0; i < m_lateTickables.Count; i++)
+            for (int i = 0; i < m_subContainerScopeList.Count; i++)
             {
-                m_lateTickables[i].LateTick();
+                m_subContainerScopeList[i].LateTick();
             }
         }
 
@@ -404,9 +594,21 @@ namespace Onity.DI
             for (int i = 0; i < m_ownedProviders.Count; i++)
             {
                 IProvider provider = m_ownedProviders[i];
+
+                if (m_retiredProviders != null && m_retiredProviders.Contains(provider))
+                {
+                    continue;
+                }
+
+                if (provider is SubContainerProvider)
+                {
+                    continue;
+                }
+
                 BakedLifetime lifetime = provider.BakedLifetime;
 
-                if (lifetime != BakedLifetime.Singleton && lifetime != BakedLifetime.Instance)
+                if (lifetime != BakedLifetime.Singleton && lifetime != BakedLifetime.Instance
+                    && lifetime != BakedLifetime.Scoped)
                 {
                     continue;
                 }
@@ -426,6 +628,7 @@ namespace Onity.DI
                 }
 
                 object instance = provider.Get(this);
+                (m_lifecycleInstances ??= new Dictionary<IProvider, object>())[provider] = instance;
 
                 // The same instance can be bound twice (e.g. two BindInstance calls),
                 // producing two providers; collect each entry point only once.
@@ -468,6 +671,74 @@ namespace Onity.DI
             }
         }
 
+        private void RegisterLifecycleAfterBuild(IProvider provider)
+        {
+            if (m_lifecycleReady == false
+                || (m_retiredProviders != null && m_retiredProviders.Contains(provider))
+                || (m_lifecycleInstances != null && m_lifecycleInstances.ContainsKey(provider))
+                || provider is SubContainerProvider)
+            {
+                return;
+            }
+
+            BakedLifetime lifetime = provider.BakedLifetime;
+            if (lifetime != BakedLifetime.Singleton && lifetime != BakedLifetime.Instance
+                && lifetime != BakedLifetime.Scoped)
+            {
+                return;
+            }
+
+            Type implementationType = provider.ImplementationType;
+            bool isInitializable = typeof(IOnityInitializable).IsAssignableFrom(implementationType);
+            bool isTickable = typeof(IOnityTickable).IsAssignableFrom(implementationType);
+            bool isFixedTickable = typeof(IOnityFixedTickable).IsAssignableFrom(implementationType);
+            bool isLateTickable = typeof(IOnityLateTickable).IsAssignableFrom(implementationType);
+            if (isInitializable == false && isTickable == false
+                && isFixedTickable == false && isLateTickable == false)
+            {
+                return;
+            }
+
+            object instance = provider.Get(this);
+            if (m_lifecycleInstances != null)
+            {
+                foreach (object registered in m_lifecycleInstances.Values)
+                {
+                    if (ReferenceEquals(registered, instance))
+                    {
+                        m_lifecycleInstances.Add(provider, instance);
+                        return;
+                    }
+                }
+            }
+
+            (m_lifecycleInstances ??= new Dictionary<IProvider, object>()).Add(provider, instance);
+            if (isInitializable)
+            {
+                (m_initializables ??= new List<IOnityInitializable>()).Add((IOnityInitializable)instance);
+            }
+
+            if (isTickable)
+            {
+                (m_tickables ??= new List<IOnityTickable>()).Add((IOnityTickable)instance);
+            }
+
+            if (isFixedTickable)
+            {
+                (m_fixedTickables ??= new List<IOnityFixedTickable>()).Add((IOnityFixedTickable)instance);
+            }
+
+            if (isLateTickable)
+            {
+                (m_lateTickables ??= new List<IOnityLateTickable>()).Add((IOnityLateTickable)instance);
+            }
+
+            if (isInitializable)
+            {
+                ((IOnityInitializable)instance).Initialize();
+            }
+        }
+
         // Compiles this scope's explicit local bindings into a flat, dense-id keyed
         // graph. The baked graph stores the SAME IProvider the dictionary path uses,
         // so a baked resolve returns an instance identical to the reflection path
@@ -482,6 +753,14 @@ namespace Onity.DI
             foreach (KeyValuePair<Type, IProvider> pair in m_providerMap)
             {
                 Type contractType = pair.Key;
+
+                // Self-resolution takes precedence over explicit bindings in
+                // TryResolveInternal. Keep the generic baked route consistent.
+                if (contractType == typeof(OnityContainer) || contractType == typeof(IResolver))
+                {
+                    continue;
+                }
+
                 IProvider provider = pair.Value;
                 int contractTypeId = TypeIdRegistry.Register(contractType);
 
@@ -694,6 +973,17 @@ namespace Onity.DI
         [MethodImpl(MethodImplOptions.NoInlining)]
         private TService ResolveGenericSlow<TService>()
         {
+            // An empty child scope has no local binding to override an inherited
+            // baked slot. Resolve it in the parent graph with this scope as owner,
+            // without repeating the collection/open-generic and type-id searches.
+            if (m_parent != null && m_providerMap.Count == 0 && m_openGenericMap == null
+                && m_parent.m_baked != null
+                && m_parent.m_baked.TryResolveForScope(
+                    TypeIdCache<TService>.Id, this, out object inheritedInstance))
+            {
+                return (TService)inheritedInstance;
+            }
+
             if (TryResolveInternal(typeof(TService), out object service))
             {
                 return (TService)service;
@@ -725,6 +1015,20 @@ namespace Onity.DI
         {
             EnsureNotDisposed();
 
+            BakedGraph baked = m_baked;
+
+            if (baked != null && baked.TryResolve(TypeIdCache<TService>.Id, out object bakedInstance))
+            {
+                if (bakedInstance is TService bakedTypedInstance)
+                {
+                    instance = bakedTypedInstance;
+                    return true;
+                }
+
+                instance = default;
+                return false;
+            }
+
             if (TryResolveInternal(typeof(TService), out object rawInstance) && rawInstance is TService typedInstance)
             {
                 instance = typedInstance;
@@ -750,6 +1054,98 @@ namespace Onity.DI
         }
 
         /// <inheritdoc />
+        public TService Resolve<TService>(object id)
+        {
+            if (id == null)
+            {
+                return Resolve<TService>();
+            }
+
+            EnsureNotDisposed();
+
+            // The common keyed case has one unconditional closed binding. Keep
+            // conditional and open-generic keys on the full selection path.
+            Dictionary<object, ContextBinding>[] directBindings = m_directKeyedBindings;
+            int typeId = TypeIdCache<TService>.Id;
+            if (directBindings != null && (uint)typeId < (uint)directBindings.Length
+                && directBindings[typeId] != null
+                && directBindings[typeId].TryGetValue(id, out ContextBinding binding))
+            {
+                if (binding.ReusesInstance && s_diagnosticsCollectionEnabled == false)
+                {
+                    if (binding.HasCachedInstance)
+                    {
+                        return (TService)binding.CachedInstance;
+                    }
+
+                    object instance = binding.Provider.Get(this);
+                    binding.CachedInstance = instance;
+                    binding.HasCachedInstance = true;
+                    return (TService)instance;
+                }
+
+                return (TService)binding.Provider.Get(this);
+            }
+
+            return (TService)Resolve(typeof(TService), id);
+        }
+
+        /// <inheritdoc />
+        public object Resolve(Type serviceType, object id)
+        {
+            if (id == null)
+            {
+                return Resolve(serviceType);
+            }
+
+            EnsureNotDisposed();
+
+            if (serviceType == null)
+            {
+                throw new OnityResolveException("Cannot resolve a null service type.");
+            }
+
+            return ResolveDependency(serviceType, id, null);
+        }
+
+        /// <inheritdoc />
+        public bool TryResolve<TService>(object id, out TService instance)
+        {
+            if (id == null)
+            {
+                return TryResolve(out instance);
+            }
+
+            if (TryResolve(typeof(TService), id, out object value) && value is TService service)
+            {
+                instance = service;
+                return true;
+            }
+
+            instance = default;
+            return false;
+        }
+
+        /// <inheritdoc />
+        public bool TryResolve(Type serviceType, object id, out object instance)
+        {
+            if (id == null)
+            {
+                return TryResolve(serviceType, out instance);
+            }
+
+            EnsureNotDisposed();
+
+            if (serviceType == null)
+            {
+                instance = null;
+                return false;
+            }
+
+            return TryResolveContextBinding(serviceType, id, null, out instance);
+        }
+
+        /// <inheritdoc />
         public void Inject(object target)
         {
             EnsureNotDisposed();
@@ -772,7 +1168,7 @@ namespace Onity.DI
             EnsureNotDisposed();
 
             return new OnityContainerDiagnostics(
-                m_providerMap.Count,
+                m_providerMap.Count + (m_contextBindings?.Count ?? 0),
                 m_implicitProviderMap.Count,
                 m_planMap.Count,
                 m_ownedProviders.Count,
@@ -823,6 +1219,32 @@ namespace Onity.DI
                 aggregation.AddContract(pair.Key);
             }
 
+            if (m_contextBindings != null)
+            {
+                foreach (KeyValuePair<BindingKey, List<ContextBinding>> pair in m_contextBindings)
+                {
+                    for (int i = 0; i < pair.Value.Count; i++)
+                    {
+                        ContextBinding binding = pair.Value[i];
+
+                        if (binding.Provider != null)
+                        {
+                            AddContextDiagnostics(aggregations, pair.Key.ContractType, binding.Provider);
+                        }
+
+                        if (binding.ClosedProviders == null)
+                        {
+                            continue;
+                        }
+
+                        foreach (KeyValuePair<Type, IProvider> closed in binding.ClosedProviders)
+                        {
+                            AddContextDiagnostics(aggregations, closed.Key, closed.Value);
+                        }
+                    }
+                }
+            }
+
             foreach (BindingDiagnosticsAggregation aggregation in aggregations.Values)
             {
                 aggregation.SortContracts();
@@ -844,6 +1266,18 @@ namespace Onity.DI
             }
         }
 
+        private static void AddContextDiagnostics(
+            Dictionary<IProvider, BindingDiagnosticsAggregation> aggregations, Type contractType, IProvider provider)
+        {
+            if (aggregations.TryGetValue(provider, out BindingDiagnosticsAggregation aggregation) == false)
+            {
+                aggregation = new BindingDiagnosticsAggregation(provider.GetDiagnosticsSnapshot(), false);
+                aggregations.Add(provider, aggregation);
+            }
+
+            aggregation.AddContract(contractType);
+        }
+
         /// <inheritdoc />
         public void Dispose()
         {
@@ -855,6 +1289,45 @@ namespace Onity.DI
             m_isDisposed = true;
 
             List<Exception> disposalErrors = null;
+
+            if (m_subContainerScopes != null)
+            {
+                foreach (OnityContainer child in m_subContainerScopes.Values)
+                {
+                    try
+                    {
+                        child.Dispose();
+                    }
+                    catch (Exception exception)
+                    {
+                        disposalErrors ??= new List<Exception>(1);
+                        disposalErrors.Add(exception);
+                    }
+                }
+
+                m_subContainerScopes.Clear();
+            }
+
+            if (m_scopedInstances != null)
+            {
+                foreach (object instance in m_scopedInstances.Values)
+                {
+                    if (instance is IDisposable disposable)
+                    {
+                        try
+                        {
+                            disposable.Dispose();
+                        }
+                        catch (Exception exception)
+                        {
+                            disposalErrors ??= new List<Exception>(1);
+                            disposalErrors.Add(exception);
+                        }
+                    }
+                }
+
+                m_scopedInstances.Clear();
+            }
 
             for (int i = m_ownedProviders.Count - 1; i >= 0; i--)
             {
@@ -887,6 +1360,14 @@ namespace Onity.DI
             m_lateTickables = null;
             m_multiProviderMap = null;
             m_openGenericMap = null;
+            m_closedOpenGenericProviders = null;
+            m_contextBindings = null;
+            m_directKeyedBindings = null;
+            m_retiredProviders = null;
+            m_lifecycleInstances = null;
+            m_scopedInstances = null;
+            m_subContainerScopes = null;
+            m_subContainerScopeList = null;
 
             if (disposalErrors == null)
             {
@@ -901,14 +1382,423 @@ namespace Onity.DI
             throw new AggregateException(disposalErrors);
         }
 
-        internal void Register(Type contractType, Type implementationType, Lifetime lifetime)
+        internal IBakedProvider RegisterConfigured(
+            Type contractType, Type implementationType, BindingLifetime lifetime, object id, Type consumerType, bool replace)
+        {
+            EnsureNotDisposed();
+            bool isOpen = contractType.IsGenericTypeDefinition || implementationType.IsGenericTypeDefinition;
+
+            if (isOpen)
+            {
+                ValidateOpenGenericBinding(contractType, implementationType);
+            }
+            else
+            {
+                ValidateBinding(contractType, implementationType);
+            }
+
+            if (replace)
+            {
+                Unbind(contractType, id);
+            }
+
+            if (id == null && consumerType == null)
+            {
+                RegisterRuntime(contractType, implementationType, lifetime);
+                return isOpen ? null : m_providerMap[contractType];
+            }
+
+            if (isOpen)
+            {
+                AddContextBinding(contractType, id, new ContextBinding(implementationType, lifetime, consumerType));
+                return null;
+            }
+
+            IProvider provider = CreateProvider(implementationType, lifetime);
+            m_ownedProviders.Add(provider);
+            AddContextBinding(contractType, id, new ContextBinding(provider, consumerType));
+            RegisterLifecycleAfterBuild(provider);
+            return provider;
+        }
+
+        internal IBakedProvider RegisterConfigured(
+            Type[] contractTypes, Type implementationType, BindingLifetime lifetime, object id, Type consumerType)
+        {
+            EnsureNotDisposed();
+
+            if (contractTypes == null || contractTypes.Length == 0)
+            {
+                throw new OnityBindingException("Contract type list cannot be empty.");
+            }
+
+            if (id == null && consumerType == null)
+            {
+                Register(contractTypes, implementationType, lifetime);
+                return m_providerMap[contractTypes[0]];
+            }
+
+            for (int i = 0; i < contractTypes.Length; i++)
+            {
+                ValidateBinding(contractTypes[i], implementationType);
+            }
+
+            IProvider provider = CreateProvider(implementationType, lifetime);
+            m_ownedProviders.Add(provider);
+            ContextBinding binding = new ContextBinding(provider, consumerType);
+
+            for (int i = 0; i < contractTypes.Length; i++)
+            {
+                AddContextBinding(contractTypes[i], id, binding);
+            }
+
+            RegisterLifecycleAfterBuild(provider);
+            return provider;
+        }
+
+        internal IBakedProvider RegisterSubContainer(
+            Type contractType, Action<OnityContainer> install, object id, Type consumerType, bool replace)
+        {
+            EnsureNotDisposed();
+
+            if (contractType == null || contractType.IsGenericTypeDefinition)
+            {
+                throw new OnityBindingException("Sub-container exports require a closed contract type.");
+            }
+
+            if (install == null)
+            {
+                throw new OnityBindingException("Sub-container installer cannot be null.");
+            }
+
+            if (replace)
+            {
+                Unbind(contractType, id);
+            }
+
+            IProvider provider = new SubContainerProvider(contractType, install);
+            if (id == null && consumerType == null)
+            {
+                RegisterProvider(contractType, provider, false);
+            }
+            else
+            {
+                m_ownedProviders.Add(provider);
+                AddContextBinding(contractType, id, new ContextBinding(provider, consumerType));
+            }
+
+            return provider;
+        }
+
+        internal void RegisterNonLazy(IBakedProvider provider)
+        {
+            RegisterBuildCallback(_ =>
+            {
+                if (m_retiredProviders == null || m_retiredProviders.Contains((IProvider)provider) == false)
+                {
+                    provider.Get(this);
+                }
+            });
+        }
+
+        private void AddContextBinding(Type contractType, object id, ContextBinding binding)
+        {
+            m_contextBindings ??= new Dictionary<BindingKey, List<ContextBinding>>();
+            BindingKey key = new BindingKey(contractType, id);
+
+            if (m_contextBindings.TryGetValue(key, out List<ContextBinding> bindings) == false)
+            {
+                bindings = new List<ContextBinding>(2);
+                m_contextBindings.Add(key, bindings);
+            }
+
+            bindings.Add(binding);
+            SetDirectKeyedBinding(contractType, id,
+                bindings.Count == 1 && binding.ConsumerType == null && binding.Provider != null
+                    ? binding : null);
+            m_bindingVersion++;
+        }
+
+        private void SetDirectKeyedBinding(Type contractType, object id, ContextBinding binding)
+        {
+            if (id == null)
+            {
+                return;
+            }
+
+            if (binding == null)
+            {
+                if (m_directKeyedBindings != null
+                    && TypeIdRegistry.TryGetId(contractType, out int existingTypeId)
+                    && existingTypeId < m_directKeyedBindings.Length)
+                {
+                    m_directKeyedBindings[existingTypeId]?.Remove(id);
+                }
+
+                return;
+            }
+
+            int typeId = TypeIdRegistry.Register(contractType);
+            if (m_directKeyedBindings == null)
+            {
+                m_directKeyedBindings = new Dictionary<object, ContextBinding>[typeId + 1];
+            }
+            else if (typeId >= m_directKeyedBindings.Length)
+            {
+                Array.Resize(ref m_directKeyedBindings,
+                    Math.Max(typeId + 1, m_directKeyedBindings.Length * 2));
+            }
+
+            Dictionary<object, ContextBinding> byId = m_directKeyedBindings[typeId];
+            if (byId == null)
+            {
+                byId = new Dictionary<object, ContextBinding>();
+                m_directKeyedBindings[typeId] = byId;
+            }
+
+            byId[id] = binding;
+        }
+
+        private object ResolveDependency(Type serviceType, object id, Type consumerType)
+        {
+            if (id == null && m_contextBindings == null && m_parent == null)
+            {
+                return Resolve(serviceType);
+            }
+
+            if (TryResolveContextBinding(serviceType, id, consumerType, out object instance))
+            {
+                return instance;
+            }
+
+            if (id == null)
+            {
+                return Resolve(serviceType);
+            }
+
+            throw new OnityResolveException(
+                $"No binding for '{serviceType.FullName}' with identifier '{id}' matches consumer '{consumerType?.FullName}'.");
+        }
+
+        private bool TryResolveContextBinding(Type serviceType, object id, Type consumerType, out object instance)
+        {
+            return TryResolveContextBinding(serviceType, id, consumerType, this, out instance);
+        }
+
+        private bool TryResolveContextBinding(
+            Type serviceType, object id, Type consumerType, OnityContainer requester, out object instance)
+        {
+            EnsureNotDisposed();
+
+            // Unkeyed self-resolution always refers to the container doing the injection.
+            if (id == null && (serviceType == typeof(OnityContainer) || serviceType == typeof(IResolver)))
+            {
+                instance = null;
+                return false;
+            }
+
+            if (TryGetContextBinding(serviceType, id, consumerType, out ContextBinding binding))
+            {
+                IProvider provider = GetContextProvider(binding, serviceType);
+                instance = provider.Get(provider is IScopeOwnedProvider ? requester : this);
+                return true;
+            }
+
+            // A local explicit default shadows conditions in ancestor scopes. A
+            // closed provider generated from an open registration does not shadow
+            // a local conditional open registration after the default is warmed.
+            if (id == null && m_providerMap.TryGetValue(serviceType, out IProvider localProvider)
+                && (m_closedOpenGenericProviders == null
+                    || m_closedOpenGenericProviders.TryGetValue(serviceType, out IProvider generatedProvider) == false
+                    || ReferenceEquals(localProvider, generatedProvider) == false))
+            {
+                instance = null;
+                return false;
+            }
+
+            if (TryResolveContextCollection(serviceType, id, consumerType, requester, out instance))
+            {
+                return true;
+            }
+
+            if (serviceType.IsConstructedGenericType)
+            {
+                Type definition = serviceType.GetGenericTypeDefinition();
+
+                if (TryGetContextBinding(definition, id, consumerType, out binding))
+                {
+                    IProvider provider = GetContextProvider(binding, serviceType);
+                    instance = provider.Get(provider is IScopeOwnedProvider ? requester : this);
+                    return true;
+                }
+
+                if (id == null && m_openGenericMap != null && m_openGenericMap.ContainsKey(definition))
+                {
+                    instance = null;
+                    return false;
+                }
+            }
+
+            if (m_parent != null)
+            {
+                return m_parent.TryResolveContextBinding(serviceType, id, consumerType, requester, out instance);
+            }
+
+            instance = null;
+            return false;
+        }
+
+        private bool TryGetContextBinding(Type serviceType, object id, Type consumerType, out ContextBinding binding)
+        {
+            binding = null;
+
+            if (m_contextBindings == null
+                || m_contextBindings.TryGetValue(new BindingKey(serviceType, id), out List<ContextBinding> bindings) == false)
+            {
+                return false;
+            }
+
+            ContextBinding fallback = null;
+
+            for (int i = 0; i < bindings.Count; i++)
+            {
+                ContextBinding candidate = bindings[i];
+
+                if (candidate.ConsumerType == null)
+                {
+                    fallback = candidate;
+                    continue;
+                }
+
+                if (consumerType == null || candidate.ConsumerType.IsAssignableFrom(consumerType) == false)
+                {
+                    continue;
+                }
+
+                if (binding != null)
+                {
+                    throw new OnityResolveException(
+                        $"Multiple conditional bindings for '{serviceType.FullName}' with identifier '{id}' match '{consumerType.FullName}'.");
+                }
+
+                binding = candidate;
+            }
+
+            binding ??= fallback;
+            return binding != null;
+        }
+
+        private IProvider GetContextProvider(ContextBinding binding, Type serviceType)
+        {
+            if (binding.Provider != null)
+            {
+                return binding.Provider;
+            }
+
+            if (serviceType.IsConstructedGenericType == false)
+            {
+                throw new OnityResolveException("Open generic definitions cannot be resolved directly.");
+            }
+
+            if (binding.ClosedProviders != null && binding.ClosedProviders.TryGetValue(serviceType, out IProvider cached))
+            {
+                return cached;
+            }
+
+            Type implementationType = binding.ImplementationDefinition.MakeGenericType(serviceType.GetGenericArguments());
+            ValidateBinding(serviceType, implementationType);
+            IProvider provider = CreateProvider(implementationType, binding.Lifetime);
+            (binding.ClosedProviders ??= new Dictionary<Type, IProvider>()).Add(serviceType, provider);
+            m_ownedProviders.Add(provider);
+            RegisterLifecycleAfterBuild(provider);
+            return provider;
+        }
+
+        private bool TryResolveContextCollection(
+            Type serviceType, object id, Type consumerType, OnityContainer requester, out object instance)
+        {
+            Type elementType = GetCollectionElementType(serviceType);
+
+            if (elementType == null)
+            {
+                instance = null;
+                return false;
+            }
+
+            List<object> items = new List<object>(4);
+            CollectContextItems(elementType, id, consumerType, requester, items);
+
+            if (items.Count == 0)
+            {
+                instance = null;
+                return false;
+            }
+
+            instance = MaterializeCollection(serviceType, elementType, items);
+            return true;
+        }
+
+        private void CollectContextItems(
+            Type elementType, object id, Type consumerType, OnityContainer requester, List<object> items)
+        {
+            EnsureNotDisposed();
+            m_parent?.CollectContextItems(elementType, id, consumerType, requester, items);
+
+            if (id == null && elementType.IsConstructedGenericType
+                && m_openGenericMap != null
+                && m_openGenericMap.TryGetValue(elementType.GetGenericTypeDefinition(), out OpenGenericRegistration registration))
+            {
+                GetClosedOpenGenericProvider(elementType, registration);
+            }
+
+            if (id == null && m_multiProviderMap != null
+                && m_multiProviderMap.TryGetValue(elementType, out List<IProvider> providers))
+            {
+                for (int i = 0; i < providers.Count; i++)
+                {
+                    IProvider provider = providers[i];
+                    items.Add(provider.Get(provider is IScopeOwnedProvider ? requester : this));
+                }
+            }
+
+            AddContextItems(elementType, elementType, id, consumerType, requester, items);
+
+            if (elementType.IsConstructedGenericType)
+            {
+                AddContextItems(elementType.GetGenericTypeDefinition(), elementType, id, consumerType, requester, items);
+            }
+        }
+
+        private void AddContextItems(
+            Type contractType, Type elementType, object id, Type consumerType,
+            OnityContainer requester, List<object> items)
+        {
+            if (m_contextBindings == null
+                || m_contextBindings.TryGetValue(new BindingKey(contractType, id), out List<ContextBinding> bindings) == false)
+            {
+                return;
+            }
+
+            for (int i = 0; i < bindings.Count; i++)
+            {
+                ContextBinding binding = bindings[i];
+
+                if (binding.ConsumerType == null
+                    || (consumerType != null && binding.ConsumerType.IsAssignableFrom(consumerType)))
+                {
+                    IProvider provider = GetContextProvider(binding, elementType);
+                    items.Add(provider.Get(provider is IScopeOwnedProvider ? requester : this));
+                }
+            }
+        }
+
+        internal void Register(Type contractType, Type implementationType, BindingLifetime lifetime)
         {
             EnsureNotDisposed();
             ValidateBinding(contractType, implementationType);
             RegisterProvider(contractType, CreateProvider(implementationType, lifetime), false);
         }
 
-        internal void Register(Type[] contractTypes, Type implementationType, Lifetime lifetime)
+        internal void Register(Type[] contractTypes, Type implementationType, BindingLifetime lifetime)
         {
             EnsureNotDisposed();
 
@@ -932,9 +1822,16 @@ namespace Onity.DI
                 AddToMultiProviderMap(contractTypes[i], provider);
                 RegisterBindingSource(contractTypes[i], provider, false);
             }
+
+            if (m_baked != null)
+            {
+                m_baked = BuildBakedGraph();
+            }
+
+            RegisterLifecycleAfterBuild(provider);
         }
 
-        internal void RegisterRuntime(Type contractType, Type implementationType, Lifetime lifetime)
+        internal void RegisterRuntime(Type contractType, Type implementationType, BindingLifetime lifetime)
         {
             EnsureNotDisposed();
 
@@ -957,7 +1854,7 @@ namespace Onity.DI
             Register(contractType, implementationType, lifetime);
         }
 
-        private void RegisterOpenGeneric(Type openContractType, Type openImplementationType, Lifetime lifetime)
+        private static void ValidateOpenGenericBinding(Type openContractType, Type openImplementationType)
         {
             if (openContractType.IsGenericTypeDefinition == false)
             {
@@ -989,9 +1886,84 @@ namespace Onity.DI
                     $"Open generic implementation '{openImplementationType}' does not implement or derive from contract '{openContractType}'.");
             }
 
+        }
+
+        private void RegisterOpenGeneric(Type openContractType, Type openImplementationType, BindingLifetime lifetime)
+        {
+            ValidateOpenGenericBinding(openContractType, openImplementationType);
+            List<Type> closedContracts = null;
+            List<IProvider> replacementProviders = null;
+
+            if (m_closedOpenGenericProviders != null)
+            {
+                foreach (KeyValuePair<Type, IProvider> pair in m_closedOpenGenericProviders)
+                {
+                    Type closedContractType = pair.Key;
+
+                    if (closedContractType.GetGenericTypeDefinition() != openContractType)
+                    {
+                        continue;
+                    }
+
+                    // Stage every replacement before changing the registration. A
+                    // new implementation may reject a previously closed type's
+                    // generic arguments, in which case the old binding stays valid.
+                    Type closedImplementationType = openImplementationType.MakeGenericType(
+                        closedContractType.GetGenericArguments());
+                    (closedContracts ??= new List<Type>(4)).Add(closedContractType);
+                    (replacementProviders ??= new List<IProvider>(4)).Add(
+                        CreateProvider(closedImplementationType, lifetime));
+                }
+            }
+
             m_openGenericMap ??= new Dictionary<Type, OpenGenericRegistration>(8);
             m_openGenericMap[openContractType] = new OpenGenericRegistration(openImplementationType, lifetime);
             m_bindingVersion++;
+
+            if (closedContracts == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < closedContracts.Count; i++)
+            {
+                Type closedContractType = closedContracts[i];
+                IProvider oldProvider = m_closedOpenGenericProviders[closedContractType];
+                IProvider newProvider = replacementProviders[i];
+                m_closedOpenGenericProviders[closedContractType] = newProvider;
+                m_ownedProviders.Add(newProvider);
+
+                if (m_providerMap.TryGetValue(closedContractType, out IProvider currentProvider)
+                    && ReferenceEquals(currentProvider, oldProvider))
+                {
+                    SetLocalProvider(closedContractType, newProvider);
+                    RegisterBindingSource(closedContractType, newProvider, false);
+                }
+
+                if (m_multiProviderMap != null
+                    && m_multiProviderMap.TryGetValue(closedContractType, out List<IProvider> providers))
+                {
+                    for (int providerIndex = 0; providerIndex < providers.Count; providerIndex++)
+                    {
+                        if (ReferenceEquals(providers[providerIndex], oldProvider))
+                        {
+                            providers[providerIndex] = newProvider;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (m_baked != null)
+            {
+                m_baked = BuildBakedGraph();
+            }
+
+            RetireUnboundProviders();
+            for (int i = 0; i < replacementProviders.Count; i++)
+            {
+                RegisterLifecycleAfterBuild(replacementProviders[i]);
+            }
         }
 
         // Confirms an open implementation definition satisfies an open contract
@@ -1190,6 +2162,140 @@ namespace Onity.DI
             }
 
             RegisterBindingSource(contractType, provider, isImplicitRegistration);
+
+            if (m_baked != null)
+            {
+                m_baked = BuildBakedGraph();
+            }
+
+            RegisterLifecycleAfterBuild(provider);
+        }
+
+        private void RemoveGeneratedProvider(Type contractType, IProvider provider)
+        {
+            List<IProvider> remaining = null;
+
+            if (m_multiProviderMap != null && m_multiProviderMap.TryGetValue(contractType, out remaining))
+            {
+                remaining.Remove(provider);
+
+                if (remaining.Count == 0)
+                {
+                    m_multiProviderMap.Remove(contractType);
+                }
+            }
+
+            if (m_providerMap.TryGetValue(contractType, out IProvider current) && ReferenceEquals(current, provider))
+            {
+                RemoveLocalProvider(contractType);
+                m_bindingSourceMap.Remove(contractType);
+
+                if (remaining != null && remaining.Count > 0)
+                {
+                    IProvider replacement = remaining[remaining.Count - 1];
+                    SetLocalProvider(contractType, replacement);
+                    RegisterBindingSource(contractType, replacement, false);
+                }
+            }
+        }
+
+        private void RetireUnboundProviders()
+        {
+            for (int i = 0; i < m_ownedProviders.Count; i++)
+            {
+                IProvider provider = m_ownedProviders[i];
+
+                if (IsProviderRegistered(provider))
+                {
+                    continue;
+                }
+
+                (m_retiredProviders ??= new HashSet<IProvider>()).Add(provider);
+
+                if (m_lifecycleInstances == null || m_lifecycleInstances.TryGetValue(provider, out object instance) == false)
+                {
+                    continue;
+                }
+
+                m_lifecycleInstances.Remove(provider);
+                bool shared = false;
+
+                foreach (KeyValuePair<IProvider, object> pair in m_lifecycleInstances)
+                {
+                    if (ReferenceEquals(pair.Value, instance) && IsProviderRegistered(pair.Key))
+                    {
+                        shared = true;
+                        break;
+                    }
+                }
+
+                if (shared)
+                {
+                    continue;
+                }
+
+                RemoveLifecycleInstance(m_initializables, instance);
+                RemoveLifecycleInstance(m_tickables, instance);
+                RemoveLifecycleInstance(m_fixedTickables, instance);
+                RemoveLifecycleInstance(m_lateTickables, instance);
+            }
+        }
+
+        private bool IsProviderRegistered(IProvider provider)
+        {
+            foreach (IProvider candidate in m_implicitProviderMap.Values)
+            {
+                if (ReferenceEquals(candidate, provider))
+                {
+                    return true;
+                }
+            }
+
+            if (m_multiProviderMap != null)
+            {
+                foreach (List<IProvider> providers in m_multiProviderMap.Values)
+                {
+                    if (providers.Contains(provider))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            if (m_contextBindings != null)
+            {
+                foreach (List<ContextBinding> bindings in m_contextBindings.Values)
+                {
+                    for (int i = 0; i < bindings.Count; i++)
+                    {
+                        ContextBinding binding = bindings[i];
+
+                        if (ReferenceEquals(binding.Provider, provider)
+                            || (binding.ClosedProviders != null && binding.ClosedProviders.ContainsValue(provider)))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static void RemoveLifecycleInstance<T>(List<T> instances, object instance)
+        {
+            if (instances == null)
+            {
+                return;
+            }
+
+            for (int i = instances.Count - 1; i >= 0; i--)
+            {
+                if (ReferenceEquals(instances[i], instance))
+                {
+                    instances.RemoveAt(i);
+                }
+            }
         }
 
         private void SetLocalProvider(Type contractType, IProvider provider)
@@ -1214,9 +2320,26 @@ namespace Onity.DI
             providers[typeId] = provider;
         }
 
+        private bool RemoveLocalProvider(Type contractType)
+        {
+            if (m_providerMap.Remove(contractType) == false)
+            {
+                return false;
+            }
+
+            IProvider[] providers = m_providerByTypeId;
+            if (providers != null && TypeIdRegistry.TryGetId(contractType, out int typeId)
+                && (uint)typeId < (uint)providers.Length)
+            {
+                providers[typeId] = null;
+            }
+
+            return true;
+        }
+
         private void AddToMultiProviderMap(Type contractType, IProvider provider)
         {
-            m_multiProviderMap ??= new Dictionary<Type, List<IProvider>>(32);
+            m_multiProviderMap ??= new Dictionary<Type, List<IProvider>>(k_initialBindingCapacity);
 
             if (m_multiProviderMap.TryGetValue(contractType, out List<IProvider> providers) == false)
             {
@@ -1233,7 +2356,7 @@ namespace Onity.DI
         // of element type T exists in this container or an ancestor. An explicit
         // binding of the collection type itself wins (matched by m_providerMap before
         // this runs); an element type with no bindings falls through unchanged.
-        private bool TryResolveCollection(Type serviceType, out object instance)
+        private bool TryResolveCollection(Type serviceType, OnityContainer requester, out object instance)
         {
             Type elementType = GetCollectionElementType(serviceType);
 
@@ -1244,7 +2367,7 @@ namespace Onity.DI
             }
 
             List<object> items = new List<object>(4);
-            CollectCollectionItems(elementType, items);
+            CollectCollectionItems(elementType, requester, items);
 
             if (items.Count == 0)
             {
@@ -1259,11 +2382,11 @@ namespace Onity.DI
         // Gathers resolved instances of the element type across the scope hierarchy,
         // ancestors first, each resolved in its owning container so its own
         // dependencies bind correctly.
-        private void CollectCollectionItems(Type elementType, List<object> items)
+        private void CollectCollectionItems(Type elementType, OnityContainer requester, List<object> items)
         {
             if (m_parent != null)
             {
-                m_parent.CollectCollectionItems(elementType, items);
+                m_parent.CollectCollectionItems(elementType, requester, items);
             }
 
             if (m_multiProviderMap == null
@@ -1274,7 +2397,8 @@ namespace Onity.DI
 
             for (int i = 0; i < providers.Count; i++)
             {
-                items.Add(providers[i].Get(this));
+                IProvider provider = providers[i];
+                items.Add(provider.Get(provider is IScopeOwnedProvider ? requester : this));
             }
         }
 
@@ -1341,7 +2465,7 @@ namespace Onity.DI
         // THIS container (IRepo<> -> Repo<>). Ancestor open registrations are reached
         // through the normal parent walk, so a child open binding overrides a parent one
         // exactly as a closed binding does.
-        private bool TryResolveOpenGeneric(Type serviceType, out object instance)
+        private bool TryResolveOpenGeneric(Type serviceType, OnityContainer requester, out object instance)
         {
             if (m_openGenericMap == null || serviceType.IsGenericType == false)
             {
@@ -1355,20 +2479,48 @@ namespace Onity.DI
                 return false;
             }
 
-            instance = ResolveClosedFromOpenGeneric(serviceType, registration);
+            instance = ResolveClosedFromOpenGeneric(serviceType, registration, requester);
             return true;
         }
 
-        private object ResolveClosedFromOpenGeneric(Type closedContractType, OpenGenericRegistration registration)
+        private object ResolveClosedFromOpenGeneric(
+            Type closedContractType, OpenGenericRegistration registration, OnityContainer requester)
         {
+            IProvider provider = GetClosedOpenGenericProvider(closedContractType, registration);
+            return provider.Get(provider is IScopeOwnedProvider ? requester : this);
+        }
+
+        private IProvider GetClosedOpenGenericProvider(Type closedContractType, OpenGenericRegistration registration)
+        {
+            if (m_closedOpenGenericProviders != null
+                && m_closedOpenGenericProviders.TryGetValue(closedContractType, out IProvider cached))
+            {
+                return cached;
+            }
+
             Type[] typeArguments = closedContractType.GetGenericArguments();
             Type closedImplementationType = registration.ImplementationDefinition.MakeGenericType(typeArguments);
+            ValidateBinding(closedContractType, closedImplementationType);
             IProvider provider = CreateProvider(closedImplementationType, registration.Lifetime);
 
-            // Cache the now-closed binding so later resolves of this closed contract take
-            // the normal fast path and its singleton lifetime is owned by this scope.
-            RegisterProvider(closedContractType, provider, false);
-            return provider.Get(this);
+            m_closedOpenGenericProviders ??= new Dictionary<Type, IProvider>(8);
+            m_closedOpenGenericProviders[closedContractType] = provider;
+
+            // An explicit closed binding keeps single-resolve precedence, while
+            // collections still include the open registration exactly once.
+            if (m_providerMap.ContainsKey(closedContractType))
+            {
+                m_ownedProviders.Add(provider);
+                AddToMultiProviderMap(closedContractType, provider);
+                m_bindingVersion++;
+                RegisterLifecycleAfterBuild(provider);
+            }
+            else
+            {
+                RegisterProvider(closedContractType, provider, false);
+            }
+
+            return provider;
         }
 
         private bool HasOpenGenericRegistration(Type definition)
@@ -1381,17 +2533,27 @@ namespace Onity.DI
             return m_parent != null && m_parent.HasOpenGenericRegistration(definition);
         }
 
-        private static IProvider CreateProvider(Type implementationType, Lifetime lifetime)
+        private static IProvider CreateProvider(Type implementationType, BindingLifetime lifetime)
         {
-            if (lifetime == Lifetime.Singleton)
+            if (lifetime == BindingLifetime.Singleton)
             {
                 return new SingletonProvider(implementationType);
+            }
+
+            if (lifetime == BindingLifetime.Scoped)
+            {
+                return new ScopedProvider(implementationType);
             }
 
             return new TransientProvider(implementationType);
         }
 
         private bool TryResolveInternal(Type serviceType, out object instance)
+        {
+            return TryResolveInternal(serviceType, this, out instance);
+        }
+
+        private bool TryResolveInternal(Type serviceType, OnityContainer requester, out object instance)
         {
             if (serviceType == typeof(OnityContainer) || serviceType == typeof(IResolver))
             {
@@ -1406,35 +2568,36 @@ namespace Onity.DI
             // parent/implicit/unbound behavior is unchanged.
             BakedGraph baked = m_baked;
 
-            if (baked != null
-                && TypeIdRegistry.TryGetId(serviceType, out int serviceTypeId)
-                && baked.TryResolve(serviceTypeId, out instance))
+            if (baked != null && TypeIdRegistry.TryGetId(serviceType, out int serviceTypeId)
+                && (ReferenceEquals(requester, this)
+                    ? baked.TryResolve(serviceTypeId, out instance)
+                    : baked.TryResolveForScope(serviceTypeId, requester, out instance)))
             {
                 return true;
             }
 
             if (m_providerMap.TryGetValue(serviceType, out IProvider provider))
             {
-                instance = provider.Get(this);
+                instance = provider.Get(provider is IScopeOwnedProvider ? requester : this);
                 return true;
             }
 
             // An explicit binding of the collection type itself already returned above;
             // otherwise synthesize IEnumerable<T>/IReadOnlyList<T>/T[]/List<T> from every
             // explicit element binding across this scope and its ancestors.
-            if (TryResolveCollection(serviceType, out instance))
+            if (TryResolveCollection(serviceType, requester, out instance))
             {
                 return true;
             }
 
             // This scope's open generic registrations (IRepo<> -> Repo<>) close on demand.
             // Checked before the parent walk so a child open binding overrides a parent's.
-            if (TryResolveOpenGeneric(serviceType, out instance))
+            if (TryResolveOpenGeneric(serviceType, requester, out instance))
             {
                 return true;
             }
 
-            if (m_parent != null && m_parent.TryResolveInternal(serviceType, out instance))
+            if (m_parent != null && m_parent.TryResolveInternal(serviceType, requester, out instance))
             {
                 return true;
             }
@@ -1464,6 +2627,106 @@ namespace Onity.DI
         }
 
         private object CreateAndInject(Type implementationType)
+        {
+            TypeInjectionPlan cachedPlan = null;
+            return CreateAndInjectCached(implementationType, ref cachedPlan);
+        }
+
+        private object GetOrCreateScoped(IProvider provider, Type implementationType)
+        {
+            EnsureNotDisposed();
+
+            if (m_scopedInstances != null && m_scopedInstances.TryGetValue(provider, out object instance))
+            {
+                return instance;
+            }
+
+            instance = CreateAndInject(implementationType);
+            (m_scopedInstances ??= new Dictionary<IProvider, object>()).Add(provider, instance);
+            return instance;
+        }
+
+        private OnityContainer GetOrCreateSubContainer(SubContainerProvider provider)
+        {
+            EnsureNotDisposed();
+
+            if (m_subContainerScopes != null
+                && m_subContainerScopes.TryGetValue(provider, out OnityContainer cached))
+            {
+                return cached;
+            }
+
+            OnityContainer child = new OnityContainer(this);
+            try
+            {
+                provider.Install(child);
+                child.Build();
+
+                if (child.HasLocalExport(provider.ContractType) == false)
+                {
+                    throw new OnityBindingException(
+                        $"Sub-container installer must bind '{provider.ContractType.FullName}' locally.");
+                }
+
+                (m_subContainerScopes ??= new Dictionary<SubContainerProvider, OnityContainer>()).Add(provider, child);
+                (m_subContainerScopeList ??= new List<OnityContainer>()).Add(child);
+                return child;
+            }
+            catch
+            {
+                child.Dispose();
+                throw;
+            }
+        }
+
+        private bool HasLocalExport(Type serviceType)
+        {
+            if (m_providerMap.ContainsKey(serviceType)
+                || TryGetContextBinding(serviceType, null, null, out _))
+            {
+                return true;
+            }
+
+            if (serviceType.IsConstructedGenericType == false)
+            {
+                return false;
+            }
+
+            Type definition = serviceType.GetGenericTypeDefinition();
+            return (m_openGenericMap != null && m_openGenericMap.ContainsKey(definition))
+                || TryGetContextBinding(definition, null, null, out _);
+        }
+
+        private object ResolveLocalExport(Type serviceType)
+        {
+            if (m_providerMap.TryGetValue(serviceType, out IProvider provider))
+            {
+                return provider.Get(this);
+            }
+
+            if (TryGetContextBinding(serviceType, null, null, out ContextBinding binding))
+            {
+                return GetContextProvider(binding, serviceType).Get(this);
+            }
+
+            if (serviceType.IsConstructedGenericType)
+            {
+                if (TryGetContextBinding(serviceType.GetGenericTypeDefinition(), null, null, out binding))
+                {
+                    return GetContextProvider(binding, serviceType).Get(this);
+                }
+
+                if (TryResolveOpenGeneric(serviceType, this, out object instance))
+                {
+                    return instance;
+                }
+            }
+
+            throw new OnityResolveException(
+                $"Sub-container has no local binding for '{serviceType.FullName}'.");
+        }
+
+        private object CreateAndInjectCached(Type implementationType, ref TypeInjectionPlan cachedPlan)
         {
             Stack<Type> resolutionStack = s_resolutionStack;
 
@@ -1627,6 +2890,19 @@ namespace Onity.DI
         // implicit, rebind, and exception behavior remain identical.
         private object ResolveConstructorDependency(TypeInjectionPlan plan, int slot)
         {
+            object id = plan.ConstructorIds == null ? null : plan.ConstructorIds[slot];
+
+            if (id != null)
+            {
+                return ResolveDependency(plan.ConstructorDependencies[slot], id, plan.ImplementationType);
+            }
+
+            if ((m_contextBindings != null || m_parent != null)
+                && TryResolveContextBinding(plan.ConstructorDependencies[slot], null, plan.ImplementationType, out object contextual))
+            {
+                return contextual;
+            }
+
             DependencyResolution resolution = plan.ConstructorDependencyCache[slot];
 
             if (resolution != null)
@@ -1677,14 +2953,14 @@ namespace Onity.DI
             for (int i = 0; i < plan.Fields.Length; i++)
             {
                 InjectedField member = plan.Fields[i];
-                object dependency = Resolve(member.DependencyType);
+                object dependency = ResolveDependency(member.DependencyType, member.Id, plan.ImplementationType);
                 member.Setter(instance, dependency);
             }
 
             for (int i = 0; i < plan.Properties.Length; i++)
             {
                 InjectedProperty member = plan.Properties[i];
-                object dependency = Resolve(member.DependencyType);
+                object dependency = ResolveDependency(member.DependencyType, member.Id, plan.ImplementationType);
                 member.Setter(instance, dependency);
             }
 
@@ -1705,7 +2981,9 @@ namespace Onity.DI
                 {
                     for (int dependencyIndex = 0; dependencyIndex < dependencyCount; dependencyIndex++)
                     {
-                        arguments[dependencyIndex] = Resolve(method.DependencyTypes[dependencyIndex]);
+                        object id = method.DependencyIds == null ? null : method.DependencyIds[dependencyIndex];
+                        arguments[dependencyIndex] = ResolveDependency(
+                            method.DependencyTypes[dependencyIndex], id, plan.ImplementationType);
                     }
 
                     method.Invoker(instance, arguments);
@@ -1756,6 +3034,7 @@ namespace Onity.DI
                 constructor,
                 activator,
                 constructorDependencyTypes,
+                ExtractDependencyIds(constructor.GetParameters()),
                 fields.ToArray(),
                 properties.ToArray(),
                 methods.ToArray());
@@ -1860,6 +3139,7 @@ namespace Onity.DI
                     new InjectedField(
                         fieldInfo,
                         fieldInfo.FieldType,
+                        fieldInfo.GetCustomAttribute<InjectAttribute>(true).Id,
                         MemberSetterCompiler.CompileFieldSetter(fieldInfo)));
             }
         }
@@ -1899,6 +3179,7 @@ namespace Onity.DI
                     new InjectedProperty(
                         propertyInfo,
                         propertyInfo.PropertyType,
+                        propertyInfo.GetCustomAttribute<InjectAttribute>(true).Id,
                         MemberSetterCompiler.CompilePropertySetter(propertyInfo)));
             }
         }
@@ -1939,8 +3220,27 @@ namespace Onity.DI
                     new InjectedMethod(
                         methodInfo,
                         dependencyTypes,
+                        ExtractDependencyIds(methodInfo.GetParameters()),
                         MemberSetterCompiler.CompileMethodInvoker(methodInfo)));
             }
+        }
+
+        private static object[] ExtractDependencyIds(ParameterInfo[] parameters)
+        {
+            object[] ids = null;
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                InjectAttribute attribute = parameters[i].GetCustomAttribute<InjectAttribute>();
+
+                if (attribute?.Id != null)
+                {
+                    ids ??= new object[parameters.Length];
+                    ids[i] = attribute.Id;
+                }
+            }
+
+            return ids;
         }
 
         private static Type[] ExtractDependencyTypes(ParameterInfo[] parameters)
@@ -2105,12 +3405,70 @@ namespace Onity.DI
 
         // One open generic registration: the open implementation definition (Repo<>)
         // and the lifetime to use when its closed form is built on resolve.
+        private readonly struct BindingKey : IEquatable<BindingKey>
+        {
+            public readonly Type ContractType;
+            private readonly object m_id;
+
+            public BindingKey(Type contractType, object id)
+            {
+                ContractType = contractType;
+                m_id = id;
+            }
+
+            public bool Equals(BindingKey other)
+            {
+                return ContractType == other.ContractType && Equals(m_id, other.m_id);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is BindingKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (ContractType.GetHashCode() * 397) ^ (m_id?.GetHashCode() ?? 0);
+                }
+            }
+        }
+
+        private sealed class ContextBinding
+        {
+            public readonly IProvider Provider;
+            public readonly Type ConsumerType;
+            public readonly Type ImplementationDefinition;
+            public readonly BindingLifetime Lifetime;
+            public readonly bool ReusesInstance;
+            public Dictionary<Type, IProvider> ClosedProviders;
+            public object CachedInstance;
+            public bool HasCachedInstance;
+
+            public ContextBinding(IProvider provider, Type consumerType)
+            {
+                Provider = provider;
+                ConsumerType = consumerType;
+                BakedLifetime lifetime = provider.BakedLifetime;
+                ReusesInstance = lifetime == BakedLifetime.Singleton
+                    || lifetime == BakedLifetime.Instance;
+            }
+
+            public ContextBinding(Type implementationDefinition, BindingLifetime lifetime, Type consumerType)
+            {
+                ImplementationDefinition = implementationDefinition;
+                Lifetime = lifetime;
+                ConsumerType = consumerType;
+            }
+        }
+
         private readonly struct OpenGenericRegistration
         {
             public readonly Type ImplementationDefinition;
-            public readonly Lifetime Lifetime;
+            public readonly BindingLifetime Lifetime;
 
-            public OpenGenericRegistration(Type implementationDefinition, Lifetime lifetime)
+            public OpenGenericRegistration(Type implementationDefinition, BindingLifetime lifetime)
             {
                 ImplementationDefinition = implementationDefinition;
                 Lifetime = lifetime;
@@ -2124,6 +3482,10 @@ namespace Onity.DI
             // Creation strategy and concrete type, read only at Build() time to
             // populate the baked graph. Never touched on the resolve hot path.
             BakedLifetime BakedLifetime { get; }
+        }
+
+        internal interface IScopeOwnedProvider
+        {
         }
 
         private interface IProvider : IBakedProvider, IDisposable
@@ -2254,6 +3616,125 @@ namespace Onity.DI
             }
         }
 
+        private sealed class SubContainerProvider : IProvider, IScopeOwnedProvider
+        {
+            private const string k_lifetimeName = "SubContainer";
+
+            private readonly Type m_contractType;
+            private readonly Action<OnityContainer> m_install;
+            private long m_resolveCount;
+            private long m_totalResolveTicks;
+            private long m_lastResolveTicks;
+
+            public SubContainerProvider(Type contractType, Action<OnityContainer> install)
+            {
+                m_contractType = contractType;
+                m_install = install;
+            }
+
+            public Type ContractType => m_contractType;
+
+            public BakedLifetime BakedLifetime => BakedLifetime.Scoped;
+
+            public Type ImplementationType => m_contractType;
+
+            public void Install(OnityContainer child)
+            {
+                m_install(child);
+            }
+
+            public object Get(OnityContainer container)
+            {
+                if (s_diagnosticsCollectionEnabled == false)
+                {
+                    return container.GetOrCreateSubContainer(this).ResolveLocalExport(m_contractType);
+                }
+
+                long startTimestamp = Stopwatch.GetTimestamp();
+                try
+                {
+                    return container.GetOrCreateSubContainer(this).ResolveLocalExport(m_contractType);
+                }
+                finally
+                {
+                    long elapsedTicks = Stopwatch.GetTimestamp() - startTimestamp;
+                    Interlocked.Increment(ref m_resolveCount);
+                    Interlocked.Add(ref m_totalResolveTicks, elapsedTicks);
+                    Interlocked.Exchange(ref m_lastResolveTicks, elapsedTicks);
+                }
+            }
+
+            public ProviderDiagnosticsSnapshot GetDiagnosticsSnapshot()
+            {
+                return new ProviderDiagnosticsSnapshot(
+                    m_contractType,
+                    k_lifetimeName,
+                    Interlocked.Read(ref m_resolveCount),
+                    Interlocked.Read(ref m_totalResolveTicks),
+                    Interlocked.Read(ref m_lastResolveTicks));
+            }
+
+            public void Dispose()
+            {
+                // The requesting container owns and disposes each installed child.
+            }
+        }
+
+        private sealed class ScopedProvider : IProvider, IScopeOwnedProvider
+        {
+            private const string k_lifetimeName = "Scoped";
+
+            private readonly Type m_implementationType;
+            private long m_resolveCount;
+            private long m_totalResolveTicks;
+            private long m_lastResolveTicks;
+
+            public ScopedProvider(Type implementationType)
+            {
+                m_implementationType = implementationType;
+            }
+
+            public BakedLifetime BakedLifetime => BakedLifetime.Scoped;
+
+            public Type ImplementationType => m_implementationType;
+
+            public object Get(OnityContainer container)
+            {
+                if (s_diagnosticsCollectionEnabled == false)
+                {
+                    return container.GetOrCreateScoped(this, m_implementationType);
+                }
+
+                long startTimestamp = Stopwatch.GetTimestamp();
+                try
+                {
+                    return container.GetOrCreateScoped(this, m_implementationType);
+                }
+                finally
+                {
+                    long elapsedTicks = Stopwatch.GetTimestamp() - startTimestamp;
+                    Interlocked.Increment(ref m_resolveCount);
+                    Interlocked.Add(ref m_totalResolveTicks, elapsedTicks);
+                    Interlocked.Exchange(ref m_lastResolveTicks, elapsedTicks);
+                }
+            }
+
+            public ProviderDiagnosticsSnapshot GetDiagnosticsSnapshot()
+            {
+                return new ProviderDiagnosticsSnapshot(
+                    m_implementationType,
+                    k_lifetimeName,
+                    Interlocked.Read(ref m_resolveCount),
+                    Interlocked.Read(ref m_totalResolveTicks),
+                    Interlocked.Read(ref m_lastResolveTicks));
+            }
+
+            public void Dispose()
+            {
+                // Each resolving container owns and disposes its cached instance.
+            }
+        }
+
         private sealed class SingletonProvider : IProvider
         {
             private const string k_lifetimeName = "Singleton";
@@ -2347,12 +3828,14 @@ namespace Onity.DI
         {
             public readonly FieldInfo FieldInfo;
             public readonly Type DependencyType;
+            public readonly object Id;
             public readonly MemberSetterDelegate Setter;
 
-            public InjectedField(FieldInfo fieldInfo, Type dependencyType, MemberSetterDelegate setter)
+            public InjectedField(FieldInfo fieldInfo, Type dependencyType, object id, MemberSetterDelegate setter)
             {
                 FieldInfo = fieldInfo;
                 DependencyType = dependencyType;
+                Id = id;
                 Setter = setter;
             }
         }
@@ -2361,12 +3844,14 @@ namespace Onity.DI
         {
             public readonly PropertyInfo PropertyInfo;
             public readonly Type DependencyType;
+            public readonly object Id;
             public readonly MemberSetterDelegate Setter;
 
-            public InjectedProperty(PropertyInfo propertyInfo, Type dependencyType, MemberSetterDelegate setter)
+            public InjectedProperty(PropertyInfo propertyInfo, Type dependencyType, object id, MemberSetterDelegate setter)
             {
                 PropertyInfo = propertyInfo;
                 DependencyType = dependencyType;
+                Id = id;
                 Setter = setter;
             }
         }
@@ -2375,12 +3860,14 @@ namespace Onity.DI
         {
             public readonly MethodInfo MethodInfo;
             public readonly Type[] DependencyTypes;
+            public readonly object[] DependencyIds;
             public readonly MethodInvokerDelegate Invoker;
 
-            public InjectedMethod(MethodInfo methodInfo, Type[] dependencyTypes, MethodInvokerDelegate invoker)
+            public InjectedMethod(MethodInfo methodInfo, Type[] dependencyTypes, object[] dependencyIds, MethodInvokerDelegate invoker)
             {
                 MethodInfo = methodInfo;
                 DependencyTypes = dependencyTypes;
+                DependencyIds = dependencyIds;
                 Invoker = invoker;
             }
         }
@@ -2428,6 +3915,7 @@ namespace Onity.DI
             public readonly ConstructorInfo Constructor;
             public readonly ActivatorDelegate Activator;
             public readonly Type[] ConstructorDependencies;
+            public readonly object[] ConstructorIds;
             public readonly DependencyResolution[] ConstructorDependencyCache;
             public readonly InjectedField[] Fields;
             public readonly InjectedProperty[] Properties;
@@ -2438,6 +3926,7 @@ namespace Onity.DI
                 ConstructorInfo constructor,
                 ActivatorDelegate activator,
                 Type[] constructorDependencies,
+                object[] constructorIds,
                 InjectedField[] fields,
                 InjectedProperty[] properties,
                 InjectedMethod[] methods)
@@ -2446,6 +3935,7 @@ namespace Onity.DI
                 Constructor = constructor;
                 Activator = activator;
                 ConstructorDependencies = constructorDependencies;
+                ConstructorIds = constructorIds;
                 ConstructorDependencyCache = constructorDependencies.Length == 0
                     ? s_emptyDependencyResolutions
                     : new DependencyResolution[constructorDependencies.Length];
@@ -2464,20 +3954,23 @@ namespace Onity.DI
             // needing the same length must receive DISTINCT buffers. Popping from a
             // per-length stack gives each outstanding rent exclusive ownership of
             // its buffer until Return pushes it back, so recursion stays correct.
-            // Thread-isolated storage removes the lock from the hot path while
-            // staying zero-allocation in steady state (buffers recycled per thread).
+            // Array indexing avoids a dictionary lookup on every rent and return.
+            // Buffers are recycled per thread without steady-state allocations.
             [ThreadStatic]
-            private static Dictionary<int, Stack<object[]>> s_freeListsByLength;
+            private static Stack<object[]>[] s_freeListsByLength;
 
             public static object[] Rent(int length)
             {
-                Dictionary<int, Stack<object[]>> freeLists = s_freeListsByLength;
+                Stack<object[]>[] freeLists = s_freeListsByLength;
 
-                if (freeLists != null
-                    && freeLists.TryGetValue(length, out Stack<object[]> bucket)
-                    && bucket.Count > 0)
+                if (freeLists != null && (uint)length < (uint)freeLists.Length)
                 {
-                    return bucket.Pop();
+                    Stack<object[]> bucket = freeLists[length];
+
+                    if (bucket != null && bucket.Count > 0)
+                    {
+                        return bucket.Pop();
+                    }
                 }
 
                 return new object[length];
@@ -2492,18 +3985,25 @@ namespace Onity.DI
 
                 Array.Clear(arguments, 0, usedLength);
 
-                Dictionary<int, Stack<object[]>> freeLists = s_freeListsByLength;
+                Stack<object[]>[] freeLists = s_freeListsByLength;
 
                 if (freeLists == null)
                 {
-                    freeLists = new Dictionary<int, Stack<object[]>>(16);
+                    freeLists = new Stack<object[]>[Math.Max(16, arguments.Length + 1)];
+                    s_freeListsByLength = freeLists;
+                }
+                else if (arguments.Length >= freeLists.Length)
+                {
+                    Array.Resize(ref freeLists, Math.Max(freeLists.Length * 2, arguments.Length + 1));
                     s_freeListsByLength = freeLists;
                 }
 
-                if (freeLists.TryGetValue(arguments.Length, out Stack<object[]> bucket) == false)
+                Stack<object[]> bucket = freeLists[arguments.Length];
+
+                if (bucket == null)
                 {
                     bucket = new Stack<object[]>(8);
-                    freeLists.Add(arguments.Length, bucket);
+                    freeLists[arguments.Length] = bucket;
                 }
 
                 bucket.Push(arguments);

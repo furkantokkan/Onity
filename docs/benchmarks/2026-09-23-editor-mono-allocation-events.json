@@ -1,0 +1,284 @@
+﻿{
+    "generatedAtUtc": "2026-09-23T13:50:08Z",
+    "unityVersion": "2022.3.62f3",
+    "platform": "WindowsEditor",
+    "eventSource": "Unity.Profiling GC.Alloc, current thread",
+    "emptyControlEvents": 0,
+    "positiveControlBytes": 1048576,
+    "positiveControlEvents": 129,
+    "iterationsPerSample": 64,
+    "samplesPerCase": 3,
+    "warmupIterations": 512,
+    "scenarios": [
+        {
+            "scenario": "ResolveSingleton",
+            "displayName": "Resolve (Singleton)",
+            "results": [
+                {
+                    "container": "Onity (Reflection)",
+                    "meanEventsPerSample": 0.0,
+                    "minEventsPerSample": 0.0,
+                    "maxEventsPerSample": 0.0,
+                    "meanEventsPerOperation": 0.0,
+                    "eventCountsPerSample": [
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "container": "Onity (Baked)",
+                    "meanEventsPerSample": 0.0,
+                    "minEventsPerSample": 0.0,
+                    "maxEventsPerSample": 0.0,
+                    "meanEventsPerOperation": 0.0,
+                    "eventCountsPerSample": [
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "container": "VContainer",
+                    "meanEventsPerSample": 0.0,
+                    "minEventsPerSample": 0.0,
+                    "maxEventsPerSample": 0.0,
+                    "meanEventsPerOperation": 0.0,
+                    "eventCountsPerSample": [
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "container": "Zenject",
+                    "meanEventsPerSample": 0.0,
+                    "minEventsPerSample": 0.0,
+                    "maxEventsPerSample": 0.0,
+                    "meanEventsPerOperation": 0.0,
+                    "eventCountsPerSample": [
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "scenario": "ResolveTransient",
+            "displayName": "Resolve (Transient)",
+            "results": [
+                {
+                    "container": "Onity (Reflection)",
+                    "meanEventsPerSample": 64.0,
+                    "minEventsPerSample": 64.0,
+                    "maxEventsPerSample": 64.0,
+                    "meanEventsPerOperation": 1.0,
+                    "eventCountsPerSample": [
+                        64,
+                        64,
+                        64
+                    ]
+                },
+                {
+                    "container": "Onity (Baked)",
+                    "meanEventsPerSample": 64.0,
+                    "minEventsPerSample": 64.0,
+                    "maxEventsPerSample": 64.0,
+                    "meanEventsPerOperation": 1.0,
+                    "eventCountsPerSample": [
+                        64,
+                        64,
+                        64
+                    ]
+                },
+                {
+                    "container": "VContainer",
+                    "meanEventsPerSample": 64.0,
+                    "minEventsPerSample": 64.0,
+                    "maxEventsPerSample": 64.0,
+                    "meanEventsPerOperation": 1.0,
+                    "eventCountsPerSample": [
+                        64,
+                        64,
+                        64
+                    ]
+                },
+                {
+                    "container": "Zenject",
+                    "meanEventsPerSample": 256.0,
+                    "minEventsPerSample": 256.0,
+                    "maxEventsPerSample": 256.0,
+                    "meanEventsPerOperation": 4.0,
+                    "eventCountsPerSample": [
+                        256,
+                        256,
+                        256
+                    ]
+                }
+            ]
+        },
+        {
+            "scenario": "ResolveCombined",
+            "displayName": "Resolve (Combined)",
+            "results": [
+                {
+                    "container": "Onity (Reflection)",
+                    "meanEventsPerSample": 64.0,
+                    "minEventsPerSample": 64.0,
+                    "maxEventsPerSample": 64.0,
+                    "meanEventsPerOperation": 1.0,
+                    "eventCountsPerSample": [
+                        64,
+                        64,
+                        64
+                    ]
+                },
+                {
+                    "container": "Onity (Baked)",
+                    "meanEventsPerSample": 64.0,
+                    "minEventsPerSample": 64.0,
+                    "maxEventsPerSample": 64.0,
+                    "meanEventsPerOperation": 1.0,
+                    "eventCountsPerSample": [
+                        64,
+                        64,
+                        64
+                    ]
+                },
+                {
+                    "container": "VContainer",
+                    "meanEventsPerSample": 64.0,
+                    "minEventsPerSample": 64.0,
+                    "maxEventsPerSample": 64.0,
+                    "meanEventsPerOperation": 1.0,
+                    "eventCountsPerSample": [
+                        64,
+                        64,
+                        64
+                    ]
+                },
+                {
+                    "container": "Zenject",
+                    "meanEventsPerSample": 256.0,
+                    "minEventsPerSample": 256.0,
+                    "maxEventsPerSample": 256.0,
+                    "meanEventsPerOperation": 4.0,
+                    "eventCountsPerSample": [
+                        256,
+                        256,
+                        256
+                    ]
+                }
+            ]
+        },
+        {
+            "scenario": "ResolveComplex",
+            "displayName": "Resolve (Complex)",
+            "results": [
+                {
+                    "container": "Onity (Reflection)",
+                    "meanEventsPerSample": 1536.0,
+                    "minEventsPerSample": 1536.0,
+                    "maxEventsPerSample": 1536.0,
+                    "meanEventsPerOperation": 24.0,
+                    "eventCountsPerSample": [
+                        1536,
+                        1536,
+                        1536
+                    ]
+                },
+                {
+                    "container": "Onity (Baked)",
+                    "meanEventsPerSample": 1536.0,
+                    "minEventsPerSample": 1536.0,
+                    "maxEventsPerSample": 1536.0,
+                    "meanEventsPerOperation": 24.0,
+                    "eventCountsPerSample": [
+                        1536,
+                        1536,
+                        1536
+                    ]
+                },
+                {
+                    "container": "VContainer",
+                    "meanEventsPerSample": 1536.0,
+                    "minEventsPerSample": 1536.0,
+                    "maxEventsPerSample": 1536.0,
+                    "meanEventsPerOperation": 24.0,
+                    "eventCountsPerSample": [
+                        1536,
+                        1536,
+                        1536
+                    ]
+                },
+                {
+                    "container": "Zenject",
+                    "meanEventsPerSample": 6144.0,
+                    "minEventsPerSample": 6144.0,
+                    "maxEventsPerSample": 6144.0,
+                    "meanEventsPerOperation": 96.0,
+                    "eventCountsPerSample": [
+                        6144,
+                        6144,
+                        6144
+                    ]
+                }
+            ]
+        },
+        {
+            "scenario": "PrepareAndRegisterComplex",
+            "displayName": "Prepare & Register (Complex)",
+            "results": [
+                {
+                    "container": "Onity (Reflection)",
+                    "meanEventsPerSample": 6528.0,
+                    "minEventsPerSample": 6528.0,
+                    "maxEventsPerSample": 6528.0,
+                    "meanEventsPerOperation": 102.0,
+                    "eventCountsPerSample": [
+                        6528,
+                        6528,
+                        6528
+                    ]
+                },
+                {
+                    "container": "Onity (Baked)",
+                    "meanEventsPerSample": 7360.0,
+                    "minEventsPerSample": 7360.0,
+                    "maxEventsPerSample": 7360.0,
+                    "meanEventsPerOperation": 115.0,
+                    "eventCountsPerSample": [
+                        7360,
+                        7360,
+                        7360
+                    ]
+                },
+                {
+                    "container": "VContainer",
+                    "meanEventsPerSample": 15232.0,
+                    "minEventsPerSample": 15232.0,
+                    "maxEventsPerSample": 15232.0,
+                    "meanEventsPerOperation": 238.0,
+                    "eventCountsPerSample": [
+                        15232,
+                        15232,
+                        15232
+                    ]
+                },
+                {
+                    "container": "Zenject",
+                    "meanEventsPerSample": 26816.0,
+                    "minEventsPerSample": 26816.0,
+                    "maxEventsPerSample": 26816.0,
+                    "meanEventsPerOperation": 419.0,
+                    "eventCountsPerSample": [
+                        26816,
+                        26816,
+                        26816
+                    ]
+                }
+            ]
+        }
+    ]
+}

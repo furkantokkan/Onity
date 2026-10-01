@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using Onity.DI;
@@ -14,7 +15,7 @@ namespace Onity.Tests.EditMode
     /// cycle detection. The flag is reflected because it is internal; each test
     /// builds the same graph twice, once per flag value, and compares observable
     /// behavior so the baked path cannot silently diverge from the reflection path
-    /// that backs the existing green suite.
+    /// that remains available as the fallback.
     /// </summary>
     [TestFixture]
     public sealed class OnityBakedGraphParityTests
@@ -43,16 +44,15 @@ namespace Onity.Tests.EditMode
         [TearDown]
         public void TearDown()
         {
-            // Restore the flag so a baked-path test can never leak true into the
-            // rest of the suite, which proves itself on the reflection default.
+            // Restore the flag so each test starts from the shipping default.
             SetUseBakedResolve(m_originalUseBakedResolve);
             OnityContainer.DiagnosticsCollectionEnabled = false;
         }
 
         [Test]
-        public void FlagDefault_IsFalse_SoReflectionPathStaysDefault()
+        public void FlagDefault_IsTrue_SoBakedPathIsDefault()
         {
-            Assert.That(m_originalUseBakedResolve, Is.False);
+            Assert.That(m_originalUseBakedResolve, Is.True);
         }
 
         [Test]
@@ -227,6 +227,109 @@ namespace Onity.Tests.EditMode
             Assert.That(container.Resolve<IResolver>(), Is.SameAs(container));
         }
 
+        [Test]
+        public void PostBuildRebind_BakedAndReflection_UseCurrentProviderForDependencies()
+        {
+            foreach (bool useBaked in new[] { false, true })
+            {
+                SetUseBakedResolve(useBaked);
+                using OnityContainer container = new OnityContainer();
+                IDependency original = new Dependency();
+                IDependency replacement = new Dependency();
+                container.BindInstance(original);
+                container.Bind<ServiceWithDependency>().AsTransient();
+                container.Build();
+
+                Assert.That(container.Resolve<ServiceWithDependency>().Dependency, Is.SameAs(original));
+
+                container.BindInstance(replacement);
+
+                Assert.That(container.Resolve<IDependency>(), Is.SameAs(replacement));
+                Assert.That(container.Resolve<ServiceWithDependency>().Dependency, Is.SameAs(replacement));
+            }
+        }
+
+        [Test]
+        public void PostBuildMultiContractRebind_BakedAndReflection_UseCurrentProvider()
+        {
+            foreach (bool useBaked in new[] { false, true })
+            {
+                SetUseBakedResolve(useBaked);
+                using OnityContainer container = new OnityContainer();
+                container.BindInterfacesTo<DualService>().AsSingle();
+                container.Build();
+
+                Assert.That(container.Resolve<IDependency>(), Is.InstanceOf<DualService>());
+
+                container.BindInterfacesTo<AlternateDualService>().AsSingle();
+
+                IDependency current = container.Resolve<IDependency>();
+                Assert.That(current, Is.InstanceOf<AlternateDualService>());
+                Assert.That(container.Resolve<ISecondDependency>(), Is.SameAs(current));
+            }
+        }
+
+        [Test]
+        public void BakedSingleton_RecordsEveryResolveWhenDiagnosticsEnableAfterWarmup()
+        {
+            SetUseBakedResolve(true);
+            using OnityContainer container = new OnityContainer();
+            container.Bind<ICountedService>().To<CountedService>().AsSingle();
+            container.Build();
+            container.Resolve<ICountedService>();
+
+            OnityContainer.DiagnosticsCollectionEnabled = true;
+            container.Resolve<ICountedService>();
+            container.Resolve<ICountedService>();
+
+            List<OnityBindingDiagnostics> diagnostics = new List<OnityBindingDiagnostics>();
+            container.GetBindingDiagnostics(diagnostics);
+
+            Assert.That(diagnostics, Has.Count.EqualTo(1));
+            Assert.That(diagnostics[0].ResolveCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void ExplicitSelfBindings_BakedAndReflection_KeepSelfResolvePrecedence()
+        {
+            foreach (bool useBaked in new[] { false, true })
+            {
+                SetUseBakedResolve(useBaked);
+                using OnityContainer other = new OnityContainer();
+                using OnityContainer container = new OnityContainer();
+                container.BindInstance<IResolver>(other);
+                container.BindInstance(other);
+                container.Build();
+
+                Assert.That(container.Resolve<IResolver>(), Is.SameAs(container));
+                Assert.That(container.Resolve<OnityContainer>(), Is.SameAs(container));
+                Assert.That(container.Resolve(typeof(IResolver)), Is.SameAs(container));
+                Assert.That(container.Resolve(typeof(OnityContainer)), Is.SameAs(container));
+                Assert.That(container.TryResolve(out IResolver resolver), Is.True);
+                Assert.That(resolver, Is.SameAs(container));
+            }
+        }
+
+        [Test]
+        public void FailedConstructor_BakedAndReflection_AllowLaterResolve()
+        {
+            foreach (bool useBaked in new[] { false, true })
+            {
+                SetUseBakedResolve(useBaked);
+                using OnityContainer container = new OnityContainer();
+                IDependency dependency = new Dependency();
+                container.BindInstance(dependency);
+                container.Bind<ThrowingService>().AsTransient();
+                container.Bind<ServiceWithDependency>().AsTransient();
+                container.Build();
+
+                Assert.That(
+                    () => container.Resolve<ThrowingService>(),
+                    Throws.TypeOf<OnityResolveException>());
+                Assert.That(container.Resolve<ServiceWithDependency>().Dependency, Is.SameAs(dependency));
+            }
+        }
+
         private static ICountedService ResolveSingletonOnce(bool useBaked)
         {
             SetUseBakedResolve(useBaked);
@@ -270,8 +373,12 @@ namespace Onity.Tests.EditMode
             container.Build();
 
             LevelA root = container.Resolve<LevelA>();
+            LevelA second = container.Resolve<LevelA>();
 
             Assert.That(root, Is.Not.Null);
+            Assert.That(second, Is.Not.SameAs(root));
+            Assert.That(second.B, Is.Not.SameAs(root.B));
+            Assert.That(second.B.C.D.E.F, Is.SameAs(root.B.C.D.E.F));
             Assert.That(root.B, Is.Not.Null);
             Assert.That(root.B.C, Is.Not.Null);
             Assert.That(root.B.C.D, Is.Not.Null);
@@ -464,6 +571,14 @@ namespace Onity.Tests.EditMode
         {
         }
 
+        private sealed class DualService : IDependency, ISecondDependency
+        {
+        }
+
+        private sealed class AlternateDualService : IDependency, ISecondDependency
+        {
+        }
+
         private sealed class ServiceWithDependency
         {
             public ServiceWithDependency(IDependency dependency)
@@ -472,6 +587,14 @@ namespace Onity.Tests.EditMode
             }
 
             public IDependency Dependency { get; }
+        }
+
+        private sealed class ThrowingService
+        {
+            public ThrowingService(IDependency dependency)
+            {
+                throw new InvalidOperationException("Constructor failure after dependency resolution.");
+            }
         }
 
         private sealed class CountedService : ICountedService

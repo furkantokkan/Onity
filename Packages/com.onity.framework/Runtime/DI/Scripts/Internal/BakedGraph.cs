@@ -17,7 +17,10 @@ namespace Onity.DI.Internal
         Transient = 1,
 
         /// <summary>Pre-supplied instance returned as-is on every resolve.</summary>
-        Instance = 2
+        Instance = 2,
+
+        /// <summary>One lazily constructed instance per resolving container scope.</summary>
+        Scoped = 3
     }
 
     /// <summary>
@@ -55,7 +58,7 @@ namespace Onity.DI.Internal
 
     /// <summary>
     /// Compiled, array-backed view of a container's explicit local bindings built
-    /// once at <c>Build()</c>. Replaces the per-resolve
+    /// at <c>Build()</c> and refreshed after later registrations. Replaces the per-resolve
     /// <see cref="System.Collections.Generic.Dictionary{TKey,TValue}" /> lookup on
     /// the hot path with a dense-id keyed slot array. Only explicit local bindings
     /// are baked; parent-chain, implicit-concrete, and unbound contracts fall back
@@ -130,6 +133,32 @@ namespace Onity.DI.Internal
             return true;
         }
 
+        /// <summary>Resolves an inherited slot while keeping scoped instances in the requester.</summary>
+        /// <param name="contractTypeId">Dense contract type id.</param>
+        /// <param name="requester">Container that requested the binding.</param>
+        /// <param name="instance">Resolved instance when the slot exists.</param>
+        /// <returns>True when the contract has a baked binding.</returns>
+        public bool TryResolveForScope(int contractTypeId, OnityContainer requester, out object instance)
+        {
+            if ((uint)contractTypeId >= (uint)m_slotByTypeId.Length)
+            {
+                instance = null;
+                return false;
+            }
+
+            int slot = m_slotByTypeId[contractTypeId];
+            if (slot == k_noSlot)
+            {
+                instance = null;
+                return false;
+            }
+
+            instance = m_providers[slot] is OnityContainer.IScopeOwnedProvider
+                ? m_providers[slot].Get(requester)
+                : ResolveSlot(slot);
+            return true;
+        }
+
         // Produces the instance for a slot. Instance and transient bindings defer
         // to the provider every time. Singleton bindings cache the provider's result
         // in a flat slot, so steady-state singleton resolves return the cached
@@ -150,6 +179,11 @@ namespace Onity.DI.Internal
 
             if (cached != null)
             {
+                if (OnityContainer.DiagnosticsCollectionEnabled)
+                {
+                    return provider.Get(m_container);
+                }
+
                 return cached;
             }
 
@@ -164,8 +198,8 @@ namespace Onity.DI.Internal
 
         /// <summary>
         /// Mutable builder that collects baked rows during <c>Build()</c> and emits
-        /// an immutable <see cref="BakedGraph" />. Construction cost is paid once
-        /// per build and never touches the resolve hot path.
+        /// an immutable <see cref="BakedGraph" />. Construction cost is paid
+        /// during build or registration and never touches the resolve hot path.
         /// </summary>
         public sealed class Builder
         {

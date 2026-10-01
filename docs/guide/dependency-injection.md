@@ -18,23 +18,51 @@ container.Build();
 IInputService input = container.Resolve<IInputService>();
 ```
 
-This page covers the binding surface, the four injection sites, scoping via child containers, factories for runtime arguments, and the documented edge behaviors. For prefab pools and pooled factories see [Factories & Pooling](factories-and-pooling.html); for the automatic per-frame/startup lifecycle see [Lifecycle & Scopes](lifecycle-and-scopes.html); for the compiled/reflection activation story see [Performance & IL2CPP](performance-and-il2cpp.html).
+This page covers the binding surface, keyed and conditional injection, the four injection sites, scoping via child containers and scoped bindings, factories for runtime arguments, and the documented edge behaviors. For prefab pools and pooled factories see [Factories & Pooling](factories-and-pooling.html); for the automatic per-frame/startup lifecycle see [Lifecycle & Scopes](lifecycle-and-scopes.html); for the compiled/reflection activation story see [Performance & IL2CPP](performance-and-il2cpp.html).
 
 ## Binding
 
-A binding always needs a lifetime. `Bind<T>()` / `.To<C>()` on their own register **nothing** until you call `.AsSingle()` or `.AsTransient()`. The lifetime enum is exactly `{ Singleton, Transient }` — there is no `Scoped` keyword (a per-scope instance is a child-container `AsSingle`; see [Lifecycle & Scopes](lifecycle-and-scopes.html)).
+A binding registers when you call `.AsSingle()`, `.AsScoped()`, `.AsTransient()`, or the terminal `.FromSubContainerResolve(...)`. `.AsScoped()` caches one instance in each resolving container; a child resolving its parent's scoped binding gets its own instance and uses its own dependencies.
 
 ```csharp
 // Contract -> implementation, choose a lifetime (the lifetime call is required):
 container.Bind<IInputService>().To<KeyboardInputService>().AsSingle();   // one shared instance
 container.Bind<IPathfinder>().To<AStarPathfinder>().AsTransient();       // new instance per resolve
+container.Bind<IRequestState>().To<RequestState>().AsScoped();           // one per resolving scope
 container.Bind<IClock>().To<SystemClock>().AsSingle().NonLazy();         // built eagerly at Build()
 
 // Self-bind shorthand (To defaults to the contract type):
 container.Bind<GameState>().AsSingle();                                  // == Bind<GameState>().To<GameState>().AsSingle()
 ```
 
-`NonLazy()` makes a singleton resolve eagerly during `Build()` instead of on first use. It throws `OnityBindingException` if called before `AsSingle()`/`AsTransient()`.
+`NonLazy()` resolves its binding during `Build()` instead of on first use. It throws `OnityBindingException` if called before a lifetime or sub-container source is registered.
+
+### Identified, conditional, and replaceable bindings
+
+```csharp
+container.Bind<IClock>().To<GameClock>().AsSingle();
+container.Bind<IClock>().To<ReplayClock>().WithId("replay").AsSingle();
+container.Bind<IClock>().To<EditorClock>()
+    .WhenInjectedInto<PreviewController>().AsSingle();
+
+IClock replay = container.Resolve<IClock>("replay");
+container.Rebind<IClock>("replay").To<ReplayClock>().AsScoped();
+container.Unbind<IClock>("replay"); // removes this scope's matching ID only
+```
+
+Use `[Inject(Id = "replay")]` on a field or property, or on an individual constructor or method parameter. IDs compare by value. A matching consumer-specific binding wins over an unconditional binding in the same scope; two matching conditions throw an ambiguity error. `Unbind` and `Rebind` affect the local container; ancestor registrations remain available. Previously created singleton or scoped instances are disposed with their owning scope.
+
+### Sub-container exports
+
+```csharp
+container.Bind<IEnemyAI>().FromSubContainerResolve(scope =>
+{
+    scope.Bind<IEnemyAI>().To<BossAI>().AsScoped();
+    scope.Bind<IBossRules>().To<BossRules>().AsSingle();
+});
+```
+
+The installer runs once per requesting scope. The exported contract must be bound inside that child container; it never falls back to the parent's export. The child binding chooses the service lifetime. The requesting scope forwards lifecycle ticks and disposes its installed child scopes.
 
 ### Sharing one instance across a concrete and its interfaces
 
@@ -81,10 +109,10 @@ A single-type `Resolve<IHandler>()` still returns the **last** registered bindin
 
 | Call | Returns | Then |
 | --- | --- | --- |
-| `Bind<TContract>()` | `TypeBindingBuilder<TContract>` | `.To<TConcrete>()` (where `TConcrete : TContract`), then `.AsSingle()` / `.AsTransient()`, then optional `.NonLazy()` |
-| `BindInterfacesAndSelfTo<TConcrete>()` | `MultiTypeBindingBuilder` | `.AsSingle()` / `.AsTransient()`, then optional `.NonLazy()` |
+| `Bind<TContract>()` | `TypeBindingBuilder<TContract>` | `.To<TConcrete>()`, then `.AsSingle()` / `.AsScoped()` / `.AsTransient()`, or `.FromSubContainerResolve(...)`; optional `.NonLazy()` |
+| `BindInterfacesAndSelfTo<TConcrete>()` | `MultiTypeBindingBuilder` | `.AsSingle()` / `.AsScoped()` / `.AsTransient()`, then optional `.NonLazy()` |
 | `BindInterfacesTo<TConcrete>()` | `MultiTypeBindingBuilder` | same as above |
-| `BindInstance<TContract>(instance)` | `void` | — |
+| `BindInstance<TContract>(instance)` | `void` | optional ID overload |
 | `BindFactory<TValue,TFactory>()` (+1-param, +2-param) | `void` | binds the factory `AsSingle` via `BindInterfacesAndSelfTo` |
 
 ## Resolving
@@ -157,6 +185,27 @@ Enemy goblin = container.Resolve<IFactory<string, Enemy>>().Create("goblin");
 
 `BindFactory` has zero-, one-, and two-parameter overloads matching `IFactory<TValue>`, `IFactory<TParam,TValue>`, and `IFactory<TParam1,TParam2,TValue>`. See [Factories & Pooling](factories-and-pooling.html) for prefab pooled factories, `IPool<T>`, and `IPoolHooks` examples.
 
+### Pooled factories and capacity
+
+`OnityObjectPool<T>` and `PrefabComponentPool<TComponent>` accept `initialSize` to create distinct items up front. `maxSize` limits retained inactive items by default; add `fixedSize: true` to cap total created items and throw when all are checked out. `Prewarm(count)` can raise the target total later without calling pool get/release hooks. Prefab clones are created under an inactive parent, so an active prefab's clone does not receive `OnEnable` before runtime parameters are applied. Do not depend on runtime parameters in `Awake`. Return checked-out items before disposing the pool; `Get`, `Release`, `Prewarm`, and `Clear` throw `ObjectDisposedException` afterward.
+
+```csharp
+using Onity.Factory;
+using Onity.Pooling;
+
+var pool = new OnityObjectPool<Enemy>(
+    () => new Enemy(), initialSize: 32, maxSize: 32, fixedSize: true);
+IFactory<int, Enemy> factory = new PooledFactory<int, Enemy>(
+    pool, (enemy, level) => enemy.SetLevel(level));
+
+Enemy enemy = factory.Create(5);
+pool.Release(enemy);
+```
+
+One- and two-parameter `PooledFactory` adapters apply the new values before pool get hooks (and before the prefab pool's activation step) on every reuse. Register the pool and factory with `BindInstance` when injecting them; bound instances remain caller-owned and should be disposed by their owner.
+
+For the no-parameter prefab case, `container.BindPooledFactory(enemyPrefab)` registers both `IFactory<EnemyView>` and `IPool<EnemyView>` in one call (`enemyPrefab` is an `EnemyView` component). Use the explicit pool and adapter construction above when you need prewarming, fixed capacity, or runtime parameters.
+
 ## Build and async startup
 
 ```csharp
@@ -181,7 +230,7 @@ These behaviors are locked by tests; rely on them, and avoid the listed traps.
 | Distinct singletons | Two separate `Bind<I>().To<C>()` calls do **not** share an instance. Use `BindInterfacesAndSelfTo<C>().AsSingle()` to share one. |
 | Circular dependency | Constructor and member cycles throw `OnityResolveException` at **resolve time** (not build time). Break the cycle by injecting a factory or `IResolver`. |
 | Constructor selection | The greediest **public** constructor wins (or the single `[Inject]` constructor). Do not add a second `[Inject]` constructor. |
-| Conditional / keyed binds | There is no `WhenInjectedInto` and no `WithId`. Use a typed factory or distinct contracts instead. |
+| Conditional / keyed binds | `WhenInjectedInto` and `WithId` are configured before the lifetime. Missing non-null IDs do not implicitly construct services. |
 
 ## Unity wiring
 

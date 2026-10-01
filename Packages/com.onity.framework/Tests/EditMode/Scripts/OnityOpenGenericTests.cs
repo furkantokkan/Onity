@@ -1,3 +1,5 @@
+using System;
+using System.Reflection;
 using NUnit.Framework;
 using Onity.DI;
 
@@ -73,6 +75,115 @@ namespace Onity.Tests.EditMode
             IRepository<int> second = container.Resolve<IRepository<int>>();
 
             Assert.That(first, Is.Not.SameAs(second));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void OpenGenericRebind_AfterClosedResolve_UsesCurrentImplementation(bool useBaked)
+        {
+            PropertyInfo bakedFlag = typeof(OnityContainer).GetProperty(
+                "UseBakedResolve",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(bakedFlag, Is.Not.Null);
+            bool originalFlag = (bool)bakedFlag.GetValue(null);
+
+            try
+            {
+                bakedFlag.SetValue(null, useBaked);
+                using OnityContainer container = new OnityContainer();
+                container.Bind<IClock>().To<Clock>().AsSingle();
+                container.Bind(typeof(IRepository<>)).To(typeof(Repository<>)).AsSingle();
+                container.Build();
+
+                Assert.That(container.Resolve<IRepository<int>>(), Is.TypeOf<Repository<int>>());
+
+                container.Bind(typeof(IRepository<>)).To(typeof(AlternateRepository<>)).AsSingle();
+
+                Assert.That(container.Resolve<IRepository<int>>(), Is.TypeOf<AlternateRepository<int>>());
+                Assert.That(container.Resolve<IRepository<string>>(), Is.TypeOf<AlternateRepository<string>>());
+            }
+            finally
+            {
+                bakedFlag.SetValue(null, originalFlag);
+            }
+        }
+
+        [Test]
+        public void OpenGenericRebind_UpdatesConstructorDependenciesAndLifetime()
+        {
+            using OnityContainer container = new OnityContainer();
+            container.Bind<IClock>().To<Clock>().AsSingle();
+            container.Bind(typeof(IRepository<>)).To(typeof(Repository<>)).AsSingle();
+            container.Bind<RepositoryConsumer>().AsTransient();
+            container.Build();
+
+            Assert.That(container.Resolve<RepositoryConsumer>().Repository, Is.TypeOf<Repository<int>>());
+
+            container.Bind(typeof(IRepository<>)).To(typeof(AlternateRepository<>)).AsTransient();
+
+            IRepository<int> first = container.Resolve<RepositoryConsumer>().Repository;
+            IRepository<int> second = container.Resolve<IRepository<int>>();
+            Assert.That(first, Is.TypeOf<AlternateRepository<int>>());
+            Assert.That(second, Is.Not.SameAs(first));
+
+            container.Bind(typeof(IRepository<>)).To(typeof(AlternateRepository<>)).AsSingle();
+
+            Assert.That(container.Resolve<RepositoryConsumer>().Repository,
+                Is.SameAs(container.Resolve<IRepository<int>>()));
+        }
+
+        [Test]
+        public void OpenGenericRebind_PreservesExplicitClosedOverrideAndReplacesCollectionEntry()
+        {
+            using OnityContainer container = new OnityContainer();
+            container.Bind<IClock>().To<Clock>().AsSingle();
+            container.Bind(typeof(IRepository<>)).To(typeof(Repository<>)).AsSingle();
+            container.Build();
+            container.Resolve<IRepository<int>>();
+            container.Bind<IRepository<int>>().To<ExplicitRepository<int>>().AsSingle();
+
+            container.Bind(typeof(IRepository<>)).To(typeof(AlternateRepository<>)).AsSingle();
+
+            Assert.That(container.Resolve<IRepository<int>>(), Is.TypeOf<ExplicitRepository<int>>());
+            IRepository<int>[] repositories = container.Resolve<IRepository<int>[]>();
+            Assert.That(repositories, Has.Length.EqualTo(2));
+            Assert.That(repositories[0], Is.TypeOf<AlternateRepository<int>>());
+            Assert.That(repositories[1], Is.TypeOf<ExplicitRepository<int>>());
+        }
+
+        [Test]
+        public void OpenGenericRebind_KeepsOldSingletonOwnedUntilContainerDisposal()
+        {
+            OnityContainer container = new OnityContainer();
+            container.Bind(typeof(IRepository<>)).To(typeof(DisposableRepository<>)).AsSingle();
+            DisposableRepository<int> oldInstance =
+                (DisposableRepository<int>)container.Resolve<IRepository<int>>();
+
+            container.Bind(typeof(IRepository<>)).To(typeof(AlternateDisposableRepository<>)).AsSingle();
+            AlternateDisposableRepository<int> newInstance =
+                (AlternateDisposableRepository<int>)container.Resolve<IRepository<int>>();
+
+            Assert.That(oldInstance.DisposeCount, Is.Zero);
+            container.Dispose();
+            Assert.That(oldInstance.DisposeCount, Is.EqualTo(1));
+            Assert.That(newInstance.DisposeCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void OpenGenericRebind_InvalidClosedType_PreservesExistingRegistration()
+        {
+            using OnityContainer container = new OnityContainer();
+            container.Bind<IClock>().To<Clock>().AsSingle();
+            container.Bind(typeof(IRepository<>)).To(typeof(Repository<>)).AsSingle();
+            container.Resolve<IRepository<int>>();
+            container.Resolve<IRepository<string>>();
+
+            Assert.That(
+                () => container.Bind(typeof(IRepository<>)).To(typeof(StructRepository<>)).AsSingle(),
+                Throws.Exception);
+
+            Assert.That(container.Resolve<IRepository<int>>(), Is.TypeOf<Repository<int>>());
+            Assert.That(container.Resolve<IRepository<string>>(), Is.TypeOf<Repository<string>>());
         }
 
         [Test]
@@ -168,6 +279,38 @@ namespace Onity.Tests.EditMode
 
         private sealed class Unrelated<T>
         {
+        }
+
+        private sealed class AlternateRepository<T> : IRepository<T>
+        {
+        }
+
+        private sealed class ExplicitRepository<T> : IRepository<T>
+        {
+        }
+
+        private sealed class StructRepository<T> : IRepository<T> where T : struct
+        {
+        }
+
+        private sealed class DisposableRepository<T> : IRepository<T>, IDisposable
+        {
+            public int DisposeCount { get; private set; }
+
+            public void Dispose()
+            {
+                DisposeCount++;
+            }
+        }
+
+        private sealed class AlternateDisposableRepository<T> : IRepository<T>, IDisposable
+        {
+            public int DisposeCount { get; private set; }
+
+            public void Dispose()
+            {
+                DisposeCount++;
+            }
         }
 
         private sealed class RepositoryConsumer

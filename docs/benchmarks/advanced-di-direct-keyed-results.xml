@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="37" result="Passed" total="37" passed="37" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.2631963">
+  <test-suite type="TestSuite" id="1000" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="464" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.263196" total="37" passed="37" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1504" name="Onity.Tests.EditMode.dll" fullname="C:/Users/e-fur/Documents/Repos/Onity/Library/ScriptAssemblies/Onity.Tests.EditMode.dll" runstate="Runnable" testcasecount="463" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.250282" total="37" passed="37" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="81068" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1505" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="463" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.242112" total="37" passed="37" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1506" name="Tests" fullname="Onity.Tests" runstate="Runnable" testcasecount="463" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.234082" total="37" passed="37" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1507" name="EditMode" fullname="Onity.Tests.EditMode" runstate="Runnable" testcasecount="463" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.225765" total="37" passed="37" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1154" name="OnityContainerEdgeCaseTests" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" testcasecount="37" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.205554" total="37" passed="37" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1182" name="AsScoped_KeyedAndOpenGenericBindingsFollowRequestingScope" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.AsScoped_KeyedAndOpenGenericBindingsFollowRequestingScope" methodname="AsScoped_KeyedAndOpenGenericBindingsFollowRequestingScope" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1573762997" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.040798" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1181" name="AsScoped_ReusesPerRequesterAndDisposesWithThatScope" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.AsScoped_ReusesPerRequesterAndDisposesWithThatScope" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.008123" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1179" name="AsScoped_ReusesPerRequesterAndDisposesWithThatScope(False)" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.AsScoped_ReusesPerRequesterAndDisposesWithThatScope(False)" methodname="AsScoped_ReusesPerRequesterAndDisposesWithThatScope" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1979290895" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.005571" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1180" name="AsScoped_ReusesPerRequesterAndDisposesWithThatScope(True)" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.AsScoped_ReusesPerRequesterAndDisposesWithThatScope(True)" methodname="AsScoped_ReusesPerRequesterAndDisposesWithThatScope" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1681158344" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000434" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1155" name="BindInstance_Null_ThrowsOnityBindingException" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.BindInstance_Null_ThrowsOnityBindingException" methodname="BindInstance_Null_ThrowsOnityBindingException" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="205798394" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.001644" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1170" name="BindInterfacesAndSelfTo_NoInterfaces_StillBindsConcreteType" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.BindInterfacesAndSelfTo_NoInterfaces_StillBindsConcreteType" methodname="BindInterfacesAndSelfTo_NoInterfaces_StillBindsConcreteType" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="2098106500" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.001204" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1171" name="BindInterfacesTo_WithIdAndNoInterfaces_ThrowsOnityBindingException" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.BindInterfacesTo_WithIdAndNoInterfaces_ThrowsOnityBindingException" methodname="BindInterfacesTo_WithIdAndNoInterfaces_ThrowsOnityBindingException" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="181687809" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000902" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1167" name="BuildAsync_CallbackReturningNullTask_DoesNotThrow" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.BuildAsync_CallbackReturningNullTask_DoesNotThrow" methodname="BuildAsync_CallbackReturningNullTask_DoesNotThrow" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1934687963" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.007117" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1168" name="BuildAsync_ExecutesSyncCallbacksBeforeAsyncCallbacks" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.BuildAsync_ExecutesSyncCallbacksBeforeAsyncCallbacks" methodname="BuildAsync_ExecutesSyncCallbacksBeforeAsyncCallbacks" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="225038170" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.083908" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1169" name="ChildBinding_OverridesParentBinding" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.ChildBinding_OverridesParentBinding" methodname="ChildBinding_OverridesParentBinding" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1876212334" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000987" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1177" name="ConditionalBinding_MatchesDerivedConsumerAndRejectsAmbiguity" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.ConditionalBinding_MatchesDerivedConsumerAndRejectsAmbiguity" methodname="ConditionalBinding_MatchesDerivedConsumerAndRejectsAmbiguity" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="66504632" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.001383" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1166" name="Dispose_DisposesSingletonInstance" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Dispose_DisposesSingletonInstance" methodname="Dispose_DisposesSingletonInstance" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1879239334" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000571" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1183" name="FromSubContainerResolve_ExportsLocalBindingPerRequestingScope" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.FromSubContainerResolve_ExportsLocalBindingPerRequestingScope" methodname="FromSubContainerResolve_ExportsLocalBindingPerRequestingScope" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="748833129" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.002183" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1184" name="FromSubContainerResolve_ForwardsTickToInstalledChild" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.FromSubContainerResolve_ForwardsTickToInstalledChild" methodname="FromSubContainerResolve_ForwardsTickToInstalledChild" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="251447817" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.001233" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1185" name="FromSubContainerResolve_RequiresLocalChildBinding" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.FromSubContainerResolve_RequiresLocalChildBinding" methodname="FromSubContainerResolve_RequiresLocalChildBinding" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="329860784" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000513" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1158" name="Inject_NullTarget_ThrowsOnityResolveException" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Inject_NullTarget_ThrowsOnityResolveException" methodname="Inject_NullTarget_ThrowsOnityResolveException" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="2126137885" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000386" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1176" name="Inject_UsesIdsOnConstructorFieldPropertyAndMethodParameters" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Inject_UsesIdsOnConstructorFieldPropertyAndMethodParameters" methodname="Inject_UsesIdsOnConstructorFieldPropertyAndMethodParameters" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1471440310" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.006054" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1193" name="OpenGenericCollection_IncludesDefaultAndConditionalBeforeAndAfterWarmup" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.OpenGenericCollection_IncludesDefaultAndConditionalBeforeAndAfterWarmup" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.004592" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1191" name="OpenGenericCollection_IncludesDefaultAndConditionalBeforeAndAfterWarmup(False)" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.OpenGenericCollection_IncludesDefaultAndConditionalBeforeAndAfterWarmup(False)" methodname="OpenGenericCollection_IncludesDefaultAndConditionalBeforeAndAfterWarmup" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="324366589" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.003262" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1192" name="OpenGenericCollection_IncludesDefaultAndConditionalBeforeAndAfterWarmup(True)" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.OpenGenericCollection_IncludesDefaultAndConditionalBeforeAndAfterWarmup(True)" methodname="OpenGenericCollection_IncludesDefaultAndConditionalBeforeAndAfterWarmup" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1137601057" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000389" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="ParameterizedMethod" id="1190" name="OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.003690" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1186" name="OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup(False,False)" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup(False,False)" methodname="OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="491543895" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.001355" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1187" name="OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup(False,True)" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup(False,True)" methodname="OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1158662962" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000336" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1188" name="OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup(True,False)" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup(True,False)" methodname="OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="2096562215" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000337" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1189" name="OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup(True,True)" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup(True,True)" methodname="OpenGenericConditional_UsesConsumerBindingRegardlessOfDefaultWarmup" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1210368040" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000284" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1194" name="Rebind_AfterBuild_StopsOldTickableAndStartsReplacement" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Rebind_AfterBuild_StopsOldTickableAndStartsReplacement" methodname="Rebind_AfterBuild_StopsOldTickableAndStartsReplacement" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1147581024" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.002970" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1161" name="Resolve_CircularDependency_ThrowsOnityResolveException" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Resolve_CircularDependency_ThrowsOnityResolveException" methodname="Resolve_CircularDependency_ThrowsOnityResolveException" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="304700822" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.001368" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1159" name="Resolve_GenericTypeDefinition_ThrowsOnityResolveException" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Resolve_GenericTypeDefinition_ThrowsOnityResolveException" methodname="Resolve_GenericTypeDefinition_ThrowsOnityResolveException" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="2093899560" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000731" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1165" name="Resolve_InjectGenericMethod_ThrowsOnityBindingException" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Resolve_InjectGenericMethod_ThrowsOnityBindingException" methodname="Resolve_InjectGenericMethod_ThrowsOnityBindingException" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1243775602" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000483" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1164" name="Resolve_InjectIndexerProperty_ThrowsOnityBindingException" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Resolve_InjectIndexerProperty_ThrowsOnityBindingException" methodname="Resolve_InjectIndexerProperty_ThrowsOnityBindingException" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="59468809" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000729" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1163" name="Resolve_InjectPropertyWithoutSetter_ThrowsOnityBindingException" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Resolve_InjectPropertyWithoutSetter_ThrowsOnityBindingException" methodname="Resolve_InjectPropertyWithoutSetter_ThrowsOnityBindingException" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="308272225" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000460" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1162" name="Resolve_MultipleInjectConstructors_ThrowsOnityBindingException" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Resolve_MultipleInjectConstructors_ThrowsOnityBindingException" methodname="Resolve_MultipleInjectConstructors_ThrowsOnityBindingException" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="2120928933" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000439" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1156" name="Resolve_NullType_ThrowsOnityResolveException" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Resolve_NullType_ThrowsOnityResolveException" methodname="Resolve_NullType_ThrowsOnityResolveException" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="120729950" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000288" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1160" name="Resolve_UnboundAbstractType_ThrowsOnityResolveException" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Resolve_UnboundAbstractType_ThrowsOnityResolveException" methodname="Resolve_UnboundAbstractType_ThrowsOnityResolveException" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1535498286" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000330" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1172" name="Resolve_UnboundConcreteType_UsesImplicitTransientBinding" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.Resolve_UnboundConcreteType_UsesImplicitTransientBinding" methodname="Resolve_UnboundConcreteType_UsesImplicitTransientBinding" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1052329675" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000614" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1157" name="TryResolve_NullType_ReturnsFalseAndNull" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.TryResolve_NullType_ReturnsFalseAndNull" methodname="TryResolve_NullType_ReturnsFalseAndNull" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1585020351" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000323" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1178" name="UnbindAndRebind_KeyedChildBindingLeavesParentUnchanged" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.UnbindAndRebind_KeyedChildBindingLeavesParentUnchanged" methodname="UnbindAndRebind_KeyedChildBindingLeavesParentUnchanged" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="615945292" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.001366" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1175" name="WithId_LaterConditionalBindingPreservesUnconditionalResolve" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.WithId_LaterConditionalBindingPreservesUnconditionalResolve" methodname="WithId_LaterConditionalBindingPreservesUnconditionalResolve" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="1968465180" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000306" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1173" name="WithId_ResolvesMatchingBindingAndKeepsDefaultSeparate" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.WithId_ResolvesMatchingBindingAndKeepsDefaultSeparate" methodname="WithId_ResolvesMatchingBindingAndKeepsDefaultSeparate" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="11723060" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.000825" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1174" name="WithId_WarmedSingletonUpdatesAfterRebindAndRecordsDiagnostics" fullname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests.WithId_WarmedSingletonUpdatesAfterRebindAndRecordsDiagnostics" methodname="WithId_WarmedSingletonUpdatesAfterRebindAndRecordsDiagnostics" classname="Onity.Tests.EditMode.OnityContainerEdgeCaseTests" runstate="Runnable" seed="231167664" result="Passed" start-time="2026-09-23 18:19:37Z" end-time="2026-09-23 18:19:37Z" duration="0.003411" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/e-fur/AppData/LocalLow/DefaultCompany/Onity\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

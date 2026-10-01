@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="1" result="Passed" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-09-24 03:08:12Z" end-time="2026-09-24 03:08:14Z" duration="1.8958172">
+  <test-suite type="TestSuite" id="1000" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="482" result="Passed" start-time="2026-09-24 03:08:12Z" end-time="2026-09-24 03:08:14Z" duration="1.895817" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1522" name="Onity.Tests.EditMode.dll" fullname="C:/Users/e-fur/Documents/Repos/Onity/Library/ScriptAssemblies/Onity.Tests.EditMode.dll" runstate="Runnable" testcasecount="481" result="Passed" start-time="2026-09-24 03:08:12Z" end-time="2026-09-24 03:08:14Z" duration="1.869536" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="102548" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1523" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="481" result="Passed" start-time="2026-09-24 03:08:12Z" end-time="2026-09-24 03:08:14Z" duration="1.849636" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1524" name="Tests" fullname="Onity.Tests" runstate="Runnable" testcasecount="481" result="Passed" start-time="2026-09-24 03:08:12Z" end-time="2026-09-24 03:08:14Z" duration="1.833259" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1525" name="EditMode" fullname="Onity.Tests.EditMode" runstate="Runnable" testcasecount="481" result="Passed" start-time="2026-09-24 03:08:12Z" end-time="2026-09-24 03:08:14Z" duration="1.816978" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1458" name="PoolingTests" fullname="Onity.Tests.EditMode.PoolingTests" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" testcasecount="24" result="Passed" start-time="2026-09-24 03:08:12Z" end-time="2026-09-24 03:08:14Z" duration="1.796193" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1475" name="MeasureWarmedRentReturnAgainstZenject" fullname="Onity.Tests.EditMode.PoolingTests.MeasureWarmedRentReturnAgainstZenject" methodname="MeasureWarmedRentReturnAgainstZenject" classname="Onity.Tests.EditMode.PoolingTests" runstate="Explicit" seed="1871550150" result="Passed" start-time="2026-09-24 03:08:12Z" end-time="2026-09-24 03:08:14Z" duration="1.775184" asserts="0">
+                <properties>
+                  <property name="_SKIPREASON" value="Run by exact name to compare warmed Onity and Zenject pools in the Editor." />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Profiler.enabled=False, Zenject UnityMainThread=current thread: False
+Warmed GC.Alloc events per 64 pairs: Onity default 0, Onity checked 0, Zenject 0
+Onity pool (default)/Zenject MemoryPool paired median: 1.062x, Q1-Q3 1.040-1.112, range 0.889-1.142
+Onity pool (collection check)/Zenject MemoryPool paired median: 2.229x, Q1-Q3 2.140-2.285, range 1.971-2.580
+Onity pool (default): median 151.2 ns/pair, range 139.6-162.4
+Onity pool (collection check): median 317.4 ns/pair, range 305.6-366.8
+Zenject MemoryPool: median 142.2 ns/pair, range 137.5-157.1
+Saving results to: C:/Users/e-fur/AppData/LocalLow/DefaultCompany/Onity\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

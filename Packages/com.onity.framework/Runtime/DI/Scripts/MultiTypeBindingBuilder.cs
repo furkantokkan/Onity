@@ -13,6 +13,9 @@ namespace Onity.DI
         private readonly Type m_implementationType;
         private bool m_isBound;
         private bool m_isNonLazyRegistered;
+        private object m_id;
+        private Type m_consumerType;
+        private OnityContainer.IBakedProvider m_provider;
 
         internal MultiTypeBindingBuilder(OnityContainer container, Type[] contractTypes, Type implementationType)
         {
@@ -29,7 +32,9 @@ namespace Onity.DI
         /// <returns>Current builder instance.</returns>
         public MultiTypeBindingBuilder AsSingle()
         {
-            m_container.Register(m_contractTypes, m_implementationType, Lifetime.Singleton);
+            ValidateNotBound();
+            m_provider = m_container.RegisterConfigured(
+                m_contractTypes, m_implementationType, BindingLifetime.Singleton, m_id, m_consumerType);
             m_isBound = true;
             return this;
         }
@@ -40,7 +45,20 @@ namespace Onity.DI
         /// <returns>Current builder instance.</returns>
         public MultiTypeBindingBuilder AsTransient()
         {
-            m_container.Register(m_contractTypes, m_implementationType, Lifetime.Transient);
+            ValidateNotBound();
+            m_provider = m_container.RegisterConfigured(
+                m_contractTypes, m_implementationType, BindingLifetime.Transient, m_id, m_consumerType);
+            m_isBound = true;
+            return this;
+        }
+
+        /// <summary>Shares one implementation across these contracts per resolving scope.</summary>
+        /// <returns>Current builder instance.</returns>
+        public MultiTypeBindingBuilder AsScoped()
+        {
+            ValidateNotBound();
+            m_provider = m_container.RegisterConfigured(
+                m_contractTypes, m_implementationType, BindingLifetime.Scoped, m_id, m_consumerType);
             m_isBound = true;
             return this;
         }
@@ -54,7 +72,7 @@ namespace Onity.DI
             if (m_isBound == false)
             {
                 throw new OnityBindingException(
-                    $"Call {nameof(AsSingle)} or {nameof(AsTransient)} before {nameof(NonLazy)}.");
+                    $"Call {nameof(AsSingle)}, {nameof(AsScoped)}, or {nameof(AsTransient)} before {nameof(NonLazy)}.");
             }
 
             if (m_isNonLazyRegistered)
@@ -62,9 +80,42 @@ namespace Onity.DI
                 return this;
             }
 
-            m_container.RegisterBuildCallback(resolver => resolver.Resolve(m_implementationType));
+            if (m_consumerType != null)
+            {
+                throw new OnityBindingException("NonLazy requires an unconditional binding.");
+            }
+
+            m_container.RegisterNonLazy(m_provider);
             m_isNonLazyRegistered = true;
             return this;
+        }
+
+        /// <summary>Sets an identifier for every contract before registering the lifetime.</summary>
+        /// <param name="id">Stable binding identifier; null selects unkeyed bindings.</param>
+        /// <returns>Current builder.</returns>
+        public MultiTypeBindingBuilder WithId(object id)
+        {
+            ValidateNotBound();
+            m_id = id;
+            return this;
+        }
+
+        /// <summary>Restricts injection to this consumer type and its derived types. Call before the lifetime.</summary>
+        /// <typeparam name="TConsumer">Consuming implementation type or interface.</typeparam>
+        /// <returns>Current builder.</returns>
+        public MultiTypeBindingBuilder WhenInjectedInto<TConsumer>()
+        {
+            ValidateNotBound();
+            m_consumerType = typeof(TConsumer);
+            return this;
+        }
+
+        private void ValidateNotBound()
+        {
+            if (m_isBound)
+            {
+                throw new OnityBindingException("Configure the binding before selecting a lifetime.");
+            }
         }
     }
 }

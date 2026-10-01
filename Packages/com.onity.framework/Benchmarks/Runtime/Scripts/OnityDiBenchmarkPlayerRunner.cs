@@ -7,6 +7,8 @@ using System.Text;
 using Onity.DI;
 using Onity.DI.Internal;
 using UnityEngine;
+using UnityEngine.Profiling;
+using Unity.Profiling;
 using VContainer;
 using Zenject;
 
@@ -18,18 +20,42 @@ namespace Onity.Benchmarks
     /// </summary>
     public static class OnityDiBenchmarkPlayerRunner
     {
-        private const int k_defaultWarmupIterations = 512;
-        private const int k_defaultSamplesPerCase = 8;
-        private const int k_defaultIterationsPerSample = 10000;
+        private const int k_warmupIterations = 512;
+        private const int k_samplesPerCase = 8;
+        private const int k_hotPathWarmupIterations = 10000;
+        private const int k_hotPathSamplesPerCase = 16;
+        private const int k_profilerWarmupIterations = 64;
+        private const int k_profilerSamplesPerCase = 1;
+        private const int k_profilerIterationsPerSample = 10000;
+        private const int k_allocationCaptureSamplesPerCase = 3;
+        private const int k_allocationCaptureIterations = 64;
+        private const int k_allocationProbeCount = 128;
+        private const int k_allocationProbeBytes = 8192;
+        private const int k_metricsPerScenario = 4;
         private const string k_runArgument = "-onityRunDiBenchmark";
         private const string k_outputArgument = "-onityBenchmarkOutput";
+        private const string k_allocationCaptureArgument = "-onityCaptureDiAllocationBytes";
+        private const string k_hotPathsOnlyArgument = "-onityBenchmarkHotPathsOnly";
         private const string k_iterationsArgument = "-onityBenchmarkIterations";
         private const string k_samplesArgument = "-onityBenchmarkSamples";
         private const string k_warmupArgument = "-onityBenchmarkWarmup";
         private const string k_scenarioArgument = "-onityBenchmarkScenario";
         private const string k_latestJsonFileName = "di-benchmark-player-latest.json";
-        private static int s_warmupIterations = k_defaultWarmupIterations;
-        private static int s_samplesPerCase = k_defaultSamplesPerCase;
+        private const string k_latestHotPathJsonFileName = "di-benchmark-player-hot-paths-latest.json";
+        private const string k_emptyProbeMarkerName = "Onity.DI.BytesProbe.Empty";
+        private const string k_positiveProbeMarkerName = "Onity.DI.BytesProbe.Positive";
+        private const string k_doubleProbeMarkerName = "Onity.DI.BytesProbe.Double";
+        private const string k_keyedServiceId = "benchmark-service";
+
+        private static readonly ProfilerMarker s_emptyProbeMarker = new ProfilerMarker(k_emptyProbeMarkerName);
+        private static readonly ProfilerMarker s_positiveProbeMarker = new ProfilerMarker(k_positiveProbeMarkerName);
+        private static readonly ProfilerMarker s_doubleProbeMarker = new ProfilerMarker(k_doubleProbeMarkerName);
+        private static bool s_isRunning;
+        private static string s_allocationProfilePath;
+        private static BenchmarkOperation[] s_allocationOperations;
+
+        internal static int AllocationCaptureStepCount =>
+            1 + s_scenarios.Length * k_metricsPerScenario * k_allocationCaptureSamplesPerCase;
 
         private static readonly BenchmarkContainerKind[] s_containers =
         {
@@ -49,6 +75,17 @@ namespace Onity.Benchmarks
                 "UseBakedResolve",
                 BindingFlags.Static | BindingFlags.NonPublic);
 
+        private static readonly ScenarioConfig[] s_scenarios =
+        {
+            new ScenarioConfig(BenchmarkScenario.ResolveSingleton, "Resolve (Singleton)", 10000),
+            new ScenarioConfig(BenchmarkScenario.ResolveTransient, "Resolve (Transient)", 10000),
+            new ScenarioConfig(BenchmarkScenario.ResolveCombined, "Resolve (Combined)", 10000),
+            new ScenarioConfig(BenchmarkScenario.ResolveComplex, "Resolve (Complex)", 10000),
+            new ScenarioConfig(BenchmarkScenario.PrepareAndRegisterComplex, "Prepare & Register (Complex)", 10000),
+            new ScenarioConfig(BenchmarkScenario.ResolveKeyedSingleton, "Resolve (Keyed Singleton)", 10000),
+            new ScenarioConfig(BenchmarkScenario.ResolveScopedSingleton, "Resolve (Scoped Singleton)", 10000)
+        };
+
         private static readonly MethodInfo s_getTotalAllocatedBytesMethod =
             typeof(GC).GetMethod(
                 "GetTotalAllocatedBytes",
@@ -59,41 +96,64 @@ namespace Onity.Benchmarks
 
         private static readonly object[] s_preciseArgs = { true };
         private static bool s_generatedOnityActivatorsRegistered;
-        private static bool s_isRunning;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void RunFromCommandLine()
         {
-            string[] args = Environment.GetCommandLineArgs();
-
-#if !ONITY_DI_BENCHMARK_PLAYER
-            if (!HasArgument(args, k_runArgument))
-            {
-                return;
-            }
-#endif
-
             RunBenchmarkAndQuit();
         }
 
+        /// <summary>
+        /// Runs the player benchmark selected by the command line and quits. Called once at load
+        /// and by <see cref="OnityDiBenchmarkPlayerBootstrap" /> in a generated benchmark scene.
+        /// </summary>
         public static void RunBenchmarkAndQuit()
         {
-            if (s_isRunning)
+            string[] args = Environment.GetCommandLineArgs();
+
+            if (s_isRunning || !HasArgument(args, k_runArgument))
             {
                 return;
             }
 
             s_isRunning = true;
 
+            bool hotPathsOnly = HasArgument(args, k_hotPathsOnlyArgument);
+            if (HasArgument(args, k_allocationCaptureArgument))
+            {
+                if (hotPathsOnly)
+                {
+                    UnityEngine.Debug.LogError("The hot-path timing option cannot be combined with allocation capture.");
+                    Application.Quit(1);
+                    return;
+                }
+
+                try
+                {
+                    OnityDiBenchmarkPlayModeDriver.RunAllocationCapture(GetOutputPath(args));
+                }
+                catch (Exception exception)
+                {
+                    UnityEngine.Debug.LogException(exception);
+                    Application.Quit(1);
+                }
+
+                return;
+            }
+
             int exitCode = 0;
-            string[] args = Environment.GetCommandLineArgs();
 
             try
             {
-                UnityEngine.Debug.Log("Onity DI player benchmark entrypoint started.");
-                string jsonPath = GetOutputPath(args);
-                BenchmarkReport report = RunBenchmarks();
-                SaveReport(report, jsonPath);
+                string jsonPath = GetOutputPath(args, hotPathsOnly);
+                if (hotPathsOnly)
+                {
+                    SaveReport(RunHotPathBenchmarks(), jsonPath);
+                }
+                else
+                {
+                    RunBenchmarksAndSave(jsonPath);
+                }
                 UnityEngine.Debug.Log($"Onity DI player benchmark completed. Latest report: {jsonPath}");
             }
             catch (Exception exception)
@@ -107,7 +167,490 @@ namespace Onity.Benchmarks
             }
         }
 
+        public static void RunBenchmarksAndSave(string latestJson)
+        {
+            if (string.IsNullOrEmpty(latestJson))
+            {
+                throw new ArgumentException("Benchmark output path cannot be null or empty.", nameof(latestJson));
+            }
+
+            BenchmarkReport report = RunBenchmarks();
+            SaveReport(report, latestJson);
+        }
+
+        internal static void StartAllocationCapture(string rawProfilePath)
+        {
+#if !ENABLE_IL2CPP
+            throw new InvalidOperationException("Allocation capture requires an IL2CPP player.");
+#endif
+            if (!UnityEngine.Debug.isDebugBuild)
+            {
+                throw new InvalidOperationException("Allocation capture requires a Development Build.");
+            }
+
+            if (s_useBakedResolveProperty == null)
+            {
+                throw new InvalidOperationException("Internal OnityContainer.UseBakedResolve flag was not found.");
+            }
+
+            if (string.IsNullOrEmpty(rawProfilePath) ||
+                !string.Equals(Path.GetExtension(rawProfilePath), ".raw", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("A .raw profiler output path is required.", nameof(rawProfilePath));
+            }
+
+            if (s_allocationOperations != null)
+            {
+                throw new InvalidOperationException("An allocation capture is already active.");
+            }
+
+            BenchmarkOperation[] operations = null;
+
+            try
+            {
+                Profiler.enabled = false;
+                RegisterGeneratedOnityActivators();
+                operations = WarmupAllocationCases();
+                ForceFullGc();
+                Directory.CreateDirectory(Path.GetDirectoryName(rawProfilePath));
+                s_allocationProfilePath = rawProfilePath;
+                Profiler.logFile = rawProfilePath;
+                Profiler.maxUsedMemory = 256 * 1024 * 1024;
+                Profiler.enableBinaryLog = true;
+                Profiler.enabled = true;
+
+                if (!Profiler.enabled || !Profiler.enableBinaryLog)
+                {
+                    throw new InvalidOperationException("The player profiler did not start binary capture.");
+                }
+
+                s_allocationOperations = operations;
+            }
+            catch
+            {
+                Profiler.enabled = false;
+                Profiler.enableBinaryLog = false;
+                Profiler.logFile = string.Empty;
+                s_allocationProfilePath = null;
+                DisposeAllocationOperations(operations);
+                throw;
+            }
+        }
+
+        internal static void RunAllocationCaptureStep(int step)
+        {
+            if (step < 0 || step >= AllocationCaptureStepCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(step));
+            }
+
+            BenchmarkOperation[] operations = s_allocationOperations;
+
+            if (operations == null)
+            {
+                throw new InvalidOperationException("Allocation capture has not started.");
+            }
+
+            if (step == 0)
+            {
+                RunAllocationControls();
+                return;
+            }
+
+            int caseIndex = (step - 1) / k_allocationCaptureSamplesPerCase;
+            ScenarioConfig config = s_scenarios[caseIndex / k_metricsPerScenario];
+            int metricIndex = caseIndex % k_metricsPerScenario;
+            BenchmarkContainerKind containerKind = metricIndex < 2
+                ? BenchmarkContainerKind.Onity
+                : metricIndex == 2 ? BenchmarkContainerKind.VContainer : BenchmarkContainerKind.Zenject;
+            OnityResolveMode resolveMode = metricIndex == 1
+                ? OnityResolveMode.Baked
+                : OnityResolveMode.Reflection;
+            bool isOnity = containerKind == BenchmarkContainerKind.Onity;
+            object originalFlag = isOnity ? s_useBakedResolveProperty.GetValue(null) : null;
+
+            try
+            {
+                if (isOnity)
+                {
+                    s_useBakedResolveProperty.SetValue(null, resolveMode == OnityResolveMode.Baked);
+                }
+
+                BenchmarkOperation operation = operations[caseIndex];
+                ForceFullGc();
+                ProfilerMarker marker = new ProfilerMarker(
+                    BuildProfilerMarkerName(config, containerKind, resolveMode));
+                using (marker.Auto())
+                {
+                    for (int i = 0; i < k_allocationCaptureIterations; i++)
+                    {
+                        operation.Invoke();
+                    }
+                }
+            }
+            finally
+            {
+                if (isOnity)
+                {
+                    s_useBakedResolveProperty.SetValue(null, originalFlag);
+                }
+            }
+        }
+
+        internal static void StopAllocationCapture()
+        {
+            BenchmarkOperation[] operations = s_allocationOperations;
+            s_allocationOperations = null;
+
+            try
+            {
+                Profiler.enabled = false;
+                Profiler.enableBinaryLog = false;
+                Profiler.logFile = string.Empty;
+
+                if (string.IsNullOrEmpty(s_allocationProfilePath) ||
+                    !File.Exists(s_allocationProfilePath) ||
+                    new FileInfo(s_allocationProfilePath).Length == 0)
+                {
+                    throw new FileNotFoundException(
+                        "The player profiler did not write a nonempty .raw capture.",
+                        s_allocationProfilePath);
+                }
+
+                UnityEngine.Debug.Log($"Onity DI IL2CPP Development allocation capture completed: {s_allocationProfilePath}");
+            }
+            finally
+            {
+                s_allocationProfilePath = null;
+                DisposeAllocationOperations(operations);
+            }
+        }
+
+        private static void RunAllocationControls()
+        {
+            using (s_emptyProbeMarker.Auto())
+            {
+            }
+
+            using (s_positiveProbeMarker.Auto())
+            {
+                byte[][] probes = new byte[k_allocationProbeCount][];
+                for (int i = 0; i < probes.Length; i++)
+                {
+                    probes[i] = new byte[k_allocationProbeBytes];
+                }
+
+                GC.KeepAlive(probes);
+            }
+
+            using (s_doubleProbeMarker.Auto())
+            {
+                byte[][] probes = new byte[k_allocationProbeCount][];
+                for (int i = 0; i < probes.Length; i++)
+                {
+                    probes[i] = new byte[k_allocationProbeBytes * 2];
+                }
+
+                GC.KeepAlive(probes);
+            }
+        }
+
+        private static BenchmarkOperation[] WarmupAllocationCases()
+        {
+            BenchmarkOperation[] operations = new BenchmarkOperation[s_scenarios.Length * k_metricsPerScenario];
+
+            try
+            {
+                for (int scenarioIndex = 0; scenarioIndex < s_scenarios.Length; scenarioIndex++)
+                {
+                    ScenarioConfig config = s_scenarios[scenarioIndex];
+                    for (int metricIndex = 0; metricIndex < k_metricsPerScenario; metricIndex++)
+                    {
+                        BenchmarkContainerKind containerKind = metricIndex < 2
+                            ? BenchmarkContainerKind.Onity
+                            : metricIndex == 2 ? BenchmarkContainerKind.VContainer : BenchmarkContainerKind.Zenject;
+                        OnityResolveMode resolveMode = metricIndex == 1
+                            ? OnityResolveMode.Baked
+                            : OnityResolveMode.Reflection;
+                        bool isOnity = containerKind == BenchmarkContainerKind.Onity;
+                        object originalFlag = isOnity ? s_useBakedResolveProperty.GetValue(null) : null;
+
+                        try
+                        {
+                            if (isOnity)
+                            {
+                                s_useBakedResolveProperty.SetValue(null, resolveMode == OnityResolveMode.Baked);
+                            }
+
+                            int caseIndex = scenarioIndex * k_metricsPerScenario + metricIndex;
+                            BenchmarkOperation operation = CreateOperation(containerKind, config.scenario);
+                            operations[caseIndex] = operation;
+
+                            for (int i = 0; i < k_warmupIterations; i++)
+                            {
+                                operation.Invoke();
+                            }
+                        }
+                        finally
+                        {
+                            if (isOnity)
+                            {
+                                s_useBakedResolveProperty.SetValue(null, originalFlag);
+                            }
+                        }
+                    }
+                }
+
+                return operations;
+            }
+            catch
+            {
+                DisposeAllocationOperations(operations);
+                throw;
+            }
+        }
+
+        private static void DisposeAllocationOperations(BenchmarkOperation[] operations)
+        {
+            if (operations == null)
+            {
+                return;
+            }
+
+            for (int i = operations.Length - 1; i >= 0; i--)
+            {
+                operations[i]?.Dispose();
+            }
+        }
+
+        public static void RunProfilerCaptureAndSave(string latestJson)
+        {
+            if (string.IsNullOrEmpty(latestJson))
+            {
+                throw new ArgumentException("Benchmark output path cannot be null or empty.", nameof(latestJson));
+            }
+
+            BenchmarkReport report = RunBenchmarks(
+                s_scenarios,
+                k_profilerSamplesPerCase,
+                k_profilerWarmupIterations,
+                k_profilerIterationsPerSample);
+
+            SaveReport(report, latestJson);
+        }
+
+        private static BenchmarkReport RunHotPathBenchmarks()
+        {
+            if (s_useBakedResolveProperty == null)
+            {
+                throw new InvalidOperationException("Internal OnityContainer.UseBakedResolve flag was not found.");
+            }
+
+            RegisterGeneratedOnityActivators();
+            ScenarioConfig[] configs =
+            {
+                new ScenarioConfig(BenchmarkScenario.ResolveSingleton, "Resolve (Singleton)", 1000000),
+                new ScenarioConfig(BenchmarkScenario.ResolveTransient, "Resolve (Transient)", 100000),
+                new ScenarioConfig(BenchmarkScenario.ResolveCombined, "Resolve (Combined)", 100000),
+                new ScenarioConfig(BenchmarkScenario.ResolveComplex, "Resolve (Complex)", 10000)
+            };
+            BenchmarkReport report = new BenchmarkReport
+            {
+                generatedAtUtc = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture),
+                unityVersion = Application.unityVersion,
+                platform = Application.platform.ToString(),
+                scriptingBackend = GetScriptingBackendLabel(),
+                compiledActivationSupported = OnityContainer.IsCompiledActivationSupported,
+                generatedActivatorsRegistered = GeneratedActivators.RegisteredCount,
+                allocationMeasurementAvailable = false,
+                scope = "Onity Baked hot paths, interleaved",
+                samplesPerCase = k_hotPathSamplesPerCase,
+                warmupIterations = k_hotPathWarmupIterations,
+                scenarios = new ScenarioReport[configs.Length]
+            };
+            BenchmarkOperation[] operations = new BenchmarkOperation[configs.Length];
+            double[][] samples = new double[configs.Length][];
+            int[][] gen0Collections = new int[configs.Length][];
+            int[][] gen1Collections = new int[configs.Length][];
+            int[][] gen2Collections = new int[configs.Length][];
+            ProfilerMarker[] markers = new ProfilerMarker[configs.Length];
+            bool originalBakedResolve = (bool)s_useBakedResolveProperty.GetValue(null);
+            bool originalDiagnostics = OnityContainer.DiagnosticsCollectionEnabled;
+
+            try
+            {
+                s_useBakedResolveProperty.SetValue(null, true);
+                OnityContainer.DiagnosticsCollectionEnabled = false;
+
+                for (int caseIndex = 0; caseIndex < configs.Length; caseIndex++)
+                {
+                    operations[caseIndex] = CreateOperation(BenchmarkContainerKind.Onity, configs[caseIndex].scenario);
+                    samples[caseIndex] = new double[k_hotPathSamplesPerCase];
+                    gen0Collections[caseIndex] = new int[k_hotPathSamplesPerCase];
+                    gen1Collections[caseIndex] = new int[k_hotPathSamplesPerCase];
+                    gen2Collections[caseIndex] = new int[k_hotPathSamplesPerCase];
+                    markers[caseIndex] = new ProfilerMarker(
+                        BuildProfilerMarkerName(configs[caseIndex], BenchmarkContainerKind.Onity, OnityResolveMode.Baked));
+
+                    Action invoke = operations[caseIndex].Invoke;
+                    for (int i = 0; i < k_hotPathWarmupIterations; i++)
+                    {
+                        invoke();
+                    }
+                }
+
+                ForceFullGc();
+
+                for (int sample = 0; sample < k_hotPathSamplesPerCase; sample++)
+                {
+                    for (int slot = 0; slot < configs.Length; slot++)
+                    {
+                        int caseIndex = (slot + sample) % configs.Length;
+                        Action invoke = operations[caseIndex].Invoke;
+                        int iterations = configs[caseIndex].iterationsPerSample;
+                        int gen0Before = GC.CollectionCount(0);
+                        int gen1Before = GC.CollectionCount(1);
+                        int gen2Before = GC.CollectionCount(2);
+                        long elapsedTicks;
+
+                        using (markers[caseIndex].Auto())
+                        {
+                            long start = Stopwatch.GetTimestamp();
+                            for (int i = 0; i < iterations; i++)
+                            {
+                                invoke();
+                            }
+                            elapsedTicks = Stopwatch.GetTimestamp() - start;
+                        }
+
+                        samples[caseIndex][sample] = elapsedTicks * 1000000000d /
+                            (Stopwatch.Frequency * iterations);
+                        gen0Collections[caseIndex][sample] = GC.CollectionCount(0) - gen0Before;
+                        gen1Collections[caseIndex][sample] = GC.CollectionCount(1) - gen1Before;
+                        gen2Collections[caseIndex][sample] = GC.CollectionCount(2) - gen2Before;
+                    }
+                }
+
+                for (int caseIndex = 0; caseIndex < configs.Length; caseIndex++)
+                {
+                    double[] sorted = (double[])samples[caseIndex].Clone();
+                    Array.Sort(sorted);
+                    Stats stats = CalculateStats(samples[caseIndex]);
+                    int iterations = configs[caseIndex].iterationsPerSample;
+                    MetricReport metric = new MetricReport
+                    {
+                        container = BuildContainerLabel(BenchmarkContainerKind.Onity, OnityResolveMode.Baked),
+                        meanMilliseconds = stats.mean * iterations / 1000000d,
+                        minMilliseconds = stats.min * iterations / 1000000d,
+                        maxMilliseconds = stats.max * iterations / 1000000d,
+                        standardDeviationMilliseconds = stats.standardDeviation * iterations / 1000000d,
+                        nanosecondsPerOperation = stats.mean,
+                        allocBytesPerSampleMean = -1d,
+                        allocBytesPerOperationMean = -1d,
+                        medianNanosecondsPerOperation = MedianOfSortedRange(sorted, 0, sorted.Length),
+                        q1NanosecondsPerOperation = MedianOfSortedRange(sorted, 0, sorted.Length / 2),
+                        q3NanosecondsPerOperation = MedianOfSortedRange(sorted, sorted.Length / 2, sorted.Length / 2),
+                        sampleNanosecondsPerOperation = samples[caseIndex],
+                        gen0CollectionsPerSample = gen0Collections[caseIndex],
+                        gen1CollectionsPerSample = gen1Collections[caseIndex],
+                        gen2CollectionsPerSample = gen2Collections[caseIndex]
+                    };
+                    report.scenarios[caseIndex] = new ScenarioReport
+                    {
+                        scenario = configs[caseIndex].scenario.ToString(),
+                        displayName = configs[caseIndex].displayName,
+                        iterationsPerSample = iterations,
+                        results = new[] { metric }
+                    };
+                }
+
+                return report;
+            }
+            finally
+            {
+                try
+                {
+                    for (int i = 0; i < operations.Length; i++)
+                    {
+                        operations[i]?.Dispose();
+                    }
+                }
+                finally
+                {
+                    OnityContainer.DiagnosticsCollectionEnabled = originalDiagnostics;
+                    s_useBakedResolveProperty.SetValue(null, originalBakedResolve);
+                }
+            }
+        }
+
+        private static double MedianOfSortedRange(double[] sorted, int start, int length)
+        {
+            int middle = start + length / 2;
+            return (sorted[middle - 1] + sorted[middle]) / 2d;
+        }
+
         private static BenchmarkReport RunBenchmarks()
+        {
+            // Optional player arguments narrow or resize the full comparison; without
+            // them (and in the Editor) the default protocol runs unchanged.
+            string[] args = Environment.GetCommandLineArgs();
+            return RunBenchmarks(
+                SelectScenarios(
+                    GetPositiveIntArgument(args, k_iterationsArgument, 0),
+                    GetArgumentValue(args, k_scenarioArgument)),
+                GetPositiveIntArgument(args, k_samplesArgument, k_samplesPerCase),
+                GetPositiveIntArgument(args, k_warmupArgument, k_warmupIterations),
+                int.MaxValue);
+        }
+
+        private static ScenarioConfig[] SelectScenarios(int iterationsPerSample, string scenarioFilter)
+        {
+            ScenarioConfig[] scenarios = new ScenarioConfig[s_scenarios.Length];
+            for (int i = 0; i < scenarios.Length; i++)
+            {
+                ScenarioConfig config = s_scenarios[i];
+                scenarios[i] = iterationsPerSample > 0
+                    ? new ScenarioConfig(config.scenario, config.displayName, iterationsPerSample)
+                    : config;
+            }
+
+            if (string.IsNullOrWhiteSpace(scenarioFilter))
+            {
+                return scenarios;
+            }
+
+            if (Enum.TryParse(scenarioFilter, true, out BenchmarkScenario selectedScenario) == false)
+            {
+                throw new ArgumentException(
+                    $"Unknown benchmark scenario '{scenarioFilter}'. Use a {nameof(BenchmarkScenario)} enum name.",
+                    nameof(scenarioFilter));
+            }
+
+            for (int i = 0; i < scenarios.Length; i++)
+            {
+                if (scenarios[i].scenario == selectedScenario)
+                {
+                    return new[] { scenarios[i] };
+                }
+            }
+
+            throw new ArgumentOutOfRangeException(
+                nameof(scenarioFilter), scenarioFilter, "Benchmark scenario is not configured.");
+        }
+
+        private static int GetPositiveIntArgument(string[] args, string argument, int fallback)
+        {
+            string value = GetArgumentValue(args, argument);
+            return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed) && parsed > 0
+                ? parsed
+                : fallback;
+        }
+
+        private static BenchmarkReport RunBenchmarks(
+            ScenarioConfig[] scenarios,
+            int samplesPerCase,
+            int warmupIterations,
+            int maxIterationsPerSample)
         {
             if (s_useBakedResolveProperty == null)
             {
@@ -116,14 +659,6 @@ namespace Onity.Benchmarks
             }
 
             RegisterGeneratedOnityActivators();
-
-            string[] args = Environment.GetCommandLineArgs();
-            int iterationsPerSample = GetPositiveIntArgument(args, k_iterationsArgument, k_defaultIterationsPerSample);
-            s_samplesPerCase = GetPositiveIntArgument(args, k_samplesArgument, k_defaultSamplesPerCase);
-            s_warmupIterations = GetPositiveIntArgument(args, k_warmupArgument, k_defaultWarmupIterations);
-            ScenarioConfig[] scenarios = CreateScenarios(
-                iterationsPerSample,
-                GetArgumentValue(args, k_scenarioArgument));
 
             BenchmarkReport report = new BenchmarkReport
             {
@@ -134,8 +669,9 @@ namespace Onity.Benchmarks
                 compiledActivationSupported = OnityContainer.IsCompiledActivationSupported,
                 generatedActivatorsRegistered = GeneratedActivators.RegisteredCount,
                 allocationMeasurementAvailable = IsAllocationMeasurementAvailable(),
-                samplesPerCase = s_samplesPerCase,
-                warmupIterations = s_warmupIterations,
+                scope = "Full comparison",
+                samplesPerCase = samplesPerCase,
+                warmupIterations = warmupIterations,
                 scenarios = new ScenarioReport[scenarios.Length]
             };
 
@@ -143,7 +679,7 @@ namespace Onity.Benchmarks
 
             for (int scenarioIndex = 0; scenarioIndex < scenarios.Length; scenarioIndex++)
             {
-                ScenarioConfig config = scenarios[scenarioIndex];
+                ScenarioConfig config = ClampScenarioIterations(scenarios[scenarioIndex], maxIterationsPerSample);
                 int metricCount = 0;
 
                 for (int containerIndex = 0; containerIndex < s_containers.Length; containerIndex++)
@@ -157,7 +693,9 @@ namespace Onity.Benchmarks
                             metrics[metricCount] = MeasureScenario(
                                 containerKind,
                                 config,
-                                s_onityResolveModes[modeIndex]);
+                                s_onityResolveModes[modeIndex],
+                                samplesPerCase,
+                                warmupIterations);
                             metricCount++;
                         }
                     }
@@ -166,7 +704,9 @@ namespace Onity.Benchmarks
                         metrics[metricCount] = MeasureScenario(
                             containerKind,
                             config,
-                            OnityResolveMode.Reflection);
+                            OnityResolveMode.Reflection,
+                            samplesPerCase,
+                            warmupIterations);
                         metricCount++;
                     }
                 }
@@ -186,16 +726,25 @@ namespace Onity.Benchmarks
             return report;
         }
 
+        private static ScenarioConfig ClampScenarioIterations(ScenarioConfig config, int maxIterationsPerSample)
+        {
+            if (maxIterationsPerSample <= 0 || maxIterationsPerSample >= config.iterationsPerSample)
+            {
+                return config;
+            }
+
+            return new ScenarioConfig(config.scenario, config.displayName, maxIterationsPerSample);
+        }
+
         private static MetricReport MeasureScenario(
             BenchmarkContainerKind containerKind,
             ScenarioConfig config,
-            OnityResolveMode resolveMode)
+            OnityResolveMode resolveMode,
+            int samplesPerCase,
+            int warmupIterations)
         {
             bool isOnity = containerKind == BenchmarkContainerKind.Onity;
             object originalFlag = isOnity ? s_useBakedResolveProperty.GetValue(null) : null;
-            string containerLabel = BuildContainerLabel(containerKind, resolveMode);
-            UnityEngine.Debug.Log(
-                $"Onity DI player benchmark measuring {config.displayName} / {containerLabel} ({config.iterationsPerSample} iterations x {s_samplesPerCase} samples).");
 
             try
             {
@@ -204,13 +753,15 @@ namespace Onity.Benchmarks
                     s_useBakedResolveProperty.SetValue(null, resolveMode == OnityResolveMode.Baked);
                 }
 
-                double[] elapsedMsSamples = new double[s_samplesPerCase];
-                long[] allocSamples = new long[s_samplesPerCase];
+                double[] elapsedMsSamples = new double[samplesPerCase];
+                long[] allocSamples = new long[samplesPerCase];
+                ProfilerMarker measuredLoopMarker = new ProfilerMarker(
+                    BuildProfilerMarkerName(config, containerKind, resolveMode));
 
-                for (int sampleIndex = 0; sampleIndex < s_samplesPerCase; sampleIndex++)
+                for (int sampleIndex = 0; sampleIndex < samplesPerCase; sampleIndex++)
                 {
                     using BenchmarkOperation operation = CreateOperation(containerKind, config.scenario);
-                    int warmup = Math.Min(s_warmupIterations, config.iterationsPerSample);
+                    int warmup = Math.Min(warmupIterations, config.iterationsPerSample);
 
                     for (int i = 0; i < warmup; i++)
                     {
@@ -219,15 +770,21 @@ namespace Onity.Benchmarks
 
                     ForceFullGc();
 
+                    Stopwatch stopwatch = new Stopwatch();
                     long allocBefore = ReadGrossAllocatedBytes();
-                    Stopwatch stopwatch = Stopwatch.StartNew();
 
-                    for (int i = 0; i < config.iterationsPerSample; i++)
+                    using (measuredLoopMarker.Auto())
                     {
-                        operation.Invoke();
+                        stopwatch.Restart();
+
+                        for (int i = 0; i < config.iterationsPerSample; i++)
+                        {
+                            operation.Invoke();
+                        }
+
+                        stopwatch.Stop();
                     }
 
-                    stopwatch.Stop();
                     long allocAfter = ReadGrossAllocatedBytes();
 
                     elapsedMsSamples[sampleIndex] = stopwatch.Elapsed.TotalMilliseconds;
@@ -239,7 +796,7 @@ namespace Onity.Benchmarks
 
                 return new MetricReport
                 {
-                    container = containerLabel,
+                    container = BuildContainerLabel(containerKind, resolveMode),
                     meanMilliseconds = stats.mean,
                     minMilliseconds = stats.min,
                     maxMilliseconds = stats.max,
@@ -276,43 +833,6 @@ namespace Onity.Benchmarks
             }
         }
 
-        private static ScenarioConfig[] CreateScenarios(int iterationsPerSample, string scenarioFilter)
-        {
-            ScenarioConfig[] scenarios =
-            {
-                new ScenarioConfig(BenchmarkScenario.ResolveSingleton, "Resolve (Singleton)", iterationsPerSample),
-                new ScenarioConfig(BenchmarkScenario.ResolveTransient, "Resolve (Transient)", iterationsPerSample),
-                new ScenarioConfig(BenchmarkScenario.ResolveCombined, "Resolve (Combined)", iterationsPerSample),
-                new ScenarioConfig(BenchmarkScenario.ResolveComplex, "Resolve (Complex)", iterationsPerSample),
-                new ScenarioConfig(BenchmarkScenario.PrepareAndRegisterComplex, "Prepare & Register (Complex)", iterationsPerSample)
-            };
-
-            if (string.IsNullOrWhiteSpace(scenarioFilter))
-            {
-                return scenarios;
-            }
-
-            if (Enum.TryParse(scenarioFilter, true, out BenchmarkScenario selectedScenario) == false)
-            {
-                throw new ArgumentException(
-                    $"Unknown benchmark scenario '{scenarioFilter}'. Use a {nameof(BenchmarkScenario)} enum name.",
-                    nameof(scenarioFilter));
-            }
-
-            for (int i = 0; i < scenarios.Length; i++)
-            {
-                if (scenarios[i].scenario == selectedScenario)
-                {
-                    return new[] { scenarios[i] };
-                }
-            }
-
-            throw new ArgumentOutOfRangeException(
-                nameof(scenarioFilter),
-                scenarioFilter,
-                "Benchmark scenario is not configured.");
-        }
-
         private static BenchmarkOperation CreateOnityOperation(BenchmarkScenario scenario)
         {
             switch (scenario)
@@ -324,6 +844,35 @@ namespace Onity.Benchmarks
                     return new BenchmarkOperation(
                         () => BenchmarkBlackhole.Consume(container.Resolve<IBenchmarkSingletonService>()),
                         container.Dispose);
+                }
+                case BenchmarkScenario.ResolveKeyedSingleton:
+                {
+                    OnityContainer container = new OnityContainer();
+                    container.Bind<IBenchmarkSingletonService>()
+                        .To<BenchmarkSingletonService>().WithId(k_keyedServiceId).AsSingle();
+                    container.Build();
+                    ValidateSingleton(container.Resolve<IBenchmarkSingletonService>(k_keyedServiceId),
+                        container.Resolve<IBenchmarkSingletonService>(k_keyedServiceId));
+                    return new BenchmarkOperation(
+                        () => BenchmarkBlackhole.Consume(
+                            container.Resolve<IBenchmarkSingletonService>(k_keyedServiceId)),
+                        container.Dispose);
+                }
+                case BenchmarkScenario.ResolveScopedSingleton:
+                {
+                    OnityContainer root = new OnityContainer();
+                    root.Bind<IBenchmarkSingletonService>()
+                        .To<BenchmarkSingletonService>().AsScoped();
+                    root.Build();
+                    OnityContainer scope = new OnityContainer(root);
+                    scope.Build();
+                    ValidateSingleton(scope.Resolve<IBenchmarkSingletonService>(),
+                        scope.Resolve<IBenchmarkSingletonService>());
+                    ValidateSeparateScopes(root.Resolve<IBenchmarkSingletonService>(),
+                        scope.Resolve<IBenchmarkSingletonService>());
+                    return new BenchmarkOperation(
+                        () => BenchmarkBlackhole.Consume(scope.Resolve<IBenchmarkSingletonService>()),
+                        () => { scope.Dispose(); root.Dispose(); });
                 }
 
                 case BenchmarkScenario.ResolveTransient:
@@ -381,6 +930,34 @@ namespace Onity.Benchmarks
                         () => BenchmarkBlackhole.Consume(resolver.Resolve<IBenchmarkSingletonService>()),
                         resolver.Dispose);
                 }
+                case BenchmarkScenario.ResolveKeyedSingleton:
+                {
+                    ContainerBuilder builder = new ContainerBuilder();
+                    builder.Register<IBenchmarkSingletonService, BenchmarkSingletonService>(
+                        VContainer.Lifetime.Singleton).Keyed(k_keyedServiceId);
+                    IObjectResolver resolver = builder.Build();
+                    ValidateSingleton(resolver.Resolve<IBenchmarkSingletonService>(k_keyedServiceId),
+                        resolver.Resolve<IBenchmarkSingletonService>(k_keyedServiceId));
+                    return new BenchmarkOperation(
+                        () => BenchmarkBlackhole.Consume(
+                            resolver.Resolve<IBenchmarkSingletonService>(k_keyedServiceId)),
+                        resolver.Dispose);
+                }
+                case BenchmarkScenario.ResolveScopedSingleton:
+                {
+                    ContainerBuilder builder = new ContainerBuilder();
+                    builder.Register<IBenchmarkSingletonService, BenchmarkSingletonService>(
+                        VContainer.Lifetime.Scoped);
+                    IObjectResolver root = builder.Build();
+                    IObjectResolver scope = root.CreateScope();
+                    ValidateSingleton(scope.Resolve<IBenchmarkSingletonService>(),
+                        scope.Resolve<IBenchmarkSingletonService>());
+                    ValidateSeparateScopes(root.Resolve<IBenchmarkSingletonService>(),
+                        scope.Resolve<IBenchmarkSingletonService>());
+                    return new BenchmarkOperation(
+                        () => BenchmarkBlackhole.Consume(scope.Resolve<IBenchmarkSingletonService>()),
+                        () => { scope.Dispose(); root.Dispose(); });
+                }
 
                 case BenchmarkScenario.ResolveTransient:
                 {
@@ -436,6 +1013,30 @@ namespace Onity.Benchmarks
                     return new BenchmarkOperation(
                         () => BenchmarkBlackhole.Consume(container.Resolve<IBenchmarkSingletonService>()));
                 }
+                case BenchmarkScenario.ResolveKeyedSingleton:
+                {
+                    DiContainer container = new DiContainer();
+                    container.Bind<IBenchmarkSingletonService>().WithId(k_keyedServiceId)
+                        .To<BenchmarkSingletonService>().AsSingle();
+                    ValidateSingleton(container.ResolveId<IBenchmarkSingletonService>(k_keyedServiceId),
+                        container.ResolveId<IBenchmarkSingletonService>(k_keyedServiceId));
+                    return new BenchmarkOperation(
+                        () => BenchmarkBlackhole.Consume(
+                            container.ResolveId<IBenchmarkSingletonService>(k_keyedServiceId)));
+                }
+                case BenchmarkScenario.ResolveScopedSingleton:
+                {
+                    DiContainer root = new DiContainer();
+                    root.Bind<IBenchmarkSingletonService>().To<BenchmarkSingletonService>().AsSingle();
+                    DiContainer scope = root.CreateSubContainer();
+                    scope.Bind<IBenchmarkSingletonService>().To<BenchmarkSingletonService>().AsSingle();
+                    ValidateSingleton(scope.Resolve<IBenchmarkSingletonService>(),
+                        scope.Resolve<IBenchmarkSingletonService>());
+                    ValidateSeparateScopes(root.Resolve<IBenchmarkSingletonService>(),
+                        scope.Resolve<IBenchmarkSingletonService>());
+                    return new BenchmarkOperation(
+                        () => BenchmarkBlackhole.Consume(scope.Resolve<IBenchmarkSingletonService>()));
+                }
 
                 case BenchmarkScenario.ResolveTransient:
                 {
@@ -476,6 +1077,22 @@ namespace Onity.Benchmarks
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "Unknown benchmark scenario.");
+            }
+        }
+
+        private static void ValidateSingleton(object first, object second)
+        {
+            if (!ReferenceEquals(first, second))
+            {
+                throw new InvalidOperationException("Benchmark registration did not reuse the singleton.");
+            }
+        }
+
+        private static void ValidateSeparateScopes(object first, object second)
+        {
+            if (ReferenceEquals(first, second))
+            {
+                throw new InvalidOperationException("Benchmark scopes shared an instance.");
             }
         }
 
@@ -696,7 +1313,10 @@ namespace Onity.Benchmarks
             Directory.CreateDirectory(directory);
 
             string fileStamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
-            string versionedJson = Path.Combine(directory, $"di-benchmark-player-{fileStamp}.json");
+            string versionedJson = Path.Combine(directory,
+                report.scope == "Onity Baked hot paths, interleaved"
+                    ? $"di-benchmark-player-hot-paths-{fileStamp}.json"
+                    : $"di-benchmark-player-{fileStamp}.json");
             string latestCsv = Path.ChangeExtension(latestJson, ".csv");
             string latestMarkdown = Path.ChangeExtension(latestJson, ".md");
 
@@ -744,6 +1364,7 @@ namespace Onity.Benchmarks
             builder.AppendLine($"- Unity: `{report.unityVersion}`");
             builder.AppendLine($"- Platform: `{report.platform}`");
             builder.AppendLine($"- Scripting backend: `{report.scriptingBackend}`");
+            builder.AppendLine($"- Scope: `{report.scope}`");
             builder.AppendLine($"- Compiled activation supported: `{report.compiledActivationSupported}`");
             builder.AppendLine($"- Generated activators registered: `{report.generatedActivatorsRegistered}`");
             builder.AppendLine($"- Allocation measurement available: `{report.allocationMeasurementAvailable}`");
@@ -769,7 +1390,48 @@ namespace Onity.Benchmarks
                 }
             }
 
+            if (report.scope == "Onity Baked hot paths, interleaved")
+            {
+                AppendHotPathMarkdown(builder, report);
+            }
+
             return builder.ToString();
+        }
+
+        private static void AppendHotPathMarkdown(StringBuilder builder, BenchmarkReport report)
+        {
+            builder.AppendLine();
+            builder.AppendLine("| Scenario | Median (ns/op) | Q1–Q3 (ns/op) | Range (ns/op) | Samples with GC |");
+            builder.AppendLine("|---|---:|---:|---:|---:|");
+
+            for (int i = 0; i < report.scenarios.Length; i++)
+            {
+                ScenarioReport scenario = report.scenarios[i];
+                MetricReport metric = scenario.results[0];
+                int gcSamples = 0;
+                for (int sample = 0; sample < metric.sampleNanosecondsPerOperation.Length; sample++)
+                {
+                    if (metric.gen0CollectionsPerSample[sample] > 0 ||
+                        metric.gen1CollectionsPerSample[sample] > 0 ||
+                        metric.gen2CollectionsPerSample[sample] > 0)
+                    {
+                        gcSamples++;
+                    }
+                }
+
+                builder.Append("| ").Append(scenario.displayName).Append(" | ");
+                builder.Append(metric.medianNanosecondsPerOperation.ToString("F2", CultureInfo.InvariantCulture))
+                    .Append(" | ");
+                builder.Append(metric.q1NanosecondsPerOperation.ToString("F2", CultureInfo.InvariantCulture))
+                    .Append("–")
+                    .Append(metric.q3NanosecondsPerOperation.ToString("F2", CultureInfo.InvariantCulture))
+                    .Append(" | ");
+                builder.Append((metric.minMilliseconds * 1000000d / scenario.iterationsPerSample)
+                    .ToString("F2", CultureInfo.InvariantCulture)).Append("–");
+                builder.Append((metric.maxMilliseconds * 1000000d / scenario.iterationsPerSample)
+                    .ToString("F2", CultureInfo.InvariantCulture)).Append(" | ");
+                builder.Append(gcSamples).Append("/").Append(report.samplesPerCase).AppendLine(" |");
+            }
         }
 
         private static string EscapeCsv(string value)
@@ -787,7 +1449,7 @@ namespace Onity.Benchmarks
             return value;
         }
 
-        private static string GetOutputPath(string[] args)
+        private static string GetOutputPath(string[] args, bool hotPathsOnly = false)
         {
             string explicitOutput = GetArgumentValue(args, k_outputArgument);
 
@@ -796,7 +1458,8 @@ namespace Onity.Benchmarks
                 return Path.GetFullPath(explicitOutput);
             }
 
-            return Path.Combine(Application.persistentDataPath, k_latestJsonFileName);
+            return Path.Combine(Application.persistentDataPath,
+                hotPathsOnly ? k_latestHotPathJsonFileName : k_latestJsonFileName);
         }
 
         private static bool HasArgument(string[] args, string argument)
@@ -825,19 +1488,6 @@ namespace Onity.Benchmarks
             return null;
         }
 
-        private static int GetPositiveIntArgument(string[] args, string argument, int fallback)
-        {
-            string value = GetArgumentValue(args, argument);
-
-            if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed)
-                && parsed > 0)
-            {
-                return parsed;
-            }
-
-            return fallback;
-        }
-
         private static string BuildContainerLabel(BenchmarkContainerKind containerKind, OnityResolveMode resolveMode)
         {
             if (containerKind != BenchmarkContainerKind.Onity)
@@ -846,6 +1496,19 @@ namespace Onity.Benchmarks
             }
 
             return resolveMode == OnityResolveMode.Baked ? "Onity (Baked)" : "Onity (Reflection)";
+        }
+
+        private static string BuildProfilerMarkerName(
+            ScenarioConfig config,
+            BenchmarkContainerKind containerKind,
+            OnityResolveMode resolveMode)
+        {
+            string containerLabel = BuildContainerLabel(containerKind, resolveMode)
+                .Replace(" ", string.Empty)
+                .Replace("(", string.Empty)
+                .Replace(")", string.Empty);
+
+            return $"Onity.DI.Benchmark/{config.scenario}/{containerLabel}";
         }
 
         private static string GetScriptingBackendLabel()
@@ -951,6 +1614,7 @@ namespace Onity.Benchmarks
             public bool compiledActivationSupported;
             public int generatedActivatorsRegistered;
             public bool allocationMeasurementAvailable;
+            public string scope;
             public int samplesPerCase;
             public int warmupIterations;
             public ScenarioReport[] scenarios;
@@ -976,6 +1640,13 @@ namespace Onity.Benchmarks
             public double nanosecondsPerOperation;
             public double allocBytesPerSampleMean;
             public double allocBytesPerOperationMean;
+            public double medianNanosecondsPerOperation;
+            public double q1NanosecondsPerOperation;
+            public double q3NanosecondsPerOperation;
+            public double[] sampleNanosecondsPerOperation;
+            public int[] gen0CollectionsPerSample;
+            public int[] gen1CollectionsPerSample;
+            public int[] gen2CollectionsPerSample;
         }
 
         private readonly struct ScenarioConfig
@@ -1027,7 +1698,9 @@ namespace Onity.Benchmarks
             ResolveTransient = 1,
             ResolveCombined = 2,
             ResolveComplex = 3,
-            PrepareAndRegisterComplex = 4
+            PrepareAndRegisterComplex = 4,
+            ResolveKeyedSingleton = 5,
+            ResolveScopedSingleton = 6
         }
 
         private sealed class BenchmarkOperation : IDisposable
@@ -1288,6 +1961,84 @@ namespace Onity.Benchmarks
                 BenchmarkBlackhole.Consume(complexServiceD);
                 BenchmarkBlackhole.Consume(complexServiceE);
                 BenchmarkBlackhole.Consume(benchmarkTransientService);
+            }
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        internal static object[] CreateZenjectIntArrayPool(
+            Func<int[]> create,
+            Action<int[], int, int> initialize,
+            Action<int[]> reset)
+        {
+            if (create == null)
+            {
+                throw new ArgumentNullException(nameof(create));
+            }
+
+            if (initialize == null)
+            {
+                throw new ArgumentNullException(nameof(initialize));
+            }
+
+            if (reset == null)
+            {
+                throw new ArgumentNullException(nameof(reset));
+            }
+
+            DiContainer container = new DiContainer();
+            container.BindMemoryPool<int[], IntArrayMemoryPool>()
+                .WithFixedSize(32)
+                .FromMethod(_ => create());
+            IntArrayMemoryPool pool = container.Resolve<IntArrayMemoryPool>();
+            pool.SetCallbacks(initialize, reset);
+
+            Func<int, int, int[]> acquire = pool.Spawn;
+            Action<int[]> release = pool.Despawn;
+            Func<int> active = () => pool.NumActive;
+            Func<int> inactive = () => pool.NumInactive;
+            Func<int> total = () => pool.NumTotal;
+#if ZEN_STRIP_ASSERTS_IN_BUILDS
+            const bool stripAssertsInBuilds = true;
+#else
+            const bool stripAssertsInBuilds = false;
+#endif
+#if ZEN_INTERNAL_PROFILING
+            const bool internalProfiling = true;
+#else
+            const bool internalProfiling = false;
+#endif
+            return new object[]
+            {
+                "onity-zenject-int-array-v1", acquire, release, active, inactive, total,
+                pool, stripAssertsInBuilds, internalProfiling
+            };
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        internal sealed class IntArrayMemoryPool : MemoryPool<int, int, int[]>
+        {
+            private Action<int[], int, int> m_initialize;
+            private Action<int[]> m_reset;
+
+            [UnityEngine.Scripting.Preserve]
+            public IntArrayMemoryPool()
+            {
+            }
+
+            public void SetCallbacks(Action<int[], int, int> initialize, Action<int[]> reset)
+            {
+                m_initialize = initialize;
+                m_reset = reset;
+            }
+
+            protected override void Reinitialize(int damage, int ownerId, int[] item)
+            {
+                m_initialize(item, damage, ownerId);
+            }
+
+            protected override void OnDespawned(int[] item)
+            {
+                m_reset(item);
             }
         }
     }

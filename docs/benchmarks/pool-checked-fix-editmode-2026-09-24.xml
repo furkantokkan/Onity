@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="24" result="Passed" total="24" passed="24" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-09-24 02:55:23Z" end-time="2026-09-24 02:55:30Z" duration="6.5785065">
+  <test-suite type="TestSuite" id="1000" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="482" result="Passed" start-time="2026-09-24 02:55:23Z" end-time="2026-09-24 02:55:30Z" duration="6.578507" total="24" passed="24" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1522" name="Onity.Tests.EditMode.dll" fullname="C:/Users/e-fur/Documents/Repos/Onity/Library/ScriptAssemblies/Onity.Tests.EditMode.dll" runstate="Runnable" testcasecount="481" result="Passed" start-time="2026-09-24 02:55:23Z" end-time="2026-09-24 02:55:30Z" duration="6.558965" total="24" passed="24" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="75160" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1523" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="481" result="Passed" start-time="2026-09-24 02:55:23Z" end-time="2026-09-24 02:55:30Z" duration="6.543962" total="24" passed="24" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1524" name="Tests" fullname="Onity.Tests" runstate="Runnable" testcasecount="481" result="Passed" start-time="2026-09-24 02:55:23Z" end-time="2026-09-24 02:55:30Z" duration="6.529903" total="24" passed="24" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1525" name="EditMode" fullname="Onity.Tests.EditMode" runstate="Runnable" testcasecount="481" result="Passed" start-time="2026-09-24 02:55:23Z" end-time="2026-09-24 02:55:30Z" duration="6.515783" total="24" passed="24" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1458" name="PoolingTests" fullname="Onity.Tests.EditMode.PoolingTests" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" testcasecount="24" result="Passed" start-time="2026-09-24 02:55:23Z" end-time="2026-09-24 02:55:30Z" duration="6.498178" total="24" passed="24" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1482" name="BindPooledFactory_BindsFactoryAndPool_WithSingleCall" fullname="Onity.Tests.EditMode.PoolingTests.BindPooledFactory_BindsFactoryAndPool_WithSingleCall" methodname="BindPooledFactory_BindsFactoryAndPool_WithSingleCall" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="1376352635" result="Passed" start-time="2026-09-24 02:55:23Z" end-time="2026-09-24 02:55:23Z" duration="0.033792" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1476" name="MeasureCheckedWarmedRentReturnAgainstUnity" fullname="Onity.Tests.EditMode.PoolingTests.MeasureCheckedWarmedRentReturnAgainstUnity" methodname="MeasureCheckedWarmedRentReturnAgainstUnity" classname="Onity.Tests.EditMode.PoolingTests" runstate="Explicit" seed="618362048" result="Passed" start-time="2026-09-24 02:55:23Z" end-time="2026-09-24 02:55:25Z" duration="1.504666" asserts="0">
+                <properties>
+                  <property name="_SKIPREASON" value="Run by exact name to isolate checked Onity pool wrapper cost in the Editor." />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Unity pool (collection check)/Unity pool (collection check + diagnostic atomics) paired median: 0.972x, Q1-Q3 0.952-1.007, range 0.837-1.099
+Onity pool (collection check)/Unity pool (collection check + diagnostic atomics) paired median: 2.690x, Q1-Q3 2.622-2.783, range 2.444-2.971
+Unity pool (collection check): median 110.2 ns/pair, range 108.4-123.2
+Unity pool (collection check + diagnostic atomics): median 113.1 ns/pair, range 111.5-134.5
+Onity pool (collection check): median 304.2 ns/pair, range 295.9-340.5
+Profiler.enabled=False; warmed GC.Alloc events per 64 pairs: all three paths 0
+]]></output>
+              </test-case>
+              <test-case id="1474" name="MeasureWarmedRentReturn" fullname="Onity.Tests.EditMode.PoolingTests.MeasureWarmedRentReturn" methodname="MeasureWarmedRentReturn" classname="Onity.Tests.EditMode.PoolingTests" runstate="Explicit" seed="1069477956" result="Passed" start-time="2026-09-24 02:55:25Z" end-time="2026-09-24 02:55:28Z" duration="3.230087" asserts="0">
+                <properties>
+                  <property name="_SKIPREASON" value="Run by exact name to measure warmed pool and factory dispatch in the Editor." />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Raw Unity pool: median 100.1 ns/pair, range 98.8-103.1
+Raw Unity pool + atomic counters: median 102.8 ns/pair, range 99.1-103.4
+Onity pool: median 147.4 ns/pair, range 144.3-149.4
+Onity pooled factory: median 153.5 ns/pair, range 150.2-158.3
+Onity pool (1 param): median 154.6 ns/pair, range 150.3-180.0
+Onity pooled factory (1 param): median 169.1 ns/pair, range 163.5-189.6
+Onity pool (2 params): median 164.8 ns/pair, range 163.2-179.2
+Onity pooled factory (2 params): median 169.3 ns/pair, range 166.1-178.4
+Onity/raw paired median: 1.47x
+Onity/raw + atomics paired median: 1.44x
+Factory/pool paired median: 1.04x
+]]></output>
+              </test-case>
+              <test-case id="1475" name="MeasureWarmedRentReturnAgainstZenject" fullname="Onity.Tests.EditMode.PoolingTests.MeasureWarmedRentReturnAgainstZenject" methodname="MeasureWarmedRentReturnAgainstZenject" classname="Onity.Tests.EditMode.PoolingTests" runstate="Explicit" seed="1279776584" result="Passed" start-time="2026-09-24 02:55:28Z" end-time="2026-09-24 02:55:30Z" duration="1.686666" asserts="0">
+                <properties>
+                  <property name="_SKIPREASON" value="Run by exact name to compare warmed Onity and Zenject pools in the Editor." />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Profiler.enabled=False, Zenject UnityMainThread=current thread: False
+Warmed GC.Alloc events per 64 pairs: Onity default 0, Onity checked 0, Zenject 0
+Onity pool (default)/Zenject MemoryPool paired median: 1.122x, Q1-Q3 1.106-1.152, range 1.082-1.245
+Onity pool (collection check)/Zenject MemoryPool paired median: 2.323x, Q1-Q3 2.291-2.362, range 2.234-2.517
+Onity pool (default): median 149.0 ns/pair, range 144.3-162.8
+Onity pool (collection check): median 304.4 ns/pair, range 297.9-331.4
+Zenject MemoryPool: median 131.7 ns/pair, range 130.5-137.9
+]]></output>
+              </test-case>
+              <test-case id="1463" name="OnityObjectPool_CheckedReturns_RejectDuplicatesBeforeHooksOrCounters" fullname="Onity.Tests.EditMode.PoolingTests.OnityObjectPool_CheckedReturns_RejectDuplicatesBeforeHooksOrCounters" methodname="OnityObjectPool_CheckedReturns_RejectDuplicatesBeforeHooksOrCounters" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="1772157749" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.002190" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1465" name="OnityObjectPool_CheckedReturns_TrackRetriesOverflowAndClear" fullname="Onity.Tests.EditMode.PoolingTests.OnityObjectPool_CheckedReturns_TrackRetriesOverflowAndClear" methodname="OnityObjectPool_CheckedReturns_TrackRetriesOverflowAndClear" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="853491747" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000992" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1464" name="OnityObjectPool_CheckedReturns_UseReferenceIdentity" fullname="Onity.Tests.EditMode.PoolingTests.OnityObjectPool_CheckedReturns_UseReferenceIdentity" methodname="OnityObjectPool_CheckedReturns_UseReferenceIdentity" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="929786803" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000922" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1472" name="OnityObjectPool_CheckedWarmedRentReturn_DoesNotAllocate" fullname="Onity.Tests.EditMode.PoolingTests.OnityObjectPool_CheckedWarmedRentReturn_DoesNotAllocate" methodname="OnityObjectPool_CheckedWarmedRentReturn_DoesNotAllocate" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="1311856741" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000428" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1461" name="OnityObjectPool_Dispose_RejectsFurtherOperations" fullname="Onity.Tests.EditMode.PoolingTests.OnityObjectPool_Dispose_RejectsFurtherOperations" methodname="OnityObjectPool_Dispose_RejectsFurtherOperations" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="2103673041" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.001063" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1466" name="OnityObjectPool_FailedInitialPrewarmDisposesCreatedItems" fullname="Onity.Tests.EditMode.PoolingTests.OnityObjectPool_FailedInitialPrewarmDisposesCreatedItems" methodname="OnityObjectPool_FailedInitialPrewarmDisposesCreatedItems" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="1929277823" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000497" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1460" name="OnityObjectPool_GetHookFailure_ReturnsItemToFixedPool" fullname="Onity.Tests.EditMode.PoolingTests.OnityObjectPool_GetHookFailure_ReturnsItemToFixedPool" methodname="OnityObjectPool_GetHookFailure_ReturnsItemToFixedPool" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="235220613" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000799" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1471" name="OnityObjectPool_InitializerFailure_RestoresFixedCapacityWithoutHooks" fullname="Onity.Tests.EditMode.PoolingTests.OnityObjectPool_InitializerFailure_RestoresFixedCapacityWithoutHooks" methodname="OnityObjectPool_InitializerFailure_RestoresFixedCapacityWithoutHooks" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="180240956" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000585" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1462" name="OnityObjectPool_PrewarmAndFixedCapacity_CreateDistinctItemsWithoutHooks" fullname="Onity.Tests.EditMode.PoolingTests.OnityObjectPool_PrewarmAndFixedCapacity_CreateDistinctItemsWithoutHooks" methodname="OnityObjectPool_PrewarmAndFixedCapacity_CreateDistinctItemsWithoutHooks" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="2016482737" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000592" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1459" name="OnityObjectPool_ReusesReleasedInstances" fullname="Onity.Tests.EditMode.PoolingTests.OnityObjectPool_ReusesReleasedInstances" methodname="OnityObjectPool_ReusesReleasedInstances" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="622975581" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000403" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1467" name="PooledFactories_ApplyNewParametersBeforeEachGetHook" fullname="Onity.Tests.EditMode.PoolingTests.PooledFactories_ApplyNewParametersBeforeEachGetHook" methodname="PooledFactories_ApplyNewParametersBeforeEachGetHook" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="1357137872" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000815" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1479" name="PrefabComponentPool_Dispose_RejectsFurtherOperations" fullname="Onity.Tests.EditMode.PoolingTests.PrefabComponentPool_Dispose_RejectsFurtherOperations" methodname="PrefabComponentPool_Dispose_RejectsFurtherOperations" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="1790363368" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.002250" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1477" name="PrefabComponentPool_GetAndRelease_InvokesHooksAndTogglesActiveState" fullname="Onity.Tests.EditMode.PoolingTests.PrefabComponentPool_GetAndRelease_InvokesHooksAndTogglesActiveState" methodname="PrefabComponentPool_GetAndRelease_InvokesHooksAndTogglesActiveState" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="309142970" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000676" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1478" name="PrefabComponentPool_GetHookFailure_ReturnsItemToFixedPool" fullname="Onity.Tests.EditMode.PoolingTests.PrefabComponentPool_GetHookFailure_ReturnsItemToFixedPool" methodname="PrefabComponentPool_GetHookFailure_ReturnsItemToFixedPool" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="1884643935" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.001784" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1481" name="PrefabComponentPool_PrewarmAndParameterizedGet_ApplyStateBeforePoolHook" fullname="Onity.Tests.EditMode.PoolingTests.PrefabComponentPool_PrewarmAndParameterizedGet_ApplyStateBeforePoolHook" methodname="PrefabComponentPool_PrewarmAndParameterizedGet_ApplyStateBeforePoolHook" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="552650205" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.002148" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1470" name="TwoParameterPooledFactory_RecoversFromInitializationFailureAndRejectsExhaustion" fullname="Onity.Tests.EditMode.PoolingTests.TwoParameterPooledFactory_RecoversFromInitializationFailureAndRejectsExhaustion" methodname="TwoParameterPooledFactory_RecoversFromInitializationFailureAndRejectsExhaustion" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="1856860267" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000827" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1469" name="TwoParameterPooledFactory_RejectsNullArguments" fullname="Onity.Tests.EditMode.PoolingTests.TwoParameterPooledFactory_RejectsNullArguments" methodname="TwoParameterPooledFactory_RejectsNullArguments" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="390813961" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000583" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1468" name="TwoParameterPooledFactory_UsesExplicitInterfaceImplementation" fullname="Onity.Tests.EditMode.PoolingTests.TwoParameterPooledFactory_UsesExplicitInterfaceImplementation" methodname="TwoParameterPooledFactory_UsesExplicitInterfaceImplementation" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="112692188" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000397" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1473" name="WarmedPoolAndPooledFactories_DoNotAllocatePerRentReturn" fullname="Onity.Tests.EditMode.PoolingTests.WarmedPoolAndPooledFactories_DoNotAllocatePerRentReturn" methodname="WarmedPoolAndPooledFactories_DoNotAllocatePerRentReturn" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="2104881275" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.001026" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1480" name="WarmedPrefabPool_DoesNotAllocatePerRentReturn" fullname="Onity.Tests.EditMode.PoolingTests.WarmedPrefabPool_DoesNotAllocatePerRentReturn" methodname="WarmedPrefabPool_DoesNotAllocatePerRentReturn" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" seed="1827225571" result="Passed" start-time="2026-09-24 02:55:30Z" end-time="2026-09-24 02:55:30Z" duration="0.000715" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/e-fur/AppData/LocalLow/DefaultCompany/Onity\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

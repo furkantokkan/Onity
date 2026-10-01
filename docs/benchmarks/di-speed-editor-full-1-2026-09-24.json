@@ -1,0 +1,340 @@
+﻿{
+    "generatedAtUtc": "2026-09-23T22:25:16Z",
+    "unityVersion": "2022.3.62f3",
+    "platform": "WindowsEditor",
+    "samplesPerCase": 8,
+    "warmupIterations": 512,
+    "allocationMeasured": false,
+    "allocationCounter": "Unavailable",
+    "scenarios": [
+        {
+            "scenario": "ResolveSingleton",
+            "displayName": "Resolve (Singleton)",
+            "iterationsPerSample": 10000,
+            "results": [
+                {
+                    "container": "Onity (Reflection)",
+                    "meanMilliseconds": 2.1464250000000004,
+                    "minMilliseconds": 1.8124,
+                    "maxMilliseconds": 3.4556,
+                    "standardDeviationMilliseconds": 0.5728671742085719,
+                    "nanosecondsPerOperation": 214.64250000000005,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Onity (Baked)",
+                    "meanMilliseconds": 0.7824000000000001,
+                    "minMilliseconds": 0.6940000000000001,
+                    "maxMilliseconds": 1.2637,
+                    "standardDeviationMilliseconds": 0.19547565431165957,
+                    "nanosecondsPerOperation": 78.24000000000001,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "VContainer",
+                    "meanMilliseconds": 1.583625,
+                    "minMilliseconds": 1.5504,
+                    "maxMilliseconds": 1.6614,
+                    "standardDeviationMilliseconds": 0.03456479422765307,
+                    "nanosecondsPerOperation": 158.3625,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Zenject",
+                    "meanMilliseconds": 24.9705875,
+                    "minMilliseconds": 23.451700000000004,
+                    "maxMilliseconds": 28.922700000000004,
+                    "standardDeviationMilliseconds": 1.8238917742309007,
+                    "nanosecondsPerOperation": 2497.05875,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                }
+            ]
+        },
+        {
+            "scenario": "ResolveTransient",
+            "displayName": "Resolve (Transient)",
+            "iterationsPerSample": 10000,
+            "results": [
+                {
+                    "container": "Onity (Reflection)",
+                    "meanMilliseconds": 9.063987500000002,
+                    "minMilliseconds": 7.4167000000000009,
+                    "maxMilliseconds": 10.4875,
+                    "standardDeviationMilliseconds": 1.0136635739978036,
+                    "nanosecondsPerOperation": 906.3987500000002,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Onity (Baked)",
+                    "meanMilliseconds": 7.5089250000000009,
+                    "minMilliseconds": 6.460100000000001,
+                    "maxMilliseconds": 9.0593,
+                    "standardDeviationMilliseconds": 0.9562680403527036,
+                    "nanosecondsPerOperation": 750.8925,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "VContainer",
+                    "meanMilliseconds": 18.217225,
+                    "minMilliseconds": 14.7287,
+                    "maxMilliseconds": 21.6447,
+                    "standardDeviationMilliseconds": 2.6688007353491196,
+                    "nanosecondsPerOperation": 1821.7225,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Zenject",
+                    "meanMilliseconds": 224.64451250000003,
+                    "minMilliseconds": 138.9413,
+                    "maxMilliseconds": 378.7196,
+                    "standardDeviationMilliseconds": 72.8004232933031,
+                    "nanosecondsPerOperation": 22464.451250000002,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                }
+            ]
+        },
+        {
+            "scenario": "ResolveCombined",
+            "displayName": "Resolve (Combined)",
+            "iterationsPerSample": 10000,
+            "results": [
+                {
+                    "container": "Onity (Reflection)",
+                    "meanMilliseconds": 13.407800000000002,
+                    "minMilliseconds": 10.1141,
+                    "maxMilliseconds": 16.8398,
+                    "standardDeviationMilliseconds": 2.7648850293844569,
+                    "nanosecondsPerOperation": 1340.7800000000002,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Onity (Baked)",
+                    "meanMilliseconds": 9.774525,
+                    "minMilliseconds": 6.5239,
+                    "maxMilliseconds": 12.963600000000002,
+                    "standardDeviationMilliseconds": 2.281466909531172,
+                    "nanosecondsPerOperation": 977.4525,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "VContainer",
+                    "meanMilliseconds": 27.4527375,
+                    "minMilliseconds": 21.979000000000004,
+                    "maxMilliseconds": 35.597,
+                    "standardDeviationMilliseconds": 4.017411707248302,
+                    "nanosecondsPerOperation": 2745.27375,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Zenject",
+                    "meanMilliseconds": 216.8518625,
+                    "minMilliseconds": 173.32510000000003,
+                    "maxMilliseconds": 305.39660000000006,
+                    "standardDeviationMilliseconds": 39.888382553425177,
+                    "nanosecondsPerOperation": 21685.18625,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                }
+            ]
+        },
+        {
+            "scenario": "ResolveComplex",
+            "displayName": "Resolve (Complex)",
+            "iterationsPerSample": 10000,
+            "results": [
+                {
+                    "container": "Onity (Reflection)",
+                    "meanMilliseconds": 218.82047500000003,
+                    "minMilliseconds": 180.9117,
+                    "maxMilliseconds": 269.94710000000006,
+                    "standardDeviationMilliseconds": 25.774592833904707,
+                    "nanosecondsPerOperation": 21882.047500000004,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Onity (Baked)",
+                    "meanMilliseconds": 217.93696250000006,
+                    "minMilliseconds": 185.23160000000002,
+                    "maxMilliseconds": 250.5077,
+                    "standardDeviationMilliseconds": 27.689580253380379,
+                    "nanosecondsPerOperation": 21793.696250000005,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "VContainer",
+                    "meanMilliseconds": 632.4772750000001,
+                    "minMilliseconds": 550.4503,
+                    "maxMilliseconds": 757.2731,
+                    "standardDeviationMilliseconds": 75.37461687456764,
+                    "nanosecondsPerOperation": 63247.727500000015,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Zenject",
+                    "meanMilliseconds": 4401.042125,
+                    "minMilliseconds": 2993.7933000000003,
+                    "maxMilliseconds": 8936.4818,
+                    "standardDeviationMilliseconds": 2021.6533958390587,
+                    "nanosecondsPerOperation": 440104.2125,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                }
+            ]
+        },
+        {
+            "scenario": "PrepareAndRegisterComplex",
+            "displayName": "Prepare & Register (Complex)",
+            "iterationsPerSample": 10000,
+            "results": [
+                {
+                    "container": "Onity (Reflection)",
+                    "meanMilliseconds": 390.9406500000001,
+                    "minMilliseconds": 364.89300000000005,
+                    "maxMilliseconds": 405.34720000000007,
+                    "standardDeviationMilliseconds": 13.056603317971226,
+                    "nanosecondsPerOperation": 39094.06500000001,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Onity (Baked)",
+                    "meanMilliseconds": 510.41641250000006,
+                    "minMilliseconds": 478.60650000000006,
+                    "maxMilliseconds": 538.682,
+                    "standardDeviationMilliseconds": 22.43771581883869,
+                    "nanosecondsPerOperation": 51041.64125000001,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "VContainer",
+                    "meanMilliseconds": 1378.294075,
+                    "minMilliseconds": 1334.3105,
+                    "maxMilliseconds": 1457.828,
+                    "standardDeviationMilliseconds": 49.90103695695395,
+                    "nanosecondsPerOperation": 137829.4075,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Zenject",
+                    "meanMilliseconds": 1802.37445,
+                    "minMilliseconds": 1780.1487000000002,
+                    "maxMilliseconds": 1844.6766,
+                    "standardDeviationMilliseconds": 21.418067009419837,
+                    "nanosecondsPerOperation": 180237.445,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                }
+            ]
+        },
+        {
+            "scenario": "ResolveKeyedSingleton",
+            "displayName": "Resolve (Keyed Singleton)",
+            "iterationsPerSample": 10000,
+            "results": [
+                {
+                    "container": "Onity (Reflection)",
+                    "meanMilliseconds": 1.2655374999999998,
+                    "minMilliseconds": 1.2202,
+                    "maxMilliseconds": 1.32,
+                    "standardDeviationMilliseconds": 0.03379792628888011,
+                    "nanosecondsPerOperation": 126.55374999999998,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Onity (Baked)",
+                    "meanMilliseconds": 1.3472000000000002,
+                    "minMilliseconds": 1.2319,
+                    "maxMilliseconds": 1.9937,
+                    "standardDeviationMilliseconds": 0.26186620902394305,
+                    "nanosecondsPerOperation": 134.72000000000004,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "VContainer",
+                    "meanMilliseconds": 2.4651,
+                    "minMilliseconds": 2.0581,
+                    "maxMilliseconds": 3.826,
+                    "standardDeviationMilliseconds": 0.6740213752439268,
+                    "nanosecondsPerOperation": 246.51,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Zenject",
+                    "meanMilliseconds": 29.8035875,
+                    "minMilliseconds": 27.9544,
+                    "maxMilliseconds": 33.9221,
+                    "standardDeviationMilliseconds": 1.8373890383892187,
+                    "nanosecondsPerOperation": 2980.35875,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                }
+            ]
+        },
+        {
+            "scenario": "ResolveScopedSingleton",
+            "displayName": "Resolve (Scoped Singleton)",
+            "iterationsPerSample": 10000,
+            "results": [
+                {
+                    "container": "Onity (Reflection)",
+                    "meanMilliseconds": 4.141475,
+                    "minMilliseconds": 3.9125,
+                    "maxMilliseconds": 4.7412,
+                    "standardDeviationMilliseconds": 0.26927137532873515,
+                    "nanosecondsPerOperation": 414.1475,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Onity (Baked)",
+                    "meanMilliseconds": 1.6650375,
+                    "minMilliseconds": 1.4703000000000002,
+                    "maxMilliseconds": 2.5126,
+                    "standardDeviationMilliseconds": 0.3453733174303671,
+                    "nanosecondsPerOperation": 166.50375,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "VContainer",
+                    "meanMilliseconds": 2.669325,
+                    "minMilliseconds": 2.5385,
+                    "maxMilliseconds": 3.071,
+                    "standardDeviationMilliseconds": 0.17031027777056127,
+                    "nanosecondsPerOperation": 266.9325,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                },
+                {
+                    "container": "Zenject",
+                    "meanMilliseconds": 29.3619125,
+                    "minMilliseconds": 27.5605,
+                    "maxMilliseconds": 37.4088,
+                    "standardDeviationMilliseconds": 3.3054263305909998,
+                    "nanosecondsPerOperation": 2936.19125,
+                    "allocBytesPerSampleMean": -1.0,
+                    "allocBytesPerOperationMean": -1.0
+                }
+            ]
+        }
+    ]
+}

@@ -233,9 +233,10 @@ Projectile projectile = factory.Create(spawnPosition);
 
 ## Plain C# object pool
 
-For non-Unity objects, use `OnityObjectPool<T>` directly. It wraps
-`UnityEngine.Pool.ObjectPool<T>` and still exposes the common `IPool<T>`
-contract.
+For non-Unity objects, use `OnityObjectPool<T>` directly. It keeps inactive
+items in its own stack and exposes the common `IPool<T>` contract. With
+`collectionCheck: true` it rejects a duplicate return by reference in the
+Editor and in players.
 
 ```csharp
 using Onity.Factory;

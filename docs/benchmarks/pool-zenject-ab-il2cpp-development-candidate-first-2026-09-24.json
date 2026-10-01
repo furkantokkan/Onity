@@ -1,0 +1,233 @@
+{
+    "status": "passed",
+    "scenario": "FourArmIntArray32",
+    "utcRecordedAt": "2026-09-24T03:51:51.5994691Z",
+    "unityVersion": "2022.3.62f3",
+    "platform": "WindowsPlayer",
+    "backend": "IL2CPP",
+    "developmentBuild": true,
+    "profilerEnabled": false,
+    "stopwatchFrequency": 10000000,
+    "zenjectBridgeAssembly": "Onity.Benchmarks",
+    "zenjectBridgeProtocol": "onity-zenject-int-array-v1",
+    "zenjectStripAssertsInBuilds": false,
+    "zenjectInternalProfiling": false,
+    "quartileMethod": "Tukey median of each six-sample half",
+    "burstSize": 32,
+    "warmupBursts": 2000,
+    "measuredBurstsPerSample": 20000,
+    "sampleCount": 12,
+    "allocationSampleCount": 64,
+    "allocationMeasurementAvailable": true,
+    "totalBurstsPerArm": 242128,
+    "positiveAllocationEvents": 64,
+    "armNames": [
+        "OnityFactory",
+        "OnityDirect",
+        "UnityUncheckedWithAtomics",
+        "ZenjectMemoryPool"
+    ],
+    "allocationEventsByArm": [
+        0,
+        0,
+        0,
+        0
+    ],
+    "factoryNanosecondsPerBurst": [
+        2194.68,
+        2070.565,
+        2126.235,
+        2094.94,
+        2459.94,
+        2139.135,
+        2232.2,
+        2310.855,
+        2186.45,
+        2109.91,
+        2324.79,
+        2091.09
+    ],
+    "directNanosecondsPerBurst": [
+        2214.655,
+        2174.21,
+        2120.885,
+        2114.655,
+        2131.64,
+        2136.855,
+        2174.32,
+        2264.85,
+        2439.83,
+        2187.36,
+        2126.225,
+        2089.72
+    ],
+    "unityNanosecondsPerBurst": [
+        713.855,
+        864.97,
+        694.475,
+        692.27,
+        713.62,
+        709.92,
+        703.74,
+        705.555,
+        719.205,
+        709.05,
+        718.83,
+        704.135
+    ],
+    "zenjectNanosecondsPerBurst": [
+        2721.625,
+        2562.38,
+        2561.165,
+        2598.09,
+        2571.945,
+        2590.105,
+        2609.83,
+        2672.21,
+        2571.66,
+        2631.825,
+        2600.18,
+        2571.175
+    ],
+    "factoryOverZenjectRatios": [
+        0.8063858907821614,
+        0.8080632068623701,
+        0.8301827488662387,
+        0.8063385025153093,
+        0.95645124604142,
+        0.8258873675005455,
+        0.8553047516504906,
+        0.8647729781716257,
+        0.8502095922478088,
+        0.8016908419062818,
+        0.8940881015929667,
+        0.81328186529505
+    ],
+    "directOverZenjectRatios": [
+        0.8137252560510725,
+        0.8485119303147855,
+        0.8280938557258124,
+        0.81392676928051,
+        0.8288046595086597,
+        0.8250070943069876,
+        0.8331270619159104,
+        0.8475568911125997,
+        0.9487373914125507,
+        0.8311190903650509,
+        0.8177222346145268,
+        0.8127490349742821
+    ],
+    "unityOverZenjectRatios": [
+        0.2622899921921646,
+        0.33756507621820339,
+        0.27115589975655615,
+        0.2664534330989303,
+        0.27746316503657739,
+        0.27408927437304667,
+        0.2696497473015484,
+        0.2640342637741794,
+        0.27966566342362528,
+        0.2694138098087829,
+        0.2764539378043059,
+        0.2738572831487549
+    ],
+    "medianNanosecondsByArm": [
+        2162.7925,
+        2155.5325000000003,
+        709.4849999999999,
+        2594.0975
+    ],
+    "q1NanosecondsByArm": [
+        2102.425,
+        2123.5550000000003,
+        703.9375,
+        2571.4175
+    ],
+    "q3NanosecondsByArm": [
+        2271.5275,
+        2201.0075,
+        716.3425,
+        2620.8275
+    ],
+    "factoryOverZenjectMedian": 0.8280350581833921,
+    "factoryOverZenjectQ1": 0.8072245488222658,
+    "factoryOverZenjectQ3": 0.8600388649110582,
+    "directOverZenjectMedian": 0.828449257617236,
+    "directOverZenjectQ1": 0.8158245019475183,
+    "directOverZenjectQ3": 0.840341976514255,
+    "unityOverZenjectMedian": 0.27250659145265557,
+    "unityOverZenjectQ1": 0.2679336214538566,
+    "unityOverZenjectQ3": 0.2769585514204416,
+    "createdByArm": [
+        32,
+        32,
+        32,
+        32
+    ],
+    "activeByArm": [
+        0,
+        0,
+        0,
+        0
+    ],
+    "inactiveByArm": [
+        32,
+        32,
+        32,
+        32
+    ],
+    "totalByArm": [
+        32,
+        32,
+        32,
+        32
+    ],
+    "getCountByArm": [
+        7748129,
+        7748129,
+        7748129,
+        -1
+    ],
+    "releaseCountByArm": [
+        7748129,
+        7748129,
+        7748129,
+        -1
+    ],
+    "resetCountByArm": [
+        7748096,
+        7748096,
+        7748096,
+        7748096
+    ],
+    "checksumByArm": [
+        31896501574144,
+        31896501574144,
+        31896501574144,
+        31896501574144
+    ],
+    "duplicateRejectedByArm": [
+        true,
+        true,
+        false,
+        true
+    ],
+    "duplicateCheckSupportedByArm": [
+        true,
+        true,
+        false,
+        true
+    ],
+    "duplicateExceptionByArm": [
+        "System.InvalidOperationException",
+        "System.InvalidOperationException",
+        "",
+        "Zenject.ZenjectException"
+    ],
+    "capacityExceptionByArm": [
+        "System.InvalidOperationException",
+        "System.InvalidOperationException",
+        "System.InvalidOperationException",
+        "Zenject.PoolExceededFixedSizeException"
+    ]
+}

@@ -1433,16 +1433,17 @@ namespace Onity.Tests.EditMode
                 Assert.That(innerFirst.TrySetResult(), Is.True);
             }
 
-            Assert.That(nativeLoser.IsCompleted, Is.True);
+            // The outer WhenAny consumed the late loser, which retired the loser's token.
+            Assert.Throws<InvalidOperationException>(() => _ = nativeLoser.IsCompleted);
             Assert.Throws<InvalidOperationException>(
                 () => nativeLoser.GetAwaiter().GetResult());
-            Assert.That(outer.IsCompletedSuccessfully, Is.True);
             if (materializeWinner)
             {
                 Assert.That(bridge.GetAwaiter().GetResult(), Is.EqualTo((0, 42)));
             }
             else
             {
+                Assert.Throws<InvalidOperationException>(() => _ = outer.IsCompletedSuccessfully);
                 Assert.Throws<InvalidOperationException>(
                     () => outer.GetAwaiter().GetResult());
             }
@@ -1887,7 +1888,8 @@ namespace Onity.Tests.EditMode
             ResourceRequest completedOperation = await task;
 
             Assert.That(completedOperation, Is.SameAs(request));
-            Assert.That(task.IsCompletedSuccessfully, Is.True);
+            // Awaiting consumed the pooled source and retired its token.
+            Assert.Throws<InvalidOperationException>(() => _ = task.IsCompletedSuccessfully);
         }
 
         [Test]

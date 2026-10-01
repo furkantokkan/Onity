@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="3" result="Passed" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-10-01 15:24:07Z" end-time="2026-10-01 15:24:14Z" duration="6.5474189">
+  <test-suite type="TestSuite" id="1000" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="483" result="Passed" start-time="2026-10-01 15:24:07Z" end-time="2026-10-01 15:24:14Z" duration="6.547419" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1523" name="Onity.Tests.EditMode.dll" fullname="C:/Users/e-fur/Documents/Repos/Onity/Library/ScriptAssemblies/Onity.Tests.EditMode.dll" runstate="Runnable" testcasecount="482" result="Passed" start-time="2026-10-01 15:24:07Z" end-time="2026-10-01 15:24:14Z" duration="6.495680" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="69464" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1524" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="482" result="Passed" start-time="2026-10-01 15:24:07Z" end-time="2026-10-01 15:24:14Z" duration="6.421620" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1525" name="Tests" fullname="Onity.Tests" runstate="Runnable" testcasecount="482" result="Passed" start-time="2026-10-01 15:24:07Z" end-time="2026-10-01 15:24:14Z" duration="6.400445" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1526" name="EditMode" fullname="Onity.Tests.EditMode" runstate="Runnable" testcasecount="482" result="Passed" start-time="2026-10-01 15:24:07Z" end-time="2026-10-01 15:24:14Z" duration="6.382804" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1458" name="PoolingTests" fullname="Onity.Tests.EditMode.PoolingTests" classname="Onity.Tests.EditMode.PoolingTests" runstate="Runnable" testcasecount="25" result="Passed" start-time="2026-10-01 15:24:07Z" end-time="2026-10-01 15:24:14Z" duration="6.323512" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1477" name="MeasureCheckedWarmedRentReturnAgainstUnity" fullname="Onity.Tests.EditMode.PoolingTests.MeasureCheckedWarmedRentReturnAgainstUnity" methodname="MeasureCheckedWarmedRentReturnAgainstUnity" classname="Onity.Tests.EditMode.PoolingTests" runstate="Explicit" seed="1841837461" result="Passed" start-time="2026-10-01 15:24:07Z" end-time="2026-10-01 15:24:09Z" duration="1.330483" asserts="0">
+                <properties>
+                  <property name="_SKIPREASON" value="Run by exact name to isolate checked Onity pool wrapper cost in the Editor." />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Unity pool (collection check)/Unity pool (collection check + diagnostic atomics) paired median: 0.966x, Q1-Q3 0.949-1.044, range 0.798-1.125
+Onity pool (collection check)/Unity pool (collection check + diagnostic atomics) paired median: 1.661x, Q1-Q3 1.599-1.678, range 1.397-1.878
+Unity pool (collection check): median 121.4 ns/pair, range 117.5-160.9
+Unity pool (collection check + diagnostic atomics): median 125.7 ns/pair, range 120.4-153.1
+Onity pool (collection check): median 206.8 ns/pair, range 200.1-231.5
+Profiler.enabled=False; warmed GC.Alloc events per 64 pairs: all three paths 0
+]]></output>
+              </test-case>
+              <test-case id="1475" name="MeasureWarmedRentReturn" fullname="Onity.Tests.EditMode.PoolingTests.MeasureWarmedRentReturn" methodname="MeasureWarmedRentReturn" classname="Onity.Tests.EditMode.PoolingTests" runstate="Explicit" seed="1739800921" result="Passed" start-time="2026-10-01 15:24:09Z" end-time="2026-10-01 15:24:12Z" duration="3.501022" asserts="0">
+                <properties>
+                  <property name="_SKIPREASON" value="Run by exact name to measure warmed pool and factory dispatch in the Editor." />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Raw Unity pool: median 117.9 ns/pair, range 114.8-134.4
+Raw Unity pool + atomic counters: median 116.0 ns/pair, range 112.4-138.5
+Onity pool: median 152.3 ns/pair, range 150.1-182.5
+Onity pooled factory: median 165.0 ns/pair, range 160.3-176.4
+Onity pool (1 param): median 168.7 ns/pair, range 159.2-213.4
+Onity pooled factory (1 param): median 181.5 ns/pair, range 169.1-198.9
+Onity pool (2 params): median 172.4 ns/pair, range 164.6-178.7
+Onity pooled factory (2 params): median 176.3 ns/pair, range 171.5-205.3
+Onity/raw paired median: 1.30x
+Onity/raw + atomics paired median: 1.33x
+Factory/pool paired median: 1.09x
+]]></output>
+              </test-case>
+              <test-case id="1476" name="MeasureWarmedRentReturnAgainstZenject" fullname="Onity.Tests.EditMode.PoolingTests.MeasureWarmedRentReturnAgainstZenject" methodname="MeasureWarmedRentReturnAgainstZenject" classname="Onity.Tests.EditMode.PoolingTests" runstate="Explicit" seed="372983354" result="Passed" start-time="2026-10-01 15:24:12Z" end-time="2026-10-01 15:24:14Z" duration="1.460865" asserts="0">
+                <properties>
+                  <property name="_SKIPREASON" value="Run by exact name to compare warmed Onity and Zenject pools in the Editor." />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Profiler.enabled=False, Zenject UnityMainThread=current thread: False
+Warmed GC.Alloc events per 64 pairs: Onity default 0, Onity checked 0, Zenject 0
+Onity pool (default)/Zenject MemoryPool paired median: 1.170x, Q1-Q3 1.148-1.189, range 0.967-1.435
+Onity pool (collection check)/Zenject MemoryPool paired median: 1.483x, Q1-Q3 1.451-1.520, range 1.255-1.753
+Onity pool (default): median 160.2 ns/pair, range 152.3-194.1
+Onity pool (collection check): median 206.2 ns/pair, range 196.4-231.1
+Zenject MemoryPool: median 137.0 ns/pair, range 131.8-166.7
+Saving results to: C:/Users/e-fur/AppData/LocalLow/DefaultCompany/Onity\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

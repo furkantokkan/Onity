@@ -7,8 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-02
+
+### Added
+
+- Identified and conditional DI bindings: `WithId(...)`, `WhenInjectedInto<T>()`,
+  `[Inject(Id = ...)]` on constructor, field, property and method parameters, and
+  `IResolver.Resolve<T>(object id)` / `TryResolve<T>(object id, out T)`. A local
+  explicit default shadows ancestor conditions; ambiguous conditions throw.
+- Native `AsScoped()` lifetime: one instance per resolving container, including
+  bindings inherited from a parent, disposed with that scope. Keyed and
+  open-generic bindings follow the requesting scope.
+- `FromSubContainerResolve` exports a sub-container's local binding per
+  requesting scope and forwards ticks to the installed child.
+- `Unbind` / `Rebind` after `Build()`: a rebound tickable stops the old instance
+  and starts the replacement; keyed child rebinding leaves the parent unchanged.
+- Pools: `Prewarm`, fixed capacity (`fixedSize`), `initialSize`, and
+  one/two-parameter `Get` overloads on `OnityObjectPool<T>` and
+  `PrefabComponentPool<T>`, plus one/two-parameter `PooledFactory` adapters that
+  apply runtime parameters before the get hook. Prefab clones are configured
+  under an inactive parent before their first `OnEnable`.
+- DI benchmark: keyed and scoped singleton scenarios, a focused hot-path mode
+  (`-onityBenchmarkHotPathsOnly`), and an IL2CPP Development allocation capture
+  (`-onityCaptureDiAllocationBytes`) that validates empty, 1 MiB and 2 MiB
+  controls. The player build runner forwards `-onityBenchmarkIterations`,
+  `-onityBenchmarkSamples`, `-onityBenchmarkWarmup` and `-onityBenchmarkScenario`,
+  and restores the original build target afterwards.
+
 ### Changed
 
+- **Breaking:** a pooled `OnityTask` retires its token as soon as it is consumed.
+  Reading `IsCompleted` or `IsCompletedSuccessfully` after `await`,
+  `GetResult()` or a `WhenAny` consumption now throws
+  `InvalidOperationException`, like a second await. Read the result once and
+  keep it instead of querying the task afterwards. Five EditMode tests were
+  updated to this contract.
+- `OnityObjectPool<T>` keeps inactive items in its own array stack instead of
+  wrapping Unity's `ObjectPool<T>`. With `collectionCheck: true` it rejects
+  duplicate returns by reference in Editor **and** players (Unity 2022.3 checks
+  only in the Editor); the top of the stack is the duplicate-check fast slot.
+  A failing release hook leaves the pool unchanged, get-hook failures return the
+  item, and operations after `Dispose` throw. `Clear` subtracts only the
+  destroyed inactive items from `CountAll`.
+- Baked resolve is the default; generic `Resolve<T>()` keeps the container-local
+  dense type-id provider slots, which now stay in step with `Unbind`, `Rebind`
+  and generated open-generic providers.
 - The pooled native task sources (suspended `async OnityTask` methods, frame,
   delay, predicate, player-loop, end-of-frame, job-handle, timeout,
   cancellation and `WhenAny` sources) keep their token version, completion
@@ -23,8 +66,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and runner cancellation with a retired version. On the desktop Mono harness
   (not a Unity measurement) a suspended-method cycle at 128 concurrent
   operations fell from 197 to 127 ns with `FlowExecutionContext` off and from
-  260 to 193 ns with it on, against UniTask's 88 ns; the Editor and Player
-  suites are not yet rerun on this change.
+  260 to 193 ns with it on, against UniTask's 88 ns. The Unity Editor suites
+  below were rerun on this change; the Windows Player suites were not.
+
+### Performance
+
+- Re-measured on Unity 2022.3.62f2 (one Windows machine, indicative): Windows
+  IL2CPP Release DI resolve, three fresh processes — Onity baked was fastest in
+  all seven scenarios in every process (Onity/VContainer 0.23x–0.57x). Editor
+  `GC.Alloc` event counts matched the September report exactly.
+- Checked single-item Editor/Mono pool rent/return against Zenject
+  `MemoryPool`: 1.48x before the own-stack change, 0.58x–0.59x after. 32-item,
+  two-parameter IL2CPP Release factory burst against Zenject: 0.796x/0.856x
+  before, 0.738x/0.729x after (old/new/new/old). Raw reports:
+  `docs/benchmarks/remeasure-2026-10-01.md`, `docs/benchmarks/pool-own-stack-2026-10-01.md`.
+
+### Tested
+
+- Unity 2022.3.62f2 EditMode: 997 passed, 0 failed, 3 explicit benchmarks skipped.
+- Unity 2022.3.62f2 PlayMode: 95 passed, 0 failed, 1 explicit benchmark skipped.
+- `dotnet build onity-core-ci.csproj -c Release -nologo`: 0 warnings, 0 errors.
+- DI benchmark assemblies compiled with `ONITY_BENCHMARKS` in the development
+  project, where VContainer and Zenject are available.
 
 ## [0.4.0] - 2026-09-27
 
