@@ -1,0 +1,23 @@
+{
+  "name": "Onity.Benchmarks.Editor",
+  "rootNamespace": "Onity.Editor.Benchmarks",
+  "references": [
+    "Onity.DI",
+    "Onity.Benchmarks",
+    "VContainer",
+    "Zenject"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "ONITY_BENCHMARKS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

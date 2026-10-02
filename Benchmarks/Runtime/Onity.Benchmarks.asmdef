@@ -1,0 +1,21 @@
+{
+  "name": "Onity.Benchmarks",
+  "rootNamespace": "Onity.Benchmarks",
+  "references": [
+    "Onity.DI",
+    "Onity.Unity",
+    "VContainer",
+    "Zenject"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "ONITY_BENCHMARKS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,48 @@
+.onity-loading {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(18, 21, 28);
+}
+
+.onity-loading__panel {
+    width: 55%;
+    max-width: 760px;
+    min-width: 320px;
+    padding: 28px;
+    border-radius: 12px;
+    background-color: rgb(35, 40, 51);
+}
+
+.onity-loading__status {
+    margin-bottom: 12px;
+    color: rgb(242, 245, 250);
+    font-size: 22px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.onity-loading__progress {
+    width: 100%;
+}
+
+.onity-loading__progress .unity-base-slider__drag-container {
+    height: 18px;
+}
+
+.onity-loading__progress .unity-base-slider__tracker {
+    height: 8px;
+    border-radius: 4px;
+    background-color: rgb(75, 84, 104);
+}
+
+.onity-loading__progress .unity-base-slider__dragger {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    background-color: rgb(91, 168, 255);
+}

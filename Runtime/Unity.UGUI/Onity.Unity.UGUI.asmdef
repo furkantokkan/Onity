@@ -1,0 +1,26 @@
+{
+  "name": "Onity.Unity.UGUI",
+  "rootNamespace": "Onity.Unity.UGUI",
+  "references": [
+    "Onity.Core",
+    "Onity.Unity",
+    "UnityEngine.UI"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "ONITY_UGUI"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.unity.ugui",
+      "expression": "",
+      "define": "ONITY_UGUI"
+    }
+  ],
+  "noEngineReferences": false
+}

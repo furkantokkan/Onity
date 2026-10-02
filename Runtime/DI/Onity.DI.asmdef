@@ -1,0 +1,17 @@
+{
+  "name": "Onity.DI",
+  "rootNamespace": "Onity.DI",
+  "references": [
+    "Onity.Core",
+    "Onity.Factory"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true
+}
