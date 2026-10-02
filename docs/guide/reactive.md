@@ -462,6 +462,53 @@ public sealed class WaveGate
 
 `FirstAsync(CancellationToken)` and `ToTask()` (on an `IOnityObservable<Unit>`) bridge a stream to a `Task`. A cancellation surfaces as `OperationCanceledException`; that is normal cancellation, not a failure.
 
+### Await a ReactiveProperty with OnityTask
+
+`Onity.Unity.Async` adds native, pooled bridges from any `IReadOnlyReactiveProperty<T>`:
+
+| Member | Result |
+| --- | --- |
+| `property.WaitAsync(ct)` | `OnityTask<T>`: the next accepted change. The current value does not complete it, and an equal set (skipped by `ReactiveProperty<T>`) is not a change. |
+| `property.WaitUntilAsync(predicate, ct)` | `OnityTask<T>`: the first value that matches; completes synchronously when the current value already matches. |
+| `property.AsLatestAsyncEnumerable(includeCurrent: true)` | `IOnityAsyncEnumerable<T>` that conflates: a slow consumer gets the latest value, never a backlog or an overflow fault. |
+| `property.ToAsyncReactiveProperty(ct)` | An `OnityReadOnlyAsyncReactiveProperty<T>` that starts with the current value and follows the property. |
+| `asyncProperty.BindTo(reactiveProperty, ct)` | Writes an async property's current and later values into a `ReactiveProperty<T>`; dispose the result to stop. |
+
+```csharp
+using System.Threading;
+using Onity.DI;
+using Onity.Reactive;
+using Onity.Unity.Async;
+
+public sealed class WaveDirector : IOnityInitializable
+{
+    private readonly IReadOnlyReactiveProperty<int> m_enemiesAlive;
+    private readonly IOnityScopeLifetime m_scope;
+
+    public WaveDirector(IReadOnlyReactiveProperty<int> enemiesAlive, IOnityScopeLifetime scope)
+    {
+        m_enemiesAlive = enemiesAlive;
+        m_scope = scope;
+    }
+
+    public void Initialize() => RunAsync(m_scope.Token).Forget();
+
+    private async OnityTaskVoid RunAsync(CancellationToken token)
+    {
+        while (true)
+        {
+            await m_enemiesAlive.WaitUntilAsync(count => count == 0, token);  // no subscription to manage
+            // ... spawn the next wave
+            await m_enemiesAlive.WaitAsync(token);  // the next change: the new wave's count
+        }
+    }
+}
+```
+
+Waits on one property share one subscription, and their waiters and completion sources are pooled; an EditMode allocation test measures zero bytes for a warmed wait cycle. A wait that starts while the property is publishing (for example in a continuation that the publication resumed) waits for the following change, so a `while` loop over `WaitAsync` sees every change once. Use these on the property's thread (the main thread); continuations run inline on the thread that sets the value.
+
+`ReactiveProperty<T>.Dispose` does not notify its observers, so disposing the property does not complete a pending wait or enumeration. Pass the scope token (`IOnityScopeLifetime.Token`, `component.GetScopeCancellationToken()`) so the wait ends with its scope; a wait started on an already disposed property is canceled.
+
 ## What is not shipped
 
 `Merge`, `CombineLatest`, `Scan`, `Pairwise`, `Sample`, `Throttle`,
@@ -469,6 +516,10 @@ public sealed class WaveGate
 `SelectOnThreadPool` **are** shipped. Still intentionally absent: `Window`,
 `Zip`, `Switch`, `Concat`, and the multicast set (`Publish`, `Share`,
 `RefCount`). Do not assume R3/UniRx parity beyond the operators listed here.
+Pull-based async streams (`IOnityAsyncEnumerable<T>`) do have `Zip`, `Concat`,
+`Publish`, `Queue` and UniTask's other LINQ operators; convert with
+`observable.AsOnityAsyncEnumerable(capacity)` or `property.AsLatestAsyncEnumerable()`
+(see [Async with OnityTask](onitytask.html#stream-operators)).
 
 ## Error handling
 

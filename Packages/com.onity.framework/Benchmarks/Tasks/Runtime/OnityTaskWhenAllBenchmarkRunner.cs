@@ -58,7 +58,7 @@ namespace Onity.Benchmarks
             m_hasSettings = true;
             try
             {
-                OnityTask.FlowExecutionContext = true;
+                OnityTask.FlowExecutionContext = false; // library default; restored with the other settings
                 OnityTaskTracker.IsEnabled = false;
                 OnityTaskTracker.EnableStackTrace = false;
                 OnityTask.RunnerPoolCapacity = 128;

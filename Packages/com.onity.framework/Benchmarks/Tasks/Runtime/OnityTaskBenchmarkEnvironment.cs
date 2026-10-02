@@ -1,7 +1,5 @@
 using System;
 using System.IO;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using Onity.Unity.Async;
 using UnityEngine;
 
@@ -40,24 +38,9 @@ namespace Onity.Benchmarks
                 build = new OnityTaskBenchmarkBuildMetadata()
             };
 
-            // Initialize the runtime probe before any smoke case suppresses flow. Read the fields
-            // actually used by Capture/TryRunPreservingContext; an unused getter may be stripped.
-            Type contextType = typeof(OnityTask).Assembly.GetType("Onity.Unity.Async.OnityAsyncExecutionContext", true);
-            RuntimeHelpers.RunClassConstructor(contextType.TypeHandle);
-            FieldInfo capture = contextType.GetField("s_fastCapture", BindingFlags.Static | BindingFlags.NonPublic);
-            FieldInfo run = contextType.GetField("s_runPreservingContext", BindingFlags.Static | BindingFlags.NonPublic);
-            if (capture != null && run != null)
-            {
-                bool hasCapture = capture.GetValue(null) != null;
-                bool hasRun = run.GetValue(null) != null;
-                environment.executionContextPath = hasCapture && hasRun ? "InternalPair" : "PublicFallback";
-                environment.executionContextEvidence = "s_fastCapture=" + hasCapture
-                    + "; s_runPreservingContext=" + hasRun + "; runtime probe initialized before suppression";
-            }
-            else
-            {
-                environment.executionContextEvidence = "Runtime capture/run fields could not be inspected.";
-            }
+            // The internal probe never throws; a runtime without it reports Unknown with the reason.
+            OnityTaskBenchmarkInternals.CaptureExecutionContextPath(
+                out environment.executionContextPath, out environment.executionContextEvidence);
 
             string[] args = Environment.GetCommandLineArgs();
             for (int i = 0; i < args.Length - 1; i++)

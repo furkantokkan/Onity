@@ -16,7 +16,14 @@ namespace Onity.Benchmarks
     /// <c>-onityTaskBenchmarkSuite jobs</c>, or pending composition construction with
     /// <c>-onityTaskBenchmarkSuite whenall</c>, or array composition cycles with
     /// <c>-onityTaskBenchmarkSuite whenany</c>, or explicit Update timing allocation with
-    /// <c>-onityTaskBenchmarkSuite timing</c>. Each suite writes the report to
+    /// <c>-onityTaskBenchmarkSuite timing</c>, or a manual-awaitable logical builder cycle with
+    /// <c>-onityTaskBenchmarkSuite buildercycle</c>, or synchronous readiness feasibility with
+    /// <c>-onityTaskBenchmarkSuite readiness</c>, or actual native consumers of controlled readiness cycles with
+    /// <c>-onityTaskBenchmarkSuite readinesscycle</c>, or sequential builder lifetimes with matched native return passes using
+    /// <c>-onityTaskBenchmarkSuite builderlifecycle</c>, or real PlayerLoop frame lifecycles of both libraries with
+    /// <c>-onityTaskBenchmarkSuite framelifecycle</c> (optional <c>-onityTaskFrameLifecycleArms</c> id list), or
+    /// end-to-end concurrent-loop throughput with <c>-onityTaskBenchmarkSuite throughput</c>, or reactive adapter
+    /// pending-delivery evidence with <c>-onityTaskBenchmarkSuite reactive</c>. Each suite writes the report to
     /// <c>-onityTaskBenchmarkOutput</c>, persists startup stages to
     /// <c>-onityTaskBenchmarkStartupTrace</c> (default: report path with a .startup.log extension),
     /// and quits with exit code 0 on success or 1 on failure.
@@ -76,10 +83,19 @@ namespace Onity.Benchmarks
                 bool endOfFrame = suite == "eof";
                 bool finite = suite == "finite";
                 bool channels = suite == "channels";
+                bool builderCycle = suite == "buildercycle";
+                bool builderLifecycle = suite == "builderlifecycle";
+                bool frameLifecycle = suite == "framelifecycle";
+                bool readiness = suite == "readiness";
+                bool readinessCycle = suite == "readinesscycle";
+                bool throughput = suite == "throughput";
+                bool reactive = suite == "reactive";
                 if (!threadSwitch && !threadPool && !smoke && !fullCycle && !jobs
-                    && !whenAll && !whenAny && !timing && !endOfFrame && !finite && !channels && suite != "primary")
+                    && !whenAll && !whenAny && !timing && !endOfFrame && !finite && !channels && !builderCycle
+                    && !readiness && !readinessCycle && !builderLifecycle && !frameLifecycle && !throughput && !reactive
+                    && suite != "primary")
                 {
-                    throw new ArgumentException("Task benchmark suite must be primary, threadswitch, threadpool, jobs, whenall, whenany, timing, eof, finite, channels, smoke, or fullcycle.");
+                    throw new ArgumentException("Task benchmark suite must be primary, threadswitch, threadpool, jobs, whenall, whenany, timing, eof, finite, channels, buildercycle, builderlifecycle, framelifecycle, throughput, reactive, readiness, readinesscycle, smoke, or fullcycle.");
                 }
                 string latestJson = GetArgumentValue(args, k_outputArgument);
                 if (string.IsNullOrEmpty(latestJson))
@@ -87,6 +103,13 @@ namespace Onity.Benchmarks
                     latestJson = Path.Combine(
                         Application.persistentDataPath,
                         endOfFrame ? "onity-task-eof-player-latest.json"
+                            : throughput ? "onity-task-throughput-player-latest.json"
+                            : reactive ? "onity-task-reactive-player-latest.json"
+                            : builderLifecycle ? "onity-task-builderlifecycle-player-latest.json"
+                            : frameLifecycle ? "onity-task-framelifecycle-player-latest.json"
+                            : readinessCycle ? "onity-task-readinesscycle-player-latest.json"
+                            : readiness ? "onity-task-readiness-player-latest.json"
+                            : builderCycle ? "onity-task-buildercycle-player-latest.json"
                             : channels ? "onity-channels-player-latest.json"
                             : finite ? "onity-async-enumerable-player-latest.json"
                             : fullCycle ? "onity-task-fullcycle-player-latest.json"
@@ -107,7 +130,35 @@ namespace Onity.Benchmarks
                 // This is outside the benchmark's scheduling/GetResult timing slices.
                 WriteStartupMarker("benchmark-entry", suite);
 
-                if (channels)
+                if (builderLifecycle)
+                {
+                    OnityTaskBuilderLifecycleBenchmarkRunner.Run(latestJson, Quit);
+                }
+                else if (throughput)
+                {
+                    OnityTaskThroughputBenchmarkRunner.Run(latestJson, Quit);
+                }
+                else if (reactive)
+                {
+                    OnityReactiveAdapterBenchmarkRunner.Run(latestJson, Quit);
+                }
+                else if (frameLifecycle)
+                {
+                    OnityTaskFrameLifecycleBenchmarkRunner.Run(latestJson, Quit);
+                }
+                else if (readinessCycle)
+                {
+                    OnityTaskReadinessCycleBenchmarkRunner.Run(latestJson, Quit);
+                }
+                else if (readiness)
+                {
+                    OnityTaskReadinessBenchmarkRunner.Run(latestJson, Quit);
+                }
+                else if (builderCycle)
+                {
+                    OnityTaskBuilderCycleBenchmarkRunner.Run(latestJson, Quit);
+                }
+                else if (channels)
                 {
                     OnityChannelBenchmarkRunner.Run(latestJson, Quit);
                 }

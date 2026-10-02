@@ -46,8 +46,11 @@ namespace Onity.Unity.Async
         private Exception m_error;
         private object m_lease;
         private OnityChannelReadWaiter<T> m_reader;
+        private OnityChannelWaitWaiter<T> m_waiter;
         private OnityChannelWriteWaiter<T> m_firstWriter;
         private OnityChannelWriteWaiter<T> m_lastWriter;
+        private OnityTaskCompletionSource m_completion;
+        private bool m_drained;
 
         internal OnityChannel(int capacity)
         {
@@ -65,9 +68,44 @@ namespace Onity.Unity.Async
 
         internal object Gate => m_gate;
 
+        /// <summary>Gets the reader of a channel, so a channel can be passed where a reader is expected.</summary>
+        /// <param name="channel">Channel, or null.</param>
+        /// <returns>The channel's reader, or null for a null channel.</returns>
+        public static implicit operator OnityChannelReader<T>(OnityChannel<T> channel) => channel?.Reader;
+
+        /// <summary>Gets the writer of a channel, so a channel can be passed where a writer is expected.</summary>
+        /// <param name="channel">Channel, or null.</param>
+        /// <returns>The channel's writer, or null for a null channel.</returns>
+        public static implicit operator OnityChannelWriter<T>(OnityChannel<T> channel) => channel?.Writer;
+
+        internal OnityTask Completion
+        {
+            get
+            {
+                lock (m_gate)
+                {
+                    if (m_completion == null)
+                    {
+                        if (m_drained && m_error == null)
+                        {
+                            return OnityTask.Completed;
+                        }
+                        // A source created after the drain is completed before anyone can observe it.
+                        m_completion = new OnityTaskCompletionSource();
+                        if (m_drained)
+                        {
+                            m_completion.TrySetFault(m_error);
+                        }
+                    }
+                    return m_completion.Task;
+                }
+            }
+        }
+
         internal bool TryWrite(T item)
         {
             OnityChannelReadWaiter<T> reader = null;
+            OnityChannelWaitWaiter<T> waiter = null;
             lock (m_gate)
             {
                 if (m_closed || m_firstWriter != null)
@@ -82,6 +120,7 @@ namespace Onity.Unity.Async
                 else if (HasCapacity())
                 {
                     AddItem(item);
+                    waiter = TakeWaiter(OnityAsyncStreamOutcome.Success(true));
                 }
                 else
                 {
@@ -89,6 +128,7 @@ namespace Onity.Unity.Async
                 }
             }
             reader?.Finish();
+            waiter?.Finish();
             return true;
         }
 
@@ -101,6 +141,7 @@ namespace Onity.Unity.Async
                 return canceled.Task;
             }
             OnityChannelReadWaiter<T> reader = null;
+            OnityChannelWaitWaiter<T> waiter = null;
             OnityChannelWriteWaiter<T> writer = null;
             Exception error = null;
             lock (m_gate)
@@ -117,6 +158,7 @@ namespace Onity.Unity.Async
                 else if (m_firstWriter == null && HasCapacity())
                 {
                     AddItem(item);
+                    waiter = TakeWaiter(OnityAsyncStreamOutcome.Success(true));
                 }
                 else
                 {
@@ -134,6 +176,7 @@ namespace Onity.Unity.Async
                 }
             }
             reader?.Finish();
+            waiter?.Finish();
             if (error != null)
             {
                 var failed = new OnityTaskCompletionSource();
@@ -151,6 +194,8 @@ namespace Onity.Unity.Async
         internal bool TryRead(out T item)
         {
             OnityChannelWriteWaiter<T> writer;
+            OnityTaskCompletionSource completion;
+            Exception error;
             lock (m_gate)
             {
                 if (m_lease != null || m_count == 0)
@@ -160,8 +205,10 @@ namespace Onity.Unity.Async
                 }
                 item = RemoveItem();
                 writer = PromoteWriter();
+                completion = TakeDrained(out error);
             }
             writer?.Finish();
+            PublishCompletion(completion, error);
             return true;
         }
 
@@ -175,6 +222,8 @@ namespace Onity.Unity.Async
             }
             OnityChannelReadWaiter<T> reader = null;
             OnityChannelWriteWaiter<T> writer = null;
+            OnityTaskCompletionSource completion = null;
+            Exception closure = null;
             T item = default;
             Exception error = null;
             lock (m_gate)
@@ -187,6 +236,7 @@ namespace Onity.Unity.Async
                 {
                     item = RemoveItem();
                     writer = PromoteWriter();
+                    completion = TakeDrained(out closure);
                 }
                 else if (m_closed)
                 {
@@ -200,6 +250,7 @@ namespace Onity.Unity.Async
                 }
             }
             writer?.Finish();
+            PublishCompletion(completion, closure);
             if (error != null)
             {
                 var failed = new OnityTaskCompletionSource<T>();
@@ -219,6 +270,8 @@ namespace Onity.Unity.Async
             OnityChannelReadWaiter<T> reader = null;
             OnityChannelWriteWaiter<T> writer = null;
             OnityTaskCompletionSource<bool> terminal = null;
+            OnityTaskCompletionSource completion = null;
+            Exception closure = null;
             OnityAsyncStreamOutcome outcome = default;
             OnityTask<bool> result;
             lock (m_gate)
@@ -265,6 +318,7 @@ namespace Onity.Unity.Async
                         enumerator.Item = RemoveItem();
                         enumerator.CurrentValid = true;
                         writer = PromoteWriter();
+                        completion = TakeDrained(out closure);
                         result = OnityTask<bool>.FromResult(true);
                     }
                     else if (m_closed)
@@ -286,6 +340,7 @@ namespace Onity.Unity.Async
                 }
             }
             writer?.Finish();
+            PublishCompletion(completion, closure);
             if (terminal != null)
             {
                 outcome.Publish(terminal, false);
@@ -481,6 +536,8 @@ namespace Onity.Unity.Async
         {
             OnityChannelWriteWaiter<T> writers;
             OnityChannelReadWaiter<T> reader;
+            OnityChannelWaitWaiter<T> waiter;
+            OnityTaskCompletionSource completion;
             lock (m_gate)
             {
                 if (m_closed)
@@ -506,6 +563,9 @@ namespace Onity.Unity.Async
                         : OnityAsyncStreamOutcome.Failure(new OnityChannelClosedException());
                     CommitRead(reader, outcome, default);
                 }
+                waiter = TakeWaiter(error != null ? OnityAsyncStreamOutcome.Failure(error)
+                    : OnityAsyncStreamOutcome.Success(false));
+                completion = TakeDrained(out _);
             }
             // Retain each next node before publication/reentrant continuations.
             Exception failure = null;
@@ -531,11 +591,140 @@ namespace Onity.Unity.Async
             {
                 failure ??= exception;
             }
+            try
+            {
+                waiter?.Finish();
+            }
+            catch (Exception exception)
+            {
+                failure ??= exception;
+            }
+            try
+            {
+                PublishCompletion(completion, error);
+            }
+            catch (Exception exception)
+            {
+                failure ??= exception;
+            }
             if (failure != null)
             {
                 ExceptionDispatchInfo.Capture(failure).Throw();
             }
             return true;
+        }
+
+        internal OnityTask<bool> WaitToReadAsync(CancellationToken token)
+        {
+            if (token.IsCancellationRequested)
+            {
+                var canceled = new OnityTaskCompletionSource<bool>();
+                canceled.TrySetCanceled(token);
+                return canceled.Task;
+            }
+            OnityChannelWaitWaiter<T> waiter = null;
+            Exception error = null;
+            bool available;
+            lock (m_gate)
+            {
+                if (m_lease != null)
+                {
+                    throw new InvalidOperationException("Another channel consumer holds the reader lease.");
+                }
+                available = m_count != 0;
+                if (!available)
+                {
+                    if (m_closed)
+                    {
+                        error = m_error;
+                    }
+                    else
+                    {
+                        waiter = new OnityChannelWaitWaiter<T>(this, token);
+                        m_waiter = waiter;
+                        m_lease = waiter;
+                    }
+                }
+            }
+            if (waiter != null)
+            {
+                waiter.Initialize();
+                return waiter.Source.Task;
+            }
+            if (error != null)
+            {
+                var failed = new OnityTaskCompletionSource<bool>();
+                failed.TrySetFault(error);
+                return failed.Task;
+            }
+            return OnityTask<bool>.FromResult(available);
+        }
+
+        internal void CancelWait(OnityChannelWaitWaiter<T> waiter, CancellationToken token) =>
+            CompleteWait(waiter, new OnityAsyncStreamOutcome
+            {
+                Status = OnityTaskSourceStatus.Canceled,
+                Token = token
+            });
+
+        internal void FailWait(OnityChannelWaitWaiter<T> waiter, Exception exception) =>
+            CompleteWait(waiter, OnityAsyncStreamOutcome.Failure(exception));
+
+        private void CompleteWait(OnityChannelWaitWaiter<T> waiter, OnityAsyncStreamOutcome outcome)
+        {
+            lock (m_gate)
+            {
+                if (waiter.Committed || !ReferenceEquals(m_waiter, waiter))
+                {
+                    return;
+                }
+                TakeWaiter(outcome);
+            }
+            waiter.Finish();
+        }
+
+        // Called under the gate; the returned waiter is finished after leaving it.
+        private OnityChannelWaitWaiter<T> TakeWaiter(OnityAsyncStreamOutcome outcome)
+        {
+            OnityChannelWaitWaiter<T> waiter = m_waiter;
+            if (waiter == null)
+            {
+                return null;
+            }
+            m_waiter = null;
+            waiter.Committed = true;
+            waiter.Outcome = outcome;
+            ReleaseLease(waiter);
+            return waiter;
+        }
+
+        // Called under the gate: marks a closed, empty channel drained once and hands out the
+        // completion source to publish after leaving the gate (null while nobody asked for it).
+        private OnityTaskCompletionSource TakeDrained(out Exception error)
+        {
+            error = m_error;
+            if (!m_closed || m_count != 0 || m_drained)
+            {
+                return null;
+            }
+            m_drained = true;
+            return m_completion;
+        }
+
+        private static void PublishCompletion(OnityTaskCompletionSource completion, Exception error)
+        {
+            if (completion == null)
+            {
+                return;
+            }
+            if (error == null)
+            {
+                completion.TrySetResult();
+            }
+            else
+            {
+                completion.TrySetFault(error);
+            }
         }
 
         private bool HasCapacity() => m_capacity == 0 || m_count < m_capacity;

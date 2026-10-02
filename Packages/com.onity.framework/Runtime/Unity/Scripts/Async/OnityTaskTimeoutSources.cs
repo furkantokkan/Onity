@@ -82,6 +82,7 @@ namespace Onity.Unity.Async
         private readonly Action m_observeProducer;
         private TInput m_input;
         private OnityTaskPlayerLoop.TimeoutEntry m_timer;
+        private CancellationTokenSource m_taskCancellation;
         private int m_timerGeneration;
         private int m_winner;
         private int m_producerObserved;
@@ -116,6 +117,63 @@ namespace Onity.Unity.Async
                 Volatile.Write(ref m_timer, entry);
             }
 
+            ObserveInput();
+        }
+
+        /// <summary>
+        /// Starts with a timer measured with <paramref name="delayType"/> at <paramref name="timing"/>. A
+        /// timeout first cancels <paramref name="taskCancellation"/>, when given, then publishes.
+        /// </summary>
+        internal void Start(
+            TimeSpan timeout, OnityDelayType delayType, OnityPlayerLoopTiming timing,
+            CancellationTokenSource taskCancellation, Exception initialFault)
+        {
+            m_taskCancellation = taskCancellation;
+            if (initialFault != null)
+            {
+                PublishFailure(initialFault);
+            }
+            else if (timeout == TimeSpan.Zero)
+            {
+                if (TryWin())
+                {
+                    CancelTask();
+                    m_output.PublishTimeout();
+                }
+            }
+            else
+            {
+                // As above: registration invokes no callbacks and validates before the producer is claimed.
+                OnityTaskPlayerLoop.TimeoutEntry entry = OnityTaskPlayerLoop.RegisterTimeout(
+                    timeout, delayType, timing, this);
+                m_timerGeneration = entry.Generation;
+                Volatile.Write(ref m_timer, entry);
+            }
+
+            ObserveInput();
+        }
+
+        private void CancelTask()
+        {
+            CancellationTokenSource taskCancellation = m_taskCancellation;
+            m_taskCancellation = null;
+            if (taskCancellation == null)
+            {
+                return;
+            }
+
+            try
+            {
+                taskCancellation.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // The owner disposed the source; there is nothing left to cancel.
+            }
+        }
+
+        private void ObserveInput()
+        {
             TInput input = m_input;
             try
             {
@@ -207,6 +265,7 @@ namespace Onity.Unity.Async
             }
             if (outcome == OnityTimeoutTimerOutcome.Expired)
             {
+                CancelTask();
                 m_output.PublishTimeout();
             }
             else
@@ -233,6 +292,17 @@ namespace Onity.Unity.Async
                 new OnityTimeoutInput(task), source);
             var output = new OnityTask(source);
             source.m_observer.Start(seconds, useUnscaledTime, initialFault);
+            return output;
+        }
+
+        internal static OnityTask Create(OnityTask task, TimeSpan timeout, OnityDelayType delayType,
+            OnityPlayerLoopTiming timing, CancellationTokenSource taskCancellation, Exception initialFault = null)
+        {
+            var source = new OnityTimeoutTaskSource();
+            source.m_observer = new OnityTimeoutObserver<OnityTimeoutInput, bool>(
+                new OnityTimeoutInput(task), source);
+            var output = new OnityTask(source);
+            source.m_observer.Start(timeout, delayType, timing, taskCancellation, initialFault);
             return output;
         }
 
@@ -295,6 +365,17 @@ namespace Onity.Unity.Async
             return output;
         }
 
+        internal static OnityTask<T> Create(OnityTask<T> task, TimeSpan timeout, OnityDelayType delayType,
+            OnityPlayerLoopTiming timing, CancellationTokenSource taskCancellation, Exception initialFault = null)
+        {
+            var source = new OnityTimeoutTaskSource<T>();
+            source.m_observer = new OnityTimeoutObserver<OnityTimeoutInput<T>, T>(
+                new OnityTimeoutInput<T>(task), source);
+            var output = new OnityTask<T>(source);
+            source.m_observer.Start(timeout, delayType, timing, taskCancellation, initialFault);
+            return output;
+        }
+
         public void PublishProducer(OnityTaskSourceStatus status, T result,
             Exception fault, CancellationToken token)
         {
@@ -352,6 +433,17 @@ namespace Onity.Unity.Async
                 new OnityTimeoutInput(task), source);
             var output = new OnityTask<bool>(source);
             source.m_observer.Start(seconds, useUnscaledTime, initialFault);
+            return output;
+        }
+
+        internal static OnityTask<bool> Create(OnityTask task, TimeSpan timeout, OnityDelayType delayType,
+            OnityPlayerLoopTiming timing, CancellationTokenSource taskCancellation, Exception initialFault = null)
+        {
+            var source = new OnityTimeoutFlagTaskSource();
+            source.m_observer = new OnityTimeoutObserver<OnityTimeoutInput, bool>(
+                new OnityTimeoutInput(task), source);
+            var output = new OnityTask<bool>(source);
+            source.m_observer.Start(timeout, delayType, timing, taskCancellation, initialFault);
             return output;
         }
 
@@ -425,6 +517,17 @@ namespace Onity.Unity.Async
                 new OnityTimeoutInput<T>(task), source);
             var output = new OnityTask<(bool isTimeout, T result)>(source);
             source.m_observer.Start(seconds, useUnscaledTime, initialFault);
+            return output;
+        }
+
+        internal static OnityTask<(bool isTimeout, T result)> Create(OnityTask<T> task, TimeSpan timeout, OnityDelayType delayType,
+            OnityPlayerLoopTiming timing, CancellationTokenSource taskCancellation, Exception initialFault = null)
+        {
+            var source = new OnityTimeoutFlagTaskSource<T>();
+            source.m_observer = new OnityTimeoutObserver<OnityTimeoutInput<T>, T>(
+                new OnityTimeoutInput<T>(task), source);
+            var output = new OnityTask<(bool isTimeout, T result)>(source);
+            source.m_observer.Start(timeout, delayType, timing, taskCancellation, initialFault);
             return output;
         }
 

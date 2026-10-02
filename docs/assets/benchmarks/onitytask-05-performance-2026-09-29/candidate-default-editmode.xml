@@ -1,0 +1,875 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="127" result="Passed" total="127" passed="127" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-09-29 20:52:42Z" end-time="2026-09-29 20:52:50Z" duration="7.4689539">
+  <test-suite type="TestSuite" id="1000" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="983" result="Passed" start-time="2026-09-29 20:52:42Z" end-time="2026-09-29 20:52:50Z" duration="7.468954" total="127" passed="127" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="2134" name="Onity.Tests.EditMode.dll" fullname="C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/Library/ScriptAssemblies/Onity.Tests.EditMode.dll" runstate="Runnable" testcasecount="983" result="Passed" start-time="2026-09-29 20:52:42Z" end-time="2026-09-29 20:52:50Z" duration="7.395224" total="127" passed="127" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="26396" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="2135" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="983" result="Passed" start-time="2026-09-29 20:52:42Z" end-time="2026-09-29 20:52:50Z" duration="7.293683" total="127" passed="127" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="2136" name="Tests" fullname="Onity.Tests" runstate="Runnable" testcasecount="983" result="Passed" start-time="2026-09-29 20:52:42Z" end-time="2026-09-29 20:52:50Z" duration="7.223944" total="127" passed="127" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="2137" name="EditMode" fullname="Onity.Tests.EditMode" runstate="Runnable" testcasecount="983" result="Passed" start-time="2026-09-29 20:52:43Z" end-time="2026-09-29 20:52:50Z" duration="7.161498" total="127" passed="127" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1190" name="OnityAsyncTests" fullname="Onity.Tests.EditMode.OnityAsyncTests" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" testcasecount="122" result="Passed" start-time="2026-09-29 20:52:44Z" end-time="2026-09-29 20:52:44Z" duration="0.455857" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1316" name="AsyncOperationAsOnityTask_MissingResource_CompletesWithOriginalOperation" fullname="Onity.Tests.EditMode.OnityAsyncTests.AsyncOperationAsOnityTask_MissingResource_CompletesWithOriginalOperation" methodname="AsyncOperationAsOnityTask_MissingResource_CompletesWithOriginalOperation" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" seed="1493455132" result="Passed" start-time="2026-09-29 20:52:44Z" end-time="2026-09-29 20:52:44Z" duration="0.045372" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1294" name="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce" fullname="Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-09-29 20:52:44Z" end-time="2026-09-29 20:52:44Z" duration="0.052329" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1290" name="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(False,False)" fullname="Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(False,False)" methodname="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" seed="996202900" result="Passed" start-time="2026-09-29 20:52:44Z" end-time="2026-09-29 20:52:44Z" duration="0.023884" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1291" name="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(False,True)" fullname="Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(False,True)" methodname="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" seed="1874112606" result="Passed" start-time="2026-09-29 20:52:44Z" end-time="2026-09-29 20:52:44Z" duration="0.002375" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1292" name="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(True,False)" fullname="Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(True,False)" methodname="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" seed="1010046481" result="Passed" start-time="2026-09-29 20:52:44Z" end-time="2026-09-29 20:52:44Z" duration="0.004377" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1293" name="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(True,True)" fullname="Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(True,True)" methodname="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" seed="1207515376" result="Passed" start-time="2026-09-29 20:52:44Z" end-time="2026-09-29 20:52:44Z" duration="0.000708" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+            <test-suite type="TestFixture" id="1599" name="OnityTaskAsyncBuilderEditModeTests" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" testcasecount="42" result="Passed" start-time="2026-09-29 20:52:44Z" end-time="2026-09-29 20:52:45Z" duration="0.336877" total="42" passed="42" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1639" name="ExecutionContextFlow_UsesTheClassLibraryFastPathOnThisRuntime" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.ExecutionContextFlow_UsesTheClassLibraryFastPathOnThisRuntime" methodname="ExecutionContextFlow_UsesTheClassLibraryFastPathOnThisRuntime" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1157524982" result="Passed" start-time="2026-09-29 20:52:44Z" end-time="2026-09-29 20:52:44Z" duration="0.008089" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1622" name="FlowSwitchFlippedWhileSuspended_KeepsEachMethodsCaptureDecision" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.FlowSwitchFlippedWhileSuspended_KeepsEachMethodsCaptureDecision" methodname="FlowSwitchFlippedWhileSuspended_KeepsEachMethodsCaptureDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="375547729" result="Passed" start-time="2026-09-29 20:52:44Z" end-time="2026-09-29 20:52:44Z" duration="0.009207" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1624" name="Forget_NativeTask_LogsWithoutHandler" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.Forget_NativeTask_LogsWithoutHandler" methodname="Forget_NativeTask_LogsWithoutHandler" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1802754025" result="Passed" start-time="2026-09-29 20:52:44Z" end-time="2026-09-29 20:52:44Z" duration="0.021109" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[InvalidOperationException: logged failure
+Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.ThrowAfterAsync (Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests+ManualAwaitable gate, System.Exception exception) (at ./Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskAsyncBuilderEditModeTests.cs:957)
+Onity.Unity.Async.OnityTaskSourceBase`1[T].GetResultCore (System.Int32 token, Onity.Unity.Async.IOnityPreservedTaskContinuation continuation) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:3178)
+Onity.Unity.Async.OnityTaskSourceBase`1[T].GetResult (System.Int32 token) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:3156)
+Onity.Unity.Async.OnityTaskForgetObserver`1[T].Complete () (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncStateMachineRunner.cs:773)
+UnityEngine.Debug:LogException(Exception)
+Onity.Unity.Async.OnityTaskForgetObserver:Report(Exception, Action`1) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncStateMachineRunner.cs:725)
+Onity.Unity.Async.OnityTaskForgetObserver`1:Complete() (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncStateMachineRunner.cs:777)
+Onity.Unity.Async.OnityTaskContinuation:Invoke(Action) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:2298)
+Onity.Unity.Async.OnityTaskSourceBase`1:TrySetStatus(OnityTaskSourceStatus, Int32, Exception, Nullable`1) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:3310)
+Onity.Unity.Async.OnityTaskSourceBase`1:TrySetException(Exception) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:3256)
+Onity.Unity.Async.OnityAsyncStateMachineRunner`2:SetException(Exception) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncStateMachineRunner.cs:583)
+Onity.Unity.Async.OnityTaskMethodBuilder`1:SetException(Exception) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:4842)
+Onity.Tests.EditMode.<ThrowAfterAsync>d__59:MoveNext() (at ./Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskAsyncBuilderEditModeTests.cs:957)
+Onity.Unity.Async.OnityAsyncStateMachineRunner`2:MoveNextInContext(Object) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncStateMachineRunner.cs:662)
+System.Threading.ExecutionContext:RunInternal(ExecutionContext, ContextCallback, Object, Boolean)
+Onity.Unity.Async.OnityAsyncExecutionContext:TryRunPreservingContext(ExecutionContext, ContextCallback, Object) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncStateMachineRunner.cs:173)
+Onity.Unity.Async.OnityAsyncStateMachineRunner`2:MoveNext() (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsyncStateMachineRunner.cs:644)
+Onity.Tests.EditMode.ManualAwaitable:Complete() (at ./Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskAsyncBuilderEditModeTests.cs:1048)
+Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests:Forget_NativeTask_LogsWithoutHandler() (at ./Packages/com.onity.framework/Tests/EditMode/Scripts/OnityTaskAsyncBuilderEditModeTests.cs:515)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+NUnit.Framework.Internal.Reflect:InvokeMethod(MethodInfo, Object, Object[])
+NUnit.Framework.Internal.MethodWrapper:Invoke(Object, Object[])
+NUnit.Framework.Internal.Commands.TestMethodCommand:RunNonAsyncTestMethod(ITestExecutionContext)
+NUnit.Framework.Internal.Commands.TestMethodCommand:RunTestMethod(ITestExecutionContext)
+NUnit.Framework.Internal.Commands.TestMethodCommand:Execute(ITestExecutionContext)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions()
+
+]]></output>
+              </test-case>
+              <test-case id="1626" name="Forget_NativeTask_ReportsCancellationToTheHandler" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.Forget_NativeTask_ReportsCancellationToTheHandler" methodname="Forget_NativeTask_ReportsCancellationToTheHandler" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1329466524" result="Passed" start-time="2026-09-29 20:52:44Z" end-time="2026-09-29 20:52:45Z" duration="0.010388" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1623" name="Forget_NativeTask_ReportsTheFailureToTheHandler" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.Forget_NativeTask_ReportsTheFailureToTheHandler" methodname="Forget_NativeTask_ReportsTheFailureToTheHandler" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1997152827" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.003151" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1625" name="Forget_WithTrackingEnabled_RegistersWithTheTracker" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.Forget_WithTrackingEnabled_RegistersWithTheTracker" methodname="Forget_WithTrackingEnabled_RegistersWithTheTracker" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1524001630" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.015358" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1636" name="Preserve_CanceledSuspendedMethod_ReportsCancellationWithTheToken" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.Preserve_CanceledSuspendedMethod_ReportsCancellationWithTheToken" methodname="Preserve_CanceledSuspendedMethod_ReportsCancellationWithTheToken" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1169260250" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.004621" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1635" name="Preserve_FaultedSuspendedMethod_RethrowsTheSameInstanceToEveryConsumer" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.Preserve_FaultedSuspendedMethod_RethrowsTheSameInstanceToEveryConsumer" methodname="Preserve_FaultedSuspendedMethod_RethrowsTheSameInstanceToEveryConsumer" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="186621031" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.003923" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1618" name="ResumedOnMainThread_KeepsUnityContext_AndIsolatesAsyncLocalWrites" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.ResumedOnMainThread_KeepsUnityContext_AndIsolatesAsyncLocalWrites" methodname="ResumedOnMainThread_KeepsUnityContext_AndIsolatesAsyncLocalWrites" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1229534094" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.004794" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1621" name="ResumedOnMainThread_WithoutFlow_LetsAsyncLocalWritesReachTheThread" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.ResumedOnMainThread_WithoutFlow_LetsAsyncLocalWritesReachTheThread" methodname="ResumedOnMainThread_WithoutFlow_LetsAsyncLocalWritesReachTheThread" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="935078178" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.000796" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1616" name="ResumedOnWorker_DoesNotFlowAsyncLocal_WhenFlowIsDisabled" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.ResumedOnWorker_DoesNotFlowAsyncLocal_WhenFlowIsDisabled" methodname="ResumedOnWorker_DoesNotFlowAsyncLocal_WhenFlowIsDisabled" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="305107455" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.001527" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1617" name="ResumedOnWorker_DoesNotFlowAsyncLocal_WhenFlowIsSuppressed" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.ResumedOnWorker_DoesNotFlowAsyncLocal_WhenFlowIsSuppressed" methodname="ResumedOnWorker_DoesNotFlowAsyncLocal_WhenFlowIsSuppressed" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="2026965124" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.001404" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1615" name="ResumedOnWorker_FlowsAsyncLocal_WhenFlowIsEnabled" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.ResumedOnWorker_FlowsAsyncLocal_WhenFlowIsEnabled" methodname="ResumedOnWorker_FlowsAsyncLocal_WhenFlowIsEnabled" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="729622464" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.001497" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1613" name="RunnerPoolCapacityZero_ReleasesRunnersInsteadOfPoolingThem" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.RunnerPoolCapacityZero_ReleasesRunnersInsteadOfPoolingThem" methodname="RunnerPoolCapacityZero_ReleasesRunnersInsteadOfPoolingThem" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1815390028" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.002316" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1620" name="SafeAwaiterSuspension_FlowsAsyncLocal_WhenFlowIsEnabled" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SafeAwaiterSuspension_FlowsAsyncLocal_WhenFlowIsEnabled" methodname="SafeAwaiterSuspension_FlowsAsyncLocal_WhenFlowIsEnabled" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1104087444" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.003963" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1602" name="SafeAwaiterSuspension_IsRunnerBacked" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SafeAwaiterSuspension_IsRunnerBacked" methodname="SafeAwaiterSuspension_IsRunnerBacked" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="968518140" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.004036" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1640" name="SetSynchronizationContextAfterAwait_IsRevertedWhenTheResumptionUnwinds_WithFlowOn" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SetSynchronizationContextAfterAwait_IsRevertedWhenTheResumptionUnwinds_WithFlowOn" methodname="SetSynchronizationContextAfterAwait_IsRevertedWhenTheResumptionUnwinds_WithFlowOn" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1786181029" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.005203" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1641" name="SetSynchronizationContextAfterAwait_PersistsOnTheThread_WithFlowOff" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SetSynchronizationContextAfterAwait_PersistsOnTheThread_WithFlowOff" methodname="SetSynchronizationContextAfterAwait_PersistsOnTheThread_WithFlowOff" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="325808792" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.001482" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1605" name="SuspendedCancellation_IsCanceled_AndRethrowsTheSameInstance" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedCancellation_IsCanceled_AndRethrowsTheSameInstance" methodname="SuspendedCancellation_IsCanceled_AndRethrowsTheSameInstance" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="2073964968" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.002698" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1637" name="SuspendedCancellation_WithCanceledToken_CancelsTheTaskAndTheBridge" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedCancellation_WithCanceledToken_CancelsTheTaskAndTheBridge" methodname="SuspendedCancellation_WithCanceledToken_CancelsTheTaskAndTheBridge" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="469552552" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.003936" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1604" name="SuspendedException_IsFaulted_AndRethrowsTheSameInstance" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedException_IsFaulted_AndRethrowsTheSameInstance" methodname="SuspendedException_IsFaulted_AndRethrowsTheSameInstance" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="469593691" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.001899" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1607" name="SuspendedMethod_AsTask_BridgesTheResult_AndBlocksNativeConsumption" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedMethod_AsTask_BridgesTheResult_AndBlocksNativeConsumption" methodname="SuspendedMethod_AsTask_BridgesTheResult_AndBlocksNativeConsumption" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="150509983" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.009266" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1610" name="SuspendedMethod_AwaiterRegistrationThrows_FaultsTheTask" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedMethod_AwaiterRegistrationThrows_FaultsTheTask" methodname="SuspendedMethod_AwaiterRegistrationThrows_FaultsTheTask" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="2011363660" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.003747" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1609" name="SuspendedMethod_BridgedCompletion_ReturnsTheRunnerToThePool" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedMethod_BridgedCompletion_ReturnsTheRunnerToThePool" methodname="SuspendedMethod_BridgedCompletion_ReturnsTheRunnerToThePool" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="103450484" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.002712" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1614" name="SuspendedMethod_ConsumerStartingTheSameMethod_DuringCompletion_Works" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedMethod_ConsumerStartingTheSameMethod_DuringCompletion_Works" methodname="SuspendedMethod_ConsumerStartingTheSameMethod_DuringCompletion_Works" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1734308347" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.002064" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1608" name="SuspendedMethod_NativeAwaitThenAsTask_Throws" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedMethod_NativeAwaitThenAsTask_Throws" methodname="SuspendedMethod_NativeAwaitThenAsTask_Throws" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1383704937" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.001828" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1611" name="SuspendedMethod_Preserve_SharesTheResultWithSeveralConsumers" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedMethod_Preserve_SharesTheResultWithSeveralConsumers" methodname="SuspendedMethod_Preserve_SharesTheResultWithSeveralConsumers" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="22821460" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.001294" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1612" name="SuspendedMethod_RunnerIsReusedAfterConsumption" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedMethod_RunnerIsReusedAfterConsumption" methodname="SuspendedMethod_RunnerIsReusedAfterConsumption" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="258073577" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.001365" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1606" name="SuspendedMethod_SupportsOnlyOneNativeAwaiter" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedMethod_SupportsOnlyOneNativeAwaiter" methodname="SuspendedMethod_SupportsOnlyOneNativeAwaiter" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="261357494" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.000959" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1601" name="SuspendedTypedMethod_ReturnsResultThroughRunner" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedTypedMethod_ReturnsResultThroughRunner" methodname="SuspendedTypedMethod_ReturnsResultThroughRunner" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="396866177" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.002566" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1600" name="SuspendedUntypedMethod_IsRunnerBacked_AndStaleAfterConsumption" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SuspendedUntypedMethod_IsRunnerBacked_AndStaleAfterConsumption" methodname="SuspendedUntypedMethod_IsRunnerBacked_AndStaleAfterConsumption" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="942131824" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.004576" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1638" name="SynchronousCancellation_KeepsTheThrownInstance_IncludingSubclasses" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SynchronousCancellation_KeepsTheThrownInstance_IncludingSubclasses" methodname="SynchronousCancellation_KeepsTheThrownInstance_IncludingSubclasses" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1668665571" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.003771" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1603" name="SynchronousCancellation_WithUncanceledToken_IsCanceled" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SynchronousCancellation_WithUncanceledToken_IsCanceled" methodname="SynchronousCancellation_WithUncanceledToken_IsCanceled" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1810235456" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.001600" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1619" name="SynchronousPartAsyncLocalWrite_ReachesTheCaller" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.SynchronousPartAsyncLocalWrite_ReachesTheCaller" methodname="SynchronousPartAsyncLocalWrite_ReachesTheCaller" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="26073800" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.001894" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1631" name="WhenAll_ConsumedInput_ThrowsOnTheStaleToken" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.WhenAll_ConsumedInput_ThrowsOnTheStaleToken" methodname="WhenAll_ConsumedInput_ThrowsOnTheStaleToken" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="56312292" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.002326" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1628" name="WhenAll_FaultedSuspendedInput_PropagatesTheFault" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.WhenAll_FaultedSuspendedInput_PropagatesTheFault" methodname="WhenAll_FaultedSuspendedInput_PropagatesTheFault" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="15077940" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.007214" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1630" name="WhenAll_InputWithNativeAwaiter_Throws_AndKeepsTheOtherInputAwaitable" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.WhenAll_InputWithNativeAwaiter_Throws_AndKeepsTheOtherInputAwaitable" methodname="WhenAll_InputWithNativeAwaiter_Throws_AndKeepsTheOtherInputAwaitable" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="533356416" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.002077" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1629" name="WhenAll_PendingInputWithTaskBridge_TakesTheTaskPath_AndCompletes" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.WhenAll_PendingInputWithTaskBridge_TakesTheTaskPath_AndCompletes" methodname="WhenAll_PendingInputWithTaskBridge_TakesTheTaskPath_AndCompletes" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1279733437" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.010099" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1627" name="WhenAll_TwoPendingSuspendedMethods_CompletesAfterBoth" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.WhenAll_TwoPendingSuspendedMethods_CompletesAfterBoth" methodname="WhenAll_TwoPendingSuspendedMethods_CompletesAfterBoth" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1149953170" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.018154" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1633" name="WhenAllTyped_FaultedSuspendedInput_RethrowsTheSameInstance" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.WhenAllTyped_FaultedSuspendedInput_RethrowsTheSameInstance" methodname="WhenAllTyped_FaultedSuspendedInput_RethrowsTheSameInstance" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="531025594" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.017536" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1632" name="WhenAllTyped_TwoPendingSuspendedMethods_ReturnsResultsInOrder_AndConsumesTheInputs" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.WhenAllTyped_TwoPendingSuspendedMethods_ReturnsResultsInOrder_AndConsumesTheInputs" methodname="WhenAllTyped_TwoPendingSuspendedMethods_ReturnsResultsInOrder_AndConsumesTheInputs" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="544948271" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.011700" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1634" name="WhenAny_TwoPendingSuspendedMethods_ReturnsTheWinner_AndConsumesTheLoserWhenItCompletes" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.WhenAny_TwoPendingSuspendedMethods_ReturnsTheWinner_AndConsumesTheLoserWhenItCompletes" methodname="WhenAny_TwoPendingSuspendedMethods_ReturnsTheWinner_AndConsumesTheLoserWhenItCompletes" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="2016503696" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.008024" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1749" name="OnityTaskPreserveEditModeTests" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" testcasecount="15" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:48Z" duration="3.393843" total="15" passed="15" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1754" name="Preserve_AlreadyCompletedNativeTask_KeepsItsResult" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_AlreadyCompletedNativeTask_KeepsItsResult" methodname="Preserve_AlreadyCompletedNativeTask_KeepsItsResult" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="440820430" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:45Z" duration="0.015451" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1757" name="Preserve_ConcurrentNativeCompletion_DoesNotLoseResult" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_ConcurrentNativeCompletion_DoesNotLoseResult" methodname="Preserve_ConcurrentNativeCompletion_DoesNotLoseResult" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="894769233" result="Passed" start-time="2026-09-29 20:52:45Z" end-time="2026-09-29 20:52:48Z" duration="3.216176" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1750" name="Preserve_InlineTaskBackedAndShareableTasks_KeepTheirState" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_InlineTaskBackedAndShareableTasks_KeepTheirState" methodname="Preserve_InlineTaskBackedAndShareableTasks_KeepTheirState" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="1427310217" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.001486" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1753" name="Preserve_InvokesPendingConsumerOutsideSourceLock" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_InvokesPendingConsumerOutsideSourceLock" methodname="Preserve_InvokesPendingConsumerOutsideSourceLock" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="186679671" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.001142" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1760" name="Preserve_NativeCancellation_PreservesTokenAndTaskBridge" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_NativeCancellation_PreservesTokenAndTaskBridge" methodname="Preserve_NativeCancellation_PreservesTokenAndTaskBridge" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="10282754" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.005211" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1758" name="Preserve_NativeFaultedOperationCanceledException_RemainsFaulted" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_NativeFaultedOperationCanceledException_RemainsFaulted" methodname="Preserve_NativeFaultedOperationCanceledException_RemainsFaulted" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="847830928" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.002167" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1762" name="Preserve_OriginalAlreadyAwaited_IsRejected" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_OriginalAlreadyAwaited_IsRejected" methodname="Preserve_OriginalAlreadyAwaited_IsRejected" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="722733046" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.001385" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1761" name="Preserve_OriginalAlreadyMaterializedAsTask_IsRejected" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_OriginalAlreadyMaterializedAsTask_IsRejected" methodname="Preserve_OriginalAlreadyMaterializedAsTask_IsRejected" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="67356646" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.001180" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1764" name="Preserve_PooledSourceReuse_DoesNotChangePreservedResult" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_PooledSourceReuse_DoesNotChangePreservedResult" methodname="Preserve_PooledSourceReuse_DoesNotChangePreservedResult" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="460527513" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.001686" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1763" name="Preserve_SharedNativeTask_CanBePassedToWhenAnyTwice" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_SharedNativeTask_CanBePassedToWhenAnyTwice" methodname="Preserve_SharedNativeTask_CanBePassedToWhenAnyTwice" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="790851129" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.000926" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1752" name="Preserve_TypedNativeTask_SupportsFourPendingAndLateConsumers" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_TypedNativeTask_SupportsFourPendingAndLateConsumers" methodname="Preserve_TypedNativeTask_SupportsFourPendingAndLateConsumers" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="277058605" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.031493" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1756" name="Preserve_TypedOriginalCannotTakeResultBeforeAdapterCompletion" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_TypedOriginalCannotTakeResultBeforeAdapterCompletion" methodname="Preserve_TypedOriginalCannotTakeResultBeforeAdapterCompletion" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="2044342525" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.001812" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1759" name="Preserve_UntypedNativeFaultedOperationCanceledException_RemainsFaulted" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_UntypedNativeFaultedOperationCanceledException_RemainsFaulted" methodname="Preserve_UntypedNativeFaultedOperationCanceledException_RemainsFaulted" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="1327600351" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.002212" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1751" name="Preserve_UntypedNativeTask_SupportsFourPendingAndLateConsumers" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_UntypedNativeTask_SupportsFourPendingAndLateConsumers" methodname="Preserve_UntypedNativeTask_SupportsFourPendingAndLateConsumers" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="460726477" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.004431" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1755" name="Preserve_UntypedOriginalCannotTakeResultBeforeAdapterCompletion" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_UntypedOriginalCannotTakeResultBeforeAdapterCompletion" methodname="Preserve_UntypedOriginalCannotTakeResultBeforeAdapterCompletion" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="882172930" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.002923" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1768" name="OnityTaskSourceStateEditModeTests" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" testcasecount="16" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:49Z" duration="0.912351" total="16" passed="16" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1774" name="AsTaskRacingCompletion_CompletesTheBridgeOnce_AndReturnsTheRunner" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.AsTaskRacingCompletion_CompletesTheBridgeOnce_AndReturnsTheRunner" methodname="AsTaskRacingCompletion_CompletesTheBridgeOnce_AndReturnsTheRunner" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="1818696454" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.065481" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1775" name="AsTaskRacingCompletion_Typed_CompletesTheBridgeOnce_AndReturnsTheRunner" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.AsTaskRacingCompletion_Typed_CompletesTheBridgeOnce_AndReturnsTheRunner" methodname="AsTaskRacingCompletion_Typed_CompletesTheBridgeOnce_AndReturnsTheRunner" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="1227645477" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.073470" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1778" name="AsTaskRacingNativeConsumption_ImmediateRentalRemainsUsable" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.AsTaskRacingNativeConsumption_ImmediateRentalRemainsUsable" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:49Z" duration="0.246114" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1776" name="AsTaskRacingNativeConsumption_ImmediateRentalRemainsUsable(False)" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.AsTaskRacingNativeConsumption_ImmediateRentalRemainsUsable(False)" methodname="AsTaskRacingNativeConsumption_ImmediateRentalRemainsUsable" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="1167914584" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:48Z" duration="0.118675" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1777" name="AsTaskRacingNativeConsumption_ImmediateRentalRemainsUsable(True)" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.AsTaskRacingNativeConsumption_ImmediateRentalRemainsUsable(True)" methodname="AsTaskRacingNativeConsumption_ImmediateRentalRemainsUsable" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="1651893247" result="Passed" start-time="2026-09-29 20:52:48Z" end-time="2026-09-29 20:52:49Z" duration="0.122582" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1771" name="ContinuationRegisteredAfterCompletion_RunsSynchronously_AndSeesTheStatus" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.ContinuationRegisteredAfterCompletion_RunsSynchronously_AndSeesTheStatus" methodname="ContinuationRegisteredAfterCompletion_RunsSynchronously_AndSeesTheStatus" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="375029926" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.001998" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1772" name="RegistrationRacingCompletion_DeliversTheContinuationExactlyOnce_AfterTheStatus" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.RegistrationRacingCompletion_DeliversTheContinuationExactlyOnce_AfterTheStatus" methodname="RegistrationRacingCompletion_DeliversTheContinuationExactlyOnce_AfterTheStatus" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="587716466" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.070235" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1773" name="RegistrationRacingCompletion_Typed_DeliversTheContinuationExactlyOnce_AfterTheStatus" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.RegistrationRacingCompletion_Typed_DeliversTheContinuationExactlyOnce_AfterTheStatus" methodname="RegistrationRacingCompletion_Typed_DeliversTheContinuationExactlyOnce_AfterTheStatus" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="487253126" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.047163" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1786" name="RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.276938" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1782" name="RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration(False,False)" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration(False,False)" methodname="RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="1203754116" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.076336" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1783" name="RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration(True,False)" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration(True,False)" methodname="RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="800886052" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.056061" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1784" name="RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration(False,True)" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration(False,True)" methodname="RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="907570427" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.047135" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1785" name="RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration(True,True)" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration(True,True)" methodname="RegistrationRacingConsumption_ImmediateRentalSurvivesOldRegistration" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="1359865280" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.087316" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="ParameterizedMethod" id="1781" name="RepeatedAsTaskRacingRelease_DoesNotReturnOrChangeTheSuccessorBridge" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.RepeatedAsTaskRacingRelease_DoesNotReturnOrChangeTheSuccessorBridge" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.095955" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1779" name="RepeatedAsTaskRacingRelease_DoesNotReturnOrChangeTheSuccessorBridge(False)" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.RepeatedAsTaskRacingRelease_DoesNotReturnOrChangeTheSuccessorBridge(False)" methodname="RepeatedAsTaskRacingRelease_DoesNotReturnOrChangeTheSuccessorBridge" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="1445411859" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.041752" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1780" name="RepeatedAsTaskRacingRelease_DoesNotReturnOrChangeTheSuccessorBridge(True)" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.RepeatedAsTaskRacingRelease_DoesNotReturnOrChangeTheSuccessorBridge(True)" methodname="RepeatedAsTaskRacingRelease_DoesNotReturnOrChangeTheSuccessorBridge" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="827284917" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.049492" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1787" name="RunnerCancellationWithARetiredVersion_IsRejected_AndLeavesTheNewCycleAlone" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.RunnerCancellationWithARetiredVersion_IsRejected_AndLeavesTheNewCycleAlone" methodname="RunnerCancellationWithARetiredVersion_IsRejected_AndLeavesTheNewCycleAlone" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="21119124" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.003239" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1769" name="StaleTokenAfterReuse_IsRejectedByEveryEntryPoint_AndLeavesTheNewCycleAlone" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.StaleTokenAfterReuse_IsRejectedByEveryEntryPoint_AndLeavesTheNewCycleAlone" methodname="StaleTokenAfterReuse_IsRejectedByEveryEntryPoint_AndLeavesTheNewCycleAlone" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="1146692559" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.004796" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1770" name="StaleTokenAfterReuse_Typed_IsRejectedByEveryEntryPoint_AndLeavesTheNewCycleAlone" fullname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests.StaleTokenAfterReuse_Typed_IsRejectedByEveryEntryPoint_AndLeavesTheNewCycleAlone" methodname="StaleTokenAfterReuse_Typed_IsRejectedByEveryEntryPoint_AndLeavesTheNewCycleAlone" classname="Onity.Tests.EditMode.OnityTaskSourceStateEditModeTests" runstate="Runnable" seed="243366515" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.002226" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1891" name="OnityTaskWhenAnyArrayEditModeTests" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" testcasecount="49" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:50Z" duration="0.621198" total="49" passed="49" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1941" name="CompletionCallback_CanRegisterAndConsumeAnotherArrayRace" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.CompletionCallback_CanRegisterAndConsumeAnotherArrayRace" methodname="CompletionCallback_CanRegisterAndConsumeAnotherArrayRace" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="792534392" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.009647" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1893" name="DefaultAndSingleInputs_ReturnIndexZeroAndExactValue" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.DefaultAndSingleInputs_ReturnIndexZeroAndExactValue" methodname="DefaultAndSingleInputs_ReturnIndexZeroAndExactValue" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1779858099" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.011945" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1950" name="DerivedCompletionSource_LoserFaultObservesExistingConcurrentAndFutureBridge" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.DerivedCompletionSource_LoserFaultObservesExistingConcurrentAndFutureBridge" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.026654" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1947" name="DerivedCompletionSource_LoserFaultObservesExistingConcurrentAndFutureBridge(0)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.DerivedCompletionSource_LoserFaultObservesExistingConcurrentAndFutureBridge(0)" methodname="DerivedCompletionSource_LoserFaultObservesExistingConcurrentAndFutureBridge" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1410697093" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.002816" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1948" name="DerivedCompletionSource_LoserFaultObservesExistingConcurrentAndFutureBridge(1)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.DerivedCompletionSource_LoserFaultObservesExistingConcurrentAndFutureBridge(1)" methodname="DerivedCompletionSource_LoserFaultObservesExistingConcurrentAndFutureBridge" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1775950101" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.000820" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1949" name="DerivedCompletionSource_LoserFaultObservesExistingConcurrentAndFutureBridge(2)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.DerivedCompletionSource_LoserFaultObservesExistingConcurrentAndFutureBridge(2)" methodname="DerivedCompletionSource_LoserFaultObservesExistingConcurrentAndFutureBridge" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="2988165" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.000479" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1901" name="DuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.DuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable" methodname="DuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="222495182" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.008231" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1892" name="InvalidArrays_ThrowBeforeCreatingAConsumer" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.InvalidArrays_ThrowBeforeCreatingAConsumer" methodname="InvalidArrays_ThrowBeforeCreatingAConsumer" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="633775246" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.002750" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1918" name="LargeDuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.LargeDuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.027097" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1915" name="LargeDuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable(17)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.LargeDuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable(17)" methodname="LargeDuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1011145595" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.004795" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1916" name="LargeDuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable(32)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.LargeDuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable(32)" methodname="LargeDuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="2026599286" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.001115" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1917" name="LargeDuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable(33)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.LargeDuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable(33)" methodname="LargeDuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1630615173" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.001608" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="ParameterizedMethod" id="1934" name="LateLoserFaults_AreObservedBeforeDuringAndAfterInputBridgeCreation" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.LateLoserFaults_AreObservedBeforeDuringAndAfterInputBridgeCreation" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.027529" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1931" name="LateLoserFaults_AreObservedBeforeDuringAndAfterInputBridgeCreation(0)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.LateLoserFaults_AreObservedBeforeDuringAndAfterInputBridgeCreation(0)" methodname="LateLoserFaults_AreObservedBeforeDuringAndAfterInputBridgeCreation" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="2100964857" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.002065" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1932" name="LateLoserFaults_AreObservedBeforeDuringAndAfterInputBridgeCreation(1)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.LateLoserFaults_AreObservedBeforeDuringAndAfterInputBridgeCreation(1)" methodname="LateLoserFaults_AreObservedBeforeDuringAndAfterInputBridgeCreation" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1227098185" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.001436" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1933" name="LateLoserFaults_AreObservedBeforeDuringAndAfterInputBridgeCreation(2)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.LateLoserFaults_AreObservedBeforeDuringAndAfterInputBridgeCreation(2)" methodname="LateLoserFaults_AreObservedBeforeDuringAndAfterInputBridgeCreation" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="39711358" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.000927" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="ParameterizedMethod" id="1921" name="MediumPool_32Then17Then32_ReusesSourceWithoutRetainedInputsOrIndexState" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.MediumPool_32Then17Then32_ReusesSourceWithoutRetainedInputsOrIndexState" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.032234" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1919" name="MediumPool_32Then17Then32_ReusesSourceWithoutRetainedInputsOrIndexState(False)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.MediumPool_32Then17Then32_ReusesSourceWithoutRetainedInputsOrIndexState(False)" methodname="MediumPool_32Then17Then32_ReusesSourceWithoutRetainedInputsOrIndexState" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1445496210" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.008556" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1920" name="MediumPool_32Then17Then32_ReusesSourceWithoutRetainedInputsOrIndexState(True)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.MediumPool_32Then17Then32_ReusesSourceWithoutRetainedInputsOrIndexState(True)" methodname="MediumPool_32Then17Then32_ReusesSourceWithoutRetainedInputsOrIndexState" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1371049917" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.005644" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1935" name="Output_NativeIsExclusive_BridgeIsCached_AndPreserveIsShareable" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.Output_NativeIsExclusive_BridgeIsCached_AndPreserveIsShareable" methodname="Output_NativeIsExclusive_BridgeIsCached_AndPreserveIsShareable" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="999397812" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.004833" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1899" name="PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.039551" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1894" name="PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles(2)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles(2)" methodname="PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1671070059" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.001006" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1895" name="PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles(16)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles(16)" methodname="PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="804763193" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.000618" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1896" name="PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles(17)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles(17)" methodname="PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1628427195" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.000561" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1897" name="PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles(32)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles(32)" methodname="PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="2009795822" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.000646" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1898" name="PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles(33)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles(33)" methodname="PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="696041142" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.000660" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1940" name="RegistrationAndConcurrentCompletionRaces_AreBoundedAndKeepWinningPairTogether" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.RegistrationAndConcurrentCompletionRaces_AreBoundedAndKeepWinningPairTogether" methodname="RegistrationAndConcurrentCompletionRaces_AreBoundedAndKeepWinningPairTogether" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="176315050" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.020579" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1926" name="ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.041981" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1922" name="ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone(16)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone(16)" methodname="ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="861552899" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.003859" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1923" name="ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone(17)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone(17)" methodname="ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1569487326" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.002209" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1924" name="ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone(32)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone(32)" methodname="ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="730509365" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.001490" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1925" name="ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone(33)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone(33)" methodname="ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="445170964" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.001567" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1936" name="ReleasedOutput_StillObservesNativeLoser_AndCannotCorruptFreshRentals" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ReleasedOutput_StillObservesNativeLoser_AndCannotCorruptFreshRentals" methodname="ReleasedOutput_StillObservesNativeLoser_AndCannotCorruptFreshRentals" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="589506601" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:49Z" duration="0.002157" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1914" name="ShareablePreservedAndTaskDuplicates_AreAllowed" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" testcasecount="12" result="Passed" start-time="2026-09-29 20:52:49Z" end-time="2026-09-29 20:52:50Z" duration="0.126929" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1902" name="ShareablePreservedAndTaskDuplicates_AreAllowed(0,3)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed(0,3)" methodname="ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="73036299" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.002447" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1903" name="ShareablePreservedAndTaskDuplicates_AreAllowed(1,3)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed(1,3)" methodname="ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1349418378" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.001290" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1904" name="ShareablePreservedAndTaskDuplicates_AreAllowed(2,3)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed(2,3)" methodname="ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1432073556" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.007291" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1905" name="ShareablePreservedAndTaskDuplicates_AreAllowed(0,17)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed(0,17)" methodname="ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="602463397" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.001403" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1906" name="ShareablePreservedAndTaskDuplicates_AreAllowed(1,17)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed(1,17)" methodname="ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="872786991" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.000886" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1907" name="ShareablePreservedAndTaskDuplicates_AreAllowed(2,17)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed(2,17)" methodname="ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1376335521" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.001913" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1908" name="ShareablePreservedAndTaskDuplicates_AreAllowed(0,32)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed(0,32)" methodname="ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="134875102" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.000637" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1909" name="ShareablePreservedAndTaskDuplicates_AreAllowed(1,32)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed(1,32)" methodname="ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1822786109" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.000841" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1910" name="ShareablePreservedAndTaskDuplicates_AreAllowed(2,32)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed(2,32)" methodname="ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="214889171" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.002061" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1911" name="ShareablePreservedAndTaskDuplicates_AreAllowed(0,33)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed(0,33)" methodname="ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1689140676" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.002779" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1912" name="ShareablePreservedAndTaskDuplicates_AreAllowed(1,33)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed(1,33)" methodname="ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1245592671" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.002636" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1913" name="ShareablePreservedAndTaskDuplicates_AreAllowed(2,33)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.ShareablePreservedAndTaskDuplicates_AreAllowed(2,33)" methodname="ShareablePreservedAndTaskDuplicates_AreAllowed" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="458462273" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.002754" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1900" name="SnapshotAndAlreadyTerminalTie_UseOriginalLowestIndex" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.SnapshotAndAlreadyTerminalTie_UseOriginalLowestIndex" methodname="SnapshotAndAlreadyTerminalTie_UseOriginalLowestIndex" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1642847740" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.002243" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1939" name="StaleAndPreclaimedInputs_AreFaultOutcomes_AndDoNotReplaceEarlierWinner" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.StaleAndPreclaimedInputs_AreFaultOutcomes_AndDoNotReplaceEarlierWinner" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.022627" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1937" name="StaleAndPreclaimedInputs_AreFaultOutcomes_AndDoNotReplaceEarlierWinner(False)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.StaleAndPreclaimedInputs_AreFaultOutcomes_AndDoNotReplaceEarlierWinner(False)" methodname="StaleAndPreclaimedInputs_AreFaultOutcomes_AndDoNotReplaceEarlierWinner" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1407879496" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.003987" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1938" name="StaleAndPreclaimedInputs_AreFaultOutcomes_AndDoNotReplaceEarlierWinner(True)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.StaleAndPreclaimedInputs_AreFaultOutcomes_AndDoNotReplaceEarlierWinner(True)" methodname="StaleAndPreclaimedInputs_AreFaultOutcomes_AndDoNotReplaceEarlierWinner" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1985921" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.002649" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1942" name="TaskBackedObservers_DoNotCaptureQueuedSynchronizationContext" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.TaskBackedObservers_DoNotCaptureQueuedSynchronizationContext" methodname="TaskBackedObservers_DoNotCaptureQueuedSynchronizationContext" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="176355492" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.002770" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1946" name="UntypedMixedArray_PreservesWinnerOutcome_AndObservesLateTaskFault" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.UntypedMixedArray_PreservesWinnerOutcome_AndObservesLateTaskFault" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.033549" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1943" name="UntypedMixedArray_PreservesWinnerOutcome_AndObservesLateTaskFault(0)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.UntypedMixedArray_PreservesWinnerOutcome_AndObservesLateTaskFault(0)" methodname="UntypedMixedArray_PreservesWinnerOutcome_AndObservesLateTaskFault" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="31020912" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.003779" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1944" name="UntypedMixedArray_PreservesWinnerOutcome_AndObservesLateTaskFault(1)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.UntypedMixedArray_PreservesWinnerOutcome_AndObservesLateTaskFault(1)" methodname="UntypedMixedArray_PreservesWinnerOutcome_AndObservesLateTaskFault" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="399014491" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.002417" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1945" name="UntypedMixedArray_PreservesWinnerOutcome_AndObservesLateTaskFault(2)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.UntypedMixedArray_PreservesWinnerOutcome_AndObservesLateTaskFault(2)" methodname="UntypedMixedArray_PreservesWinnerOutcome_AndObservesLateTaskFault" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="264655451" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.002550" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="ParameterizedMethod" id="1930" name="WinnerFailure_PreservesOriginalFaultCancellationAndFaultedOce" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.WinnerFailure_PreservesOriginalFaultCancellationAndFaultedOce" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.031232" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1927" name="WinnerFailure_PreservesOriginalFaultCancellationAndFaultedOce(0)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.WinnerFailure_PreservesOriginalFaultCancellationAndFaultedOce(0)" methodname="WinnerFailure_PreservesOriginalFaultCancellationAndFaultedOce" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1246547069" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.002502" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1928" name="WinnerFailure_PreservesOriginalFaultCancellationAndFaultedOce(1)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.WinnerFailure_PreservesOriginalFaultCancellationAndFaultedOce(1)" methodname="WinnerFailure_PreservesOriginalFaultCancellationAndFaultedOce" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="1525233974" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.001442" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1929" name="WinnerFailure_PreservesOriginalFaultCancellationAndFaultedOce(2)" fullname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests.WinnerFailure_PreservesOriginalFaultCancellationAndFaultedOce(2)" methodname="WinnerFailure_PreservesOriginalFaultCancellationAndFaultedOce" classname="Onity.Tests.EditMode.OnityTaskWhenAnyArrayEditModeTests" runstate="Runnable" seed="2066004194" result="Passed" start-time="2026-09-29 20:52:50Z" end-time="2026-09-29 20:52:50Z" duration="0.002468" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[Saving results to: C:/Users/e-fur/AppData/LocalLow/DefaultCompany/Onity\TestResults.xml
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

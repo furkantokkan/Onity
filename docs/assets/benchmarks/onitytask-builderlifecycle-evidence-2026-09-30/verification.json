@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "sourceBase": "5c09749b7531cdc28678153a0b4421ccc4eafdfe",
+  "unityVersion": "2022.3.62f2",
+  "releaseArgument": "-releaseCodeOptimization",
+  "candidateRuntimeSha256": "01BF0C57CAC4373BA9A9228B5BD5397380881CED9E265E29CBAAC585651036C1",
+  "retainedRuntimeSha256": "3D66BDB8C0A0F27DFA75649283C75AB9E0289866F9D61DDDA80A99B74685128F",
+  "testSourceSha256": "F2092109CA07A986FB61782ADE03F801B4C75EBC631E6BC9B87A0DA258D089E4",
+  "candidateEditMode": {
+    "skipped": 0,
+    "passed": 94,
+    "newCases": 24,
+    "failed": 0
+  },
+  "candidatePlayMode": {
+    "skipped": 0,
+    "passed": 1,
+    "scope": "Mono Editor typed pooling smoke; IL2CPP branches do not run.",
+    "failed": 0
+  },
+  "retainedSourceState": {
+    "skipped": 0,
+    "passed": 40,
+    "newCases": 24,
+    "failed": 0
+  },
+  "retention": "Reverted exact two-site guard; frozen criteria unmet. Harness and tests retained.",
+  "taskOwnedOverlap": "Root excluded own build/test/Roslyn during fixed timing. Build/test timestamps corroborate; earlier Roslyn stdout/timestamp artifact was not saved.",
+  "settingsRestored": true,
+  "temporarySceneRemoved": true,
+  "fullBuildEditorLogsArchived": false,
+  "playerBinariesArchived": false
+}

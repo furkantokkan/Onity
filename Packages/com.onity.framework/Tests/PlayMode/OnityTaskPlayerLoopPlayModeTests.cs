@@ -15,10 +15,17 @@ namespace Onity.Tests.PlayMode
 {
     public sealed partial class OnityTaskPlayerLoopPlayModeTests
     {
+        private static readonly OnityPlayerLoopTiming[] s_eagerTimings =
+        {
+            OnityPlayerLoopTiming.Update, OnityPlayerLoopTiming.FixedUpdate, OnityPlayerLoopTiming.LateUpdate
+        };
+
         [UnityTest]
         public IEnumerator YieldPhaseOrdering_BeforeDrainUsesSameOccurrence_AfterAndReentrantUseNext()
         {
-            foreach (OnityPlayerLoopTiming timing in Enum.GetValues(typeof(OnityPlayerLoopTiming)))
+            // The probes bracket the script-callback anchors of the three eager timings; the appended
+            // timings are covered by OnityTaskTimingPlayModeTests.
+            foreach (OnityPlayerLoopTiming timing in s_eagerTimings)
             {
                 using (var cancellation = new CancellationTokenSource())
                 {
@@ -287,7 +294,7 @@ namespace Onity.Tests.PlayMode
                     AddProbe(Anchor(OnityPlayerLoopTiming.Update), typeof(ForeignMarker), () => foreignCalls++, true);
                     OnityTaskPlayerLoop.Initialize();
                     OnityTaskPlayerLoop.Initialize();
-                    Assert.That(CountOwned(PlayerLoop.GetCurrentPlayerLoop()), Is.EqualTo(3));
+                    Assert.That(CountEager(PlayerLoop.GetCurrentPlayerLoop()), Is.EqualTo(3));
                     Assert.That(Count(PlayerLoop.GetCurrentPlayerLoop(), typeof(ForeignMarker)), Is.EqualTo(1));
                     yield return Wait(() => error != null || completedFrame >= 0);
                     Assert.That(error, Is.Null);
@@ -409,19 +416,32 @@ namespace Onity.Tests.PlayMode
         [UnityTest]
         public IEnumerator NativeReuseAndBridges_KeepConsumerAndStaleTokenRules()
         {
-            var first = OnityTask.Yield(OnityPlayerLoopTiming.Update);
-            bool completed = false;
-            Exception error = null;
-            Observe(first, () => completed = true, exception => error = exception);
-            yield return Wait(() => completed || error != null);
-            Assert.That(error, Is.Null);
-            var second = OnityTask.NextFrame(OnityPlayerLoopTiming.LateUpdate, default);
-            Task bridge = second.AsTask();
-            Assert.That(second.AsTask(), Is.SameAs(bridge));
-            Assert.Throws<InvalidOperationException>(() => first.GetAwaiter().GetResult());
-            yield return Wait(() => bridge.IsCompleted);
-            bridge.GetAwaiter().GetResult();
-            Assert.Throws<InvalidOperationException>(() => second.GetAwaiter().GetResult());
+            using (var cancellation = new CancellationTokenSource())
+            {
+                // A cancelable explicit wait is a pooled single-consumer source.
+                OnityTask first = OnityTask.Yield(OnityPlayerLoopTiming.Update, cancellation.Token);
+                bool completed = false;
+                Exception error = null;
+                Observe(first, () => completed = true, exception => error = exception);
+                yield return Wait(() => completed || error != null);
+                Assert.That(error, Is.Null);
+                OnityTask second = OnityTask.NextFrame(OnityPlayerLoopTiming.LateUpdate, cancellation.Token);
+                Task bridge = second.AsTask();
+                Assert.That(second.AsTask(), Is.SameAs(bridge));
+                Assert.Throws<InvalidOperationException>(() => first.GetAwaiter().GetResult());
+                yield return Wait(() => bridge.IsCompleted);
+                bridge.GetAwaiter().GetResult();
+                Assert.Throws<InvalidOperationException>(() => second.GetAwaiter().GetResult());
+            }
+
+            // A token-less explicit wait is stateless (D2b): one shared bridge and repeatable reads.
+            OnityTask stateless = OnityTask.NextFrame(OnityPlayerLoopTiming.LateUpdate, default);
+            Task statelessBridge = stateless.AsTask();
+            Assert.That(stateless.AsTask(), Is.SameAs(statelessBridge));
+            yield return Wait(() => statelessBridge.IsCompleted);
+            statelessBridge.GetAwaiter().GetResult();
+            Assert.DoesNotThrow(() => stateless.GetAwaiter().GetResult());
+            Assert.DoesNotThrow(() => stateless.GetAwaiter().GetResult());
             var preserved = OnityTask.Yield(OnityPlayerLoopTiming.FixedUpdate).Preserve();
             Task firstBridge = preserved.AsTask();
             Task secondBridge = preserved.AsTask();
@@ -435,7 +455,8 @@ namespace Onity.Tests.PlayMode
         [UnityTest]
         public IEnumerator LegacyRunnerDestruction_DoesNotRetireInjectedPendingWait()
         {
-            OnityTask legacy = OnityTask.NextFrame();
+            // A legacy delay creates the legacy runner; default frame waits no longer do.
+            OnityTask legacy = OnityTask.Delay(0.001f);
             yield return Wait(() => legacy.IsCompleted);
             legacy.GetAwaiter().GetResult();
             var pending = OnityTask.DelayFrames(3, OnityPlayerLoopTiming.Update, default);
@@ -452,7 +473,7 @@ namespace Onity.Tests.PlayMode
             Assert.That(runner, Is.Not.Null);
             UnityEngine.Object.DestroyImmediate(runner);
             Assert.That(pending.IsCompleted, Is.False);
-            Assert.That(CountOwned(PlayerLoop.GetCurrentPlayerLoop()), Is.EqualTo(3));
+            Assert.That(CountEager(PlayerLoop.GetCurrentPlayerLoop()), Is.EqualTo(3));
             yield return Wait(() => bridge.IsCompleted);
             Assert.That(bridge.IsCanceled || bridge.IsFaulted, Is.False);
             bridge.GetAwaiter().GetResult();
@@ -470,7 +491,7 @@ namespace Onity.Tests.PlayMode
                 ScriptBehaviourUpdateOrder.AppendWorldToCurrentPlayerLoop(world);
                 try
                 {
-                    Assert.That(CountOwned(PlayerLoop.GetCurrentPlayerLoop()), Is.EqualTo(3));
+                    Assert.That(CountEager(PlayerLoop.GetCurrentPlayerLoop()), Is.EqualTo(3));
                     Assert.That(ScriptBehaviourUpdateOrder.IsWorldInCurrentPlayerLoop(world), Is.True);
                     yield return Wait(() => system.CompletedFrame >= 0 || system.Error != null);
                     Assert.That(system.Error, Is.Null);
@@ -556,7 +577,10 @@ namespace Onity.Tests.PlayMode
 
         private static IEnumerator Wait(Func<bool> completed)
         {
-            for (int frame = 0; frame < 240 && !completed(); frame++)
+            // Bounded by real time, not by frames: in Editor batch mode a frame can take about 0.15 ms, so
+            // 240 frames may end before two fixed steps (2 x fixedDeltaTime of game time) have run.
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            while (!completed() && timer.Elapsed.TotalSeconds < 10d)
             {
                 yield return null;
             }
@@ -627,6 +651,18 @@ namespace Onity.Tests.PlayMode
         }
 
         private static int CountOwned(PlayerLoopSystem loop) => OnityTaskPlayerLoopAwakeProbe.CountOwned(loop);
+
+        /// <summary>Counts the three eager nodes only; appended timings install on first use.</summary>
+        private static int CountEager(PlayerLoopSystem loop)
+        {
+            int count = 0;
+            foreach (OnityPlayerLoopTiming timing in s_eagerTimings)
+            {
+                count += Count(loop, Marker(timing));
+            }
+
+            return count;
+        }
 
         private static void RemoveOwnedNodes()
         {

@@ -1,6 +1,6 @@
 # Onity
 
-**One Unity package for dependency injection, reactive programming, and events — one idiom, one disposal model, an engine-free core, and hot paths designed to avoid per-call managed allocation.**
+**One Unity package for dependency injection, reactive programming, events, and async — one idiom, one lifetime and disposal model, an engine-free core, and hot paths designed to avoid per-call managed allocation.**
 
 [![Onity CI](https://github.com/furkantokkan/Onity/actions/workflows/onity-ci.yml/badge.svg)](https://github.com/furkantokkan/Onity/actions/workflows/onity-ci.yml)
 ![Unity 2022.3+](https://img.shields.io/badge/Unity-2022.3%2B-black?logo=unity)
@@ -11,6 +11,23 @@
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
 
 **Repository Editor version:** Unity `2022.3.62f2`. The package supports Unity 2022.3 LTS or newer.
+
+**0.6.0:** OnityTask is faster than UniTask 2.5.11 in all 29 gated scenarios of the
+published IL2CPP Release Player suite (median speedups 1.2x to 12x), measured at
+Onity's default context-flow setting with pool retention matched to UniTask for the
+1,024- and 4,096-operation bursts. Mono, opt-in `AsyncLocal` flow and
+default-retention results, including the rows where Onity is slower, are in the
+[comparison guide](docs/guide/onitytask-comparison.md) and the
+[gate evidence](docs/assets/benchmarks/onitytask-surpass-2026-10-02.md). OnityTask
+now covers UniTask's runtime API under Onity names, apart from the
+[listed gaps](docs/guide/onitytask-comparison.md#feature-coverage) (19 PlayerLoop
+timings, timers, tuple `WhenAll`/`WhenAny`, triggers, UnityEvent/uGUI/UI Toolkit
+events, async LINQ, channels, async reactive properties), and connects async work
+to the rest of Onity in ways a standalone async library cannot: DI scope lifetime
+tokens, awaited `IOnityAsyncInitializable` startup, `ReactiveProperty` waits and
+message-bus receives with backpressure. Context flow is now off by default
+(UniTask semantics); see the [changelog](CHANGELOG.md) for this and the other
+breaking changes.
 
 **0.5.0:** DI adds identified and conditional bindings (`WithId`,
 `WhenInjectedInto<T>()`, `[Inject(Id = ...)]`), a native `AsScoped()` lifetime,
@@ -29,14 +46,15 @@ channels and sequential awaitable operators. See the [0.4.0 release verification
 
 ## Why Onity
 
-A typical Unity project bolts together four assets to ship gameplay: a DI container (Zenject or VContainer), a reactive library (R3 or UniRx), a message bus (MessagePipe), and async/pooling helpers on top. That is four installs, four mental models, four disposal idioms, and four places for an AI agent — or a new teammate — to guess wrong.
+A typical Unity project bolts together four or five assets to ship gameplay: a DI container (Zenject or VContainer), a reactive library (R3 or UniRx), a message bus (MessagePipe), an async library (UniTask), and pooling helpers on top. That is several installs, mental models and disposal idioms, and as many places for an AI agent — or a new teammate — to guess wrong.
 
 Onity replaces all of that with **one package and one mental model**:
 
 - **DI is the spine.** Bind services in a `MonoInstaller`; consume them through constructor injection.
 - **Events ride the broker.** `IMessageBroker` and `OnityEventHub` are auto-bound in every scope — use `OnityEvent.Publish(...)` / `OnityEvent.Subscribe(...)` from Unity code with no setup line.
 - **Reactive operators ride both.** `Subject<T>`, `ReactiveProperty<T>`, and `broker.Observe<T>()` are all the *same* `IOnityObservable<T>`, so `Where`/`Select`/`Subscribe` work on state and events alike.
-- **Everything disposes the same way.** Every `Subscribe` returns `IDisposable`; `AddTo(this)` (Unity) or `AddTo(CompositeDisposable)` (plain C#) scopes its lifetime — across DI, events, and reactive, identically.
+- **Everything disposes the same way.** Every `Subscribe` returns `IDisposable`; `AddTo(this)` (Unity), `AddTo(CompositeDisposable)` (plain C#) or `AddTo(scope)` (a DI scope) scopes its lifetime — across DI, events, and reactive, identically.
+- **Async ends with its owner.** `OnityTask` waits take the destroy token of a component or the lifetime token of the DI scope that owns a service, so async work stops before the services it uses are disposed.
 
 The runtime core (`Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, `Onity.Factory`, `Onity.Composition`) is **engine-free** — no `UnityEngine` dependency — so domain logic is testable in plain EditMode with no scene. The hot-path machinery (resolve via compiled activators, pooled argument arrays, and cached construction plans; publish, `OnNext`, `EveryUpdate`, subscription steady state) is **designed to avoid per-call managed allocation** — though a transient resolve still allocates the instance it returns. The DI allocation figures below come from separate raw Profiler passes with positive controls. The core uses no `System.Linq`; **Onity has no non-Unity third-party runtime dependencies**. The Zenject-familiar `Bind<T>().To<C>().AsSingle()` vocabulary, fluent discoverable builders, a verified [machine-readable usage guide](docs/Onity-AI-Usage-Guide.md), and a [Roslyn analyzer pack](tools/Onity.Analyzers) (`ONITY001`–`ONITY006`) make it **AI-friendly** by design: an agent reading one guide writes correct, compiling code across all three pillars, and the analyzer turns common misuse into inline diagnostics.
 
@@ -83,6 +101,16 @@ The DI fast path uses source-generated constructor activators when available, co
 - Allocation-free diagnostics: `GetDiagnostics(List<...>)` and `ChannelCount` built into the core type.
 - `BindMessageChannel<T>()` when you want to inject a typed `IPublisher<T>` / `ISubscriber<T>` directly.
 
+### Async — `Onity.Unity.Async` (replaces UniTask)
+
+- `OnityTask` / `OnityTask<T>` / `OnityTaskVoid` with Onity's own pooled method builders; a suspended method's runner returns to its pool when its task is consumed. Context flow is off by default, as in UniTask, and `AsyncLocal<T>` flow is an opt-in.
+- Frame waits and all of UniTask's PlayerLoop timings (plus three after-script positions), `Yield`, `Delay` / `WaitForSeconds` with scaled, unscaled or real time, `WaitUntil` / `WaitWhile`, `WaitUntilValueChanged`, `OnityPlayerLoopTimer`, `Timeout`, `CancelAfterSlim`. In Play, frame waits without a cancelable token are stateless and can be awaited by any number of consumers.
+- Composition: `WhenAll` / `WhenAny` over arrays, sequences and typed tuples, left/right `WhenAny`, `WhenEach`, and `await (a, b)`.
+- Unity integration: destroy tokens, lifecycle and MonoBehaviour message triggers, `UnityEvent` and UI Toolkit events, optional uGUI events, scene loading, web requests, `AsyncOperation` and asset adapters, `JobHandle`, coroutines, thread switches.
+- Async streams (`IOnityAsyncEnumerable<T>`) with UniTask's async LINQ operators, `Subscribe`, `Publish`, `BindTo`, channels with backpressure and `OnityAsyncReactiveProperty<T>`.
+- Integration a standalone async library cannot offer: the DI scope lifetime token (`IOnityScopeLifetime`, `AddTo(scope)`, `GetScopeCancellationToken()`), awaited `IOnityAsyncInitializable` startup and `OnityContext.WaitReadyAsync`, `ReactiveProperty.WaitAsync` / `WaitUntilAsync`, and message-bus `ReceiveAsync` / `ReceiveAllAsync` / `SubscribeQueued` with backpressure.
+- [Async with OnityTask](docs/guide/onitytask.md) · [Migrating from UniTask](docs/Migration/From-UniTask.md) · [Measured comparison](docs/guide/onitytask-comparison.md)
+
 ### DOTS / ECS — `Onity.DOTS` (Burst-compiled bridge)
 
 - A Burst-compiled `ISystem` layer bridges Onity's managed event broker into **Entities**: publish a message and a `[BurstCompile]` system drains it off an entity event queue, so managed gameplay and DOTS systems share one event model instead of a hand-written sync layer.
@@ -115,6 +143,7 @@ Onity is deliberately structured — and its documentation is **indexed for AI**
 | Entry-point lifecycle | automatic (Zenject); manual wiring (VContainer) | **automatic** — `IOnityTickable` etc. need no registration |
 | Collection / open-generic binds | yes (both) | **yes** — `IEnumerable<T>`…`T[]` and `Bind(typeof(IRepo<>))` |
 | IL2CPP / AOT | AOT-compatible DI | Source-generated constructor activators, runtime-probed compiled activation, and reflection fallback; current IL2CPP player timing beats VContainer on the measured resolve/build paths |
+| Async | a fifth package (UniTask) with its own lifetime handling | `OnityTask` in the same package: faster than UniTask 2.5.11 in all 29 gated IL2CPP Release Player rows (matched pool retention for bursts; see the comparison for Mono and opt-in flow), and async waits end with DI scope tokens |
 | DOTS / ECS event bridge | not built in | **yes** — Burst `ISystem`s drain the event broker into Entities |
 | Engine-free, scene-free testing | no (Zenject); partial (VContainer) | **yes** — `new OnityContainer()` in EditMode |
 | Compile-time analyzer | partial (Zenject validation) | **yes** — `ONITY001`–`ONITY006` with code fixes |
@@ -185,7 +214,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root (auto-mirrored by CI on every change). The equivalent explicit form — handy for pinning a release — is:
 
 ```
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.5.0
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.6.0
 ```
 
 …or in `Packages/manifest.json`:
@@ -198,7 +227,7 @@ https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.
 }
 ```
 
-(`#upm` tracks the latest package; use the `?path=/Packages/com.onity.framework#v0.5.0` form to pin a specific release.)
+(`#upm` tracks the latest package; use the `?path=/Packages/com.onity.framework#v0.6.0` form to pin a specific release.)
 
 ### Option B — embedded package (used by the Onity Example Game)
 
@@ -300,8 +329,8 @@ For the complete, source-verified API across all three pillars, read the [Onity 
 
 - **[Onity AI Usage Guide](docs/Onity-AI-Usage-Guide.md)** — the source-of-truth, machine-readable reference for the real public API across DI, Reactive, and Events. Read this first.
 - **[Getting Started](docs/Getting-Started.md)** — a step-by-step human walkthrough: install, your first installer, DI + reactive state + events, and common mistakes.
-- **[Async with OnityTask](docs/guide/onitytask.md)** — Unity frame waits, cancellation, scene/web operations, task interop, and pooled-task safety.
-- **[OnityTask and UniTask comparison](docs/guide/onitytask-comparison.md)** — measured Unity 2022 timing slices, API coverage, and current limits.
+- **[Async with OnityTask](docs/guide/onitytask.md)** — frame waits and PlayerLoop timings, cancellation, composition, triggers and UI events, async streams, scene/web operations, DI-scoped async work, and pooled-task safety.
+- **[OnityTask and UniTask comparison](docs/guide/onitytask-comparison.md)** — Release Player gate results, API coverage, and current limits.
 - **[Events & Messaging](docs/guide/events-messaging.md)** — MessageBroker/MessagePipe-style publish, subscribe, typed channel, and reactive event examples.
 - **[Factories & Pooling](docs/guide/factories-and-pooling.md)** — `BindFactory`, `BindPooledFactory`, `IPool<T>`, `IPoolHooks`, and prefab pool examples.
 - **[Refactoring from Existing Architecture](docs/guide/refactoring-from-existing-architecture.md)** — moving from `GameManager.Instance`, Unity reference graphs, ScriptableObject config, VContainer, Zenject, or static events to Onity services.

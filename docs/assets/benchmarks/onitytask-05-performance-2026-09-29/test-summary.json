@@ -1,0 +1,67 @@
+[
+  {
+    "name": "candidate-release-editmode",
+    "result": "Failed(Child)",
+    "total": 983,
+    "passed": 977,
+    "failed": 6,
+    "skipped": 0,
+    "sha256": "E40699B1F233E3A7AB18A3A93A5F0291F3F75DAE6BB41211A6BDECE752F665AB",
+    "failures": [
+      {
+        "name": "Onity.Tests.EditMode.OnityAsyncTests.AsyncOperationAsOnityTask_MissingResource_CompletesWithOriginalOperation",
+        "message": "System.InvalidOperationException : The OnityTask source is no longer valid. Pooled OnityTask instances can be awaited only once."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(False,False)",
+        "message": "System.InvalidOperationException : The OnityTask source is no longer valid. Pooled OnityTask instances can be awaited only once."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(False,True)",
+        "message": "System.InvalidOperationException : The OnityTask source is no longer valid. Pooled OnityTask instances can be awaited only once."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(True,False)",
+        "message": "System.InvalidOperationException : The OnityTask source is no longer valid. Pooled OnityTask instances can be awaited only once."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(True,True)",
+        "message": "System.InvalidOperationException : The OnityTask source is no longer valid. Pooled OnityTask instances can be awaited only once."
+      },
+      {
+        "name": "Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_PooledSourceReuse_DoesNotChangePreservedResult",
+        "message": "System.NullReferenceException : Object reference not set to an instance of an object"
+      }
+    ]
+  },
+  {
+    "name": "candidate-release-editmode-repair",
+    "result": "Passed",
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "sha256": "6F0CF1B869E6FEE3A8DF12B5515B8E2BB4F50AC7EFD8246048932F997FBEEE76",
+    "failures": []
+  },
+  {
+    "name": "candidate-release-playmode",
+    "result": "Passed",
+    "total": 94,
+    "passed": 94,
+    "failed": 0,
+    "skipped": 0,
+    "sha256": "251B610D850ABA4385C04F2280A4087963FAB992433F1524A6FD2429CE7AA9E0",
+    "failures": []
+  },
+  {
+    "name": "candidate-default-editmode",
+    "result": "Passed",
+    "total": 127,
+    "passed": 127,
+    "failed": 0,
+    "skipped": 0,
+    "sha256": "37D67DD23631BBF93473F00AC701A767B8F154FFB2EB7B1FD3B83784819B2267",
+    "failures": []
+  }
+]

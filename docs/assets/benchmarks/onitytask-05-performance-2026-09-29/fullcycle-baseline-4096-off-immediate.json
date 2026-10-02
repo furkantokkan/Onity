@@ -1,0 +1,59 @@
+{
+    "schemaVersion": 1,
+    "generatedAtUtc": "2026-09-29T20:35:41.8366834Z",
+    "attributionOnly": true,
+    "completed": true,
+    "failure": "",
+    "concurrency": 4096,
+    "flowExecutionContext": false,
+    "reuse": "immediate",
+    "warmupBatchesPerLibrary": 2,
+    "capturedBatchesPerLibrary": 2,
+    "terminalDrainFrames": 2,
+    "profilerBufferBytes": 536870912,
+    "rawProfile": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\onity05-20260929\\fullcycle-baseline-4096-off-immediate.raw",
+    "environment": {
+        "buildGuid": "3d2e2396d1a8463e89242a0b1932e899",
+        "isDevelopment": true,
+        "scriptingBackend": "IL2CPP",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": false,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+            "generatedAtUtc": "2026-09-29T20:34:35.6095977Z",
+            "codeOptimization": "Development diagnostic Player; EnableDeepProfilingSupport; attribution only",
+            "managedCompilerOptimization": "/optimize+ requested; verify effective response file and generated state-machine shape",
+            "il2CppCompilerConfiguration": "Release",
+            "managedStrippingLevel": "Minimal",
+            "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+            "onityVersion": "0.3.14",
+            "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+            "uniTaskVersion": "2.5.11"
+        }
+    },
+    "windows": [
+        {
+            "library": "Onity",
+            "beginMarker": "Onity.FullCycle.Onity.Begin",
+            "endMarker": "Onity.FullCycle.Onity.End",
+            "beginPlayerFrame": 8,
+            "endPlayerFrame": 12,
+            "completed": true,
+            "completedBatches": 2,
+            "consumedOperations": 8192
+        },
+        {
+            "library": "UniTask",
+            "beginMarker": "Onity.FullCycle.UniTask.Begin",
+            "endMarker": "Onity.FullCycle.UniTask.End",
+            "beginPlayerFrame": 21,
+            "endPlayerFrame": 25,
+            "completed": true,
+            "completedBatches": 2,
+            "consumedOperations": 8192
+        }
+    ]
+}

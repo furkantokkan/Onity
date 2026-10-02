@@ -28,6 +28,9 @@ namespace Onity.Editor.Benchmarks
         private const string k_suiteArgument = "-onityTaskBenchmarkSuite";
         private const string k_playerRunArgument = "-onityRunTaskBenchmark";
         private const string k_startupTraceArgument = "-onityTaskBenchmarkStartupTrace";
+        private const string k_frameLifecycleArmsArgument = "-onityTaskFrameLifecycleArms";
+        private const string k_retentionArgument = "-onityTaskBenchmarkRetention";
+        private const string k_selfTestArgument = "-onityTaskBenchmarkSelfTest";
         private const string k_threadSwitchSuite = "threadswitch";
         private const string k_benchmarkDefine = "ONITY_TASK_BENCHMARKS";
         private const string k_benchmarkScenePath = "Assets/OnityBenchmarkTemp/OnityTaskBenchmarkPlayer.unity";
@@ -53,28 +56,70 @@ namespace Onity.Editor.Benchmarks
 
         /// <summary>
         /// Command-line entry point. Reads <c>-onityTaskBenchmarkBackend Mono|IL2CPP</c> (default
-        /// IL2CPP), <c>-onityTaskBenchmarkSuite primary|threadswitch|threadpool|jobs|whenall|whenany|timing|smoke|fullcycle</c> (default primary),
-        /// <c>-onityTaskBenchmarkBuildPath</c>, and <c>-onityTaskBenchmarkOutput</c>.
+        /// IL2CPP), <c>-onityTaskBenchmarkSuite primary|threadswitch|threadpool|jobs|whenall|whenany|timing|buildercycle|builderlifecycle|framelifecycle|throughput|reactive|readiness|readinesscycle|smoke|fullcycle</c> (default primary),
+        /// <c>-onityTaskBenchmarkBuildPath</c>, and <c>-onityTaskBenchmarkOutput</c>. For framelifecycle, an optional
+        /// <c>-onityTaskFrameLifecycleArms</c> comma-separated arm id list is forwarded to the Player. For primary and
+        /// builderlifecycle, an optional <c>-onityTaskBenchmarkRetention default|matched</c> is validated here and
+        /// forwarded to the Player; a missing or invalid value, or use with another suite, throws before the build.
+        /// <c>-onityTaskBenchmarkSelfTest</c> is forwarded for primary, builderlifecycle and throughput and throws with
+        /// any other suite.
         /// </summary>
         public static void BuildAndRunFromCommandLine()
         {
-            string backend = GetArgumentValue(k_backendArgument);
-            ScriptingImplementation implementation = string.Equals(backend, "Mono", StringComparison.OrdinalIgnoreCase)
-                ? ScriptingImplementation.Mono2x
-                : ScriptingImplementation.IL2CPP;
+            ScriptingImplementation implementation = ReadBackend();
             string suite = GetArgumentValue(k_suiteArgument);
             suite = string.IsNullOrEmpty(suite) ? "primary" : suite.ToLowerInvariant();
             if (suite != "primary" && suite != k_threadSwitchSuite && suite != "threadpool"
                 && suite != "jobs" && suite != "whenall" && suite != "whenany" && suite != "timing"
-                && suite != "smoke" && suite != "fullcycle" && suite != "eof" && suite != "finite" && suite != "channels")
+                && suite != "smoke" && suite != "fullcycle" && suite != "eof" && suite != "finite" && suite != "channels"
+                && suite != "buildercycle" && suite != "builderlifecycle" && suite != "framelifecycle"
+                && suite != "throughput" && suite != "reactive" && suite != "readiness" && suite != "readinesscycle")
             {
-                throw new ArgumentException("Task benchmark suite must be primary, threadswitch, threadpool, jobs, whenall, whenany, timing, eof, finite, channels, smoke, or fullcycle.");
+                throw new ArgumentException("Task benchmark suite must be primary, threadswitch, threadpool, jobs, whenall, whenany, timing, eof, finite, channels, buildercycle, builderlifecycle, framelifecycle, throughput, reactive, readiness, readinesscycle, smoke, or fullcycle.");
             }
 
-            BuildAndRunPlayerBenchmark(implementation, suite);
+            ForwardRetentionArgument(suite);
+            ForwardSelfTestArgument(suite);
+            BuildAndRunPlayerBenchmark(implementation, suite, false);
+        }
+
+        /// <summary>
+        /// Command-line entry point that only builds the non-development Release Player, so one binary per backend
+        /// can serve many Player processes. Reads <c>-onityTaskBenchmarkBackend Mono|IL2CPP</c> (default IL2CPP) and
+        /// the required <c>-onityTaskBenchmarkBuildPath &lt;exe&gt;</c>. Writes the usual <c>&lt;exe&gt;.build.json</c>
+        /// sidecar and <c>&lt;exe&gt;.buildreport.json</c> (backend, build GUID, result, size, time). The built Player
+        /// accepts <c>-onityRunTaskBenchmark -onityTaskBenchmarkSuite &lt;suite&gt; -onityTaskBenchmarkOutput &lt;json&gt;</c>.
+        /// </summary>
+        public static void BuildPlayerFromCommandLine()
+        {
+            if (string.IsNullOrEmpty(GetArgumentValue(k_buildPathArgument)))
+            {
+                throw new ArgumentException(k_buildPathArgument + " is required for a build-only run.");
+            }
+
+            BuildAndRunPlayerBenchmark(ReadBackend(), "primary", true);
+        }
+
+        private static ScriptingImplementation ReadBackend()
+        {
+            string backend = GetArgumentValue(k_backendArgument);
+            if (!string.IsNullOrEmpty(backend) && !string.Equals(backend, "Mono", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(backend, "IL2CPP", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(k_backendArgument + " must be Mono or IL2CPP, got '" + backend + "'.");
+            }
+
+            return string.Equals(backend, "Mono", StringComparison.OrdinalIgnoreCase)
+                ? ScriptingImplementation.Mono2x
+                : ScriptingImplementation.IL2CPP;
         }
 
         private static void BuildAndRunPlayerBenchmark(ScriptingImplementation backend, string suite)
+        {
+            BuildAndRunPlayerBenchmark(backend, suite, false);
+        }
+
+        private static void BuildAndRunPlayerBenchmark(ScriptingImplementation backend, string suite, bool buildOnly)
         {
             bool fullCycle = suite == "fullcycle";
             if (fullCycle && backend != ScriptingImplementation.IL2CPP)
@@ -115,6 +160,13 @@ namespace Onity.Editor.Benchmarks
             {
                 latestJson = Path.Combine(
                     k_resultsDirectory, suite == "eof" ? "onity-task-eof-player-latest.json"
+                        : suite == "throughput" ? "onity-task-throughput-player-latest.json"
+                        : suite == "reactive" ? "onity-task-reactive-player-latest.json"
+                        : suite == "builderlifecycle" ? "onity-task-builderlifecycle-player-latest.json"
+                        : suite == "framelifecycle" ? "onity-task-framelifecycle-player-latest.json"
+                        : suite == "readinesscycle" ? "onity-task-readinesscycle-player-latest.json"
+                        : suite == "readiness" ? "onity-task-readiness-player-latest.json"
+                        : suite == "buildercycle" ? "onity-task-buildercycle-player-latest.json"
                         : suite == "channels" ? "onity-channels-player-latest.json"
                         : suite == "finite" ? "onity-async-enumerable-player-latest.json"
                         : fullCycle ? "onity-task-fullcycle-player-latest.json"
@@ -130,7 +182,10 @@ namespace Onity.Editor.Benchmarks
             buildPath = Path.GetFullPath(buildPath);
             latestJson = Path.GetFullPath(latestJson);
             Directory.CreateDirectory(Path.GetDirectoryName(buildPath));
-            Directory.CreateDirectory(Path.GetDirectoryName(latestJson));
+            if (!buildOnly)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(latestJson));
+            }
 
             try
             {
@@ -171,6 +226,13 @@ namespace Onity.Editor.Benchmarks
 
                 WriteBuildMetadata(buildPath + ".build.json", targetGroup, fullCycle);
                 string buildGuid = report.summary.guid.ToString();
+                if (buildOnly)
+                {
+                    WriteBuildReport(buildPath + ".buildreport.json", report, backendLabel, targetGroup);
+                    UnityEngine.Debug.Log($"Onity task {backendLabel} benchmark Player built: {buildPath} (GUID {buildGuid}).");
+                    return;
+                }
+
                 RunPlayer(buildPath, latestJson, suite, backendLabel, buildGuid);
                 if (suite == "eof" || suite == "finite" || suite == "channels")
                 {
@@ -252,6 +314,10 @@ namespace Onity.Editor.Benchmarks
                     + ForwardRequiredArgument("-onityTaskProfileFlow")
                     + ForwardRequiredArgument("-onityTaskProfileReuse")
                 : string.Empty;
+            string frameLifecycleArms = suite == "framelifecycle" ? ForwardOptionalArgument(k_frameLifecycleArmsArgument)
+                : string.Empty;
+            string retentionArgument = ForwardRetentionArgument(suite);
+            string selfTestArgument = ForwardSelfTestArgument(suite);
 
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
@@ -263,7 +329,7 @@ namespace Onity.Editor.Benchmarks
                     + $"{k_startupTraceArgument} \"{startupTracePath}\" "
                     + $"-onityTaskBenchmarkBuildMetadata \"{buildPath}.build.json\""
                     + (suite == "eof" ? $" -onityTaskExpectedBackend {expectedBackend} -onityTaskExpectedBuildGuid {expectedBuildGuid}" : string.Empty)
-                    + drainArgument + profileArguments,
+                    + drainArgument + profileArguments + frameLifecycleArms + retentionArgument + selfTestArgument,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -803,6 +869,111 @@ namespace Onity.Editor.Benchmarks
             }
 
             return " " + argumentName + " \"" + value + "\"";
+        }
+
+        private static string ForwardOptionalArgument(string argumentName)
+        {
+            string value = GetArgumentValue(argumentName);
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+            if (value.IndexOf('"') >= 0)
+            {
+                throw new ArgumentException("Invalid forwarded argument value: " + argumentName);
+            }
+
+            return " " + argumentName + " \"" + value + "\"";
+        }
+
+        /// <summary>
+        /// Validates <c>-onityTaskBenchmarkRetention</c> and returns the text to append to the Player arguments.
+        /// Absent returns empty. A trailing flag with no value, a value other than default or matched, or use
+        /// with a suite other than primary or builderlifecycle throws, so a launch can never silently run at the
+        /// default.
+        /// </summary>
+        private static string ForwardRetentionArgument(string suite)
+        {
+            if (!HasArgument(k_retentionArgument))
+            {
+                return string.Empty;
+            }
+
+            string value = GetArgumentValue(k_retentionArgument);
+            if (string.IsNullOrEmpty(value))
+            {
+                throw new ArgumentException(k_retentionArgument + " requires a value: default or matched.");
+            }
+            if (!string.Equals(value, "default", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(value, "matched", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(k_retentionArgument + " must be default or matched, got '" + value + "'.");
+            }
+            if (suite != "builderlifecycle" && suite != "primary")
+            {
+                throw new ArgumentException(k_retentionArgument + " applies to the primary and builderlifecycle suites only.");
+            }
+
+            return " " + k_retentionArgument + " " + value.ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Forwards <c>-onityTaskBenchmarkSelfTest</c> (tiny harness self-test samples, report marked selfTest) for
+        /// the suites that honour it; any other suite throws so an unmarked report can never pass as a self-test.
+        /// </summary>
+        private static string ForwardSelfTestArgument(string suite)
+        {
+            if (!HasArgument(k_selfTestArgument))
+            {
+                return string.Empty;
+            }
+            if (suite != "primary" && suite != "builderlifecycle" && suite != "throughput")
+            {
+                throw new ArgumentException(k_selfTestArgument + " applies to the primary, builderlifecycle and throughput suites only.");
+            }
+
+            return " " + k_selfTestArgument;
+        }
+
+        private static void WriteBuildReport(string path, BuildReport report, string backend, BuildTargetGroup targetGroup)
+        {
+            BuildReportFile file = new BuildReportFile
+            {
+                generatedAtUtc = DateTime.UtcNow.ToString("O"),
+                unityVersion = Application.unityVersion,
+                backend = backend,
+                buildGuid = report.summary.guid.ToString(),
+                result = report.summary.result.ToString(),
+                outputPath = report.summary.outputPath,
+                totalSizeBytes = (long)report.summary.totalSize,
+                totalTimeSeconds = report.summary.totalTime.TotalSeconds,
+                totalErrors = report.summary.totalErrors,
+                totalWarnings = report.summary.totalWarnings,
+                options = report.summary.options.ToString(),
+                scriptingDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup),
+                il2CppCompilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(targetGroup).ToString(),
+                managedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(targetGroup).ToString()
+            };
+            File.WriteAllText(path, JsonUtility.ToJson(file, true));
+        }
+
+        [Serializable]
+        private sealed class BuildReportFile
+        {
+            public string generatedAtUtc;
+            public string unityVersion;
+            public string backend;
+            public string buildGuid;
+            public string result;
+            public string outputPath;
+            public long totalSizeBytes;
+            public double totalTimeSeconds;
+            public int totalErrors;
+            public int totalWarnings;
+            public string options;
+            public string scriptingDefines;
+            public string il2CppCompilerConfiguration;
+            public string managedStrippingLevel;
         }
 
         private static string AddDefine(string defines, string define)

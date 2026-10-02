@@ -1,0 +1,37 @@
+[
+  {
+    "path": "mono-r3.json",
+    "sha256": "6D6B312E10BA7728D9BE3E8F89832605D65222095FEB84EC30CE19DD19C5505D",
+    "bytes": 180242
+  },
+  {
+    "path": "mono-r3.observation.json",
+    "sha256": "5DCC66BAF4580F322966042CDE6CA5EA77FACB413BB1C016F93D348233807411",
+    "bytes": 1823
+  },
+  {
+    "path": "il2cpp-r3.json",
+    "sha256": "B914E78348765516F82868C9D2E3A29EDC460622849391FEFF95266409A00A79",
+    "bytes": 180271
+  },
+  {
+    "path": "il2cpp-r3.observation.json",
+    "sha256": "830F6CFE52CEDED825D56F24940FB7846620A36CE719E7F844C4745CB84D2257",
+    "bytes": 1803
+  },
+  {
+    "path": "quiet-recheck-initial.json",
+    "sha256": "A75344B6B068BA144FC5A20223C6DD15FAE43CF48230B796ADE54345B23F5FE1",
+    "bytes": 366
+  },
+  {
+    "path": "quiet-recheck-final.json",
+    "sha256": "A8FDF6C07EA83F9D5FB56F71CB1989FFD2B0C95305EBE0AB121EA6C3E6AF8159",
+    "bytes": 1103
+  },
+  {
+    "path": "summary.json",
+    "sha256": "9E024C26B75EEB26CA1B6964B83EBCF7C2619FA4932E0B0B38123C36B3C3896C",
+    "bytes": 5160
+  }
+]

@@ -16,7 +16,7 @@ container.Build();
 IClock clock = container.Resolve<IClock>();
 ```
 
-A lifetime call (`AsSingle()` / `AsTransient()`) is **required** to actually register a binding; `Bind<T>()` / `To<T>()` alone register nothing. The lifetime enum is exactly `{ Singleton, Transient }` — there is no `Scoped` keyword; a per-scope instance is a child-container `AsSingle` (see [Lifecycle & Scopes](../guide/lifecycle-and-scopes.html)).
+A lifetime call (`AsSingle()` / `AsScoped()` / `AsTransient()`) is **required** to actually register a binding; `Bind<T>()` / `To<T>()` alone register nothing. `AsScoped()` gives one instance per resolving container, including bindings a child inherits from its parent (see [Lifecycle & Scopes](../guide/lifecycle-and-scopes.html)); the `Lifetime` enum itself stays `{ Singleton, Transient }`.
 
 The resolve machinery is designed to avoid per-call managed allocation (generated activators for marked types, compiled constructor activators on JIT runtimes, pooled argument arrays, cached injection plans, an optional dense-id baked graph). A transient resolve still allocates the instance it returns. On IL2CPP/AOT the container uses generated activators when available and falls back to reflection-based activation otherwise; it constructs correctly either way. `OnityContainer.IsCompiledActivationSupported` reports only whether runtime `Expression.Compile` is live, not whether a generated activator exists for a specific type.
 
@@ -46,9 +46,13 @@ Returned by `Bind<TContract>()`.
 | API | Signature | Notes |
 | --- | --- | --- |
 | `To<TConcrete>` | `To<TConcrete>() -> TypeBindingBuilder<TContract>` where `TConcrete : TContract` | Set the implementation. Optional — defaults to `TContract` (self-bind). |
+| `WithId` | `WithId(object id) -> TypeBindingBuilder<TContract>` | Identify the binding (compared by value). Call before the lifetime; consume with `[Inject(Id = ...)]` or `Resolve<T>(id)`. |
+| `WhenInjectedInto<TConsumer>` | `WhenInjectedInto<TConsumer>() -> TypeBindingBuilder<TContract>` | Restrict injection to this consumer type and its derived types. Call before the lifetime. |
 | `AsSingle` | `AsSingle() -> TypeBindingBuilder<TContract>` | Register as a shared singleton. |
+| `AsScoped` | `AsScoped() -> TypeBindingBuilder<TContract>` | One instance per resolving container scope, disposed with that scope. |
 | `AsTransient` | `AsTransient() -> TypeBindingBuilder<TContract>` | Register as a new instance per resolve. |
-| `NonLazy` | `NonLazy() -> TypeBindingBuilder<TContract>` | Resolve eagerly at `Build()`. Throws `OnityBindingException` if called before `AsSingle()`/`AsTransient()`. |
+| `FromSubContainerResolve` | `FromSubContainerResolve(Action<OnityContainer> install) -> TypeBindingBuilder<TContract>` | Export a sub-container's local binding per requesting scope. |
+| `NonLazy` | `NonLazy() -> TypeBindingBuilder<TContract>` | Resolve eagerly at `Build()`. Throws `OnityBindingException` if called before a lifetime. |
 
 ### `MultiTypeBindingBuilder`
 
@@ -56,7 +60,9 @@ Returned by `BindInterfacesAndSelfTo<T>()` / `BindInterfacesTo<T>()`.
 
 | API | Signature | Notes |
 | --- | --- | --- |
+| `WithId` / `WhenInjectedInto<TConsumer>` | `-> MultiTypeBindingBuilder` | As on `TypeBindingBuilder`; call before the lifetime. |
 | `AsSingle` | `AsSingle() -> MultiTypeBindingBuilder` | One shared instance across all collected contracts. |
+| `AsScoped` | `AsScoped() -> MultiTypeBindingBuilder` | One instance per resolving container scope. |
 | `AsTransient` | `AsTransient() -> MultiTypeBindingBuilder` | New instance per resolve. |
 | `NonLazy` | `NonLazy() -> MultiTypeBindingBuilder` | Resolve the implementation eagerly at `Build()`. Throws if no lifetime was set first. |
 
@@ -67,8 +73,11 @@ Returned by `Bind(Type)`. Handles both closed runtime-typed bindings and open ge
 | API | Signature | Notes |
 | --- | --- | --- |
 | `To` | `To(Type implementationType) -> RuntimeTypeBindingBuilder` | Set the implementation. For an open generic contract the implementation must be an open generic definition with the same type-parameter count. Null throws `OnityBindingException`. |
+| `WithId` / `WhenInjectedInto<TConsumer>` | `-> RuntimeTypeBindingBuilder` | As on `TypeBindingBuilder`; call before the lifetime. |
 | `AsSingle` | `AsSingle() -> RuntimeTypeBindingBuilder` | Singleton. For an open generic, each distinct closed contract gets its own singleton. |
+| `AsScoped` | `AsScoped() -> RuntimeTypeBindingBuilder` | One instance per resolving container scope; open generics follow the requesting scope. |
 | `AsTransient` | `AsTransient() -> RuntimeTypeBindingBuilder` | Transient. |
+| `FromSubContainerResolve` | `FromSubContainerResolve(Action<OnityContainer> install) -> RuntimeTypeBindingBuilder` | Export a sub-container's local binding per requesting scope. |
 | `NonLazy` | `NonLazy() -> RuntimeTypeBindingBuilder` | Eager at `Build()`. **Not supported for open generic bindings** (the closed type is unknown until resolve) — throws `OnityBindingException`. |
 
 ---
@@ -80,8 +89,9 @@ Defined on `IResolver` (and therefore on `OnityContainer`). The container always
 | API | Signature | Notes |
 | --- | --- | --- |
 | `Resolve<TService>` | `Resolve<TService>() -> TService` | Resolve by generic type. Throws `OnityResolveException` if unresolvable. |
+| `Resolve<TService>` (identified) | `Resolve<TService>(object id) -> TService`, `Resolve(Type serviceType, object id) -> object` | Resolve a `WithId` binding. A missing non-null ID does not implicitly construct a service. |
 | `Resolve` | `Resolve(Type serviceType) -> object` | Runtime-type overload. Null type throws `OnityResolveException`. |
-| `TryResolve<TService>` | `TryResolve<TService>(out TService instance) -> bool` | Returns false instead of throwing when unresolvable. |
+| `TryResolve<TService>` | `TryResolve<TService>(out TService instance) -> bool`, `TryResolve<TService>(object id, out TService instance) -> bool` | Returns false instead of throwing when unresolvable. |
 | `TryResolve` | `TryResolve(Type serviceType, out object instance) -> bool` | Runtime-type overload. Null type returns false. |
 | `Inject` | `Inject(object target) -> void` | Member-injects an already-constructed object (fields, properties, methods). Null target throws `OnityResolveException`. |
 | `CanResolve` | `CanResolve(Type serviceType) -> bool` | Reports resolvability without constructing. Accounts for explicit bindings, parent scope, collection element bindings, open generic registrations, and concrete auto-resolve. |
@@ -109,13 +119,19 @@ Defined on `IResolver` (and therefore on `OnityContainer`). The container always
 | `RegisterBuildCallbackAsync` | `RegisterBuildCallbackAsync(Func<IResolver, Task> callback) -> void` | Async callback (no token). |
 | `RegisterBuildCallbackAsync` | `RegisterBuildCallbackAsync(Func<IResolver, CancellationToken, Task> callback) -> void` | Async callback with a cancellation token. |
 | `Build` | `Build() -> void` | Run sync callbacks, finalize bindings, collect lifecycle entry points, and run `Initialize()`. Idempotent (a second call is a no-op). |
-| `BuildAsync` | `BuildAsync(CancellationToken cancellationToken = default) -> Task` | Run `Build()` then async callbacks. The result task is cached; on cancel/failure it is re-armed so a later `BuildAsync` retries. |
+| `BuildAsync` | `BuildAsync(CancellationToken cancellationToken = default) -> Task` | Run `Build()`, the async callbacks, then every `IOnityAsyncInitializable` one at a time. Callbacks and initializers receive the scope's `LifetimeToken` (linked with the caller's token); a canceled run reports the caller's token when the caller canceled, otherwise `LifetimeToken`. The result task is cached; on cancel/failure it is re-armed so a later `BuildAsync` retries from the first incomplete step. |
+| `Unbind<TContract>` | `Unbind<TContract>(object id = null) -> bool`, `Unbind(Type contractType, object id = null) -> bool` | Remove local bindings for the exact contract and identifier, also after `Build()`. Parent bindings are unchanged. |
+| `Rebind<TContract>` | `Rebind<TContract>(object id = null) -> TypeBindingBuilder<TContract>`, `Rebind(Type, object id = null)` | Replace local bindings when the new lifetime is selected; a rebound tickable stops the old instance and starts the replacement. |
+| `LifetimeToken` | `CancellationToken { get; }` | Canceled when the container is disposed, before anything is disposed; linked to the parent's token; a disposed container returns a canceled token. Also exposed as `IOnityScopeLifetime.Token`. |
+| `IsDisposed` | `bool { get; }` | True after `Dispose()`. |
 | `Tick` | `Tick() -> void` | Run `IOnityTickable.Tick()` on collected tickables in registration order. The owning Unity context calls this from `Update`. No-op before `Build()`. |
 | `FixedTick` | `FixedTick() -> void` | Run `IOnityFixedTickable.FixedTick()`. Pumped from the context's `FixedUpdate`. |
 | `LateTick` | `LateTick() -> void` | Run `IOnityLateTickable.LateTick()`. Pumped from the context's `LateUpdate`. |
-| `Dispose` | `Dispose() -> void` | Dispose owned singletons in reverse registration order; clear all maps. Resolve/inject after dispose throws `OnityResolveException`. |
+| `Dispose` | `Dispose() -> void` | Cancel `LifetimeToken` (which disposes everything tied to the scope with `AddTo(scope)`), then dispose child scopes, scoped instances and owned singletons in reverse registration order; clear all maps. Resolve/inject after dispose throws `OnityResolveException`. |
 
 > Build callbacks cannot be registered after the build is finalized — both `RegisterBuildCallback` overloads throw `OnityBindingException` once `Build()`/`BuildAsync()` has run.
+
+`OnityContainer` implements `IOnityScopeLifetime` (`Token`, `IsDisposed`), and every Unity context binds that contract to its container. `disposable.AddTo(scope)` (`OnityScopeLifetimeExtensions`) disposes an `IDisposable` when the scope ends, immediately if it already ended.
 
 ### Lifecycle interfaces
 
@@ -124,6 +140,7 @@ Implement on a singleton (or bound instance) to be wired up automatically — bi
 | Interface | Member | Called |
 | --- | --- | --- |
 | `IOnityInitializable` | `Initialize()` | Once, at the end of `Build()`, in binding-registration order. Lifecycle singletons are created eagerly here. |
+| `IOnityAsyncInitializable` | `ValueTask InitializeAsync(CancellationToken)` | Once, in `BuildAsync()` after the async build callbacks, one at a time in binding-registration order, on the context the build started on. A Unity context is ready only after every one completed. |
 | `IOnityTickable` | `Tick()` | Every frame from the context's `Update` (via `OnityContainer.Tick`). |
 | `IOnityFixedTickable` | `FixedTick()` | Every physics step from `FixedUpdate` (via `OnityContainer.FixedTick`). |
 | `IOnityLateTickable` | `LateTick()` | Late each frame from `LateUpdate` (via `OnityContainer.LateTick`). |
@@ -132,7 +149,7 @@ Implement on a singleton (or bound instance) to be wired up automatically — bi
 
 ## Injection sites — `[Inject]`
 
-`InjectAttribute` targets `Constructor | Field | Property | Method`. Constructor injection is preferred; use the others only when a constructor cannot.
+`InjectAttribute` targets `Constructor | Field | Property | Method | Parameter`, and `[Inject(Id = ...)]` selects a `WithId` binding. Constructor injection is preferred; use the others only when a constructor cannot.
 
 | Site | Rule |
 | --- | --- |
@@ -187,4 +204,4 @@ Two sealed exception types, both in `Onity.DI`.
 
 For the full message-to-fix table, see the [AI Usage Guide](../Onity-AI-Usage-Guide.html) error section. Narrative usage lives in the [Dependency Injection guide](../guide/dependency-injection.html).
 
-> Not shipped (Zenject parity gaps): no `WhenInjectedInto`, no `WithId`, no `Instantiate(args)`. Use a typed factory or distinct contracts instead.
+> Not shipped (Zenject parity gap): no `Instantiate(args)`. Use a typed factory instead. Identified and conditional bindings (`WithId`, `WhenInjectedInto`) ship since 0.5.0.

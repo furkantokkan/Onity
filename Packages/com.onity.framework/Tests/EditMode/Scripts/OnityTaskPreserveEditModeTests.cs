@@ -213,9 +213,13 @@ Assert.That(tick.Invoke(source, new object[] { null, 0f, 0f }), Is.EqualTo(true)
             object source = frame.source;
             OnityTask shared = original.Preserve();
             OperationCanceledException failure = new OperationCanceledException("native fault");
+            // The unversioned overload: PERF-7 added TrySetException(Exception, int) for version-checked completers.
             MethodInfo fail = source.GetType().BaseType.GetMethod(
                 "TrySetException",
-                BindingFlags.Instance | BindingFlags.NonPublic);
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                null,
+                new[] { typeof(Exception) },
+                null);
 
             Assert.That(fail.Invoke(source, new object[] { failure }), Is.EqualTo(true));
             Assert.That(shared.IsFaulted, Is.True);
@@ -297,7 +301,11 @@ Assert.That(tick.Invoke(source, new object[] { null, 0f, 0f }), Is.EqualTo(true)
                 "s_pool",
                 BindingFlags.Static | BindingFlags.NonPublic);
             object pool = poolField.GetValue(null);
-            object reusedSource = pool.GetType().GetMethod("Pop").Invoke(pool, null);
+            object[] arguments = { null };
+            Assert.That(pool.GetType().GetMethod("TryPop").Invoke(pool, arguments), Is.EqualTo(true));
+            // Reflection boxes the value-type pool; publish its updated head before reusing the source.
+            poolField.SetValue(null, pool);
+            object reusedSource = arguments[0];
             Assert.That(reusedSource, Is.SameAs(source));
             ResetSource(reusedSource, CancellationToken.None);
             OnityTask next = NewTaskFromSource(reusedSource);
@@ -342,13 +350,20 @@ Assert.That(tick.Invoke(source, new object[] { null, 0f, 0f }), Is.EqualTo(true)
         private static void PublishNativeSuccessWithoutCallback(object source)
         {
             // Reproduce the interval after terminal status is visible but before
-            // the preserved adapter receives its completion callback. The source
-            // publishes its terminal status in a dedicated field once a completer
-            // has claimed the cycle; writing that field alone leaves the packed
-            // state word (version, mode and consumption bits) intact.
-            source.GetType().BaseType.GetField(
-                "m_status",
-                BindingFlags.Instance | BindingFlags.NonPublic).SetValue(source, 1);
+            // the preserved adapter receives its completion callback. Since PERF-7
+            // the status lives in the low bits of the single state word, which the
+            // publishing compare-and-swap sets before the registered continuation
+            // runs; setting those bits alone keeps the version, consumption-mode and
+            // registered bits intact.
+            FieldInfo state = null;
+            for (Type type = source.GetType(); type != null && state == null; type = type.BaseType)
+            {
+                state = type.GetField("m_state", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            }
+
+            Assert.That(state, Is.Not.Null, "The source state word was not found.");
+            const int succeeded = 1;
+            state.SetValue(source, (int)state.GetValue(source) | succeeded);
         }
 
         private static void CompletePreservedAdapter(OnityTask task)

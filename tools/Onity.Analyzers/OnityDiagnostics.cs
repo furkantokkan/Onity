@@ -68,29 +68,34 @@ namespace Onity.Analyzers
             helpLinkUri: "https://github.com/Onity/Onity/blob/main/docs/Onity-AI-Usage-Guide.md");
 
         /// <summary>
-        /// ONITY003 id: a <c>Subscribe(...)</c> result is discarded instead of
-        /// being assigned, returned, awaited, passed onward, or chained into an
+        /// ONITY003 id: the <c>IDisposable</c> returned by a <c>Subscribe(...)</c>
+        /// or <c>SubscribeAwait(...)</c> call is discarded instead of being
+        /// assigned, returned, awaited, passed onward, or chained into an
         /// <c>AddTo(...)</c> disposal scope.
         /// </summary>
         public const string k_subscribeWithoutAddToId = "ONITY003";
 
         /// <summary>
-        /// ONITY003 descriptor. A <c>Subscribe</c> returns an
-        /// <c>IDisposable</c> that owns the subscription; dropping it leaks the
-        /// subscription for the lifetime of the source.
+        /// ONITY003 descriptor. A <c>Subscribe</c> or <c>SubscribeAwait</c> that
+        /// returns an <c>IDisposable</c> hands back the handle that owns the
+        /// subscription; dropping it leaks the subscription for the lifetime of the
+        /// source. Overloads that return <c>void</c> are never reported. The
+        /// <c>{0}</c> argument names the invoked method.
         /// </summary>
         public static readonly DiagnosticDescriptor SubscribeWithoutAddTo = new DiagnosticDescriptor(
             id: k_subscribeWithoutAddToId,
             title: "Subscribe result is not disposed",
-            messageFormat: "The IDisposable returned by 'Subscribe' is discarded; chain '.AddTo(...)' or store it so the subscription can be disposed",
+            messageFormat: "The IDisposable returned by '{0}' is discarded; chain '.AddTo(...)' or store it so the subscription can be disposed",
             category: k_category,
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
             description:
-                "Subscribe returns an IDisposable that controls the lifetime of the subscription. "
-                + "Discarding it leaks the subscription until the source completes, which can keep "
-                + "objects alive and run callbacks after the subscriber is gone. Chain .AddTo(...) "
-                + "onto the subscription, assign it to a field, or return it so it can be disposed.",
+                "Subscribe and SubscribeAwait return an IDisposable that controls the lifetime of the "
+                + "subscription. Discarding it leaks the subscription until the source completes, which "
+                + "can keep objects alive and run callbacks after the subscriber is gone. Chain "
+                + ".AddTo(...) onto the subscription, assign it to a field, or return it so it can be "
+                + "disposed. Overloads that return nothing, such as those whose lifetime is owned by a "
+                + "CancellationToken argument, are not reported.",
             helpLinkUri: "https://github.com/Onity/Onity/blob/main/docs/Onity-AI-Usage-Guide.md");
 
         /// <summary>

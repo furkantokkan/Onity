@@ -34,7 +34,9 @@ jobs:
           status=0
           while IFS= read -r -d '' file; do
             filename="$(basename "$file")"
-            if [[ "$filename" == .* || "$file" == *.meta ]]; then
+            # Unity imports nothing from a folder whose name ends in "~" (for example the
+            # generated Documentation~), so those files need no .meta file.
+            if [[ "$filename" == .* || "$file" == *.meta || "$file" == *"~/"* ]]; then
               continue
             fi
 

@@ -16,5 +16,18 @@ namespace Onity.Unity.Async
             : base("The channel is closed.", innerException)
         {
         }
+
+        /// <summary>Creates an exception with a custom message.</summary>
+        /// <param name="message">Error message.</param>
+        public OnityChannelClosedException(string message) : base(message)
+        {
+        }
+
+        /// <summary>Creates an exception with a custom message that retains the channel's terminal error.</summary>
+        /// <param name="message">Error message.</param>
+        /// <param name="innerException">Original terminal error, or null.</param>
+        public OnityChannelClosedException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
     }
 }

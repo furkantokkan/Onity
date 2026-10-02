@@ -138,8 +138,10 @@ namespace Onity.Tests.PlayMode
                 {
                     try
                     {
-                        // Ordinary frame work may create a replacement during job retirement.
-                        frame = OnityTask.NextFrame().AsTask();
+                        // Ordinary legacy-runner work may create a replacement during job retirement. A
+                        // timed delay still runs on the legacy runner; default frame waits run on Onity's
+                        // PlayerLoop nodes in Play since PERF-7 and no longer create a runner.
+                        frame = OnityTask.Delay(0.001f).AsTask();
                         try
                         {
                             default(JobHandle).AsOnityTask();

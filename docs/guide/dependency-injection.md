@@ -82,6 +82,20 @@ container.BindInterfacesTo<PlayerStateService>().AsSingle();
 container.BindInstance<IConfig>(loadedConfig);   // rejects null with OnityBindingException
 ```
 
+### Shared reactive and messaging primitives
+
+One-liners that create one shared primitive and bind it to every contract it satisfies:
+
+| Call | Namespace | Resolves as |
+| --- | --- | --- |
+| `container.BindReactiveProperty(initialValue)` | `Onity.Composition` | `ReactiveProperty<T>`, `IReadOnlyReactiveProperty<T>` |
+| `container.BindSubject<T>()` | `Onity.Composition` | `Subject<T>` |
+| `container.DeclareMessage<T>()` | `Onity.Composition` | `MessageChannel<T>`, `IPublisher<T>`, `ISubscriber<T>` |
+| `container.DeclareAsyncMessage<T>()` | `Onity.Composition` | `AsyncMessageChannel<T>`, `IAsyncPublisher<T>`, `IAsyncSubscriber<T>` |
+| `container.BindAsyncReactiveProperty(initialValue)` | `Onity.Unity.Async` | `OnityAsyncReactiveProperty<T>`, `IOnityAsyncReactiveProperty<T>`, `IOnityReadOnlyAsyncReactiveProperty<T>` |
+
+The helper creates the primitive, so the container owns it and disposes it when the container is disposed, after the scope's `LifetimeToken` is canceled (an `OnityAsyncReactiveProperty<T>` then cancels its pending `WaitAsync` calls). An instance you create yourself and pass to `BindInstance` stays caller-owned and is not disposed.
+
 ### Open generics
 
 Bind an **open** generic definition once and resolve any **closed** form of it. On the first resolve of a closed contract the closed implementation is built and cached as a normal binding, so later resolves of the same closed type hit the fast path.
@@ -112,7 +126,7 @@ A single-type `Resolve<IHandler>()` still returns the **last** registered bindin
 | `Bind<TContract>()` | `TypeBindingBuilder<TContract>` | `.To<TConcrete>()`, then `.AsSingle()` / `.AsScoped()` / `.AsTransient()`, or `.FromSubContainerResolve(...)`; optional `.NonLazy()` |
 | `BindInterfacesAndSelfTo<TConcrete>()` | `MultiTypeBindingBuilder` | `.AsSingle()` / `.AsScoped()` / `.AsTransient()`, then optional `.NonLazy()` |
 | `BindInterfacesTo<TConcrete>()` | `MultiTypeBindingBuilder` | same as above |
-| `BindInstance<TContract>(instance)` | `void` | optional ID overload |
+| `BindInstance<TContract>(instance)` | `void` | optional ID overload; the instance stays caller-owned |
 | `BindFactory<TValue,TFactory>()` (+1-param, +2-param) | `void` | binds the factory `AsSingle` via `BindInterfacesAndSelfTo` |
 
 ## Resolving
@@ -213,10 +227,12 @@ container.RegisterBuildCallback(r => r.Resolve<IGameLoopRunner>().Start());
 container.RegisterBuildCallbackAsync(async (r, ct) => await r.Resolve<ISaveLoader>().PrimeAsync(ct));
 
 container.Build();                              // runs sync callbacks once; idempotent
-await container.BuildAsync(cancellationToken); // runs Build() then async callbacks; result cached
+await container.BuildAsync(cancellationToken); // runs Build(), async callbacks, then IOnityAsyncInitializable; result cached
 ```
 
-Callbacks cannot be registered after build is finalized (throws `OnityBindingException`). `Dispose()` disposes owned singletons in reverse registration order.
+Callbacks cannot be registered after build is finalized (throws `OnityBindingException`). `Dispose()` cancels the container's `LifetimeToken` first, then disposes owned singletons in reverse registration order.
+
+`BuildAsync` runs the async build callbacks, then every collected `IOnityAsyncInitializable` one at a time (see [Async initialization](lifecycle-and-scopes.html#async-initialization)). Each step starts on the context the build started on, so a callback that completes on a worker thread does not move the next callback or initializer off the Unity main thread. The token they receive is canceled when the container is disposed: it is the container's `LifetimeToken`, linked with the `BuildAsync` caller's token when the caller passes its own. Disposing the container mid-run ends `BuildAsync` as canceled. A canceled or faulted run is not cached: the next `BuildAsync` call runs the async callbacks again unless all of them already completed, and resumes at the first async initializer that has not completed. See [Scope lifetime token](lifecycle-and-scopes.html#scope-lifetime-token).
 
 ## Documented behaviors (test-locked)
 
@@ -234,7 +250,7 @@ These behaviors are locked by tests; rely on them, and avoid the listed traps.
 
 ## Unity wiring
 
-In a scene, bindings live in a `MonoInstaller`. A context component (`ProjectContext` / `SceneContext` / `GameObjectContext`) creates the container, registers the default bindings (the container, `IResolver`, itself, `MessageBroker`, `OnityEventHub`), runs your installers, builds, and injects the hierarchy. See [Lifecycle & Scopes](lifecycle-and-scopes.html) for the full context model.
+In a scene, bindings live in a `MonoInstaller`. A context component (`ProjectContext` / `SceneContext` / `GameObjectContext`) creates the container, registers the default bindings (the container, `IResolver`, `IOnityScopeLifetime`, itself, `MessageBroker`, `OnityEventHub`), runs your installers, builds, and injects the hierarchy. See [Lifecycle & Scopes](lifecycle-and-scopes.html) for the full context model.
 
 ```csharp
 using Onity.DI;

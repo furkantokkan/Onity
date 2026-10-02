@@ -1,0 +1,178 @@
+[
+  {
+    "report": "baseline-mono-control",
+    "startedAtUtc": "2026-09-29T20:59:22.6979319Z",
+    "elapsedSeconds": 8.5373725,
+    "exitCode": 0,
+    "otherUnityCpu": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.15625
+      },
+      {
+        "pid": 80220,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.03125
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.015625
+      }
+    ]
+  },
+  {
+    "report": "candidate-mono-control",
+    "startedAtUtc": "2026-09-29T20:59:31.3094892Z",
+    "elapsedSeconds": 8.0657344,
+    "exitCode": 0,
+    "otherUnityCpu": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.109375
+      },
+      {
+        "pid": 80220,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.015625
+      }
+    ]
+  },
+  {
+    "report": "baseline-mono-whenany-control",
+    "startedAtUtc": "2026-09-29T20:59:39.4138281Z",
+    "elapsedSeconds": 1.1722806,
+    "exitCode": 0,
+    "otherUnityCpu": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.046875
+      },
+      {
+        "pid": 80220,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.015625
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.015625
+      }
+    ]
+  },
+  {
+    "report": "candidate-mono-whenany-control",
+    "startedAtUtc": "2026-09-29T20:59:40.6310170Z",
+    "elapsedSeconds": 1.1306681,
+    "exitCode": 0,
+    "otherUnityCpu": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 80220,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "candidate-il2cpp-control",
+    "startedAtUtc": "2026-09-29T20:59:41.7892055Z",
+    "elapsedSeconds": 9.15968,
+    "exitCode": 0,
+    "otherUnityCpu": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.21875
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.03125
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "baseline-il2cpp-control",
+    "startedAtUtc": "2026-09-29T20:59:50.9790589Z",
+    "elapsedSeconds": 9.7446142,
+    "exitCode": 0,
+    "otherUnityCpu": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 2.0625
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.015625
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.046875
+      }
+    ]
+  },
+  {
+    "report": "candidate-il2cpp-whenany-control",
+    "startedAtUtc": "2026-09-29T21:00:00.7566704Z",
+    "elapsedSeconds": 0.7807901,
+    "exitCode": 0,
+    "otherUnityCpu": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.890625
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "baseline-il2cpp-whenany-control",
+    "startedAtUtc": "2026-09-29T21:00:01.5733091Z",
+    "elapsedSeconds": 0.8946446,
+    "exitCode": 0,
+    "otherUnityCpu": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.734375
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.015625
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.015625
+      }
+    ]
+  }
+]

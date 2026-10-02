@@ -105,6 +105,44 @@ pools, VContainer pool adapters, or other workloads.
 [Method, raw reports, and binary hashes](../benchmarks/factory-pooling-2026-09-23.md);
 [own-stack pool measurements](../benchmarks/pool-own-stack-2026-10-01.md).
 
+## OnityTask on IL2CPP
+
+The [2026-10-02 Release Player gate](../assets/benchmarks/onitytask-surpass-2026-10-02.md)
+measured OnityTask against UniTask 2.5.11 in non-development Windows x64 Players
+(Unity 2022.3.62f2), three processes per backend and suite. On IL2CPP all 29 gated
+rows were faster, with median Onity/UniTask time ratios from 0.085 to 0.808; Mono
+was reported without a gate. The [comparison](onitytask-comparison.html) has the
+full picture, including where Onity is slower.
+
+What the IL2CPP build relies on:
+
+- **Code generation options.** Onity carries internal copies of the
+  `Unity.IL2CPP.CompilerServices` attributes, which IL2CPP recognizes by name.
+  `[Il2CppSetOption(Option.NullChecks, false)]` removes null checks from the task
+  awaiters, method builders, pooled source bases, async-method runners and their
+  pool, the PlayerLoop owner and the yield awaiter, where every receiver is non-null
+  by construction and public entry points validate their arguments.
+  `[Il2CppEagerStaticClassConstruction]` on the settings holder and the PlayerLoop
+  owner runs their static constructors at startup, so reads of their static fields
+  carry no class-initialization check. `OnityTask` itself has no static
+  constructor, so its inlined members have none either; the generated C++ of the
+  measured Player confirms both.
+- **Immediate runner return.** A suspended async method's runner goes back to its
+  pool as soon as its task is consumed. This is safe because the runner calls the
+  state machine's `MoveNext` by address, with no copy back, which the generated C++
+  of the measured Player also confirms.
+- **Context flow.** Performance claims for `async OnityTask` are measured at the
+  default `FlowExecutionContext = false`, which is UniTask-equivalent; enabling flow
+  adds one execution-context capture and restore per suspension, and the complete
+  lifecycle with four suspensions then measured 1.5x to 1.6x slower than UniTask.
+- **Pool retention.** Onity keeps at most 128 runners per async method
+  (`OnityTask.RunnerPoolCapacity`) and 256 sources per source type
+  (`OnityTask.SourcePoolCapacity`); UniTask keeps everything. Above the cap each
+  extra operation allocates, which made 4,096-call bursts of one async method up to
+  2.6x slower than UniTask at the defaults. Raise both caps at startup for methods
+  that run in large bursts when the retained memory is acceptable; the gate's
+  4,096-operation rows were measured that way.
+
 ## IL2CPP checklist
 
 - **Use generated activators for hot IL2CPP graphs.** Mark hot DI-managed implementation types with `[OnityGenerateActivator]` and ship the `Onity.SourceGen` Roslyn analyzer DLL so IL2CPP can use direct `new T(...)` delegates instead of `ConstructorInfo.Invoke`.

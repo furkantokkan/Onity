@@ -103,7 +103,7 @@ namespace Onity.Benchmarks
             {
                 if (m_threadPool)
                 {
-                    OnityTask.FlowExecutionContext = true;
+                    OnityTask.FlowExecutionContext = false; // library default; each probe sets its own flow arm
                     OnityTask.RunnerPoolCapacity = 128;
                     OnityTaskTracker.IsEnabled = false;
                     OnityTaskTracker.EnableStackTrace = false;

@@ -256,7 +256,8 @@ namespace Onity.Tests.PlayMode
         public IEnumerator SwitchToMainThread_AfterRunnerDestroyed_RecreatesPumpAndResumes()
         {
             int mainThreadId = Thread.CurrentThread.ManagedThreadId;
-            OnityTask warmupTask = OnityTask.NextFrame();
+            // A legacy delay creates the legacy runner; default frame waits no longer do.
+            OnityTask warmupTask = OnityTask.Delay(0.001f);
             yield return WaitForFlag(() => warmupTask.IsCompleted, k_timeoutFrames);
             warmupTask.GetAwaiter().GetResult();
 

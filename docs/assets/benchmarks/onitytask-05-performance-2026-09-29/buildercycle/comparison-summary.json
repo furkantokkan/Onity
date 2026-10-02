@@ -1,0 +1,659 @@
+{
+  "schemaVersion": 1,
+  "reports": 8,
+  "validatedLibraryBatches": 640,
+  "measuredLibraryBatches": 512,
+  "operationsPerBatch": 128,
+  "controlsPerReport": 32,
+  "allChecksPassed": true,
+  "rows": [
+    {
+      "backend": "mono",
+      "flow": true,
+      "shape": "Untyped",
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "ratio": 1.7715555555555556,
+          "phases": {
+            "OnityTask": {
+              "schedule": 204.6875,
+              "completion": 129.8828125,
+              "consumption": 54.6875,
+              "total": 389.2578125
+            },
+            "UniTask": {
+              "schedule": 150.29296875,
+              "completion": 31.640625,
+              "consumption": 37.79296875,
+              "total": 219.7265625
+            }
+          }
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "ratio": 2.0761329305135954,
+          "phases": {
+            "OnityTask": {
+              "schedule": 179.8828125,
+              "completion": 109.86328125,
+              "consumption": 45.80078125,
+              "total": 335.546875
+            },
+            "UniTask": {
+              "schedule": 111.71875,
+              "completion": 23.92578125,
+              "consumption": 25.9765625,
+              "total": 161.62109375
+            }
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "ratio": 1.9473684210526316,
+          "phases": {
+            "OnityTask": {
+              "schedule": 157.2265625,
+              "completion": 111.81640625,
+              "consumption": 45.3125,
+              "total": 314.35546875
+            },
+            "UniTask": {
+              "schedule": 109.9609375,
+              "completion": 24.609375,
+              "consumption": 26.85546875,
+              "total": 161.42578125
+            }
+          }
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "ratio": 1.9198242723778143,
+          "phases": {
+            "OnityTask": {
+              "schedule": 172.4609375,
+              "completion": 124.12109375,
+              "consumption": 44.82421875,
+              "total": 341.40625
+            },
+            "UniTask": {
+              "schedule": 123.33984375,
+              "completion": 25.9765625,
+              "consumption": 28.515625,
+              "total": 177.83203125
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "flow": true,
+      "shape": "Typed int",
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "ratio": 2.1454979129397733,
+          "phases": {
+            "OnityTask": {
+              "schedule": 174.70703125,
+              "completion": 126.5625,
+              "consumption": 50.09765625,
+              "total": 351.3671875
+            },
+            "UniTask": {
+              "schedule": 104.6875,
+              "completion": 26.7578125,
+              "consumption": 32.32421875,
+              "total": 163.76953125
+            }
+          }
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "ratio": 1.9349747474747474,
+          "phases": {
+            "OnityTask": {
+              "schedule": 147.0703125,
+              "completion": 109.47265625,
+              "consumption": 42.7734375,
+              "total": 299.31640625
+            },
+            "UniTask": {
+              "schedule": 104.19921875,
+              "completion": 23.73046875,
+              "consumption": 26.7578125,
+              "total": 154.6875
+            }
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "ratio": 2.063949402670415,
+          "phases": {
+            "OnityTask": {
+              "schedule": 133.30078125,
+              "completion": 109.86328125,
+              "consumption": 43.65234375,
+              "total": 286.81640625
+            },
+            "UniTask": {
+              "schedule": 88.671875,
+              "completion": 23.14453125,
+              "consumption": 27.1484375,
+              "total": 138.96484375
+            }
+          }
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "ratio": 1.8137973137973138,
+          "phases": {
+            "OnityTask": {
+              "schedule": 134.765625,
+              "completion": 110.64453125,
+              "consumption": 44.7265625,
+              "total": 290.13671875
+            },
+            "UniTask": {
+              "schedule": 104.00390625,
+              "completion": 25.5859375,
+              "consumption": 30.37109375,
+              "total": 159.9609375
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "flow": false,
+      "shape": "Untyped",
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "ratio": 1.2244333886124932,
+          "phases": {
+            "OnityTask": {
+              "schedule": 125.78125,
+              "completion": 47.265625,
+              "consumption": 43.26171875,
+              "total": 216.30859375
+            },
+            "UniTask": {
+              "schedule": 119.82421875,
+              "completion": 25.390625,
+              "consumption": 31.4453125,
+              "total": 176.66015625
+            }
+          }
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "ratio": 1.3384982121573301,
+          "phases": {
+            "OnityTask": {
+              "schedule": 129.98046875,
+              "completion": 43.1640625,
+              "consumption": 46.19140625,
+              "total": 219.3359375
+            },
+            "UniTask": {
+              "schedule": 113.8671875,
+              "completion": 23.53515625,
+              "consumption": 26.46484375,
+              "total": 163.8671875
+            }
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "ratio": 1.2046403712296985,
+          "phases": {
+            "OnityTask": {
+              "schedule": 147.8515625,
+              "completion": 49.31640625,
+              "consumption": 56.34765625,
+              "total": 253.515625
+            },
+            "UniTask": {
+              "schedule": 151.5625,
+              "completion": 26.953125,
+              "consumption": 31.93359375,
+              "total": 210.44921875
+            }
+          }
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "ratio": 1.2370495495495495,
+          "phases": {
+            "OnityTask": {
+              "schedule": 116.11328125,
+              "completion": 53.41796875,
+              "consumption": 45.01953125,
+              "total": 214.55078125
+            },
+            "UniTask": {
+              "schedule": 119.23828125,
+              "completion": 25.390625,
+              "consumption": 28.80859375,
+              "total": 173.4375
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "flow": false,
+      "shape": "Typed int",
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "ratio": 1.3366336633663367,
+          "phases": {
+            "OnityTask": {
+              "schedule": 100.09765625,
+              "completion": 41.6015625,
+              "consumption": 42.87109375,
+              "total": 184.5703125
+            },
+            "UniTask": {
+              "schedule": 88.76953125,
+              "completion": 22.65625,
+              "consumption": 26.66015625,
+              "total": 138.0859375
+            }
+          }
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "ratio": 1.3450655624568668,
+          "phases": {
+            "OnityTask": {
+              "schedule": 105.2734375,
+              "completion": 42.28515625,
+              "consumption": 42.7734375,
+              "total": 190.33203125
+            },
+            "UniTask": {
+              "schedule": 91.69921875,
+              "completion": 22.4609375,
+              "consumption": 27.34375,
+              "total": 141.50390625
+            }
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "ratio": 0.647887323943662,
+          "phases": {
+            "OnityTask": {
+              "schedule": 157.421875,
+              "completion": 62.3046875,
+              "consumption": 90.234375,
+              "total": 309.9609375
+            },
+            "UniTask": {
+              "schedule": 402.734375,
+              "completion": 32.03125,
+              "consumption": 43.65234375,
+              "total": 478.41796875
+            }
+          }
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "ratio": 1.277158774373259,
+          "phases": {
+            "OnityTask": {
+              "schedule": 94.04296875,
+              "completion": 40.234375,
+              "consumption": 44.82421875,
+              "total": 179.1015625
+            },
+            "UniTask": {
+              "schedule": 89.2578125,
+              "completion": 23.828125,
+              "consumption": 27.1484375,
+              "total": 140.234375
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "flow": true,
+      "shape": "Untyped",
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "ratio": 1.8181194234728895,
+          "phases": {
+            "OnityTask": {
+              "schedule": 104.4921875,
+              "completion": 73.828125,
+              "consumption": 80.37109375,
+              "total": 258.69140625
+            },
+            "UniTask": {
+              "schedule": 51.5625,
+              "completion": 19.43359375,
+              "consumption": 71.2890625,
+              "total": 142.28515625
+            }
+          }
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "ratio": 1.9506775067750677,
+          "phases": {
+            "OnityTask": {
+              "schedule": 138.671875,
+              "completion": 107.6171875,
+              "consumption": 105.17578125,
+              "total": 351.46484375
+            },
+            "UniTask": {
+              "schedule": 68.1640625,
+              "completion": 27.24609375,
+              "consumption": 84.765625,
+              "total": 180.17578125
+            }
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "ratio": 1.8444444444444446,
+          "phases": {
+            "OnityTask": {
+              "schedule": 103.515625,
+              "completion": 75.68359375,
+              "consumption": 88.28125,
+              "total": 267.48046875
+            },
+            "UniTask": {
+              "schedule": 53.02734375,
+              "completion": 19.82421875,
+              "consumption": 72.16796875,
+              "total": 145.01953125
+            }
+          }
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "ratio": 1.8284250960307298,
+          "phases": {
+            "OnityTask": {
+              "schedule": 105.95703125,
+              "completion": 86.9140625,
+              "consumption": 86.03515625,
+              "total": 278.90625
+            },
+            "UniTask": {
+              "schedule": 53.61328125,
+              "completion": 20.21484375,
+              "consumption": 78.7109375,
+              "total": 152.5390625
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "flow": true,
+      "shape": "Typed int",
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "ratio": 2.107142857142857,
+          "phases": {
+            "OnityTask": {
+              "schedule": 178.02734375,
+              "completion": 162.109375,
+              "consumption": 149.609375,
+              "total": 489.74609375
+            },
+            "UniTask": {
+              "schedule": 90.625,
+              "completion": 36.5234375,
+              "consumption": 105.2734375,
+              "total": 232.421875
+            }
+          }
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "ratio": 1.9242424242424243,
+          "phases": {
+            "OnityTask": {
+              "schedule": 109.08203125,
+              "completion": 96.875,
+              "consumption": 91.69921875,
+              "total": 297.65625
+            },
+            "UniTask": {
+              "schedule": 58.59375,
+              "completion": 23.6328125,
+              "consumption": 72.4609375,
+              "total": 154.6875
+            }
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "ratio": 1.8717294192724951,
+          "phases": {
+            "OnityTask": {
+              "schedule": 110.7421875,
+              "completion": 82.91015625,
+              "consumption": 92.7734375,
+              "total": 286.42578125
+            },
+            "UniTask": {
+              "schedule": 55.859375,
+              "completion": 22.36328125,
+              "consumption": 74.8046875,
+              "total": 153.02734375
+            }
+          }
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "ratio": 1.8046116504854368,
+          "phases": {
+            "OnityTask": {
+              "schedule": 111.03515625,
+              "completion": 88.18359375,
+              "consumption": 91.2109375,
+              "total": 290.4296875
+            },
+            "UniTask": {
+              "schedule": 56.15234375,
+              "completion": 22.4609375,
+              "consumption": 82.32421875,
+              "total": 160.9375
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "flow": false,
+      "shape": "Untyped",
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "ratio": 1.4230550823395798,
+          "phases": {
+            "OnityTask": {
+              "schedule": 99.51171875,
+              "completion": 46.875,
+              "consumption": 98.33984375,
+              "total": 244.7265625
+            },
+            "UniTask": {
+              "schedule": 66.30859375,
+              "completion": 25.48828125,
+              "consumption": 80.17578125,
+              "total": 171.97265625
+            }
+          }
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "ratio": 1.336173001310616,
+          "phases": {
+            "OnityTask": {
+              "schedule": 82.6171875,
+              "completion": 36.62109375,
+              "consumption": 79.8828125,
+              "total": 199.12109375
+            },
+            "UniTask": {
+              "schedule": 53.90625,
+              "completion": 21.484375,
+              "consumption": 73.6328125,
+              "total": 149.0234375
+            }
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "ratio": 1.3271327774214239,
+          "phases": {
+            "OnityTask": {
+              "schedule": 84.27734375,
+              "completion": 36.81640625,
+              "consumption": 80.95703125,
+              "total": 202.05078125
+            },
+            "UniTask": {
+              "schedule": 57.6171875,
+              "completion": 21.38671875,
+              "consumption": 73.2421875,
+              "total": 152.24609375
+            }
+          }
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "ratio": 1.3601246105919003,
+          "phases": {
+            "OnityTask": {
+              "schedule": 85.64453125,
+              "completion": 37.40234375,
+              "consumption": 90.13671875,
+              "total": 213.18359375
+            },
+            "UniTask": {
+              "schedule": 55.37109375,
+              "completion": 21.38671875,
+              "consumption": 79.98046875,
+              "total": 156.73828125
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "flow": false,
+      "shape": "Typed int",
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "ratio": 1.4485696895922093,
+          "phases": {
+            "OnityTask": {
+              "schedule": 95.703125,
+              "completion": 43.45703125,
+              "consumption": 93.26171875,
+              "total": 232.421875
+            },
+            "UniTask": {
+              "schedule": 59.5703125,
+              "completion": 24.51171875,
+              "consumption": 76.3671875,
+              "total": 160.44921875
+            }
+          }
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "ratio": 1.4917600527356625,
+          "phases": {
+            "OnityTask": {
+              "schedule": 87.6953125,
+              "completion": 43.65234375,
+              "consumption": 89.6484375,
+              "total": 220.99609375
+            },
+            "UniTask": {
+              "schedule": 53.41796875,
+              "completion": 21.875,
+              "consumption": 72.8515625,
+              "total": 148.14453125
+            }
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "ratio": 1.3725728155339805,
+          "phases": {
+            "OnityTask": {
+              "schedule": 85.83984375,
+              "completion": 42.48046875,
+              "consumption": 92.578125,
+              "total": 220.8984375
+            },
+            "UniTask": {
+              "schedule": 55.859375,
+              "completion": 21.484375,
+              "consumption": 83.59375,
+              "total": 160.9375
+            }
+          }
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "ratio": 1.3710961420698102,
+          "phases": {
+            "OnityTask": {
+              "schedule": 86.23046875,
+              "completion": 41.6015625,
+              "consumption": 90.8203125,
+              "total": 218.65234375
+            },
+            "UniTask": {
+              "schedule": 54.98046875,
+              "completion": 22.55859375,
+              "consumption": 81.93359375,
+              "total": 159.47265625
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

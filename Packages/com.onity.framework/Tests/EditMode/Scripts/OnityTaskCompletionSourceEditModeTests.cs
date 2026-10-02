@@ -696,7 +696,7 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
-        public void UnobservedFault_FinalizerPostsOnceToCapturedContext()
+        public void UnobservedFault_FinalizerPublishesOnceThroughTheScheduler()
         {
             SynchronizationContext previous = SynchronizationContext.Current;
             QueuedSynchronizationContext context = new QueuedSynchronizationContext();
@@ -705,10 +705,10 @@ namespace Onity.Tests.EditMode
                 SynchronizationContext.SetSynchronizationContext(context);
                 OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
                 source.TrySetException(new InvalidOperationException("unobserved source failure"));
+                // Without subscribers OnityTaskScheduler writes the fault to Unity's thread-safe log
+                // at once; the captured context is no longer used.
                 LogAssert.Expect(LogType.Exception, new Regex("unobserved source failure"));
                 Assert.That(Task.Run(() => InvokeFaultFinalizer(source)).Wait(5000), Is.True);
-                Assert.That(context.Count, Is.EqualTo(1));
-                context.Drain();
                 Assert.That(context.Count, Is.Zero);
                 Assert.Throws<InvalidOperationException>(
                     () => source.Task.GetAwaiter().GetResult());

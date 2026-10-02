@@ -20,8 +20,8 @@ namespace Onity.Tests.EditMode
             Assert.Throws<ArgumentNullException>(() => missing.Take(0));
             Assert.Throws<ArgumentNullException>(() => missing.FirstAsync());
             Assert.Throws<ArgumentNullException>(() => missing.ToArrayAsync());
-            Assert.Throws<ArgumentNullException>(() => OnityAsyncEnumerable.Return(1).Select<int, int>(null));
-            Assert.Throws<ArgumentNullException>(() => OnityAsyncEnumerable.Return(1).Where(null));
+            Assert.Throws<ArgumentNullException>(() => OnityAsyncEnumerable.Return(1).Select<int, int>((Func<int, int>)null));
+            Assert.Throws<ArgumentNullException>(() => OnityAsyncEnumerable.Return(1).Where((Func<int, bool>)null));
             Assert.Throws<ArgumentOutOfRangeException>(() => OnityAsyncEnumerable.Return(1).Take(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => OnityAsyncEnumerable.Range(0, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => OnityAsyncEnumerable.Range(int.MaxValue, 2));

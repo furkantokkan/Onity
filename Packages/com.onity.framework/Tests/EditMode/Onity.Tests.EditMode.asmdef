@@ -6,6 +6,7 @@
     "Onity.Composition",
     "Onity.DI",
     "Onity.DOTS",
+    "Onity.Editor",
     "Onity.Factory",
     "Onity.Messaging",
     "Onity.Reactive",

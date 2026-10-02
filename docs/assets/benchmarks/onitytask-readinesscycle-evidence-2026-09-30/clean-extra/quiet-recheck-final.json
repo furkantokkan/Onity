@@ -1,0 +1,47 @@
+{
+  "startedUtc": "2026-09-30T01:16:45.1061668Z",
+  "elapsedSeconds": 10.0279347,
+  "otherUnityCpuSeconds": 0.140625,
+  "otherUnityWallFraction": 0.014023326258795842,
+  "unknown": false,
+  "before": [
+    {
+      "pid": 48360,
+      "startUtc": "2026-09-29T19:21:09.9459178Z",
+      "cpuSeconds": 13242.953125,
+      "observed": true
+    },
+    {
+      "pid": 111640,
+      "startUtc": "2026-09-29T19:27:10.6166148Z",
+      "cpuSeconds": 316.65625,
+      "observed": true
+    },
+    {
+      "pid": 122860,
+      "startUtc": "2026-09-29T19:27:10.5389151Z",
+      "cpuSeconds": 321.1875,
+      "observed": true
+    }
+  ],
+  "after": [
+    {
+      "pid": 48360,
+      "startUtc": "2026-09-29T19:21:09.9459178Z",
+      "cpuSeconds": 13243.046875,
+      "observed": true
+    },
+    {
+      "pid": 111640,
+      "startUtc": "2026-09-29T19:27:10.6166148Z",
+      "cpuSeconds": 316.671875,
+      "observed": true
+    },
+    {
+      "pid": 122860,
+      "startUtc": "2026-09-29T19:27:10.5389151Z",
+      "cpuSeconds": 321.21875,
+      "observed": true
+    }
+  ]
+}

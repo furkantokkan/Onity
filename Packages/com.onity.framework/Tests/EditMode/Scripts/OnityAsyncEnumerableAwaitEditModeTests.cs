@@ -17,9 +17,9 @@ namespace Onity.Tests.EditMode
             Assert.Throws<ArgumentNullException>(() => missing.SelectAwait((value, token) => OnityTask<int>.FromResult(value)));
             Assert.Throws<ArgumentNullException>(() => missing.WhereAwait((value, token) => OnityTask<bool>.FromResult(true)));
             Assert.Throws<ArgumentNullException>(() => missing.ForEachAsync((value, token) => default));
-            Assert.Throws<ArgumentNullException>(() => source.SelectAwait<int, int>(null));
-            Assert.Throws<ArgumentNullException>(() => source.WhereAwait(null));
-            Assert.Throws<ArgumentNullException>(() => source.ForEachAsync(null));
+            Assert.Throws<ArgumentNullException>(() => source.SelectAwait<int, int>((Func<int, CancellationToken, OnityTask<int>>)null));
+            Assert.Throws<ArgumentNullException>(() => source.WhereAwait((Func<int, CancellationToken, OnityTask<bool>>)null));
+            Assert.Throws<ArgumentNullException>(() => source.ForEachAsync((Func<int, CancellationToken, OnityTask>)null));
             source.SelectAwait((value, token) => OnityTask<int>.FromResult(value)).GetAsyncEnumerator().DisposeAsync();
             source.WhereAwait((value, token) => OnityTask<bool>.FromResult(true)).GetAsyncEnumerator().DisposeAsync();
             Assert.That(source.Acquires, Is.Zero);

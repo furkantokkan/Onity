@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "suite": "readinesscycle",
+  "backend": "IL2CPP",
+  "repeat": 3,
+  "startedUtc": "2026-09-30T01:16:56.4271132Z",
+  "endedUtc": "2026-09-30T01:16:57.1548672Z",
+  "elapsedSeconds": 0.7090466,
+  "exitCode": 0,
+  "timedOut": false,
+  "binarySha256": "5DC4AC3627307A53E7C949863A4FEE389D47DEE919B46E90587A1B512EAD840A",
+  "buildMetadataSha256": "9A799FD2D18FE2ABE3BB77816904B650A07CF6FD6D52E25E6936CB4F2F336DF6",
+  "reportSha256": "B914E78348765516F82868C9D2E3A29EDC460622849391FEFF95266409A00A79",
+  "otherUnityBefore": [
+    {
+      "pid": 48360,
+      "startUtc": "2026-09-29T19:21:09.9459178Z",
+      "cpuSeconds": 13243.046875,
+      "observed": true
+    },
+    {
+      "pid": 111640,
+      "startUtc": "2026-09-29T19:27:10.6166148Z",
+      "cpuSeconds": 316.6875,
+      "observed": true
+    },
+    {
+      "pid": 122860,
+      "startUtc": "2026-09-29T19:27:10.5389151Z",
+      "cpuSeconds": 321.234375,
+      "observed": true
+    }
+  ],
+  "otherUnityAfter": [
+    {
+      "pid": 48360,
+      "startUtc": "2026-09-29T19:21:09.9459178Z",
+      "cpuSeconds": 13243.046875,
+      "observed": true
+    },
+    {
+      "pid": 111640,
+      "startUtc": "2026-09-29T19:27:10.6166148Z",
+      "cpuSeconds": 316.6875,
+      "observed": true
+    },
+    {
+      "pid": 122860,
+      "startUtc": "2026-09-29T19:27:10.5389151Z",
+      "cpuSeconds": 321.234375,
+      "observed": true
+    }
+  ],
+  "otherUnityCpuSeconds": 0.0,
+  "otherUnityWallFraction": 0.0,
+  "noiseStatus": "accepted",
+  "noiseRule": "Other Unity CPU <=0.5s AND <=5% wall, no core normalization; missing/new process is unknown. Only known Unity interference screened.",
+  "taskOwnedOverlap": "None: all source/Roslyn/build work finished before process repeats."
+}

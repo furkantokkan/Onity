@@ -1,0 +1,272 @@
+--- frozen/OnityAsync.cs
++++ based/OnityAsync.cs
+@@ -4559,7 +4559,7 @@
+     /// </summary>
+     public struct OnityTaskMethodBuilder
+     {
+-        private IOnityAsyncStateMachineRunner m_runner;
++        private OnityAsyncStateMachineRunnerBase m_runner;
+         private Task m_synchronousFailure;
+ 
+         /// <summary>
+@@ -4632,12 +4632,7 @@
+                 OnityAsyncStateMachineRunner<TStateMachine>.Rent(ref stateMachine, ref m_runner);
+             }
+ 
+-            if (OnityTask.FlowExecutionContext)
+-            {
+-                m_runner.CaptureExecutionContext();
+-            }
+-
+-            awaiter.OnCompleted(m_runner.MoveNextAction);
++            awaiter.OnCompleted(m_runner.GetMoveNextAction());
+         }
+ 
+         /// <summary>
+@@ -4658,12 +4653,7 @@
+                 OnityAsyncStateMachineRunner<TStateMachine>.Rent(ref stateMachine, ref m_runner);
+             }
+ 
+-            if (OnityTask.FlowExecutionContext)
+-            {
+-                m_runner.CaptureExecutionContext();
+-            }
+-
+-            awaiter.UnsafeOnCompleted(m_runner.MoveNextAction);
++            awaiter.UnsafeOnCompleted(m_runner.GetMoveNextAction());
+         }
+ 
+         /// <summary>
+@@ -4706,7 +4696,7 @@
+     /// <typeparam name="T">Result type.</typeparam>
+     public struct OnityTaskMethodBuilder<T>
+     {
+-        private IOnityAsyncStateMachineRunner<T> m_runner;
++        private OnityAsyncStateMachineRunnerBase<T> m_runner;
+         private Task<T> m_synchronousFailure;
+         private T m_result;
+ 
+@@ -4780,12 +4770,7 @@
+                 OnityAsyncStateMachineRunner<TStateMachine, T>.Rent(ref stateMachine, ref m_runner);
+             }
+ 
+-            if (OnityTask.FlowExecutionContext)
+-            {
+-                m_runner.CaptureExecutionContext();
+-            }
+-
+-            awaiter.OnCompleted(m_runner.MoveNextAction);
++            awaiter.OnCompleted(m_runner.GetMoveNextAction());
+         }
+ 
+         /// <summary>
+@@ -4806,12 +4791,7 @@
+                 OnityAsyncStateMachineRunner<TStateMachine, T>.Rent(ref stateMachine, ref m_runner);
+             }
+ 
+-            if (OnityTask.FlowExecutionContext)
+-            {
+-                m_runner.CaptureExecutionContext();
+-            }
+-
+-            awaiter.UnsafeOnCompleted(m_runner.MoveNextAction);
++            awaiter.UnsafeOnCompleted(m_runner.GetMoveNextAction());
+         }
+ 
+         /// <summary>
+--- frozen/OnityAsyncStateMachineRunner.cs
++++ based/OnityAsyncStateMachineRunner.cs
+@@ -11,34 +11,47 @@
+     /// Pooled runner behind a suspended <c>async OnityTask</c> method. Untyped builders bind to it
+     /// on the first suspension.
+     /// </summary>
+-    internal interface IOnityAsyncStateMachineRunner
+-    {
+-        Action MoveNextAction { get; }
+-
+-        OnityTask Task { get; }
+-
+-        void SetResult();
+-
+-        void SetException(Exception exception);
+-
+-        void CaptureExecutionContext();
++    internal abstract class OnityAsyncStateMachineRunnerBase : OnityTaskSourceBase
++    {
++        public OnityTask Task => new OnityTask((IOnityTaskSource)this, Version);
++
++        /// <summary>Returns the continuation for the next suspension.</summary>
++        /// <returns>The runner's cached continuation.</returns>
++        public abstract Action GetMoveNextAction();
++
++        /// <summary>Completes the native source successfully.</summary>
++        public void SetResult()
++        {
++            TrySetResult();
++        }
++
++        /// <summary>Completes the native source with the supplied failure.</summary>
++        /// <param name="exception">The failure or cancellation.</param>
++        public abstract void SetException(Exception exception);
+     }
+ 
+     /// <summary>
+     /// Pooled runner behind a suspended <c>async OnityTask&lt;T&gt;</c> method.
+     /// </summary>
+     /// <typeparam name="T">Result type.</typeparam>
+-    internal interface IOnityAsyncStateMachineRunner<T>
+-    {
+-        Action MoveNextAction { get; }
+-
+-        OnityTask<T> Task { get; }
+-
+-        void SetResult(T result);
+-
+-        void SetException(Exception exception);
+-
+-        void CaptureExecutionContext();
++    internal abstract class OnityAsyncStateMachineRunnerBase<T> : OnityTaskSourceBase<T>
++    {
++        public OnityTask<T> Task => new OnityTask<T>((IOnityTaskSource<T>)this, Version);
++
++        /// <summary>Returns the continuation for the next suspension.</summary>
++        /// <returns>The runner's cached continuation.</returns>
++        public abstract Action GetMoveNextAction();
++
++        /// <summary>Completes the native source successfully.</summary>
++        /// <param name="result">The method's result.</param>
++        public void SetResult(T result)
++        {
++            TrySetResult(result);
++        }
++
++        /// <summary>Completes the native source with the supplied failure.</summary>
++        /// <param name="exception">The failure or cancellation.</param>
++        public abstract void SetException(Exception exception);
+     }
+ 
+     /// <summary>
+@@ -336,7 +349,7 @@
+     /// </summary>
+     /// <typeparam name="TStateMachine">Compiler-generated state machine type.</typeparam>
+     internal sealed class OnityAsyncStateMachineRunner<TStateMachine> :
+-        OnityTaskSourceBase, IOnityAsyncStateMachineRunner, IOnityPooledRunner<OnityAsyncStateMachineRunner<TStateMachine>>
++        OnityAsyncStateMachineRunnerBase, IOnityPooledRunner<OnityAsyncStateMachineRunner<TStateMachine>>
+         where TStateMachine : IAsyncStateMachine
+     {
+         private static OnityRunnerPool<OnityAsyncStateMachineRunner<TStateMachine>> s_pool;
+@@ -361,10 +374,6 @@
+ #endif
+         }
+ 
+-        public Action MoveNextAction => m_moveNext;
+-
+-        public OnityTask Task => new OnityTask((IOnityTaskSource)this, Version);
+-
+         public ref OnityAsyncStateMachineRunner<TStateMachine> NextPooled => ref m_nextPooled;
+ 
+         /// <summary>
+@@ -375,7 +384,7 @@
+         /// <param name="runnerField">The builder's runner field inside that state machine.</param>
+         public static void Rent(
+             ref TStateMachine stateMachine,
+-            ref IOnityAsyncStateMachineRunner runnerField)
++            ref OnityAsyncStateMachineRunnerBase runnerField)
+         {
+             if (!s_pool.TryPop(out OnityAsyncStateMachineRunner<TStateMachine> runner))
+             {
+@@ -389,12 +398,7 @@
+             runner.m_stateMachine = stateMachine;
+         }
+ 
+-        public void SetResult()
+-        {
+-            TrySetResult();
+-        }
+-
+-        public void SetException(Exception exception)
++        public override void SetException(Exception exception)
+         {
+             // A method that faults after capturing, for example when its awaiter rejected the
+             // registration, never resumes; drop the captured context now rather than at pool return.
+@@ -409,9 +413,15 @@
+             }
+         }
+ 
+-        public void CaptureExecutionContext()
+-        {
+-            m_executionContext = OnityAsyncExecutionContext.Capture();
++        /// <summary>Captures context for this suspension when enabled and returns the cached continuation.</summary>
++        /// <returns>The runner's cached continuation.</returns>
++        public override Action GetMoveNextAction()
++        {
++            if (OnityTask.FlowExecutionContext)
++            {
++                m_executionContext = OnityAsyncExecutionContext.Capture();
++            }
++            return m_moveNext;
+         }
+ 
+         protected override void ReleaseSource()
+@@ -513,7 +523,7 @@
+     /// <typeparam name="TStateMachine">Compiler-generated state machine type.</typeparam>
+     /// <typeparam name="T">Result type.</typeparam>
+     internal sealed class OnityAsyncStateMachineRunner<TStateMachine, T> :
+-        OnityTaskSourceBase<T>, IOnityAsyncStateMachineRunner<T>, IOnityPooledRunner<OnityAsyncStateMachineRunner<TStateMachine, T>>
++        OnityAsyncStateMachineRunnerBase<T>, IOnityPooledRunner<OnityAsyncStateMachineRunner<TStateMachine, T>>
+         where TStateMachine : IAsyncStateMachine
+     {
+         private static OnityRunnerPool<OnityAsyncStateMachineRunner<TStateMachine, T>> s_pool;
+@@ -538,10 +548,6 @@
+ #endif
+         }
+ 
+-        public Action MoveNextAction => m_moveNext;
+-
+-        public OnityTask<T> Task => new OnityTask<T>((IOnityTaskSource<T>)this, Version);
+-
+         public ref OnityAsyncStateMachineRunner<TStateMachine, T> NextPooled => ref m_nextPooled;
+ 
+         /// <summary>
+@@ -552,7 +558,7 @@
+         /// <param name="runnerField">The builder's runner field inside that state machine.</param>
+         public static void Rent(
+             ref TStateMachine stateMachine,
+-            ref IOnityAsyncStateMachineRunner<T> runnerField)
++            ref OnityAsyncStateMachineRunnerBase<T> runnerField)
+         {
+             if (!s_pool.TryPop(out OnityAsyncStateMachineRunner<TStateMachine, T> runner))
+             {
+@@ -564,12 +570,7 @@
+             runner.m_stateMachine = stateMachine;
+         }
+ 
+-        public void SetResult(T result)
+-        {
+-            TrySetResult(result);
+-        }
+-
+-        public void SetException(Exception exception)
++        public override void SetException(Exception exception)
+         {
+             // A method that faults after capturing, for example when its awaiter rejected the
+             // registration, never resumes; drop the captured context now rather than at pool return.
+@@ -584,9 +585,15 @@
+             }
+         }
+ 
+-        public void CaptureExecutionContext()
+-        {
+-            m_executionContext = OnityAsyncExecutionContext.Capture();
++        /// <summary>Captures context for this suspension when enabled and returns the cached continuation.</summary>
++        /// <returns>The runner's cached continuation.</returns>
++        public override Action GetMoveNextAction()
++        {
++            if (OnityTask.FlowExecutionContext)
++            {
++                m_executionContext = OnityAsyncExecutionContext.Capture();
++            }
++            return m_moveNext;
+         }
+ 
+         protected override void ReleaseSource()

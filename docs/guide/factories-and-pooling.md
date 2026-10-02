@@ -188,11 +188,52 @@ public sealed class Projectile : MonoBehaviour, IPoolHooks
 }
 ```
 
+### Pool lifetime
+
+`BindPooledFactory(prefab, ...)` creates the pool, so the container's scope owns it: the
+pool is disposed when the container is disposed (a context disposes its container when it
+is destroyed). Disposing a prefab pool destroys its inactive instances only. Instances that
+are still checked out stay with their owners, so release them before the scope ends;
+`Release` throws `ObjectDisposedException` afterward. See
+[Disposal ownership](lifecycle-and-scopes.html#disposal-ownership).
+
+A pool you build yourself and pass to `BindPooledFactory(pool)` stays caller-owned: the
+container never disposes it. Tie it to the scope with `pool.AddTo(container)`, or dispose
+it yourself:
+
+```csharp
+using Onity.DI;
+using Onity.Pooling;
+using Onity.Unity.Installers;
+
+PrefabComponentPool<Projectile> pool = new PrefabComponentPool<Projectile>(
+    m_projectilePrefab, m_projectileRoot, maxSize: 64, initialSize: 16);
+
+pool.AddTo(container);                  // disposed when the container is disposed
+container.BindPooledFactory(pool);
+```
+
+### Prewarm and fixed capacity
+
+`OnityObjectPool<T>` and `PrefabComponentPool<T>` take `initialSize` (items created
+in the constructor) and `fixedSize` (when `true`, `maxSize` is the total number of
+items and `Get()` throws `InvalidOperationException` once all of them are checked
+out). `pool.Prewarm(count)` raises the created total to `count`; it is a target,
+not an increment. Prewarming runs no get or release hooks. `BindPooledFactory(prefab,
+parent, defaultCapacity, maxSize)` has no prewarm or fixed-size option: build the
+pool yourself, as above, when you need one.
+
 ## Parameterized pooled spawn
 
-`BindPooledFactory(prefab)` binds a zero-parameter `IFactory<TComponent>`. If you
-want `Create(position)` or `Create(position, velocity)`, wrap the pool in your
-own factory:
+`BindPooledFactory(prefab)` binds a zero-parameter `IFactory<TComponent>`. For
+`Create(position)` or `Create(position, velocity)` there are two options; they
+differ in when the component sees the argument.
+
+### Wrapper factory over `IPool<T>`
+
+Wrap the pool in your own factory. It works with `BindPooledFactory(prefab)`, but
+it applies the argument after `Get()` returns, so the clone's `OnEnable` and
+`IPoolHooks.OnPoolGet` have already run without it:
 
 ```csharp
 using Onity.Factory;
@@ -231,6 +272,46 @@ IFactory<Vector3, Projectile> factory = container.Resolve<IFactory<Vector3, Proj
 Projectile projectile = factory.Create(spawnPosition);
 ```
 
+### `PooledFactory` adapter over `IParameterizedPool<T>`
+
+Both pools implement `IParameterizedPool<T>`, whose `Get(param, initialize)` and
+`Get(param1, param2, initialize)` run `initialize` before activation and before the
+get hooks, on every use, including a clone's first `OnEnable`. `PooledFactory<TParam,
+TValue>` and `PooledFactory<TParam1, TParam2, TValue>` adapt such a pool to
+`IFactory<...>`. `BindPooledFactory` binds only `IPool<T>`, so build the pool
+yourself and bind the factory as an instance:
+
+```csharp
+using Onity.DI;
+using Onity.Factory;
+using Onity.Pooling;
+using Onity.Unity.Installers;
+using UnityEngine;
+
+public sealed class ProjectileInstaller : MonoInstaller
+{
+    [SerializeField] private Projectile m_projectilePrefab;
+    [SerializeField] private Transform m_projectileRoot;
+
+    public override void InstallBindings(OnityContainer container)
+    {
+        PrefabComponentPool<Projectile> pool = new PrefabComponentPool<Projectile>(
+            m_projectilePrefab, m_projectileRoot, defaultCapacity: 32, maxSize: 256, initialSize: 16);
+        pool.AddTo(container);                                  // caller-built: tie it to the scope
+        container.BindPooledFactory(pool);                      // IPool<Projectile> + IFactory<Projectile>
+        container.BindInstance<IFactory<Vector3, Projectile>>(
+            new PooledFactory<Vector3, Projectile>(
+                pool,
+                (projectile, position) => projectile.transform.position = position));
+    }
+}
+```
+
+With the adapter, `OnPoolGet` already sees the state that `initialize` set, so do
+not clear those fields in `OnPoolGet` (the `Projectile` example above does, which
+is only correct for the zero-parameter factory and the wrapper); reset them in
+`OnPoolRelease` instead.
+
 ## Plain C# object pool
 
 For non-Unity objects, use `OnityObjectPool<T>` directly. It keeps inactive
@@ -268,6 +349,8 @@ container.BindPooledFactory(pool);
 IFactory<PathNode> factory = container.Resolve<IFactory<PathNode>>();
 PathNode node = factory.Create();
 ```
+
+The pool stays caller-owned; see [Pool lifetime](#pool-lifetime).
 
 ## Is it easier than Zenject or VContainer?
 

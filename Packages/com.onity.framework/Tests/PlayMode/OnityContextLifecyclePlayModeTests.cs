@@ -212,6 +212,8 @@ namespace Onity.Tests.PlayMode
     [TestFixture]
     public sealed class PrefabComponentPoolPlayModeTests
     {
+        private const int k_maximumFrames = 10;
+
         [Test]
         public void ActivePrefab_FirstParameterizedGet_InitializesBeforeOnEnable()
         {
@@ -240,6 +242,114 @@ namespace Onity.Tests.PlayMode
                 }
 
                 Object.Destroy(prefabRoot);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator DestroyingGameObjectContext_DisposesPoolCreatedByBindPooledFactory()
+        {
+            return RunContextDestroyScenario<GameObjectContext>(
+                nameof(DestroyingGameObjectContext_DisposesPoolCreatedByBindPooledFactory));
+        }
+
+        [UnityTest]
+        public IEnumerator DestroyingSceneContext_DisposesPoolCreatedByBindPooledFactory()
+        {
+            return RunContextDestroyScenario<SceneContext>(
+                nameof(DestroyingSceneContext_DisposesPoolCreatedByBindPooledFactory));
+        }
+
+        private static IEnumerator RunContextDestroyScenario<TContext>(string scenarioName)
+            where TContext : OnityContext
+        {
+            GameObject prefabRoot = new GameObject(scenarioName + "-Prefab-" + Guid.NewGuid().ToString("N"));
+            ScopedPoolProbe prefab = prefabRoot.AddComponent<ScopedPoolProbe>();
+            GameObject contextObject = new GameObject(scenarioName);
+            ScopedPoolProbe inactive = null;
+
+            try
+            {
+                // Inactive while components are added, so Awake runs after the installer is wired in.
+                contextObject.SetActive(false);
+                ScopedPoolInstaller installer = contextObject.AddComponent<ScopedPoolInstaller>();
+                installer.Prefab = prefab;
+                TContext context = contextObject.AddComponent<TContext>();
+                SetContextInstallers(context, installer);
+
+                contextObject.SetActive(true);
+
+                IPool<ScopedPoolProbe> pool = context.Container.Resolve<IPool<ScopedPoolProbe>>();
+                IOnityPoolDiagnosticsSource diagnostics = (IOnityPoolDiagnosticsSource)pool;
+                string poolName = diagnostics.GetDiagnosticsSnapshot().PoolName;
+                inactive = pool.Get();
+                pool.Release(inactive);
+
+                Assert.That(IsRegisteredInDiagnostics(poolName), Is.True);
+
+                Object.Destroy(contextObject);
+
+                for (int frame = 0; frame < k_maximumFrames && IsRegisteredInDiagnostics(poolName); frame++)
+                {
+                    yield return null;
+                }
+
+                Assert.That(IsRegisteredInDiagnostics(poolName), Is.False);
+                Assert.That(diagnostics.GetDiagnosticsSnapshot().IsDisposed, Is.True);
+            }
+            finally
+            {
+                if (contextObject != null)
+                {
+                    Object.Destroy(contextObject);
+                }
+
+                if (inactive != null)
+                {
+                    Object.Destroy(inactive.gameObject);
+                }
+
+                Object.Destroy(prefabRoot);
+            }
+        }
+
+        private static bool IsRegisteredInDiagnostics(string poolName)
+        {
+            System.Collections.Generic.List<OnityPoolDiagnosticsSnapshot> snapshots =
+                new System.Collections.Generic.List<OnityPoolDiagnosticsSnapshot>();
+            OnityPoolDiagnosticsRegistry.GetSnapshots(snapshots);
+
+            for (int i = 0; i < snapshots.Count; i++)
+            {
+                if (snapshots[i].PoolName == poolName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void SetContextInstallers(OnityContext context, params MonoInstaller[] installers)
+        {
+            FieldInfo installersField = typeof(OnityContext).GetField(
+                "m_installers",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.That(installersField, Is.Not.Null);
+            installersField.SetValue(context, installers);
+        }
+
+        private sealed class ScopedPoolProbe : MonoBehaviour
+        {
+        }
+
+        private sealed class ScopedPoolInstaller : MonoInstaller
+        {
+            public ScopedPoolProbe Prefab { get; set; }
+
+            public override void InstallBindings(OnityContainer container)
+            {
+                container.BindPooledFactory(Prefab);
             }
         }
 

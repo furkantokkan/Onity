@@ -1,0 +1,113 @@
+03:09:20 surpass attempt attempt-1
+03:09:20 attempt directory: C:\Users\e-fur\.codex\worktrees\onity-builder-benchmark-4be50dc\Onity\BenchmarkResults\surpass-attempt-1-20261002-0309
+03:09:20 source: C:\Users\e-fur\Documents\Repos\Onity\_publish @ 6cc21159461c5a970cdbc7de4e4522b20c8aa002 (0 dirty path(s))
+03:09:21 lease ok; host idle; Packages/manifest.json D9ACF452B0C43B069CF445AD53F306231E6B9AAD0742E7F2920D93FA2EBA39EE
+03:09:33     quiet-check: sampled 30 watched process(es) for 10.9 s
+03:09:33       PID 88108  Unity  cpu=100.06%  project=<other Unity project A>
+03:09:33       PID 58580  Unity  cpu=2.16%  project=<other Unity project B>
+03:09:33       PID 57740  Unity  cpu=2.01%  project=<other Unity project C>
+03:09:33       PID 32604  Unity Hub  cpu=0.72%  project=(no project)
+03:09:33       PID 57020  Unity  cpu=0.58%  project=<other Unity project C> [worker]
+03:09:33       PID 67656  Unity  cpu=0.29%  project=<other Unity project B> [worker]
+03:09:33       PID 65916  Unity  cpu=0.29%  project=<other Unity project B> [worker]
+03:09:33       PID 55028  UnityPackageManager  cpu=0.29%  project=(no project)
+03:09:33       PID 90920  Unity  cpu=0.14%  project=<other Unity project C> [worker]
+03:09:33       PID 22612  Unity Hub  cpu=0%  project=(no project)
+03:09:33       PID 69516  UnityShaderCompiler  cpu=0%  project=(no project) [worker]
+03:09:33       PID 49412  UnityPackageManager  cpu=0%  project=(no project)
+03:09:33       PID 27520  Unity Hub  cpu=0%  project=(no project)
+03:09:33       PID 83236  UnityCrashHandler64  cpu=0%  project=(no project)
+03:09:33       PID 52444  UnityShaderCompiler  cpu=0%  project=(no project) [worker]
+03:09:33       PID 71224  UnityCrashHandler64  cpu=0%  project=(no project)
+03:09:33       PID 102836  unity  cpu=0%  project=(no project)
+03:09:33       PID 59012  UnityCrashHandler64  cpu=0%  project=(no project)
+03:09:33       PID 51484  unity  cpu=0%  project=(no project)
+03:09:33       PID 3076  Unity Hub  cpu=0%  project=(no project)
+03:09:33       PID 57368  UnityShaderCompiler  cpu=0%  project=(no project)
+03:09:33       PID 91548  UnityShaderCompiler  cpu=0%  project=(no project) [worker]
+03:09:33       PID 95248  UnityCrashHandler64  cpu=0%  project=(no project)
+03:09:33       PID 57916  UnityCrashHandler64  cpu=0%  project=(no project)
+03:09:33       PID 109184  UnityCrashHandler64  cpu=0%  project=(no project)
+03:09:33       PID 79820  UnityCrashHandler64  cpu=0%  project=(no project)
+03:09:33       PID 85432  UnityShaderCompiler  cpu=0%  project=(no project)
+03:09:33       PID 41116  UnityPackageManager  cpu=0%  project=(no project)
+03:09:33       PID 50068  UnityShaderCompiler  cpu=0%  project=(no project)
+03:09:33       PID 77364  UnityShaderCompiler  cpu=0%  project=(no project) [worker]
+03:09:33       power plan: Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance) -> ok
+03:09:33     quiet-check: REFUSED - CPU above 2%: PIDs 88108,57740,58580
+03:09:33 WARNING quiet-check did not report QUIET; continuing (noise is recorded per process).
+03:09:34     ProjectSettings.asset      3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33  recorded=match
+03:09:34     EditorBuildSettings.asset  D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880  recorded=match
+03:09:34     EditorSettings.asset       962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34  recorded=match
+03:09:34     ProjectVersion.txt         21B4CD39F50B6E0B77CC9F18B79C453E9212E19B953A23E0CEB761C627DE97C3  recorded=match
+03:09:34     settings check: all match
+03:09:37     source : C:\Users\e-fur\Documents\Repos\Onity\_publish\Packages\com.onity.framework
+03:09:37     host   : C:\Users\e-fur\.codex\worktrees\onity-builder-benchmark-4be50dc\Onity\Packages\com.onity.framework
+03:09:37     files  : source=1128 host=1128 identical=1128 different=0 missingInHost=0 extraInHost=0
+03:09:37     frozen runtime files: 5 checked, 0 diff(s)
+03:09:37       identical       Runtime/Unity/Scripts/Async/OnityAsync.cs
+03:09:37       identical       Runtime/Unity/Scripts/Async/OnityAsyncStateMachineRunner.cs
+03:09:37       identical       Runtime/Unity/Scripts/Async/OnityTaskThreadSwitch.cs
+03:09:37       identical       Benchmarks/Tasks/Runtime/OnityTaskBuilderLifecycleBenchmarkRunner.cs
+03:09:37       identical       Runtime/Unity/Scripts/Async/OnityWhenAnyArrayTaskSource.cs
+03:09:37     staged: copied 0, deleted 0, verified 1128 file(s)
+03:09:37     manifest: C:\Users\e-fur\.codex\worktrees\onity-builder-benchmark-4be50dc\Onity\BenchmarkResults\surpass-attempt-1-20261002-0309\staging.json
+03:09:37 staged 1128 file(s); changed 0
+03:09:48     host-compile-check: 453 file(s); skipped (assembly not compiled in host): Onity.Benchmarks=3, Onity.Benchmarks.Editor=3, Onity.Tests.UGUI.PlayMode=3, Onity.Unity.UGUI=3
+03:09:48     unity-compile-check: Onity, Unity 2022.3.62f2, 453 C# file(s), 14 assembly(ies) to compile (1 stale .csproj ignored)
+03:09:48       Onity.Core: OK in 0.8s
+03:09:48       Onity.Factory: OK in 0.7s
+03:09:48       Onity.DI: OK in 0.7s
+03:09:48       Onity.Reactive: OK in 0.7s
+03:09:48       Onity.Messaging: OK in 0.7s
+03:09:48       Onity.Composition: OK in 0.7s
+03:09:48       Onity.DOTS: OK in 0.8s
+03:09:48       Onity.Pooling: OK in 0.8s
+03:09:48       Onity.Unity: OK in 0.8s
+03:09:48       Onity.Editor: OK in 0.8s
+03:09:48       Onity.TaskBenchmarks: OK in 0.8s
+03:09:48       Onity.TaskBenchmarks.Editor: OK in 0.8s
+03:09:48       Onity.Tests.EditMode: OK in 0.8s
+03:09:48       Onity.Tests.PlayMode: OK in 0.8s
+03:09:48     COMPILE_OK
+03:09:52 reused Mono Player from C:\Users\e-fur\.codex\worktrees\onity-builder-benchmark-4be50dc\Onity\BenchmarkResults\surpass-selftest-attempt-1b-20261002-0301
+03:09:53 reused IL2CPP Player from C:\Users\e-fur\.codex\worktrees\onity-builder-benchmark-4be50dc\Onity\BenchmarkResults\surpass-selftest-attempt-1b-20261002-0301
+03:09:53 Mono Player GUID ad8bc783e0d34baab4bf1afb000e3141 (165 files)
+03:09:53 IL2CPP Player GUID a1e17c822d2b46799b38e6621ec43969 (23 files)
+03:09:53 planned 22 Player process(es): il2cpp-primary-matched-p1, il2cpp-builderlifecycle-matched-p1, il2cpp-throughput-matched-p1, mono-primary-matched-p1, mono-builderlifecycle-matched-p1, mono-throughput-matched-p1, mono-builderlifecycle-matched-p2, mono-throughput-matched-p2, mono-primary-matched-p2, il2cpp-builderlifecycle-matched-p2, il2cpp-throughput-matched-p2, il2cpp-primary-matched-p2, il2cpp-throughput-matched-p3, il2cpp-primary-matched-p3, il2cpp-builderlifecycle-matched-p3, mono-throughput-matched-p3, mono-primary-matched-p3, mono-builderlifecycle-matched-p3, il2cpp-primary-default-p1, il2cpp-builderlifecycle-default-p1, mono-primary-default-p1, mono-builderlifecycle-default-p1
+03:09:59 il2cpp-primary-matched-p1 exit=0 wall=4.5s noise=flagged
+03:10:06 il2cpp-builderlifecycle-matched-p1 exit=0 wall=6.9s noise=flagged
+03:10:08 il2cpp-throughput-matched-p1 exit=0 wall=1.4s noise=flagged
+03:10:14 mono-primary-matched-p1 exit=0 wall=5.0s noise=flagged
+03:10:19 mono-builderlifecycle-matched-p1 exit=0 wall=4.6s noise=flagged
+03:10:21 mono-throughput-matched-p1 exit=0 wall=1.7s noise=flagged
+03:10:27 mono-builderlifecycle-matched-p2 exit=0 wall=4.7s noise=flagged
+03:10:29 mono-throughput-matched-p2 exit=0 wall=1.7s noise=flagged
+03:10:34 mono-primary-matched-p2 exit=0 wall=4.8s noise=flagged
+03:10:42 il2cpp-builderlifecycle-matched-p2 exit=0 wall=7.0s noise=flagged
+03:10:44 il2cpp-throughput-matched-p2 exit=0 wall=1.4s noise=flagged
+03:10:49 il2cpp-primary-matched-p2 exit=0 wall=4.3s noise=flagged
+03:10:51 il2cpp-throughput-matched-p3 exit=0 wall=1.4s noise=flagged
+03:10:56 il2cpp-primary-matched-p3 exit=0 wall=4.3s noise=flagged
+03:11:04 il2cpp-builderlifecycle-matched-p3 exit=0 wall=6.9s noise=flagged
+03:11:06 mono-throughput-matched-p3 exit=0 wall=1.7s noise=flagged
+03:11:11 mono-primary-matched-p3 exit=0 wall=4.9s noise=flagged
+03:11:17 mono-builderlifecycle-matched-p3 exit=0 wall=4.7s noise=flagged
+03:11:23 il2cpp-primary-default-p1 exit=0 wall=5.9s noise=flagged
+03:11:31 il2cpp-builderlifecycle-default-p1 exit=0 wall=7.3s noise=flagged
+03:11:38 mono-primary-default-p1 exit=0 wall=5.7s noise=flagged
+03:11:43 mono-builderlifecycle-default-p1 exit=0 wall=4.8s noise=flagged
+03:11:44     ProjectSettings.asset      3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33  recorded=match
+03:11:44     EditorBuildSettings.asset  D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880  recorded=match
+03:11:44     EditorSettings.asset       962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34  recorded=match
+03:11:44     ProjectVersion.txt         21B4CD39F50B6E0B77CC9F18B79C453E9212E19B953A23E0CEB761C627DE97C3  recorded=match
+03:11:44     settings check: all match
+03:11:44 gate exit=0 verdict=PASS
+03:11:45     ProjectSettings.asset      3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33  recorded=match
+03:11:45     EditorBuildSettings.asset  D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880  recorded=match
+03:11:45     EditorSettings.asset       962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34  recorded=match
+03:11:45     ProjectVersion.txt         21B4CD39F50B6E0B77CC9F18B79C453E9212E19B953A23E0CEB761C627DE97C3  recorded=match
+03:11:45     settings check: all match
+03:11:45 lease released
+03:11:45 status: completed; attempt manifest: C:\Users\e-fur\.codex\worktrees\onity-builder-benchmark-4be50dc\Onity\BenchmarkResults\surpass-attempt-1-20261002-0309\attempt-manifest.json
+03:11:45 verdict: PASS -> C:\Users\e-fur\.codex\worktrees\onity-builder-benchmark-4be50dc\Onity\BenchmarkResults\surpass-attempt-1-20261002-0309\surpass-gate.md

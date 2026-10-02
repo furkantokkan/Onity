@@ -4,7 +4,7 @@ using System.Threading;
 namespace Onity.Unity.Async
 {
     /// <summary>Finite native asynchronous stream descriptions.</summary>
-    public static class OnityAsyncEnumerable
+    public static partial class OnityAsyncEnumerable
     {
         /// <summary>Creates an on-demand stream yielding Unit.Default once per accepted Update wait.</summary>
         /// <returns>An inert reusable description with no buffering or replay while idle.</returns>

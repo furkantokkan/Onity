@@ -1,0 +1,1659 @@
+{
+  "schemaVersion": 1,
+  "attributionOnly": true,
+  "scope": "Development IL2CPP with deep profiling and optimize+; not Release timing. Only Monitor.Enter is counted, excluding nested ReliableEnter markers.",
+  "profiles": [
+    {
+      "name": "fullcycle-baseline-128-on-immediate",
+      "revision": "baseline",
+      "concurrency": 128,
+      "flow": "on",
+      "reuse": "immediate",
+      "captureSha256": "12974E002961A444DE667A07FA3E96D3A4CD6A86ADA361A0D2CB1EA982DBC080",
+      "rawProfileSha256": "CE6810EE1197E2D01DB1D4723F4C6B4A9E48ECD4179003DFF94C58C20F4BCD02",
+      "attributionSha256": "48B597C5664404499E679C0D7707024E0515CA23F4E02FC3DA2CCC826905D6DF",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 384,
+          "gcKnownAllocatedBytes": 58368,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 256,
+          "frameReturnMonitorEntries": 256,
+          "dispatcherEnqueueMonitorEntries": 256,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Schedule",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.016499999999999966,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.018099999999999963,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.TickSources()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Tick()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskContinuation.Invoke()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNextCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncExecutionContext.TryRunPreservingContext()/mscorlib.dll!System.Threading::ExecutionContext.RunInternal()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNextInContext()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.ReleaseSource()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.017099999999999976,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.0004,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 256,
+          "frameSourceReleaseCalls": 256,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+              "sampleCount": 256,
+              "gcKnownAllocatedBytes": 32768,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+              "sampleCount": 128,
+              "gcKnownAllocatedBytes": 25600,
+              "gcMetadataMissing": 0
+            }
+          ]
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 384,
+          "gcKnownAllocatedBytes": 50176,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.0002,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()/GC.Alloc",
+              "sampleCount": 256,
+              "gcKnownAllocatedBytes": 32768,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/GC.Alloc",
+              "sampleCount": 128,
+              "gcKnownAllocatedBytes": 17408,
+              "gcMetadataMissing": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-baseline-128-on-drain",
+      "revision": "baseline",
+      "concurrency": 128,
+      "flow": "on",
+      "reuse": "drain",
+      "captureSha256": "A52A3CDBFEF0CEFE57424180FB11E5BEE5D0A5E0173805E1EB6D00D4FBDAE044",
+      "rawProfileSha256": "88D919913D850F65A281F697072FB8795A0B384902F3039E0C603E2ED605BCA7",
+      "attributionSha256": "B2A5B9C491218E7A19783A4E612DE7470599D499B0CACD319544592E8CBF41BD",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 0,
+          "gcKnownAllocatedBytes": 0,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 256,
+          "frameReturnMonitorEntries": 256,
+          "dispatcherEnqueueMonitorEntries": 256,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Schedule",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.01589999999999997,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.017099999999999966,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.TickSources()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Tick()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskContinuation.Invoke()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNextCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncExecutionContext.TryRunPreservingContext()/mscorlib.dll!System.Threading::ExecutionContext.RunInternal()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNextInContext()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.ReleaseSource()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.01799999999999996,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0005,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 256,
+          "frameSourceReleaseCalls": 256,
+          "gcAllocationSites": []
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 0,
+          "gcKnownAllocatedBytes": 0,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0006000000000000001,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": []
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-baseline-128-off-immediate",
+      "revision": "baseline",
+      "concurrency": 128,
+      "flow": "off",
+      "reuse": "immediate",
+      "captureSha256": "2CA3B2B630F40E45F3B6D355F04EF7FDF2B46D0C843B7BED1D32FFCD9053BB70",
+      "rawProfileSha256": "F7A48B4D781C50961AB8EB8B0F162A2AF7F9D09424CC4F228D1CE06595EC4010",
+      "attributionSha256": "31CD767E4627F60FC7BCB2ACDE4BABC0F4CD8440F93EFB4F5AC2CD6B4E856B29",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 384,
+          "gcKnownAllocatedBytes": 58368,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 256,
+          "frameReturnMonitorEntries": 256,
+          "dispatcherEnqueueMonitorEntries": 256,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Schedule",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.015399999999999968,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.018899999999999945,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.TickSources()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Tick()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskContinuation.Invoke()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNextCore()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.ReleaseSource()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.017999999999999967,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.0002,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 256,
+          "frameSourceReleaseCalls": 256,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+              "sampleCount": 256,
+              "gcKnownAllocatedBytes": 32768,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+              "sampleCount": 128,
+              "gcKnownAllocatedBytes": 25600,
+              "gcMetadataMissing": 0
+            }
+          ]
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 384,
+          "gcKnownAllocatedBytes": 50176,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.0002,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()/GC.Alloc",
+              "sampleCount": 256,
+              "gcKnownAllocatedBytes": 32768,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/GC.Alloc",
+              "sampleCount": 128,
+              "gcKnownAllocatedBytes": 17408,
+              "gcMetadataMissing": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-baseline-128-off-drain",
+      "revision": "baseline",
+      "concurrency": 128,
+      "flow": "off",
+      "reuse": "drain",
+      "captureSha256": "5BB0B9CAFDB66C49ABE5C96EF50ECB85B3E6BC724CB1B2C52030C2E02E3C8B85",
+      "rawProfileSha256": "36FA6969D8848772C13F55C78938E84C24C6431DD2719DFF491DA24BDA5F64DA",
+      "attributionSha256": "46A72A890266B96E41FFBC1800A66EF9D40A844B1C5CA615007B377748D702C8",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 0,
+          "gcKnownAllocatedBytes": 0,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 256,
+          "frameReturnMonitorEntries": 256,
+          "dispatcherEnqueueMonitorEntries": 256,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Schedule",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.022299999999999955,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.017599999999999984,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.TickSources()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Tick()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskContinuation.Invoke()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNextCore()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.ReleaseSource()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.016599999999999972,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0008,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 256,
+          "frameSourceReleaseCalls": 256,
+          "gcAllocationSites": []
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 0,
+          "gcKnownAllocatedBytes": 0,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0004,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": []
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-baseline-4096-on-immediate",
+      "revision": "baseline",
+      "concurrency": 4096,
+      "flow": "on",
+      "reuse": "immediate",
+      "captureSha256": "06C6035BE81E250D730497CF7ACB960B9FFD6D205D2B4C1460BBAFAA587E514B",
+      "rawProfileSha256": "8688976280F2A3EBC6FE86390AB534B826C9AD05C1A0132E64790922044AE928",
+      "attributionSha256": "1B6BBDDFA9FA9043211CBE2CDC0EC9FB94FA7445C3CE7B0C0DA5E1E958B8D063",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 31872,
+          "gcKnownAllocatedBytes": 4598784,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 8192,
+          "frameReturnMonitorEntries": 8192,
+          "dispatcherEnqueueMonitorEntries": 8192,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Schedule",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.6508999999999516,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.5993999999999581,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.TickSources()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Tick()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskContinuation.Invoke()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNextCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncExecutionContext.TryRunPreservingContext()/mscorlib.dll!System.Threading::ExecutionContext.RunInternal()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNextInContext()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.ReleaseSource()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.5874999999999604,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.00030000000000000003,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 8192,
+          "frameSourceReleaseCalls": 8192,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+              "sampleCount": 16128,
+              "gcKnownAllocatedBytes": 2064384,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/GC.Alloc",
+              "sampleCount": 7680,
+              "gcKnownAllocatedBytes": 921600,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+              "sampleCount": 8064,
+              "gcKnownAllocatedBytes": 1612800,
+              "gcMetadataMissing": 0
+            }
+          ]
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 12288,
+          "gcKnownAllocatedBytes": 1605632,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.0002,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()/GC.Alloc",
+              "sampleCount": 8192,
+              "gcKnownAllocatedBytes": 1048576,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/GC.Alloc",
+              "sampleCount": 4096,
+              "gcKnownAllocatedBytes": 557056,
+              "gcMetadataMissing": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-baseline-4096-on-drain",
+      "revision": "baseline",
+      "concurrency": 4096,
+      "flow": "on",
+      "reuse": "drain",
+      "captureSha256": "51711001424C72C67644BCCF47CDDBFF4F3FE7265FC8A2320DB4A6B2CEEA6DB4",
+      "rawProfileSha256": "1FD2F7C20838C773095BD98BECDE197253B419C57D76CF48019E7FAFA6C095BF",
+      "attributionSha256": "D9817DA8E878994A35148D69B8FDEE8D63FCA40A43EC7ADA24D3FCAF3D848862",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 31488,
+          "gcKnownAllocatedBytes": 4540416,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 8192,
+          "frameReturnMonitorEntries": 8192,
+          "dispatcherEnqueueMonitorEntries": 8192,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Schedule",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.6119999999999562,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.6456999999999552,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.TickSources()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Tick()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskContinuation.Invoke()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNextCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncExecutionContext.TryRunPreservingContext()/mscorlib.dll!System.Threading::ExecutionContext.RunInternal()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNextInContext()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.ReleaseSource()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.6365999999999512,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0004,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 8192,
+          "frameSourceReleaseCalls": 8192,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+              "sampleCount": 15872,
+              "gcKnownAllocatedBytes": 2031616,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/GC.Alloc",
+              "sampleCount": 7680,
+              "gcKnownAllocatedBytes": 921600,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+              "sampleCount": 7936,
+              "gcKnownAllocatedBytes": 1587200,
+              "gcMetadataMissing": 0
+            }
+          ]
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 0,
+          "gcKnownAllocatedBytes": 0,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0004,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": []
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-baseline-4096-off-immediate",
+      "revision": "baseline",
+      "concurrency": 4096,
+      "flow": "off",
+      "reuse": "immediate",
+      "captureSha256": "CB1F8FD582FA49DDA5603411DEF72E21A6C83BF70C499C030BF516F3968DA07D",
+      "rawProfileSha256": "3E011CCF4489F9389F06343ED0002C8107DF53D3F06A1ED5A68AE19D83771D29",
+      "attributionSha256": "CCED6CBA33B510AAD34E8B5967110B8B0DE99A880943146A404ADC0936AC4DC1",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 31872,
+          "gcKnownAllocatedBytes": 4598784,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 8192,
+          "frameReturnMonitorEntries": 8192,
+          "dispatcherEnqueueMonitorEntries": 8192,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Schedule",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.587299999999958,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.5990999999999576,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.TickSources()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Tick()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskContinuation.Invoke()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNextCore()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.ReleaseSource()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.6755999999999533,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.0005,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 8192,
+          "frameSourceReleaseCalls": 8192,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+              "sampleCount": 16128,
+              "gcKnownAllocatedBytes": 2064384,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+              "sampleCount": 8064,
+              "gcKnownAllocatedBytes": 1612800,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/GC.Alloc",
+              "sampleCount": 7680,
+              "gcKnownAllocatedBytes": 921600,
+              "gcMetadataMissing": 0
+            }
+          ]
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 12288,
+          "gcKnownAllocatedBytes": 1605632,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.00030000000000000003,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()/GC.Alloc",
+              "sampleCount": 8192,
+              "gcKnownAllocatedBytes": 1048576,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/GC.Alloc",
+              "sampleCount": 4096,
+              "gcKnownAllocatedBytes": 557056,
+              "gcMetadataMissing": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-baseline-4096-off-drain",
+      "revision": "baseline",
+      "concurrency": 4096,
+      "flow": "off",
+      "reuse": "drain",
+      "captureSha256": "EA2F8C6BDE243E21DE0E01712621D5A8E05462E5DD9213408E341A632F36CB3D",
+      "rawProfileSha256": "5A2B3E6AFC6277625BF43DA8204EF7A90FDF10D9BC14C5A2E062BA1442E6241F",
+      "attributionSha256": "72FD5BB879A014DA3CB8320A7755D3C47BD05DE9CA40341414735D586A22CB18",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 31488,
+          "gcKnownAllocatedBytes": 4540416,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 8192,
+          "frameReturnMonitorEntries": 8192,
+          "dispatcherEnqueueMonitorEntries": 8192,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Schedule",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.6878999999999518,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.6511999999999534,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.TickSources()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Tick()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.TrySetStatus()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskContinuation.Invoke()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.MoveNextCore()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.ReleaseSource()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.652899999999955,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0005,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 8192,
+          "frameSourceReleaseCalls": 8192,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+              "sampleCount": 15872,
+              "gcKnownAllocatedBytes": 2031616,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/GC.Alloc",
+              "sampleCount": 7680,
+              "gcKnownAllocatedBytes": 921600,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+              "sampleCount": 7936,
+              "gcKnownAllocatedBytes": 1587200,
+              "gcMetadataMissing": 0
+            }
+          ]
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 0,
+          "gcKnownAllocatedBytes": 0,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.00030000000000000003,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": []
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-candidate-128-on-immediate",
+      "revision": "candidate",
+      "concurrency": 128,
+      "flow": "on",
+      "reuse": "immediate",
+      "captureSha256": "0354948652A8EB18101394352A1CD17FD2D89976081852EF83F522C3B9919F5A",
+      "rawProfileSha256": "C5F824EE8C466D560C2CD7D54937C8E66FBB35585121193551BA071B9626965F",
+      "attributionSha256": "3975B03AA17FDC7EB623CAC3B5ADEAE4488A1E9F5EBFE0E1C7AEAF51D5ADC647",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 384,
+          "gcKnownAllocatedBytes": 58368,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 256,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.019999999999999966,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.0002,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 256,
+          "frameSourceReleaseCalls": 256,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+              "sampleCount": 256,
+              "gcKnownAllocatedBytes": 32768,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+              "sampleCount": 128,
+              "gcKnownAllocatedBytes": 25600,
+              "gcMetadataMissing": 0
+            }
+          ]
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 384,
+          "gcKnownAllocatedBytes": 50176,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.0005,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()/GC.Alloc",
+              "sampleCount": 256,
+              "gcKnownAllocatedBytes": 32768,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/GC.Alloc",
+              "sampleCount": 128,
+              "gcKnownAllocatedBytes": 17408,
+              "gcMetadataMissing": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-candidate-128-on-drain",
+      "revision": "candidate",
+      "concurrency": 128,
+      "flow": "on",
+      "reuse": "drain",
+      "captureSha256": "BE3176109C8B7CF0AEBA86871F8EDEA2154DCF9EE24B41FA4D85738A056D23F2",
+      "rawProfileSha256": "A74B85E05F612FEFEDEB15F2E83BC09B62C82AC509F495516EC05DADC3490F76",
+      "attributionSha256": "CC6D6E28D3F0FDC06B446E300D77CA5A07A499641984110CBB6635C79A84CA56",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 0,
+          "gcKnownAllocatedBytes": 0,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 256,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.026199999999999935,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0005,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 256,
+          "frameSourceReleaseCalls": 256,
+          "gcAllocationSites": []
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 0,
+          "gcKnownAllocatedBytes": 0,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0004,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": []
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-candidate-128-off-immediate",
+      "revision": "candidate",
+      "concurrency": 128,
+      "flow": "off",
+      "reuse": "immediate",
+      "captureSha256": "A9DE7D00729385A78641DAF8A5D39E231CE7ED3C6B24E724C12DE1CA9E72036D",
+      "rawProfileSha256": "3CB4E30A00A306A6037A20495E25E3E274CB573D9B9723E087673FA00DBE17DF",
+      "attributionSha256": "96DCF1B62BF9DC72970F085CFEB51567BD9753AEE1D496B0EA959F8AF6B5F5EF",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 384,
+          "gcKnownAllocatedBytes": 58368,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 256,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.017699999999999976,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.0004,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 256,
+          "frameSourceReleaseCalls": 256,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+              "sampleCount": 256,
+              "gcKnownAllocatedBytes": 32768,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+              "sampleCount": 128,
+              "gcKnownAllocatedBytes": 25600,
+              "gcMetadataMissing": 0
+            }
+          ]
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 384,
+          "gcKnownAllocatedBytes": 50176,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.00030000000000000003,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()/GC.Alloc",
+              "sampleCount": 256,
+              "gcKnownAllocatedBytes": 32768,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/GC.Alloc",
+              "sampleCount": 128,
+              "gcKnownAllocatedBytes": 17408,
+              "gcMetadataMissing": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-candidate-128-off-drain",
+      "revision": "candidate",
+      "concurrency": 128,
+      "flow": "off",
+      "reuse": "drain",
+      "captureSha256": "02F62059E940D529B71B66BFECA258A9E6A19AA81A415DFFDE25CFE8EE75BC04",
+      "rawProfileSha256": "AB64A6BE391355A21DAD8041B4AFF6EAD8E2F9192AA68667D292F38167B66FF6",
+      "attributionSha256": "95CDDEEE936EED61E8E7B31744FB3F9B2A4A89DA5D5881F086E97230C8CE2A49",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 0,
+          "gcKnownAllocatedBytes": 0,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 256,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 256,
+              "selfMilliseconds": 0.01839999999999997,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0009,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 256,
+          "frameSourceReleaseCalls": 256,
+          "gcAllocationSites": []
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 256,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 0,
+          "gcKnownAllocatedBytes": 0,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0008,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": []
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-candidate-4096-on-immediate",
+      "revision": "candidate",
+      "concurrency": 4096,
+      "flow": "on",
+      "reuse": "immediate",
+      "captureSha256": "20AF1C789C6BACC10937B0194CA23C8416AF8BE7A9FA32F32C142CD971D780BE",
+      "rawProfileSha256": "50CBE17DA6E1134BAA5A1FD058C41559BEFA9D011816BAC48DCEDD8536ECAAFB",
+      "attributionSha256": "91A6EFF530CE8DAE0C3066F10B047BF5541216EBAFECD59D183E3FD445A4217D",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 31872,
+          "gcKnownAllocatedBytes": 4660224,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 8192,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.5944999999999646,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.0004,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 8192,
+          "frameSourceReleaseCalls": 8192,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+              "sampleCount": 16128,
+              "gcKnownAllocatedBytes": 2064384,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/GC.Alloc",
+              "sampleCount": 7680,
+              "gcKnownAllocatedBytes": 983040,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+              "sampleCount": 8064,
+              "gcKnownAllocatedBytes": 1612800,
+              "gcMetadataMissing": 0
+            }
+          ]
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 12288,
+          "gcKnownAllocatedBytes": 1605632,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.0002,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()/GC.Alloc",
+              "sampleCount": 8192,
+              "gcKnownAllocatedBytes": 1048576,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/GC.Alloc",
+              "sampleCount": 4096,
+              "gcKnownAllocatedBytes": 557056,
+              "gcMetadataMissing": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-candidate-4096-on-drain",
+      "revision": "candidate",
+      "concurrency": 4096,
+      "flow": "on",
+      "reuse": "drain",
+      "captureSha256": "14C933DD6CE8BA5EC121A618817D387A1479586F02811B9110D47EA00034F17C",
+      "rawProfileSha256": "261752FF166E26211E26694AA4C858C3131D613C4703A14FBB32469266CBA9BD",
+      "attributionSha256": "B7D6B8ECD2A29275337320218210816ACBB7D928053025953AD0F9DAF21F4571",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 31488,
+          "gcKnownAllocatedBytes": 4601856,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 8192,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.6809999999999601,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.00030000000000000003,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 8192,
+          "frameSourceReleaseCalls": 8192,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+              "sampleCount": 15872,
+              "gcKnownAllocatedBytes": 2031616,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/GC.Alloc",
+              "sampleCount": 7680,
+              "gcKnownAllocatedBytes": 983040,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+              "sampleCount": 7936,
+              "gcKnownAllocatedBytes": 1587200,
+              "gcMetadataMissing": 0
+            }
+          ]
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 0,
+          "gcKnownAllocatedBytes": 0,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0009000000000000001,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": []
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-candidate-4096-off-immediate",
+      "revision": "candidate",
+      "concurrency": 4096,
+      "flow": "off",
+      "reuse": "immediate",
+      "captureSha256": "74807E3E12A126489A664B6AC1A51BE42ED63B45F90E7CBAFE9EB2A8FC1B7867",
+      "rawProfileSha256": "C0BBC87B5F840456CD06DCE85E1C722FEBA72E9EDC24F1BC5148408368EEEC48",
+      "attributionSha256": "FF0850B6B5826A421B4F47D3196B7C84ABE858F6480E17A1A33AF8C1F24DB00B",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 31872,
+          "gcKnownAllocatedBytes": 4660224,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 8192,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.6408999999999598,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.0004,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 8192,
+          "frameSourceReleaseCalls": 8192,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+              "sampleCount": 16128,
+              "gcKnownAllocatedBytes": 2064384,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+              "sampleCount": 8064,
+              "gcKnownAllocatedBytes": 1612800,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/GC.Alloc",
+              "sampleCount": 7680,
+              "gcKnownAllocatedBytes": 983040,
+              "gcMetadataMissing": 0
+            }
+          ]
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 12288,
+          "gcKnownAllocatedBytes": 1605632,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 4,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 4,
+              "selfMilliseconds": 0.00030000000000000003,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2..ctor()/GC.Alloc",
+              "sampleCount": 8192,
+              "gcKnownAllocatedBytes": 1048576,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.UniTask.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.UniTaskNextFrameAsync()/Onity.TaskBenchmarks.dll!::<UniTaskNextFrameAsync>d__23.MoveNext()/UniTask.dll!Cysharp.Threading.Tasks.CompilerServices::AsyncUniTask`2.SetStateMachine()/GC.Alloc",
+              "sampleCount": 4096,
+              "gcKnownAllocatedBytes": 557056,
+              "gcMetadataMissing": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fullcycle-candidate-4096-off-drain",
+      "revision": "candidate",
+      "concurrency": 4096,
+      "flow": "off",
+      "reuse": "drain",
+      "captureSha256": "2EF74B4C0DE4E467E7D09E2EEC2A4C1E41627601776514BD0F3CDE048019E7DB",
+      "rawProfileSha256": "6069DD8E899EB10CD609B2C9BD480702E7CBB6CBEA8B8139C76457FE4F9E96CE",
+      "attributionSha256": "F62C8EED725D511794330D36F0BC721E51C96557B3276A33AA70FB824EE3BEAB",
+      "windows": [
+        {
+          "library": "Onity",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 31488,
+          "gcKnownAllocatedBytes": 4601856,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 8192,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Consume",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 8192,
+              "selfMilliseconds": 0.6230999999999581,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Consume/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Consume()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskAwaiter`1.GetResultSlow()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResult()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskSourceBase`1.GetResultCore()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.ReleaseSource()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Enqueue()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            },
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0007,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 8192,
+          "frameSourceReleaseCalls": 8192,
+          "gcAllocationSites": [
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2..ctor()/GC.Alloc",
+              "sampleCount": 15872,
+              "gcKnownAllocatedBytes": 2031616,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMethodBuilder`1.AwaitUnsafeOnCompleted()/Onity.Unity.dll!Onity.Unity.Async::OnityAsyncStateMachineRunner`2.Rent()/GC.Alloc",
+              "sampleCount": 7936,
+              "gcKnownAllocatedBytes": 1587200,
+              "gcMetadataMissing": 0
+            },
+            {
+              "phase": "Schedule",
+              "name": "GC.Alloc",
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunDelayedDynamicFrameRate/CoroutinesDelayedCalls/UnityEngine.CoreModule.dll!UnityEngine::SetupCoroutine.InvokeMoveNext()/Onity.TaskBenchmarks.dll!::<Start>d__17.MoveNext()/Onity.TaskBenchmarks.dll!::<ProfileLibraries>d__18.MoveNext()/Onity.FullCycle.Onity.Schedule/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.Schedule()/Onity.TaskBenchmarks.dll!Onity.Benchmarks::OnityTaskFullCycleProfileRunner.OnityNextFrameAsync()/Onity.TaskBenchmarks.dll!::<OnityNextFrameAsync>d__22.MoveNext()/Onity.Unity.dll!Onity.Unity.Async::OnityTask.NextFrame()/Onity.Unity.dll!Onity.Unity.Async::OnityFrameTaskSource.Rent()/GC.Alloc",
+              "sampleCount": 7680,
+              "gcKnownAllocatedBytes": 983040,
+              "gcMetadataMissing": 0
+            }
+          ]
+        },
+        {
+          "library": "UniTask",
+          "scheduleSamples": 2,
+          "consumeSamples": 2,
+          "resumeSamples": 8192,
+          "deepRuntimeSamplesPresent": true,
+          "gcAllocationSamples": 0,
+          "gcKnownAllocatedBytes": 0,
+          "gcMetadataMissing": 0,
+          "frameRentMonitorEntries": 0,
+          "frameReturnMonitorEntries": 0,
+          "dispatcherEnqueueMonitorEntries": 0,
+          "dispatcherDrainMonitorEntries": 6,
+          "selectedMonitorSamples": [
+            {
+              "phase": "Lifecycle",
+              "name": "mscorlib.dll!System.Threading::Monitor.Enter()",
+              "sampleCount": 6,
+              "selfMilliseconds": 0.0007000000000000001,
+              "path": "Main Thread/PlayerLoop/Update.ScriptRunBehaviourUpdate/BehaviourUpdate/Onity.Unity.dll!Onity.Unity.Async::OnityTaskRunner.Update()/Onity.Unity.dll!Onity.Unity.Async::OnityTaskMainThreadDispatcher.Drain()/mscorlib.dll!System.Threading::Monitor.Enter()"
+            }
+          ],
+          "runnerReturnCalls": 0,
+          "frameSourceReleaseCalls": 0,
+          "gcAllocationSites": []
+        }
+      ]
+    }
+  ]
+}

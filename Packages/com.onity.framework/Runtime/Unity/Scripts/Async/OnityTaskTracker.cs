@@ -18,6 +18,7 @@ namespace Onity.Unity.Async
         private static readonly Action<Task> s_completeTrackedTask = CompleteTrackedTask;
         private static bool s_isEnabled = true;
         private static bool s_enableStackTrace;
+        private static long s_nativeCount;
 
         /// <summary>
         /// Enables or disables task tracking.
@@ -153,6 +154,60 @@ namespace Onity.Unity.Async
             }
         }
 
+        /// <summary>
+        /// Records a native Onity task that is observed without a .NET task bridge, such as a forgotten
+        /// task. Its row has a negative synthetic id and <see cref="OnityTrackedTaskInfo.IsNative"/> set.
+        /// Callers read <see cref="IsEnabled"/> first, so tracking costs nothing while it is off.
+        /// </summary>
+        /// <param name="source">Source label.</param>
+        /// <returns>The synthetic id to pass to <see cref="CompleteNative"/>.</returns>
+        internal static int BeginNative(string source)
+        {
+            int taskId = -(int)(Interlocked.Increment(ref s_nativeCount) % int.MaxValue) - 1;
+            string stackTrace = s_enableStackTrace ? Environment.StackTrace : string.Empty;
+            lock (s_gate)
+            {
+                if (s_entryByTaskId.ContainsKey(taskId) == false)
+                {
+                    s_entryByTaskId.Add(
+                        taskId,
+                        new TrackedTaskEntry(
+                            taskId, source, DateTime.UtcNow, TaskStatus.WaitingForActivation, stackTrace, true));
+                    s_taskOrder.Enqueue(taskId);
+                    TrimOverflow_NoAlloc();
+                }
+            }
+
+            return taskId;
+        }
+
+        /// <summary>Records the outcome of a native task recorded by <see cref="BeginNative"/>.</summary>
+        /// <param name="taskId">Synthetic id.</param>
+        /// <param name="failure">Fault or cancellation, or null for success.</param>
+        internal static void CompleteNative(int taskId, Exception failure)
+        {
+            TaskStatus status = failure == null
+                ? TaskStatus.RanToCompletion
+                : failure is OperationCanceledException ? TaskStatus.Canceled : TaskStatus.Faulted;
+            string errorMessage = failure == null
+                ? null
+                : status == TaskStatus.Canceled ? "Canceled" : failure.Message;
+            DateTime completedAtUtc = DateTime.UtcNow;
+            lock (s_gate)
+            {
+                if (s_entryByTaskId.TryGetValue(taskId, out TrackedTaskEntry entry) == false || entry.IsCompleted)
+                {
+                    return;
+                }
+
+                entry.Status = status;
+                entry.IsCompleted = true;
+                entry.CompletedAtUtc = completedAtUtc;
+                entry.ErrorMessage = errorMessage;
+                s_entryByTaskId[taskId] = entry;
+            }
+        }
+
         private static void TrackInternal(Task task, string source)
         {
             int taskId = task.Id;
@@ -252,6 +307,7 @@ namespace Onity.Unity.Async
             public readonly string Source;
             public readonly DateTime StartedAtUtc;
             public readonly string StackTrace;
+            public readonly bool IsNative;
             public TaskStatus Status;
             public bool IsCompleted;
             public DateTime CompletedAtUtc;
@@ -262,12 +318,14 @@ namespace Onity.Unity.Async
                 string source,
                 DateTime startedAtUtc,
                 TaskStatus status,
-                string stackTrace)
+                string stackTrace,
+                bool isNative = false)
             {
                 TaskId = taskId;
                 Source = string.IsNullOrWhiteSpace(source) ? "Unknown" : source;
                 StartedAtUtc = startedAtUtc;
                 StackTrace = stackTrace ?? string.Empty;
+                IsNative = isNative;
                 Status = status;
                 IsCompleted = false;
                 CompletedAtUtc = default;
@@ -287,7 +345,8 @@ namespace Onity.Unity.Async
                     StartedAtUtc,
                     elapsedMilliseconds,
                     ErrorMessage,
-                    StackTrace);
+                    StackTrace,
+                    IsNative);
             }
         }
     }
@@ -356,6 +415,32 @@ namespace Onity.Unity.Async
             double elapsedMilliseconds,
             string errorMessage,
             string stackTrace)
+            : this(taskId, source, status, isCompleted, startedAtUtc, elapsedMilliseconds, errorMessage, stackTrace, false)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a snapshot row that may describe a native Onity task.
+        /// </summary>
+        /// <param name="taskId">Task id; negative and synthetic for a native task.</param>
+        /// <param name="source">Source label.</param>
+        /// <param name="status">Task status; for a native task, the mapped Onity outcome.</param>
+        /// <param name="isCompleted">Completion flag.</param>
+        /// <param name="startedAtUtc">Start time UTC.</param>
+        /// <param name="elapsedMilliseconds">Elapsed milliseconds.</param>
+        /// <param name="errorMessage">Error details.</param>
+        /// <param name="stackTrace">Captured stack trace.</param>
+        /// <param name="isNative">True for a native Onity task observed without a .NET task bridge.</param>
+        public OnityTrackedTaskInfo(
+            int taskId,
+            string source,
+            TaskStatus status,
+            bool isCompleted,
+            DateTime startedAtUtc,
+            double elapsedMilliseconds,
+            string errorMessage,
+            string stackTrace,
+            bool isNative)
         {
             TaskId = taskId;
             Source = source ?? "Unknown";
@@ -365,6 +450,14 @@ namespace Onity.Unity.Async
             ElapsedMilliseconds = elapsedMilliseconds;
             ErrorMessage = errorMessage ?? string.Empty;
             StackTrace = stackTrace ?? string.Empty;
+            IsNative = isNative;
         }
+
+        /// <summary>
+        /// True for a native Onity task that is tracked without a .NET task bridge (a forgotten pooled
+        /// task); its <see cref="TaskId"/> is negative and synthetic, and <see cref="Status"/> maps the Onity
+        /// outcome (<c>WaitingForActivation</c> while pending).
+        /// </summary>
+        public bool IsNative { get; }
     }
 }

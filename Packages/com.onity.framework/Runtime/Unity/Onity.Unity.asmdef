@@ -26,6 +26,21 @@
       "name": "com.unity.entities",
       "expression": "1.0.0",
       "define": "ONITY_ENTITIES"
+    },
+    {
+      "name": "com.unity.modules.physics",
+      "expression": "",
+      "define": "ONITY_PHYSICS"
+    },
+    {
+      "name": "com.unity.modules.physics2d",
+      "expression": "",
+      "define": "ONITY_PHYSICS2D"
+    },
+    {
+      "name": "com.unity.modules.particlesystem",
+      "expression": "",
+      "define": "ONITY_PARTICLESYSTEM"
     }
   ],
   "noEngineReferences": false

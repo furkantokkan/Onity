@@ -1,0 +1,150 @@
+--- frozen/OnityAsync.cs
++++ fused/OnityAsync.cs
+@@ -4632,12 +4632,7 @@
+                 OnityAsyncStateMachineRunner<TStateMachine>.Rent(ref stateMachine, ref m_runner);
+             }
+ 
+-            if (OnityTask.FlowExecutionContext)
+-            {
+-                m_runner.CaptureExecutionContext();
+-            }
+-
+-            awaiter.OnCompleted(m_runner.MoveNextAction);
++            awaiter.OnCompleted(m_runner.GetMoveNextAction());
+         }
+ 
+         /// <summary>
+@@ -4658,12 +4653,7 @@
+                 OnityAsyncStateMachineRunner<TStateMachine>.Rent(ref stateMachine, ref m_runner);
+             }
+ 
+-            if (OnityTask.FlowExecutionContext)
+-            {
+-                m_runner.CaptureExecutionContext();
+-            }
+-
+-            awaiter.UnsafeOnCompleted(m_runner.MoveNextAction);
++            awaiter.UnsafeOnCompleted(m_runner.GetMoveNextAction());
+         }
+ 
+         /// <summary>
+@@ -4780,12 +4770,7 @@
+                 OnityAsyncStateMachineRunner<TStateMachine, T>.Rent(ref stateMachine, ref m_runner);
+             }
+ 
+-            if (OnityTask.FlowExecutionContext)
+-            {
+-                m_runner.CaptureExecutionContext();
+-            }
+-
+-            awaiter.OnCompleted(m_runner.MoveNextAction);
++            awaiter.OnCompleted(m_runner.GetMoveNextAction());
+         }
+ 
+         /// <summary>
+@@ -4806,12 +4791,7 @@
+                 OnityAsyncStateMachineRunner<TStateMachine, T>.Rent(ref stateMachine, ref m_runner);
+             }
+ 
+-            if (OnityTask.FlowExecutionContext)
+-            {
+-                m_runner.CaptureExecutionContext();
+-            }
+-
+-            awaiter.UnsafeOnCompleted(m_runner.MoveNextAction);
++            awaiter.UnsafeOnCompleted(m_runner.GetMoveNextAction());
+         }
+ 
+         /// <summary>
+--- frozen/OnityAsyncStateMachineRunner.cs
++++ fused/OnityAsyncStateMachineRunner.cs
+@@ -13,7 +13,7 @@
+     /// </summary>
+     internal interface IOnityAsyncStateMachineRunner
+     {
+-        Action MoveNextAction { get; }
++        Action GetMoveNextAction();
+ 
+         OnityTask Task { get; }
+ 
+@@ -21,7 +21,6 @@
+ 
+         void SetException(Exception exception);
+ 
+-        void CaptureExecutionContext();
+     }
+ 
+     /// <summary>
+@@ -30,7 +29,7 @@
+     /// <typeparam name="T">Result type.</typeparam>
+     internal interface IOnityAsyncStateMachineRunner<T>
+     {
+-        Action MoveNextAction { get; }
++        Action GetMoveNextAction();
+ 
+         OnityTask<T> Task { get; }
+ 
+@@ -38,7 +37,6 @@
+ 
+         void SetException(Exception exception);
+ 
+-        void CaptureExecutionContext();
+     }
+ 
+     /// <summary>
+@@ -361,8 +359,6 @@
+ #endif
+         }
+ 
+-        public Action MoveNextAction => m_moveNext;
+-
+         public OnityTask Task => new OnityTask((IOnityTaskSource)this, Version);
+ 
+         public ref OnityAsyncStateMachineRunner<TStateMachine> NextPooled => ref m_nextPooled;
+@@ -409,9 +405,15 @@
+             }
+         }
+ 
+-        public void CaptureExecutionContext()
+-        {
+-            m_executionContext = OnityAsyncExecutionContext.Capture();
++        /// <summary>Captures context for this suspension when enabled and returns the cached continuation.</summary>
++        /// <returns>The runner's cached continuation.</returns>
++        public Action GetMoveNextAction()
++        {
++            if (OnityTask.FlowExecutionContext)
++            {
++                m_executionContext = OnityAsyncExecutionContext.Capture();
++            }
++            return m_moveNext;
+         }
+ 
+         protected override void ReleaseSource()
+@@ -538,8 +540,6 @@
+ #endif
+         }
+ 
+-        public Action MoveNextAction => m_moveNext;
+-
+         public OnityTask<T> Task => new OnityTask<T>((IOnityTaskSource<T>)this, Version);
+ 
+         public ref OnityAsyncStateMachineRunner<TStateMachine, T> NextPooled => ref m_nextPooled;
+@@ -584,9 +584,15 @@
+             }
+         }
+ 
+-        public void CaptureExecutionContext()
+-        {
+-            m_executionContext = OnityAsyncExecutionContext.Capture();
++        /// <summary>Captures context for this suspension when enabled and returns the cached continuation.</summary>
++        /// <returns>The runner's cached continuation.</returns>
++        public Action GetMoveNextAction()
++        {
++            if (OnityTask.FlowExecutionContext)
++            {
++                m_executionContext = OnityAsyncExecutionContext.Capture();
++            }
++            return m_moveNext;
+         }
+ 
+         protected override void ReleaseSource()

@@ -33,8 +33,7 @@ namespace Onity.Unity.Async
 
         internal static void Validate(OnityTask[] inputs, int count)
         {
-            HashSet<OnityWhenAnyInputIdentity> seen = count > 16
-                ? new HashSet<OnityWhenAnyInputIdentity>() : null;
+            HashSet<OnityWhenAnyInputIdentity> seen = null;
             for (int i = 0; i < count; i++)
             {
                 if (!inputs[i].TryGetWhenAnyIdentity(out OnityWhenAnyInputIdentity identity))
@@ -42,8 +41,13 @@ namespace Onity.Unity.Async
                     continue;
                 }
 
-                if (seen != null)
+                if (count > 16)
                 {
+                    if (seen == null)
+                    {
+                        seen = new HashSet<OnityWhenAnyInputIdentity>();
+                    }
+
                     if (!seen.Add(identity))
                     {
                         ThrowDuplicate();
@@ -65,8 +69,7 @@ namespace Onity.Unity.Async
 
         internal static void Validate<T>(OnityTask<T>[] inputs, int count)
         {
-            HashSet<OnityWhenAnyInputIdentity> seen = count > 16
-                ? new HashSet<OnityWhenAnyInputIdentity>() : null;
+            HashSet<OnityWhenAnyInputIdentity> seen = null;
             for (int i = 0; i < count; i++)
             {
                 if (!inputs[i].TryGetWhenAnyIdentity(out OnityWhenAnyInputIdentity identity))
@@ -74,8 +77,13 @@ namespace Onity.Unity.Async
                     continue;
                 }
 
-                if (seen != null)
+                if (count > 16)
                 {
+                    if (seen == null)
+                    {
+                        seen = new HashSet<OnityWhenAnyInputIdentity>();
+                    }
+
                     if (!seen.Add(identity))
                     {
                         ThrowDuplicate();
@@ -105,6 +113,8 @@ namespace Onity.Unity.Async
     {
         protected const int k_retainedInputs = 16;
         protected const int k_maxPoolSize = 256;
+        protected const int k_retainedMediumInputs = 32;
+        protected const int k_maxMediumPoolSize = 128;
         private readonly Action[] m_callbacks;
         private readonly bool[] m_accounted;
         private readonly bool[] m_observed;
@@ -138,7 +148,7 @@ namespace Onity.Unity.Async
             m_winner = 0;
             m_registrationPinned = true;
             m_outputReleased = false;
-            m_poolable = count <= k_retainedInputs;
+            m_poolable = count <= k_retainedMediumInputs;
             m_returned = false;
         }
 
@@ -284,12 +294,9 @@ namespace Onity.Unity.Async
         {
             lock (this)
             {
-                if (!m_outputReleased)
-                {
-                    m_outputReleased = true;
-                    InvalidateVersion();
-                }
-
+                // Every caller reached this through the compare-and-swap that claimed the release and
+                // retired the token version, so the output is already unreachable for stale values.
+                m_outputReleased = true;
                 ReturnIfReady();
             }
         }
@@ -318,23 +325,37 @@ namespace Onity.Unity.Async
         protected abstract void ReturnToPool();
     }
 
-    internal sealed class OnityWhenAnyArrayTaskSource : OnityWhenAnyArrayTaskSourceBase<int>
+    internal sealed class OnityWhenAnyArrayTaskSource :
+        OnityWhenAnyArrayTaskSourceBase<int>, IOnityPooledRunner<OnityWhenAnyArrayTaskSource>
     {
-        private static readonly Stack<OnityWhenAnyArrayTaskSource> s_pool = new Stack<OnityWhenAnyArrayTaskSource>(32);
+        private static OnityRunnerPool<OnityWhenAnyArrayTaskSource> s_pool;
+        private static OnityRunnerPool<OnityWhenAnyArrayTaskSource> s_mediumPool;
         private readonly OnityTask[] m_inputs;
+        private OnityWhenAnyArrayTaskSource m_nextPooled;
 
         private OnityWhenAnyArrayTaskSource(int capacity) : base(capacity)
         {
             m_inputs = new OnityTask[capacity];
         }
 
+        ref OnityWhenAnyArrayTaskSource IOnityPooledRunner<OnityWhenAnyArrayTaskSource>.NextPooled =>
+            ref m_nextPooled;
+
         internal static OnityWhenAnyArrayTaskSource Rent(OnityTask[] inputs)
         {
             OnityWhenAnyArrayTaskSource source;
-            lock (s_pool)
+            if (inputs.Length > k_retainedMediumInputs)
             {
-                source = inputs.Length <= k_retainedInputs && s_pool.Count > 0
-                    ? s_pool.Pop() : new OnityWhenAnyArrayTaskSource(Math.Max(k_retainedInputs, inputs.Length));
+                source = new OnityWhenAnyArrayTaskSource(inputs.Length);
+            }
+            else
+            {
+                // A contended rent allocates instead of waiting.
+                bool small = inputs.Length <= k_retainedInputs;
+                if (!(small ? s_pool.TryPop(out source) : s_mediumPool.TryPop(out source)))
+                {
+                    source = new OnityWhenAnyArrayTaskSource(small ? k_retainedInputs : k_retainedMediumInputs);
+                }
             }
 
             try
@@ -347,7 +368,7 @@ namespace Onity.Unity.Async
             catch
             {
                 source.ClearInputs(inputs.Length);
-                if (inputs.Length <= k_retainedInputs)
+                if (source.m_inputs.Length <= k_retainedMediumInputs)
                 {
                     source.ReturnToPool();
                 }
@@ -381,33 +402,56 @@ namespace Onity.Unity.Async
 
         protected override void ReturnToPool()
         {
-            lock (s_pool)
+            if (m_inputs.Length > k_retainedMediumInputs)
             {
-                if (s_pool.Count < k_maxPoolSize)
-                {
-                    s_pool.Push(this);
-                }
+                return;
+            }
+
+            // The active count was cleared before this call; immutable capacity identifies its bucket.
+            // A contended or full return lets the source be collected.
+            if (m_inputs.Length <= k_retainedInputs)
+            {
+                s_pool.TryPush(this, OnityTaskSettings.s_sourcePoolCapacity);
+            }
+            else
+            {
+                s_mediumPool.TryPush(this, k_maxMediumPoolSize);
             }
         }
     }
 
-    internal sealed class OnityWhenAnyArrayTaskSource<T> : OnityWhenAnyArrayTaskSourceBase<(int winnerIndex, T result)>
+    internal sealed class OnityWhenAnyArrayTaskSource<T> :
+        OnityWhenAnyArrayTaskSourceBase<(int winnerIndex, T result)>,
+        IOnityPooledRunner<OnityWhenAnyArrayTaskSource<T>>
     {
-        private static readonly Stack<OnityWhenAnyArrayTaskSource<T>> s_pool = new Stack<OnityWhenAnyArrayTaskSource<T>>(32);
+        private static OnityRunnerPool<OnityWhenAnyArrayTaskSource<T>> s_pool;
+        private static OnityRunnerPool<OnityWhenAnyArrayTaskSource<T>> s_mediumPool;
         private readonly OnityTask<T>[] m_inputs;
+        private OnityWhenAnyArrayTaskSource<T> m_nextPooled;
 
         private OnityWhenAnyArrayTaskSource(int capacity) : base(capacity)
         {
             m_inputs = new OnityTask<T>[capacity];
         }
 
+        ref OnityWhenAnyArrayTaskSource<T> IOnityPooledRunner<OnityWhenAnyArrayTaskSource<T>>.NextPooled =>
+            ref m_nextPooled;
+
         internal static OnityWhenAnyArrayTaskSource<T> Rent(OnityTask<T>[] inputs)
         {
             OnityWhenAnyArrayTaskSource<T> source;
-            lock (s_pool)
+            if (inputs.Length > k_retainedMediumInputs)
             {
-                source = inputs.Length <= k_retainedInputs && s_pool.Count > 0
-                    ? s_pool.Pop() : new OnityWhenAnyArrayTaskSource<T>(Math.Max(k_retainedInputs, inputs.Length));
+                source = new OnityWhenAnyArrayTaskSource<T>(inputs.Length);
+            }
+            else
+            {
+                // A contended rent allocates instead of waiting.
+                bool small = inputs.Length <= k_retainedInputs;
+                if (!(small ? s_pool.TryPop(out source) : s_mediumPool.TryPop(out source)))
+                {
+                    source = new OnityWhenAnyArrayTaskSource<T>(small ? k_retainedInputs : k_retainedMediumInputs);
+                }
             }
 
             try
@@ -419,7 +463,7 @@ namespace Onity.Unity.Async
             catch
             {
                 source.ClearInputs(inputs.Length);
-                if (inputs.Length <= k_retainedInputs)
+                if (source.m_inputs.Length <= k_retainedMediumInputs)
                 {
                     source.ReturnToPool();
                 }
@@ -455,12 +499,20 @@ namespace Onity.Unity.Async
 
         protected override void ReturnToPool()
         {
-            lock (s_pool)
+            if (m_inputs.Length > k_retainedMediumInputs)
             {
-                if (s_pool.Count < k_maxPoolSize)
-                {
-                    s_pool.Push(this);
-                }
+                return;
+            }
+
+            // The active count was cleared before this call; immutable capacity identifies its bucket.
+            // A contended or full return lets the source be collected.
+            if (m_inputs.Length <= k_retainedInputs)
+            {
+                s_pool.TryPush(this, OnityTaskSettings.s_sourcePoolCapacity);
+            }
+            else
+            {
+                s_mediumPool.TryPush(this, k_maxMediumPoolSize);
             }
         }
     }

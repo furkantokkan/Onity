@@ -1,0 +1,3429 @@
+{
+  "schemaVersion": 1,
+  "ratioMeaning": "Onity mean nanoseconds / UniTask mean nanoseconds; above 1 is slower",
+  "allocationMeaning": "Calibrated process-wide HeapDelta estimate; not exact allocated bytes",
+  "primary": [
+    {
+      "backend": "mono",
+      "scenario": "Completed GetResult",
+      "concurrency": 1,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 11.4563,
+          "uniTaskNs": 3.0354375000000005,
+          "ratio": 3.7741841167871186,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 11.2272,
+          "uniTaskNs": 3.1297750000000004,
+          "ratio": 3.5872227236782193,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 11.2830875,
+          "uniTaskNs": 3.0865750000000003,
+          "ratio": 3.655536476515231,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 11.44055,
+          "uniTaskNs": 3.0725625,
+          "ratio": 3.7234555847114583,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 11.4699625,
+          "uniTaskNs": 3.0997625,
+          "ratio": 3.700271391759852,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 11.163775,
+          "uniTaskNs": 3.340325,
+          "ratio": 3.342122398269629,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "FromResult<int> GetResult",
+      "concurrency": 1,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 17.6554,
+          "uniTaskNs": 7.761149999999999,
+          "ratio": 2.274843289976357,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 17.6547625,
+          "uniTaskNs": 7.747975,
+          "ratio": 2.2786292547407547,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 18.196225,
+          "uniTaskNs": 7.844624999999999,
+          "ratio": 2.3195786924167825,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 17.7365,
+          "uniTaskNs": 7.744974999999998,
+          "ratio": 2.290065494078419,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 18.0080125,
+          "uniTaskNs": 7.9519,
+          "ratio": 2.2646175756737383,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 18.335237499999995,
+          "uniTaskNs": 7.7305375,
+          "ratio": 2.371793358482511,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "NextFrame scheduling",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 127.39257812499999,
+          "uniTaskNs": 128.79028320312497,
+          "ratio": 0.9891474337709114,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 121.77734374999997,
+          "uniTaskNs": 116.2689208984375,
+          "ratio": 1.047376571563558,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 128.436279296875,
+          "uniTaskNs": 127.655029296875,
+          "ratio": 1.006120009562515,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 113.1927490234375,
+          "uniTaskNs": 119.9493408203125,
+          "ratio": 0.9436712886401222,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 113.9404296875,
+          "uniTaskNs": 124.38964843749999,
+          "ratio": 0.9159960745829245,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 115.4541015625,
+          "uniTaskNs": 122.650146484375,
+          "ratio": 0.9413286887285395,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "NextFrame GetResult",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 45.709228515625,
+          "uniTaskNs": 30.3253173828125,
+          "ratio": 1.507295964576834,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 42.6727294921875,
+          "uniTaskNs": 30.114746093750004,
+          "ratio": 1.417004458856911,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 49.01123046874999,
+          "uniTaskNs": 30.2764892578125,
+          "ratio": 1.6187884285858278,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 34.912109375,
+          "uniTaskNs": 30.523681640625,
+          "ratio": 1.1437712457508498,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 36.14196777343751,
+          "uniTaskNs": 30.450439453125,
+          "ratio": 1.1869112046502308,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 37.3443603515625,
+          "uniTaskNs": 30.82275390625,
+          "ratio": 1.2115841584158416,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "NextFrame scheduling",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 147.50432968139648,
+          "uniTaskNs": 129.38947677612305,
+          "ratio": 1.1400025207352587,
+          "onityHeapBytes": 105.625,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 139.6026611328125,
+          "uniTaskNs": 117.53931045532225,
+          "ratio": 1.1877103974153118,
+          "onityHeapBytes": 105.86328125,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 145.95727920532227,
+          "uniTaskNs": 126.25026702880858,
+          "ratio": 1.1560948157996118,
+          "onityHeapBytes": 105.8984375,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 135.76135635375977,
+          "uniTaskNs": 126.18255615234376,
+          "ratio": 1.0759122377410968,
+          "onityHeapBytes": 119.03125,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 140.5679702758789,
+          "uniTaskNs": 139.81761932373047,
+          "ratio": 1.0053666408838724,
+          "onityHeapBytes": 119.23828125,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 131.73599243164062,
+          "uniTaskNs": 124.17306900024415,
+          "ratio": 1.0609063099775813,
+          "onityHeapBytes": 119.265625,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "NextFrame GetResult",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 35.12601852416992,
+          "uniTaskNs": 30.816555023193356,
+          "ratio": 1.1398424806969225,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 32.32250213623046,
+          "uniTaskNs": 28.795623779296875,
+          "ratio": 1.1224796651034628,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 35.15338897705078,
+          "uniTaskNs": 30.610084533691406,
+          "ratio": 1.1484250864566783,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 23.341369628906246,
+          "uniTaskNs": 30.380153656005863,
+          "ratio": 0.7683097950458155,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 25.11358261108398,
+          "uniTaskNs": 33.13064575195312,
+          "ratio": 0.7580166954519286,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 22.081375122070312,
+          "uniTaskNs": 30.242252349853516,
+          "ratio": 0.7301498204110207,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method completed GetResult",
+      "concurrency": 1,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 42.3057375,
+          "uniTaskNs": 16.3845875,
+          "ratio": 2.582044711226328,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 42.749700000000004,
+          "uniTaskNs": 18.0980625,
+          "ratio": 2.3621147291319167,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 42.60605,
+          "uniTaskNs": 17.0461375,
+          "ratio": 2.499454788511474,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 31.6684625,
+          "uniTaskNs": 16.457387500000003,
+          "ratio": 1.9242703314848724,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 33.2669,
+          "uniTaskNs": 17.75235,
+          "ratio": 1.8739434497404568,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 30.919825,
+          "uniTaskNs": 16.1543125,
+          "ratio": 1.9140291485632706,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method completed<int> GetResult",
+      "concurrency": 1,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 46.6520875,
+          "uniTaskNs": 21.2944125,
+          "ratio": 2.1908135526162087,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 45.892962499999996,
+          "uniTaskNs": 20.7459125,
+          "ratio": 2.2121448020182286,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 49.544675000000005,
+          "uniTaskNs": 22.915375,
+          "ratio": 2.162071316746944,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 37.6156375,
+          "uniTaskNs": 22.248375,
+          "ratio": 1.6907139285453432,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 42.270625,
+          "uniTaskNs": 24.154625000000003,
+          "ratio": 1.7500012937480915,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 36.2898125,
+          "uniTaskNs": 23.5764375,
+          "ratio": 1.5392407143784974,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame scheduling",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 309.942626953125,
+          "uniTaskNs": 226.708984375,
+          "ratio": 1.36713870342451,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 285.4400634765625,
+          "uniTaskNs": 223.1781005859375,
+          "ratio": 1.278978818831959,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 296.2127685546875,
+          "uniTaskNs": 229.840087890625,
+          "ratio": 1.2887776509015587,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 350.00915527343756,
+          "uniTaskNs": 297.4212646484375,
+          "ratio": 1.1768128135934086,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 291.22924804687506,
+          "uniTaskNs": 237.8631591796875,
+          "ratio": 1.2243562603440978,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 306.158447265625,
+          "uniTaskNs": 248.8433837890625,
+          "ratio": 1.2303258483462307,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame GetResult",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 38.5894775390625,
+          "uniTaskNs": 26.400756835937496,
+          "ratio": 1.4616807305513815,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 37.3016357421875,
+          "uniTaskNs": 26.422119140624996,
+          "ratio": 1.411757911757912,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 38.37890624999999,
+          "uniTaskNs": 26.947021484375,
+          "ratio": 1.4242355605889012,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 43.49365234374999,
+          "uniTaskNs": 30.28564453125,
+          "ratio": 1.4361144699717854,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 39.7705078125,
+          "uniTaskNs": 27.3284912109375,
+          "ratio": 1.4552763819095478,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 43.8323974609375,
+          "uniTaskNs": 29.522705078125004,
+          "ratio": 1.4847012611122594,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame scheduling",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 401.6184806823731,
+          "uniTaskNs": 243.33152770996097,
+          "ratio": 1.6504991542283098,
+          "onityHeapBytes": 400.734375,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 370.30105590820307,
+          "uniTaskNs": 222.2781181335449,
+          "ratio": 1.6659357161091577,
+          "onityHeapBytes": 401.0078125,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 414.0704154968262,
+          "uniTaskNs": 251.08261108398438,
+          "ratio": 1.6491401523553704,
+          "onityHeapBytes": 401.2421875,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 375.57935714721674,
+          "uniTaskNs": 248.02227020263666,
+          "ratio": 1.5142969090653218,
+          "onityHeapBytes": 411.0546875,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 402.0146369934082,
+          "uniTaskNs": 254.31337356567383,
+          "ratio": 1.5807844918135696,
+          "onityHeapBytes": 411.13671875,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 369.90652084350586,
+          "uniTaskNs": 234.70382690429688,
+          "ratio": 1.5760566230321391,
+          "onityHeapBytes": 411.171875,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame GetResult",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 26.045894622802734,
+          "uniTaskNs": 27.212238311767575,
+          "ratio": 0.9571390021062519,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 23.439407348632812,
+          "uniTaskNs": 25.52013397216797,
+          "ratio": 0.9184672531184837,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 27.373027801513675,
+          "uniTaskNs": 28.902435302734375,
+          "ratio": 0.9470837842831878,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 29.537487030029297,
+          "uniTaskNs": 27.349853515625,
+          "ratio": 1.0799870285650524,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 32.897090911865234,
+          "uniTaskNs": 27.73160934448242,
+          "ratio": 1.1862669238996242,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 26.475048065185547,
+          "uniTaskNs": 26.65433883666992,
+          "ratio": 0.9932734864450019,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame<int> scheduling",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 308.8287353515625,
+          "uniTaskNs": 214.99023437499997,
+          "ratio": 1.436477969566205,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 276.123046875,
+          "uniTaskNs": 209.53369140625003,
+          "ratio": 1.3177978444509173,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 297.02453613281244,
+          "uniTaskNs": 220.4010009765625,
+          "ratio": 1.3476551141634703,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 297.198486328125,
+          "uniTaskNs": 235.9283447265625,
+          "ratio": 1.2596980946590952,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 264.9169921875,
+          "uniTaskNs": 210.284423828125,
+          "ratio": 1.259803210170377,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 266.79382324218756,
+          "uniTaskNs": 213.287353515625,
+          "ratio": 1.250865646015167,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame<int> GetResult",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 37.1246337890625,
+          "uniTaskNs": 27.5543212890625,
+          "ratio": 1.3473252851921587,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 37.52136230468751,
+          "uniTaskNs": 27.0050048828125,
+          "ratio": 1.3894225336196182,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 38.5772705078125,
+          "uniTaskNs": 29.357910156249996,
+          "ratio": 1.3140332640332641,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 41.851806640625,
+          "uniTaskNs": 32.000732421875,
+          "ratio": 1.3078390234598511,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 37.25280761718751,
+          "uniTaskNs": 26.901245117187504,
+          "ratio": 1.3847986386840614,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 38.14697265624999,
+          "uniTaskNs": 27.117919921875,
+          "ratio": 1.4067071798334456,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame<int> scheduling",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 403.7981986999512,
+          "uniTaskNs": 225.63323974609375,
+          "ratio": 1.7896219508896267,
+          "onityHeapBytes": 414.69921875,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 359.9167823791504,
+          "uniTaskNs": 208.98723602294922,
+          "ratio": 1.722195045153989,
+          "onityHeapBytes": 414.890625,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 385.8648300170898,
+          "uniTaskNs": 225.48017501831058,
+          "ratio": 1.7113026898518011,
+          "onityHeapBytes": 414.328125,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 373.35586547851557,
+          "uniTaskNs": 233.1674575805664,
+          "ratio": 1.6012348779396448,
+          "onityHeapBytes": 414.83203125,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 369.9640274047851,
+          "uniTaskNs": 227.9179573059082,
+          "ratio": 1.6232333414090085,
+          "onityHeapBytes": 415.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 355.130672454834,
+          "uniTaskNs": 216.68806076049805,
+          "ratio": 1.6389028136042734,
+          "onityHeapBytes": 414.7109375,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame<int> GetResult",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 26.606750488281246,
+          "uniTaskNs": 28.161048889160153,
+          "ratio": 0.944806800094822,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 25.33206939697266,
+          "uniTaskNs": 28.306388854980465,
+          "ratio": 0.8949240938769737,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 27.820777893066406,
+          "uniTaskNs": 27.839183807373043,
+          "ratio": 0.9993388486374459,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 28.734111785888675,
+          "uniTaskNs": 28.8818359375,
+          "ratio": 0.9948852229501269,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 31.852149963378906,
+          "uniTaskNs": 30.154418945312504,
+          "ratio": 1.0563012346928446,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 27.64930725097656,
+          "uniTaskNs": 28.9128303527832,
+          "ratio": 0.9562988788579457,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame scheduling (flow off)",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 315.6036376953125,
+          "uniTaskNs": 273.33984375000006,
+          "ratio": 1.1546199535548407,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 242.64221191406253,
+          "uniTaskNs": 223.18115234375,
+          "ratio": 1.087198490400919,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 253.5614013671875,
+          "uniTaskNs": 235.552978515625,
+          "ratio": 1.0764516881299717,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 243.2159423828125,
+          "uniTaskNs": 253.66516113281247,
+          "ratio": 0.9588070403387833,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 259.92431640624994,
+          "uniTaskNs": 233.33740234374997,
+          "ratio": 1.113941930421135,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 236.3037109375,
+          "uniTaskNs": 228.1524658203125,
+          "ratio": 1.0357271839595512,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame GetResult (flow off)",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 45.67260742187501,
+          "uniTaskNs": 31.582641601562496,
+          "ratio": 1.4461300608754473,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 37.5518798828125,
+          "uniTaskNs": 25.277709960937496,
+          "ratio": 1.4855728600748523,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 43.8262939453125,
+          "uniTaskNs": 26.81884765625,
+          "ratio": 1.634160218479745,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 37.36572265625,
+          "uniTaskNs": 28.912353515625004,
+          "ratio": 1.2923791429174583,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 39.4317626953125,
+          "uniTaskNs": 25.854492187500004,
+          "ratio": 1.52514164305949,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 39.7552490234375,
+          "uniTaskNs": 26.724243164062496,
+          "ratio": 1.4876099120703439,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame scheduling (flow off)",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 342.4336433410645,
+          "uniTaskNs": 233.93783569335938,
+          "ratio": 1.4637805053044908,
+          "onityHeapBytes": 397.52734375,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 330.70106506347656,
+          "uniTaskNs": 226.79195404052734,
+          "ratio": 1.4581693008579169,
+          "onityHeapBytes": 397.65625,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 342.42706298828125,
+          "uniTaskNs": 236.38153076171875,
+          "ratio": 1.4486202110834974,
+          "onityHeapBytes": 397.22265625,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 333.05606842041016,
+          "uniTaskNs": 250.99420547485354,
+          "ratio": 1.326947240834921,
+          "onityHeapBytes": 398.69140625,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 365.7488822937012,
+          "uniTaskNs": 264.0077590942383,
+          "ratio": 1.385371716151517,
+          "onityHeapBytes": 398.1796875,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 318.43252182006836,
+          "uniTaskNs": 232.07130432128903,
+          "ratio": 1.3721322537112013,
+          "onityHeapBytes": 398.0625,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame GetResult (flow off)",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 25.159358978271484,
+          "uniTaskNs": 26.46017074584961,
+          "ratio": 0.9508388747724856,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 24.280071258544922,
+          "uniTaskNs": 25.92926025390625,
+          "ratio": 0.9363966044841994,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 26.034545898437504,
+          "uniTaskNs": 27.01129913330078,
+          "ratio": 0.9638390871152476,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 28.842639923095707,
+          "uniTaskNs": 27.474498748779297,
+          "ratio": 1.0497967656053124,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 31.46715164184571,
+          "uniTaskNs": 30.080795288085934,
+          "ratio": 1.046087756007863,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 26.27801895141602,
+          "uniTaskNs": 26.79615020751953,
+          "ratio": 0.9806639665738957,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame<int> scheduling (flow off)",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 256.1798095703125,
+          "uniTaskNs": 221.06628417968747,
+          "ratio": 1.1588370905175391,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 234.5733642578125,
+          "uniTaskNs": 209.2529296875,
+          "ratio": 1.12100396686501,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 245.440673828125,
+          "uniTaskNs": 216.680908203125,
+          "ratio": 1.13272865553083,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 247.58911132812503,
+          "uniTaskNs": 237.542724609375,
+          "ratio": 1.0422929674452068,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 244.00329589843753,
+          "uniTaskNs": 224.74365234375003,
+          "ratio": 1.085696051273695,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 225.6500244140625,
+          "uniTaskNs": 215.777587890625,
+          "ratio": 1.0457528356857975,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame<int> GetResult (flow off)",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 37.255859375,
+          "uniTaskNs": 28.192138671875,
+          "ratio": 1.321498159774843,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 37.835693359375,
+          "uniTaskNs": 26.800537109375,
+          "ratio": 1.4117513094966978,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 36.70654296874999,
+          "uniTaskNs": 28.408813476562504,
+          "ratio": 1.2920829304973678,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 41.7236328125,
+          "uniTaskNs": 30.172729492187504,
+          "ratio": 1.38282593304339,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 39.739990234375,
+          "uniTaskNs": 28.8238525390625,
+          "ratio": 1.3787188988883008,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 39.0838623046875,
+          "uniTaskNs": 27.346801757812496,
+          "ratio": 1.4291931704050889,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame<int> scheduling (flow off)",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 346.1441993713379,
+          "uniTaskNs": 223.77538681030273,
+          "ratio": 1.546837676409733,
+          "onityHeapBytes": 413.79296875,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 317.4404144287109,
+          "uniTaskNs": 215.59820175170896,
+          "ratio": 1.4723704179791224,
+          "onityHeapBytes": 413.546875,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 335.7473373413086,
+          "uniTaskNs": 224.81298446655273,
+          "ratio": 1.4934517156025766,
+          "onityHeapBytes": 413.30078125,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 353.3503532409668,
+          "uniTaskNs": 245.94230651855472,
+          "ratio": 1.4367204985707038,
+          "onityHeapBytes": 415.85546875,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 337.237548828125,
+          "uniTaskNs": 237.4039649963379,
+          "ratio": 1.4205219733096164,
+          "onityHeapBytes": 414.5625,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 308.60013961791987,
+          "uniTaskNs": 219.47050094604492,
+          "ratio": 1.4061121576142332,
+          "onityHeapBytes": 415.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "scenario": "Async method NextFrame<int> GetResult (flow off)",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-mono.json",
+          "onityNs": 27.692127227783207,
+          "uniTaskNs": 27.88896560668945,
+          "ratio": 0.9929420695739598,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-repeat.json",
+          "onityNs": 25.826454162597656,
+          "uniTaskNs": 28.000831604003906,
+          "ratio": 0.9223459691427404,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-mono-control.json",
+          "onityNs": 27.56490707397461,
+          "uniTaskNs": 28.74593734741211,
+          "ratio": 0.958914880417221,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono.json",
+          "onityNs": 32.227516174316406,
+          "uniTaskNs": 31.876277923583984,
+          "ratio": 1.011018797476118,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-repeat.json",
+          "onityNs": 33.08897018432617,
+          "uniTaskNs": 30.956363677978512,
+          "ratio": 1.0688907304660185,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-mono-control.json",
+          "onityNs": 27.31304168701171,
+          "uniTaskNs": 28.12089920043945,
+          "ratio": 0.9712719885779786,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Completed GetResult",
+      "concurrency": 1,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 4.3288375,
+          "uniTaskNs": 5.511862499999999,
+          "ratio": 0.7853674688002468,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 4.25985,
+          "uniTaskNs": 5.4371624999999995,
+          "ratio": 0.783469318785304,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 4.264675,
+          "uniTaskNs": 5.5507124999999995,
+          "ratio": 0.7683112753542902,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 4.0650625,
+          "uniTaskNs": 5.1878625,
+          "ratio": 0.7835717504078028,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 6.0988875,
+          "uniTaskNs": 7.6941875,
+          "ratio": 0.792661668304808,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 4.112825,
+          "uniTaskNs": 5.2620625,
+          "ratio": 0.7815994203793665,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "FromResult<int> GetResult",
+      "concurrency": 1,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 6.987225,
+          "uniTaskNs": 10.271175,
+          "ratio": 0.680275138920328,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 6.81545,
+          "uniTaskNs": 10.134825,
+          "ratio": 0.6724783111696552,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 7.103312500000001,
+          "uniTaskNs": 11.8975125,
+          "ratio": 0.597041818615446,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 6.862474999999999,
+          "uniTaskNs": 11.7129,
+          "ratio": 0.5858903431259551,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 10.5246875,
+          "uniTaskNs": 13.501025,
+          "ratio": 0.7795472936314095,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 6.7577875,
+          "uniTaskNs": 10.7407375,
+          "ratio": 0.6291735088023518,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "NextFrame scheduling",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 111.29455566406251,
+          "uniTaskNs": 147.894287109375,
+          "ratio": 0.7525277537039331,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 119.72351074218751,
+          "uniTaskNs": 137.567138671875,
+          "ratio": 0.8702914947424465,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 109.01184082031251,
+          "uniTaskNs": 141.40319824218753,
+          "ratio": 0.7709291032696665,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 85.74829101562499,
+          "uniTaskNs": 126.28173828125,
+          "ratio": 0.6790236829386176,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 129.876708984375,
+          "uniTaskNs": 204.50744628906247,
+          "ratio": 0.6350708071568204,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 89.447021484375,
+          "uniTaskNs": 134.21630859375,
+          "ratio": 0.6664392905866303,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "NextFrame GetResult",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 70.3277587890625,
+          "uniTaskNs": 31.365966796875,
+          "ratio": 2.2421677369137964,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 77.11791992187499,
+          "uniTaskNs": 35.00366210937501,
+          "ratio": 2.2031386224934604,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 68.865966796875,
+          "uniTaskNs": 30.722045898437496,
+          "ratio": 2.2415814045892524,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 42.1142578125,
+          "uniTaskNs": 32.0556640625,
+          "ratio": 1.3137852246763138,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 69.9493408203125,
+          "uniTaskNs": 51.5411376953125,
+          "ratio": 1.357155545029309,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 44.4580078125,
+          "uniTaskNs": 31.8695068359375,
+          "ratio": 1.3950014363688594,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "NextFrame scheduling",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 122.54467010498047,
+          "uniTaskNs": 138.01517486572263,
+          "ratio": 0.8879072190736006,
+          "onityHeapBytes": 118.36328125,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 122.42193222045897,
+          "uniTaskNs": 121.0948944091797,
+          "ratio": 1.0109586602949188,
+          "onityHeapBytes": 118.7265625,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 123.82030487060545,
+          "uniTaskNs": 135.1723670959473,
+          "ratio": 0.9160178779936288,
+          "onityHeapBytes": 118.7265625,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 106.01520538330078,
+          "uniTaskNs": 131.42099380493164,
+          "ratio": 0.8066839422981331,
+          "onityHeapBytes": 136.1640625,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 162.41388320922852,
+          "uniTaskNs": 202.5463104248047,
+          "ratio": 0.801860487453928,
+          "onityHeapBytes": 136.1640625,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 102.84605026245117,
+          "uniTaskNs": 129.39720153808594,
+          "ratio": 0.7948089219856902,
+          "onityHeapBytes": 136.16796875,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "NextFrame GetResult",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 66.34950637817383,
+          "uniTaskNs": 29.207229614257816,
+          "ratio": 2.271680924704499,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 65.2280807495117,
+          "uniTaskNs": 28.214645385742184,
+          "ratio": 2.3118518718818866,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 65.44857025146484,
+          "uniTaskNs": 28.684139251708984,
+          "ratio": 2.28169894439365,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 39.347267150878906,
+          "uniTaskNs": 30.144023895263675,
+          "ratio": 1.3053090485726848,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 62.68644332885742,
+          "uniTaskNs": 51.32083892822265,
+          "ratio": 1.2214617811788056,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 37.62693405151367,
+          "uniTaskNs": 30.435466766357422,
+          "ratio": 1.2362857563632148,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method completed GetResult",
+      "concurrency": 1,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 16.9816625,
+          "uniTaskNs": 17.79,
+          "ratio": 0.9545622540753232,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 17.233862499999997,
+          "uniTaskNs": 16.771,
+          "ratio": 1.0275989803828034,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 18.695625,
+          "uniTaskNs": 17.10275,
+          "ratio": 1.093135606846852,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 18.6135,
+          "uniTaskNs": 15.8998875,
+          "ratio": 1.1706686603914649,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 23.405812499999996,
+          "uniTaskNs": 22.208237500000003,
+          "ratio": 1.0539248105573435,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 17.129475,
+          "uniTaskNs": 16.4503875,
+          "ratio": 1.0412809424702,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method completed<int> GetResult",
+      "concurrency": 1,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 26.8355125,
+          "uniTaskNs": 21.1151125,
+          "ratio": 1.2709149667092705,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 26.249674999999996,
+          "uniTaskNs": 21.084,
+          "ratio": 1.2450045057863781,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 24.857575,
+          "uniTaskNs": 20.808799999999998,
+          "ratio": 1.1945703260159164,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 25.1854,
+          "uniTaskNs": 22.752399999999998,
+          "ratio": 1.1069337740194443,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 30.5735375,
+          "uniTaskNs": 29.074012500000002,
+          "ratio": 1.0515761283379788,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 26.695674999999998,
+          "uniTaskNs": 24.334725,
+          "ratio": 1.097019793730975,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame scheduling",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 303.948974609375,
+          "uniTaskNs": 189.0167236328125,
+          "ratio": 1.6080533445275038,
+          "onityHeapBytes": 241.5,
+          "uniTaskHeapBytes": 1.5
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 301.8951416015625,
+          "uniTaskNs": 189.105224609375,
+          "ratio": 1.5964399832166027,
+          "onityHeapBytes": 241.375,
+          "uniTaskHeapBytes": 1.5
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 298.4649658203125,
+          "uniTaskNs": 186.4776611328125,
+          "ratio": 1.6005400540054004,
+          "onityHeapBytes": 241.5,
+          "uniTaskHeapBytes": 1.5
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 336.981201171875,
+          "uniTaskNs": 213.11950683593747,
+          "ratio": 1.581184219947018,
+          "onityHeapBytes": 242.0,
+          "uniTaskHeapBytes": 1.625
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 488.4185791015625,
+          "uniTaskNs": 304.669189453125,
+          "ratio": 1.603111164533125,
+          "onityHeapBytes": 241.25,
+          "uniTaskHeapBytes": 1.625
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 318.341064453125,
+          "uniTaskNs": 197.4151611328125,
+          "ratio": 1.6125461825039806,
+          "onityHeapBytes": 242.125,
+          "uniTaskHeapBytes": 1.625
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame GetResult",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 78.63769531250001,
+          "uniTaskNs": 71.62170410156249,
+          "ratio": 1.097959009757553,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 78.363037109375,
+          "uniTaskNs": 70.135498046875,
+          "ratio": 1.1173091985031764,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 78.19824218750001,
+          "uniTaskNs": 70.08056640625,
+          "ratio": 1.1158334784880686,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 87.1063232421875,
+          "uniTaskNs": 75.88500976562499,
+          "ratio": 1.1478725971205666,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 114.263916015625,
+          "uniTaskNs": 94.92187500000001,
+          "ratio": 1.203768004115226,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 82.0220947265625,
+          "uniTaskNs": 74.0325927734375,
+          "ratio": 1.1079187105816397,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame scheduling",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 395.18585205078125,
+          "uniTaskNs": 202.61869430541992,
+          "ratio": 1.9503918599687189,
+          "onityHeapBytes": 617.60546875,
+          "uniTaskHeapBytes": 1.640625
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 370.1995849609375,
+          "uniTaskNs": 190.21081924438477,
+          "ratio": 1.946259347557414,
+          "onityHeapBytes": 618.07421875,
+          "uniTaskHeapBytes": 1.64453125
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 393.6649322509765,
+          "uniTaskNs": 196.2449073791504,
+          "ratio": 2.005988015222252,
+          "onityHeapBytes": 617.5390625,
+          "uniTaskHeapBytes": 1.640625
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 405.9711456298828,
+          "uniTaskNs": 207.84387588500977,
+          "ratio": 1.953250457350437,
+          "onityHeapBytes": 522.20703125,
+          "uniTaskHeapBytes": 1.640625
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 516.6919708251953,
+          "uniTaskNs": 271.6628074645996,
+          "ratio": 1.9019606535301137,
+          "onityHeapBytes": 528.16796875,
+          "uniTaskHeapBytes": 1.640625
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 385.4944229125977,
+          "uniTaskNs": 199.75681304931638,
+          "ratio": 1.9298186481250381,
+          "onityHeapBytes": 524.53515625,
+          "uniTaskHeapBytes": 1.64453125
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame GetResult",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 83.50601196289062,
+          "uniTaskNs": 71.98972702026367,
+          "ratio": 1.1599712267194089,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 79.8497200012207,
+          "uniTaskNs": 69.56300735473633,
+          "ratio": 1.1478761922127276,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 84.18359756469727,
+          "uniTaskNs": 70.30200958251955,
+          "ratio": 1.1974564890052495,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 93.82438659667969,
+          "uniTaskNs": 72.5727081298828,
+          "ratio": 1.2928329259638889,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 114.26248550415039,
+          "uniTaskNs": 83.50639343261719,
+          "ratio": 1.3683082313493857,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 86.1410140991211,
+          "uniTaskNs": 70.85275650024413,
+          "ratio": 1.2157750573730224,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame<int> scheduling",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 310.888671875,
+          "uniTaskNs": 197.00927734375,
+          "ratio": 1.5780407708036432,
+          "onityHeapBytes": 245.0,
+          "uniTaskHeapBytes": 1.375
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 304.541015625,
+          "uniTaskNs": 194.02465820312497,
+          "ratio": 1.5695995470131179,
+          "onityHeapBytes": 246.0,
+          "uniTaskHeapBytes": 1.125
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 337.56408691406256,
+          "uniTaskNs": 213.5162353515625,
+          "ratio": 1.580976202386908,
+          "onityHeapBytes": 246.0,
+          "uniTaskHeapBytes": 1.5
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 316.3421630859375,
+          "uniTaskNs": 197.2900390625,
+          "ratio": 1.6034370746194777,
+          "onityHeapBytes": 103.5,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 407.47070312499994,
+          "uniTaskNs": 249.63684082031247,
+          "ratio": 1.6322538844268406,
+          "onityHeapBytes": 103.5,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 312.8082275390625,
+          "uniTaskNs": 198.5015869140625,
+          "ratio": 1.5758474901990929,
+          "onityHeapBytes": 103.5,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame<int> GetResult",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 92.2576904296875,
+          "uniTaskNs": 74.9755859375,
+          "ratio": 1.2305030934549006,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 95.098876953125,
+          "uniTaskNs": 72.1466064453125,
+          "ratio": 1.3181337506873652,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 96.67968749999999,
+          "uniTaskNs": 75.7476806640625,
+          "ratio": 1.2763385842633252,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 98.83117675781249,
+          "uniTaskNs": 75.06103515625,
+          "ratio": 1.3166775085379734,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 112.78076171875,
+          "uniTaskNs": 84.9090576171875,
+          "ratio": 1.3282536031340977,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 93.597412109375,
+          "uniTaskNs": 73.42224121093751,
+          "ratio": 1.2747828255538465,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame<int> scheduling",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 405.84936141967773,
+          "uniTaskNs": 223.25553894042966,
+          "ratio": 1.8178691706635275,
+          "onityHeapBytes": 617.15625,
+          "uniTaskHeapBytes": 1.71484375
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 398.28863143920904,
+          "uniTaskNs": 222.00374603271484,
+          "ratio": 1.7940626613594013,
+          "onityHeapBytes": 617.5234375,
+          "uniTaskHeapBytes": 1.71484375
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 427.9989242553711,
+          "uniTaskNs": 239.4465446472168,
+          "ratio": 1.7874508270142453,
+          "onityHeapBytes": 616.578125,
+          "uniTaskHeapBytes": 1.71484375
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 421.26169204711914,
+          "uniTaskNs": 260.2262496948242,
+          "ratio": 1.6188285868206855,
+          "onityHeapBytes": 536.98046875,
+          "uniTaskHeapBytes": 1.7109375
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 518.7482833862305,
+          "uniTaskNs": 327.0534515380859,
+          "ratio": 1.5861269188465403,
+          "onityHeapBytes": 537.01953125,
+          "uniTaskHeapBytes": 1.71484375
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 411.596393585205,
+          "uniTaskNs": 245.5164909362793,
+          "ratio": 1.6764511093148105,
+          "onityHeapBytes": 542.765625,
+          "uniTaskHeapBytes": 1.7109375
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame<int> GetResult",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 95.9080696105957,
+          "uniTaskNs": 76.21879577636719,
+          "ratio": 1.258325700815303,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 95.32241821289064,
+          "uniTaskNs": 72.89676666259767,
+          "ratio": 1.3076357508981158,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 98.54803085327147,
+          "uniTaskNs": 76.8157958984375,
+          "ratio": 1.2829136208334986,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 106.69822692871094,
+          "uniTaskNs": 85.4402542114258,
+          "ratio": 1.2488051201800188,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 129.41160202026367,
+          "uniTaskNs": 92.55781173706055,
+          "ratio": 1.398170501133906,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 104.22582626342772,
+          "uniTaskNs": 77.74324417114258,
+          "ratio": 1.3406415872482356,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame scheduling (flow off)",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 293.93005371093744,
+          "uniTaskNs": 199.4293212890625,
+          "ratio": 1.47385575907818,
+          "onityHeapBytes": 242.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 285.3668212890625,
+          "uniTaskNs": 187.61596679687497,
+          "ratio": 1.5210156478740364,
+          "onityHeapBytes": 244.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 302.82592773437494,
+          "uniTaskNs": 215.88439941406253,
+          "ratio": 1.402722607822903,
+          "onityHeapBytes": 244.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 300.732421875,
+          "uniTaskNs": 198.03466796874997,
+          "ratio": 1.5185847253898788,
+          "onityHeapBytes": 104.5,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 363.226318359375,
+          "uniTaskNs": 232.35168457031253,
+          "ratio": 1.5632609637889592,
+          "onityHeapBytes": 103.5,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 274.93896484375,
+          "uniTaskNs": 191.0491943359375,
+          "ratio": 1.4391003626024312,
+          "onityHeapBytes": 104.5,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame GetResult (flow off)",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 82.1533203125,
+          "uniTaskNs": 74.4964599609375,
+          "ratio": 1.1027815329154889,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 79.2724609375,
+          "uniTaskNs": 72.0550537109375,
+          "ratio": 1.1001651772478929,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 81.622314453125,
+          "uniTaskNs": 74.737548828125,
+          "ratio": 1.0921192323397304,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 84.57031250000001,
+          "uniTaskNs": 73.0926513671875,
+          "ratio": 1.157028934073734,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 94.98901367187499,
+          "uniTaskNs": 81.2103271484375,
+          "ratio": 1.1696666791928148,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 79.87670898437501,
+          "uniTaskNs": 72.216796875,
+          "ratio": 1.1060682893847196,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame scheduling (flow off)",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 368.22099685668945,
+          "uniTaskNs": 202.70061492919925,
+          "ratio": 1.8165756279787526,
+          "onityHeapBytes": 616.53125,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 343.4770584106446,
+          "uniTaskNs": 188.87052536010745,
+          "ratio": 1.8185847567044073,
+          "onityHeapBytes": 617.29296875,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 389.4814491271973,
+          "uniTaskNs": 216.10755920410153,
+          "ratio": 1.8022574062731134,
+          "onityHeapBytes": 616.89453125,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 359.0888023376465,
+          "uniTaskNs": 200.15954971313477,
+          "ratio": 1.7940128405179088,
+          "onityHeapBytes": 551.9296875,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 448.91023635864263,
+          "uniTaskNs": 252.57635116577146,
+          "ratio": 1.7773248931924466,
+          "onityHeapBytes": 543.921875,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 354.5328140258789,
+          "uniTaskNs": 197.90372848510745,
+          "ratio": 1.7914408017459764,
+          "onityHeapBytes": 548.84765625,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame GetResult (flow off)",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 84.78116989135741,
+          "uniTaskNs": 71.77801132202148,
+          "ratio": 1.1811579664836236,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 80.60827255249023,
+          "uniTaskNs": 70.263671875,
+          "ratio": 1.1472254495309242,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 91.86429977416992,
+          "uniTaskNs": 72.97267913818361,
+          "ratio": 1.2588862141160047,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 88.88406753540039,
+          "uniTaskNs": 71.32940292358398,
+          "ratio": 1.2461069894363608,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 102.96621322631836,
+          "uniTaskNs": 80.89742660522461,
+          "ratio": 1.2727996123880223,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 80.46369552612305,
+          "uniTaskNs": 71.29230499267578,
+          "ratio": 1.1286448871920958,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame<int> scheduling (flow off)",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 299.3255615234375,
+          "uniTaskNs": 208.3648681640625,
+          "ratio": 1.436545249498367,
+          "onityHeapBytes": 244.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 280.18798828125,
+          "uniTaskNs": 201.3458251953125,
+          "ratio": 1.391575852190915,
+          "onityHeapBytes": 244.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 301.27258300781256,
+          "uniTaskNs": 206.4849853515625,
+          "ratio": 1.459053221205717,
+          "onityHeapBytes": 244.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 286.1907958984375,
+          "uniTaskNs": 196.22802734375,
+          "ratio": 1.4584603421461897,
+          "onityHeapBytes": 104.5,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 339.48059082031256,
+          "uniTaskNs": 241.827392578125,
+          "ratio": 1.4038136341838927,
+          "onityHeapBytes": 103.5,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 277.56347656250006,
+          "uniTaskNs": 192.16003417968747,
+          "ratio": 1.4444391506662224,
+          "onityHeapBytes": 103.5,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame<int> GetResult (flow off)",
+      "concurrency": 128,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 97.8851318359375,
+          "uniTaskNs": 76.89514160156251,
+          "ratio": 1.2729690042465371,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 93.06640625000001,
+          "uniTaskNs": 72.49755859375,
+          "ratio": 1.2837177976090253,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 94.79980468750001,
+          "uniTaskNs": 74.04479980468751,
+          "ratio": 1.2803033425380208,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 99.67041015625,
+          "uniTaskNs": 73.35205078125,
+          "ratio": 1.3587951406223997,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 107.94982910156249,
+          "uniTaskNs": 82.90710449218751,
+          "ratio": 1.302057643464497,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 93.048095703125,
+          "uniTaskNs": 72.11303710937499,
+          "ratio": 1.2903089293271268,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame<int> scheduling (flow off)",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 357.4077606201172,
+          "uniTaskNs": 219.4624900817871,
+          "ratio": 1.6285596708891894,
+          "onityHeapBytes": 615.95703125,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 384.1409683227539,
+          "uniTaskNs": 240.66572189331058,
+          "ratio": 1.59615987395599,
+          "onityHeapBytes": 617.328125,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 404.20684814453125,
+          "uniTaskNs": 268.0117607116699,
+          "ratio": 1.5081683246705786,
+          "onityHeapBytes": 616.77734375,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 368.59903335571295,
+          "uniTaskNs": 235.0786209106445,
+          "ratio": 1.56798194547781,
+          "onityHeapBytes": 550.98828125,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 419.89641189575195,
+          "uniTaskNs": 278.115177154541,
+          "ratio": 1.5097932309621023,
+          "onityHeapBytes": 543.5234375,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 357.5543403625488,
+          "uniTaskNs": 223.5849380493164,
+          "ratio": 1.5991879573018584,
+          "onityHeapBytes": 546.7734375,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "scenario": "Async method NextFrame<int> GetResult (flow off)",
+      "concurrency": 4096,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp.json",
+          "onityNs": 94.36988830566406,
+          "uniTaskNs": 75.74100494384766,
+          "ratio": 1.2459550592922204,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-repeat.json",
+          "onityNs": 101.40838623046875,
+          "uniTaskNs": 75.97856521606445,
+          "ratio": 1.3346973049844797,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "baseline-il2cpp-control.json",
+          "onityNs": 101.59540176391603,
+          "uniTaskNs": 81.24914169311523,
+          "ratio": 1.2504181539252477,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp.json",
+          "onityNs": 101.6615867614746,
+          "uniTaskNs": 77.14109420776367,
+          "ratio": 1.317865500943894,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-repeat.json",
+          "onityNs": 108.50763320922852,
+          "uniTaskNs": 81.81962966918947,
+          "ratio": 1.3261809378500384,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        },
+        {
+          "report": "candidate-il2cpp-control.json",
+          "onityNs": 96.58889770507812,
+          "uniTaskNs": 73.9603042602539,
+          "ratio": 1.3059559269144971,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 0.0
+        }
+      ]
+    }
+  ],
+  "whenAny": [
+    {
+      "backend": "mono",
+      "shape": "Untyped",
+      "inputCount": 2,
+      "baseline": [
+        {
+          "report": "baseline-mono-whenany.json",
+          "onityNs": 722.412109375,
+          "uniTaskNs": 531.201171875,
+          "ratio": 1.3599595551061678,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 92.0
+        },
+        {
+          "report": "baseline-mono-whenany-repeat.json",
+          "onityNs": 755.126953125,
+          "uniTaskNs": 553.90625,
+          "ratio": 1.3632757404795486,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 92.0
+        },
+        {
+          "report": "baseline-mono-whenany-control.json",
+          "onityNs": 740.13671875,
+          "uniTaskNs": 564.892578125,
+          "ratio": 1.3102256029043133,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 92.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono-whenany.json",
+          "onityNs": 906.0546875,
+          "uniTaskNs": 625.244140625,
+          "ratio": 1.4491214369386958,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 94.0
+        },
+        {
+          "report": "candidate-mono-whenany-repeat.json",
+          "onityNs": 806.689453125,
+          "uniTaskNs": 601.220703125,
+          "ratio": 1.3417526191829774,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 92.0
+        },
+        {
+          "report": "candidate-mono-whenany-control.json",
+          "onityNs": 757.71484375,
+          "uniTaskNs": 553.3203125,
+          "ratio": 1.3693963995764207,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 92.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "shape": "Untyped",
+      "inputCount": 16,
+      "baseline": [
+        {
+          "report": "baseline-mono-whenany.json",
+          "onityNs": 3947.7050781249995,
+          "uniTaskNs": 3958.349609375,
+          "ratio": 0.9973108663204509,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 310.0
+        },
+        {
+          "report": "baseline-mono-whenany-repeat.json",
+          "onityNs": 3654.5410156250005,
+          "uniTaskNs": 3713.916015625,
+          "ratio": 0.9840128318060505,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 308.0
+        },
+        {
+          "report": "baseline-mono-whenany-control.json",
+          "onityNs": 3779.052734375,
+          "uniTaskNs": 3780.810546875,
+          "ratio": 0.9995350699332308,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 300.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono-whenany.json",
+          "onityNs": 4016.357421875,
+          "uniTaskNs": 3826.611328125,
+          "ratio": 1.049585933213388,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 304.0
+        },
+        {
+          "report": "candidate-mono-whenany-repeat.json",
+          "onityNs": 3702.63671875,
+          "uniTaskNs": 3614.94140625,
+          "ratio": 1.0242591241861847,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 298.0
+        },
+        {
+          "report": "candidate-mono-whenany-control.json",
+          "onityNs": 4205.908203125,
+          "uniTaskNs": 4629.78515625,
+          "ratio": 0.9084456537788184,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 300.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "shape": "Untyped",
+      "inputCount": 32,
+      "baseline": [
+        {
+          "report": "baseline-mono-whenany.json",
+          "onityNs": 9906.103515625,
+          "uniTaskNs": 7976.26953125,
+          "ratio": 1.2419469373262975,
+          "onityHeapBytes": 6398.0,
+          "uniTaskHeapBytes": 540.0
+        },
+        {
+          "report": "baseline-mono-whenany-repeat.json",
+          "onityNs": 10430.517578125,
+          "uniTaskNs": 8350.09765625,
+          "ratio": 1.249149172563008,
+          "onityHeapBytes": 6392.0,
+          "uniTaskHeapBytes": 542.0
+        },
+        {
+          "report": "baseline-mono-whenany-control.json",
+          "onityNs": 10988.76953125,
+          "uniTaskNs": 9113.134765625,
+          "ratio": 1.2058166387157958,
+          "onityHeapBytes": 6410.0,
+          "uniTaskHeapBytes": 564.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono-whenany.json",
+          "onityNs": 7711.572265625,
+          "uniTaskNs": 8663.867187499998,
+          "ratio": 0.8900843120899932,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 574.0
+        },
+        {
+          "report": "candidate-mono-whenany-repeat.json",
+          "onityNs": 7714.892578125,
+          "uniTaskNs": 7714.16015625,
+          "ratio": 1.0000949451217196,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 558.0
+        },
+        {
+          "report": "candidate-mono-whenany-control.json",
+          "onityNs": 7217.138671875001,
+          "uniTaskNs": 8149.70703125,
+          "ratio": 0.8855703210190168,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 558.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "shape": "Typed int",
+      "inputCount": 2,
+      "baseline": [
+        {
+          "report": "baseline-mono-whenany.json",
+          "onityNs": 777.587890625,
+          "uniTaskNs": 588.7695312500001,
+          "ratio": 1.320699950240504,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 88.0
+        },
+        {
+          "report": "baseline-mono-whenany-repeat.json",
+          "onityNs": 854.296875,
+          "uniTaskNs": 635.2539062500001,
+          "ratio": 1.3448116833205224,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 88.0
+        },
+        {
+          "report": "baseline-mono-whenany-control.json",
+          "onityNs": 762.01171875,
+          "uniTaskNs": 578.759765625,
+          "ratio": 1.316628701594533,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 88.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono-whenany.json",
+          "onityNs": 1117.7734374999998,
+          "uniTaskNs": 727.2949218749999,
+          "ratio": 1.5368915743538099,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 86.0
+        },
+        {
+          "report": "candidate-mono-whenany-repeat.json",
+          "onityNs": 866.3574218749999,
+          "uniTaskNs": 642.7734375000001,
+          "ratio": 1.3478426010331201,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 88.0
+        },
+        {
+          "report": "candidate-mono-whenany-control.json",
+          "onityNs": 748.974609375,
+          "uniTaskNs": 574.4628906249999,
+          "ratio": 1.3037824054398643,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 86.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "shape": "Typed int",
+      "inputCount": 16,
+      "baseline": [
+        {
+          "report": "baseline-mono-whenany.json",
+          "onityNs": 3597.7050781250005,
+          "uniTaskNs": 3559.765625,
+          "ratio": 1.010657851421047,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 292.0
+        },
+        {
+          "report": "baseline-mono-whenany-repeat.json",
+          "onityNs": 3897.119140625,
+          "uniTaskNs": 3987.6464843749995,
+          "ratio": 0.9772980518446864,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 292.0
+        },
+        {
+          "report": "baseline-mono-whenany-control.json",
+          "onityNs": 3638.134765625,
+          "uniTaskNs": 3770.8984375000005,
+          "ratio": 0.9647925622831096,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 304.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono-whenany.json",
+          "onityNs": 4266.69921875,
+          "uniTaskNs": 3892.431640625,
+          "ratio": 1.0961526399638721,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 312.0
+        },
+        {
+          "report": "candidate-mono-whenany-repeat.json",
+          "onityNs": 4099.853515625,
+          "uniTaskNs": 4244.384765625,
+          "ratio": 0.9659476560253092,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 312.0
+        },
+        {
+          "report": "candidate-mono-whenany-control.json",
+          "onityNs": 3739.8925781250005,
+          "uniTaskNs": 3666.0156250000005,
+          "ratio": 1.0201518380394246,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 306.0
+        }
+      ]
+    },
+    {
+      "backend": "mono",
+      "shape": "Typed int",
+      "inputCount": 32,
+      "baseline": [
+        {
+          "report": "baseline-mono-whenany.json",
+          "onityNs": 10050.29296875,
+          "uniTaskNs": 7633.593750000001,
+          "ratio": 1.3165873503223824,
+          "onityHeapBytes": 6386.0,
+          "uniTaskHeapBytes": 534.0
+        },
+        {
+          "report": "baseline-mono-whenany-repeat.json",
+          "onityNs": 9873.33984375,
+          "uniTaskNs": 8366.30859375,
+          "ratio": 1.1801309661378996,
+          "onityHeapBytes": 6368.0,
+          "uniTaskHeapBytes": 526.0
+        },
+        {
+          "report": "baseline-mono-whenany-control.json",
+          "onityNs": 10792.724609375,
+          "uniTaskNs": 9179.1015625,
+          "ratio": 1.175793135732068,
+          "onityHeapBytes": 6382.0,
+          "uniTaskHeapBytes": 520.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-mono-whenany.json",
+          "onityNs": 7723.925781250001,
+          "uniTaskNs": 8514.74609375,
+          "ratio": 0.9071234416396189,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 574.0
+        },
+        {
+          "report": "candidate-mono-whenany-repeat.json",
+          "onityNs": 8627.246093749998,
+          "uniTaskNs": 8710.83984375,
+          "ratio": 0.9904034798596395,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 576.0
+        },
+        {
+          "report": "candidate-mono-whenany-control.json",
+          "onityNs": 6977.294921875001,
+          "uniTaskNs": 6950.9765625,
+          "ratio": 1.0037862822782322,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 564.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "shape": "Untyped",
+      "inputCount": 2,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp-whenany.json",
+          "onityNs": 1090.5273437499998,
+          "uniTaskNs": 565.771484375,
+          "ratio": 1.9275049624579266,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 136.0
+        },
+        {
+          "report": "baseline-il2cpp-whenany-repeat.json",
+          "onityNs": 921.38671875,
+          "uniTaskNs": 496.240234375,
+          "ratio": 1.8567352159795336,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 138.0
+        },
+        {
+          "report": "baseline-il2cpp-whenany-control.json",
+          "onityNs": 945.9472656249999,
+          "uniTaskNs": 523.53515625,
+          "ratio": 1.806845737735497,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 138.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp-whenany.json",
+          "onityNs": 1192.9687499999998,
+          "uniTaskNs": 668.5546875000001,
+          "ratio": 1.7843996494303236,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 138.0
+        },
+        {
+          "report": "candidate-il2cpp-whenany-repeat.json",
+          "onityNs": 959.3750000000001,
+          "uniTaskNs": 528.5156250000001,
+          "ratio": 1.8152254249815223,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 134.0
+        },
+        {
+          "report": "candidate-il2cpp-whenany-control.json",
+          "onityNs": 1109.5703125,
+          "uniTaskNs": 591.259765625,
+          "ratio": 1.8766206953505657,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 140.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "shape": "Untyped",
+      "inputCount": 16,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp-whenany.json",
+          "onityNs": 5178.564453124999,
+          "uniTaskNs": 3482.373046875,
+          "ratio": 1.4870791794612934,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 574.0
+        },
+        {
+          "report": "baseline-il2cpp-whenany-repeat.json",
+          "onityNs": 4941.552734375,
+          "uniTaskNs": 3469.580078125,
+          "ratio": 1.4242509534598984,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 584.0
+        },
+        {
+          "report": "baseline-il2cpp-whenany-control.json",
+          "onityNs": 6007.275390625001,
+          "uniTaskNs": 3930.029296875,
+          "ratio": 1.5285574067861893,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 574.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp-whenany.json",
+          "onityNs": 5683.447265625001,
+          "uniTaskNs": 3833.984375,
+          "ratio": 1.4823866530820176,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 566.0
+        },
+        {
+          "report": "candidate-il2cpp-whenany-repeat.json",
+          "onityNs": 5181.787109375001,
+          "uniTaskNs": 3463.7695312500005,
+          "ratio": 1.4959965039893992,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 584.0
+        },
+        {
+          "report": "candidate-il2cpp-whenany-control.json",
+          "onityNs": 5781.591796875,
+          "uniTaskNs": 3743.7499999999995,
+          "ratio": 1.5443316986644409,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 584.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "shape": "Untyped",
+      "inputCount": 32,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp-whenany.json",
+          "onityNs": 12730.126953124998,
+          "uniTaskNs": 7258.30078125,
+          "ratio": 1.7538715102589975,
+          "onityHeapBytes": 7506.0,
+          "uniTaskHeapBytes": 1076.0
+        },
+        {
+          "report": "baseline-il2cpp-whenany-repeat.json",
+          "onityNs": 11758.30078125,
+          "uniTaskNs": 7095.019531249999,
+          "ratio": 1.657261228029125,
+          "onityHeapBytes": 7512.0,
+          "uniTaskHeapBytes": 1092.0
+        },
+        {
+          "report": "baseline-il2cpp-whenany-control.json",
+          "onityNs": 12825.927734375,
+          "uniTaskNs": 7302.1484375,
+          "ratio": 1.7564594645197529,
+          "onityHeapBytes": 7512.0,
+          "uniTaskHeapBytes": 1084.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp-whenany.json",
+          "onityNs": 10562.841796875,
+          "uniTaskNs": 7762.353515625001,
+          "ratio": 1.36077824536242,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 1082.0
+        },
+        {
+          "report": "candidate-il2cpp-whenany-repeat.json",
+          "onityNs": 10926.611328125,
+          "uniTaskNs": 7720.898437500001,
+          "ratio": 1.4151994637120233,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 1080.0
+        },
+        {
+          "report": "candidate-il2cpp-whenany-control.json",
+          "onityNs": 10357.2265625,
+          "uniTaskNs": 7207.861328125,
+          "ratio": 1.4369347703855246,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 1070.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "shape": "Typed int",
+      "inputCount": 2,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp-whenany.json",
+          "onityNs": 991.8457031250001,
+          "uniTaskNs": 556.689453125,
+          "ratio": 1.7816858170335939,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 142.0
+        },
+        {
+          "report": "baseline-il2cpp-whenany-repeat.json",
+          "onityNs": 939.8437499999999,
+          "uniTaskNs": 516.552734375,
+          "ratio": 1.8194536345590318,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 140.0
+        },
+        {
+          "report": "baseline-il2cpp-whenany-control.json",
+          "onityNs": 1078.22265625,
+          "uniTaskNs": 539.2089843749999,
+          "ratio": 1.9996377795888802,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 142.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp-whenany.json",
+          "onityNs": 978.3691406250001,
+          "uniTaskNs": 549.9023437499999,
+          "ratio": 1.7791688865210449,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 134.0
+        },
+        {
+          "report": "candidate-il2cpp-whenany-repeat.json",
+          "onityNs": 1135.3027343750002,
+          "uniTaskNs": 551.26953125,
+          "ratio": 2.059433126660762,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 126.0
+        },
+        {
+          "report": "candidate-il2cpp-whenany-control.json",
+          "onityNs": 973.388671875,
+          "uniTaskNs": 523.3398437499999,
+          "ratio": 1.859955215525285,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 144.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "shape": "Typed int",
+      "inputCount": 16,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp-whenany.json",
+          "onityNs": 5364.6484375,
+          "uniTaskNs": 3613.0859374999995,
+          "ratio": 1.4847829612411483,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 578.0
+        },
+        {
+          "report": "baseline-il2cpp-whenany-repeat.json",
+          "onityNs": 5306.835937500001,
+          "uniTaskNs": 3794.7753906249995,
+          "ratio": 1.3984585097211681,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 580.0
+        },
+        {
+          "report": "baseline-il2cpp-whenany-control.json",
+          "onityNs": 5726.416015625,
+          "uniTaskNs": 3902.0019531250005,
+          "ratio": 1.4675584698359465,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 584.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp-whenany.json",
+          "onityNs": 6186.5234375,
+          "uniTaskNs": 4028.613281249999,
+          "ratio": 1.5356458924199456,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 586.0
+        },
+        {
+          "report": "candidate-il2cpp-whenany-repeat.json",
+          "onityNs": 5888.916015625001,
+          "uniTaskNs": 3823.53515625,
+          "ratio": 1.5401757208898426,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 586.0
+        },
+        {
+          "report": "candidate-il2cpp-whenany-control.json",
+          "onityNs": 5654.980468749999,
+          "uniTaskNs": 3656.884765625,
+          "ratio": 1.546392853804761,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 580.0
+        }
+      ]
+    },
+    {
+      "backend": "il2cpp",
+      "shape": "Typed int",
+      "inputCount": 32,
+      "baseline": [
+        {
+          "report": "baseline-il2cpp-whenany.json",
+          "onityNs": 14041.845703125002,
+          "uniTaskNs": 7532.861328125001,
+          "ratio": 1.864078613885774,
+          "onityHeapBytes": 7468.0,
+          "uniTaskHeapBytes": 1042.0
+        },
+        {
+          "report": "baseline-il2cpp-whenany-repeat.json",
+          "onityNs": 12238.134765625,
+          "uniTaskNs": 7297.216796875001,
+          "ratio": 1.6770962280942405,
+          "onityHeapBytes": 7482.0,
+          "uniTaskHeapBytes": 1064.0
+        },
+        {
+          "report": "baseline-il2cpp-whenany-control.json",
+          "onityNs": 13111.62109375,
+          "uniTaskNs": 8596.777343749998,
+          "ratio": 1.5251786302552512,
+          "onityHeapBytes": 7508.0,
+          "uniTaskHeapBytes": 1042.0
+        }
+      ],
+      "candidate": [
+        {
+          "report": "candidate-il2cpp-whenany.json",
+          "onityNs": 10764.355468750002,
+          "uniTaskNs": 7432.03125,
+          "ratio": 1.4483732786712922,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 1096.0
+        },
+        {
+          "report": "candidate-il2cpp-whenany-repeat.json",
+          "onityNs": 13192.7734375,
+          "uniTaskNs": 8506.835937499998,
+          "ratio": 1.550843760762255,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 1090.0
+        },
+        {
+          "report": "candidate-il2cpp-whenany-control.json",
+          "onityNs": 10525.146484375,
+          "uniTaskNs": 7589.648437500001,
+          "ratio": 1.3867765511207184,
+          "onityHeapBytes": 0.0,
+          "uniTaskHeapBytes": 1084.0
+        }
+      ]
+    }
+  ]
+}

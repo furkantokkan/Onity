@@ -2,7 +2,7 @@
 title: "OnityTask and UniTask comparison"
 parent: "Guides"
 nav_order: 8
-description: "Measured Unity 2022 OnityTask and UniTask workloads, API coverage, and current limits."
+description: "Measured OnityTask and UniTask 2.5.11 Release Player results, API coverage, and current limits."
 ---
 
 # OnityTask and UniTask comparison
@@ -15,7 +15,187 @@ Each result applies to its stated workload and timing boundary. The separate
 [benchmark harness](https://github.com/furkantokkan/Onity/blob/main/Packages/com.onity.framework/Benchmarks/Tasks/README.md)
 defines every timing boundary and how to reproduce the run.
 
-## Latest Player verification (2026-09-27)
+## Latest Player verification (2026-10-02)
+
+Onity 0.6.0 was measured against UniTask 2.5.11 in non-development Release
+Players (Unity 2022.3.62f2, Windows x64) built from source `6cc2115`. Three
+Player processes per backend ran each of three suites; the gate reads the median
+and the worst process of the Onity/UniTask time ratio, so a ratio below 1 means
+OnityTask took less time. Onity ran with its default `FlowExecutionContext =
+false` (UniTask has no context flow) and with pool retention raised to the
+cohort for the 1,024- and 4,096-operation bursts, because UniTask's pools retain
+every released object. The [full report](../assets/benchmarks/onitytask-surpass-2026-10-02.md)
+lists every row, the per-process ratios, the configuration and the raw data.
+
+**IL2CPP, the gate backend: all 29 gated rows pass.** No process measured Onity
+slower in any gated row.
+
+| Suite and rows | Rows | Median Onity/UniTask | Worst process |
+| --- | ---: | ---: | ---: |
+| `primary`: consume a completed task or a synchronously completed async method (N = 1) | 4 | 0.515-0.808 | 0.906 |
+| `primary`: `NextFrame` scheduling and `GetResult` (128, 4,096) | 4 | 0.085-0.125 | 0.126 |
+| `primary`: async method awaiting `NextFrame`, typed and untyped, scheduling and `GetResult` (128, 4,096) | 8 | 0.307-0.415 | 0.418 |
+| `builderlifecycle`: complete async-method lifecycle with 1 or 4 suspensions, typed and untyped (128, 4,096) | 8 | 0.490-0.605 | 0.874 |
+| `throughput`: 16-await `NextFrame` / `Yield` loops under the real PlayerLoop (1,024, 4,096) | 5 | 0.280-0.353 | 0.377 |
+
+**Mono, reported and not gated.** Onity's median is lower in 25 of 29 rows:
+
+| Suite and rows | Rows | Median Onity/UniTask |
+| --- | ---: | ---: |
+| `primary`: completed results (N = 1) | 4 | 1.087-1.924 (Onity slower) |
+| `primary`: `NextFrame` scheduling and `GetResult` | 4 | 0.120-0.319 |
+| `primary`: async method awaiting `NextFrame` | 8 | 0.564-0.814 |
+| `builderlifecycle`, 1 suspension | 4 | 0.885-0.909 |
+| `builderlifecycle`, 4 suspensions | 4 | 0.932-0.973 (one process 1.009) |
+| `throughput` | 5 | 0.361-0.721 |
+
+**Report-only results to read with the gate:**
+
+- **Opt-in context flow.** With `FlowExecutionContext = true`, every suspension
+  captures and restores the execution context, which UniTask never does. The
+  complete lifecycle with four suspensions is then 1.51-1.60x slower than
+  UniTask on IL2CPP and 2.65-2.72x on Mono (128 and 4,096 calls); with one
+  suspension it stays faster on IL2CPP (0.82-0.84) and is 1.63-1.65x slower on
+  Mono. The synchronous scheduling and consumption slices stay faster with flow
+  on (IL2CPP 0.31-0.53, Mono 0.72-0.82).
+- **Default retention in 4,096-call bursts.** With the default caps (128
+  runners per async method, 256 sources per source type) a burst above the cap
+  allocates, and the complete lifecycle of three of the four IL2CPP rows is
+  1.47-2.58x slower (typed 4-suspension: 0.95); on Mono all four are 1.63-2.50x
+  slower. Raise `OnityTask.RunnerPoolCapacity` / `SourcePoolCapacity` for
+  bursty methods; see [Bursts and pool retention](onitytask.html#bursts-and-pool-retention).
+  The 4,096 `primary` slices stay faster at the default caps.
+- **Single calls.** The builder lifecycle with one call at a time (N = 1) is
+  0.86-0.90 on IL2CPP and 0.97-1.00 on Mono.
+
+**Noise.** The quiet pre-gate refused the host because other Unity Editors used
+CPU, and the noise screen flagged all 22 processes. On each backend 21 of the 29
+rows have their three per-process ratios within 5% of each other; the widest
+IL2CPP spread is typed `int` with 4 suspensions at N = 128 (0.603-0.874).
+
+**Correctness.** The same Mono and IL2CPP Players passed all 42 Player smoke
+cases. The generated IL2CPP C++ shows that the async-method runner calls its
+stored state machine by address with no copy back and clears it with
+`il2cpp_codegen_initobj` when it returns to the pool, which is what makes the
+immediate runner return safe, and that `OnityTask` members carry no
+class-initialization checks.
+
+What changed since the measurements below: pooled sources are class-rooted with
+a single-word completion protocol, pools are array-slot stacks with a shared
+`SourcePoolCapacity`, async-method runners return to their pool when their task
+is consumed on every backend, default frame waits are stateless in Play,
+`Yield()` returns a reference-free awaitable, `OnityTask` has no static
+constructor, the hot task, runner, source and PlayerLoop types turn off IL2CPP
+null checks, and context flow is off by default.
+
+These are timing results for the measured workloads on one Windows PC. They do
+not establish allocation results, other platforms (ARM64, consoles, mobile) or
+Development Player behavior.
+
+## Feature coverage
+
+Onity 0.6.0 covers UniTask 2.5.11's runtime API, except for the gaps listed
+below, under Onity names; [Migrating from UniTask](../Migration/From-UniTask.html)
+maps each UniTask member. Addressables, DOTween and TextMeshPro integrations
+(UniTask's `External` folder) are out of scope.
+
+| Area | OnityTask 0.6.0 |
+| --- | --- |
+| Core task types | `OnityTask`, `OnityTask<T>`, `OnityTaskVoid`, Onity method builders, `Status` / `OnityTaskStatus`, implicit `OnityTask<T>` to `OnityTask` view, `Preserve()`, `CompletedTask`, `FromResult`, `FromException`, `FromCanceled`, `Create`, `Defer`, `Never`, `Lazy` / `OnityAsyncLazy`, `Void` / `Action` / `UnityAction` |
+| PlayerLoop timing | 19 `OnityPlayerLoopTiming` members (UniTask's 16 plus three after-script positions), `Yield` / `NextFrame` / `DelayFrame` with `cancelImmediately`, `WaitForFixedUpdate`, `WaitForEndOfFrame`, `Post`, `OnityTaskPlayerLoop` items, continuations, `Initialize`, `InitializeAll`, `IsInjected`, `DumpCurrentPlayerLoop` |
+| Timed waits and timers | `Delay(TimeSpan, ignoreTimeScale or OnityDelayType, timing)`, `WaitForSeconds`, `WaitUntil` / `WaitWhile` with timing or state, `WaitUntilCanceled`, `WaitUntilValueChanged`, `OnityPlayerLoopTimer`, timed `CancelAfterSlim`, `OnityTimeoutController`, timed `Timeout` / `TimeoutWithoutException` |
+| Threading | `SwitchToMainThread` (also with a timing), `ReturnToMainThread`, `SwitchToThreadPool`, `SwitchToTaskPool`, `SwitchToSynchronizationContext`, `ReturnToSynchronizationContext`, `ReturnToCurrentSynchronizationContext`, every `RunOnThreadPool` shape |
+| Composition | `WhenAll` / `WhenAny` over arrays, sequences, typed tuples (2-15) and mixed types (2-15), left/right `WhenAny`, `WhenEach`, `await` on arrays, sequences and tuples, `IEnumerable<T>.Select` to tasks |
+| Cancellation | destroy tokens, `RegisterRaiseCancelOnDestroy`, `AttachExternalCancellation`, `SuppressCancellationThrow`, `ToCancellationToken`, token `ToOnityTask` / `WaitUntilCanceled`, `AddTo(CancellationToken)`, `RegisterWithoutCaptureExecutionContext`, `IsOperationCanceledException`, `OnityCancellationTokenEqualityComparer` |
+| Completion sources | `OnityTaskCompletionSource(<T>)`, `OnityAutoResetTaskCompletionSource(<T>)` |
+| Unity operations | `AsyncOperation` (with `Action<float>` or `IProgress<float>`), `ResourceRequest`, `AssetBundleRequest`, `AssetBundleCreateRequest`, `UnityWebRequestAsyncOperation`, `AsyncGPUReadbackRequest`, `AsyncInstantiateOperation`, `Awaitable`, `JobHandle` (`await`, `AsOnityTask`, `WaitAsync`), `OnityProgress`, `OnityUnityWebRequestException` |
+| Coroutines | `ToCoroutine`, awaiting `IEnumerator`, `ToOnityTask` (PlayerLoop or `MonoBehaviour`), `StartAsyncCoroutine` |
+| Triggers and UI events | lifecycle triggers, 55 MonoBehaviour message triggers, public trigger base and waiter list, `UnityEvent` waits and streams, uGUI waits, streams, EventSystems triggers and `BindTo` (optional `Onity.Unity.UGUI`), UI Toolkit waits, streams and `BindTo` (beyond UniTask) |
+| Async streams | native `IOnityAsyncEnumerable<T>`, `Create` with `IOnityAsyncWriter<T>`, `Empty`, `Return`, `Range`, `Repeat`, `Never`, `Throw`, timing streams, conversions, the async LINQ operators and consumers, `Subscribe` / `SubscribeAwait`, `Publish`, `Queue`, generic `BindTo`, BCL and reactive adapters |
+| Channels | bounded (beyond UniTask) and unbounded channels, `Completion`, `WaitToReadAsync`, `Complete`, `ReadAllAsync` |
+| Async reactive properties | `OnityAsyncReactiveProperty<T>`, `OnityReadOnlyAsyncReactiveProperty<T>`, `ToReadOnlyAsyncReactiveProperty` |
+| Diagnostics and policy | `OnityTaskScheduler`, `Forget(handler, handleExceptionOnMainThread)`, task tracker, `RunnerPoolCapacity` / `SourcePoolCapacity` |
+| Task interop | `ContinueWith`, `Unwrap`, `ValueTask` / `Task` bridges, `AsUnitTask`, observable bridges |
+
+Beyond UniTask, the same package connects async work to DI scopes
+(`IOnityScopeLifetime`, `AddTo(scope)`, `GetScopeCancellationToken`,
+`IOnityAsyncInitializable`, `OnityContext.WaitReadyAsync`), reactive properties
+(`WaitAsync`, `WaitUntilAsync`, `AsLatestAsyncEnumerable`) and message channels
+(`ReceiveAsync`, `ReceiveAllAsync`, `SubscribeQueued`), plus the bundled scene,
+web JSON and opt-in `AsyncLocal<T>` flow helpers.
+
+Remaining gaps:
+
+- `PlayerLoopTiming` and `cancelImmediately` overloads of the Unity operation
+  adapters (`AsyncOperation`, `ResourceRequest`, `AssetBundleRequest`,
+  `AsyncGPUReadbackRequest`); they poll at Update and observe cancellation at
+  the next Update.
+- A native shareable `WhenAll` output: the array `WhenAll` paths still return a
+  Task-backed output when inputs are pending.
+- `UniTaskSynchronizationContext` (no `OnityTaskSynchronizationContext`).
+- Index-only `SelectAwait(Func<T, int, OnityTask<R>>)` and
+  `WhereAwait(Func<T, int, OnityTask<bool>>)`, which would be ambiguous with
+  Onity's token forms; the indexed forms exist with a token.
+- `Delay(int milliseconds)`: `Delay(2)` means two seconds in Onity; use
+  `Delay(TimeSpan.FromMilliseconds(ms))`.
+- Public custom task sources (`IUniTaskSource`, `UniTaskCompletionSourceCore<T>`),
+  the `IPromise` interfaces, `TaskPool.GetCacheSizeInfo` and the obsolete
+  `UniTask.Run`.
+- Task tracking of `async OnityTaskVoid` starts (only `Forget` is tracked
+  natively).
+
+## Earlier measurements
+
+The sections below record earlier implementations, harnesses and decisions in
+the order they were made. They are superseded by the 2026-10-02 verification
+above and kept as history: statements such as "superiority remains unmet" or
+"keep context flow on by default" describe the state at their date. Context flow
+was on by default until 0.6.0; it is now off by default (UniTask semantics), and
+flow on is an opt-in that preserves ambient `AsyncLocal<T>` values and is
+reported separately, never gated.
+
+## Dispatch investigation (2026-09-30)
+
+Two runner-dispatch experiments were tested and reverted: neither established
+a repeatable general async benefit. Some IL2CPP slices improved, Mono results
+were mixed, and other Editor activity contaminated the final comparison.
+Keep the verified runtime packet below and the default context-flow behavior.
+Twelve new two-suspension context regression cases are retained. The
+[experiment report](../assets/benchmarks/onitytask-dispatch-performance-2026-09-30.md)
+records all variants, raw results, noise, focused verification and the decision.
+General async superiority over UniTask remains unmet.
+
+## Retained Player verification (2026-09-29)
+
+The unreleased 0.5 development changes were compared with pulled commit
+`5c09749` in three Release Player processes per revision/backend. They protect
+pooled sources during bridge/continuation publication, remove frame-pool
+monitors, add a separate 32-input WhenAny pool, and inline small builder paths.
+
+| Measured workload | Candidate Mono / UniTask | Candidate IL2CPP / UniTask |
+| --- | ---: | ---: |
+| Plain NextFrame scheduling, 128 | 0.916–0.944 | 0.635–0.679 |
+| Async NextFrame scheduling, 128, flow on | 1.177–1.260 | 1.576–1.632 |
+| Async NextFrame scheduling, 128, flow off | 0.959–1.114 | 1.404–1.563 |
+| Array WhenAny cycle, 32 inputs | 0.886–1.004 | 1.361–1.551 |
+
+Ratios above 1 are slower; typed/untyped results and all three processes are
+included. Scheduling slices exclude resumption and deferred returns. Mono
+synchronous async completion improved, and 32-input WhenAny improved most
+clearly on Mono and untyped IL2CPP. Other results are mixed; some ratio changes
+reflect a varying UniTask denominator. Overall superiority and the 1.2x async
+milestone remained unmet at this point, and context flow stayed on by default
+(it is off by default since 0.6.0).
+
+Release coverage includes all 983 EditMode cases (six test-maintenance failures
+passed on focused rerun), 94 PlayMode cases and 35 smoke cases per Player;
+127 focused default-optimization cases also pass. Sixteen diagnostic profiles
+confirm removal of two frame-pool monitors per operation, unchanged warm-cycle
+allocation events, and eight additional bytes per cold frame-source allocation
+on this Windows x64 build. Calibrated HeapDelta zero readings are not proof of
+zero allocation. See the [full report, raw samples and test evidence](../assets/benchmarks/onitytask-05-performance-2026-09-29.md).
+
+## Previous Player verification (2026-09-27)
 
 Runtime candidate `528d52c` plus benchmark-only startup/verification changes
 passed 668/668 EditMode and 41/41 PlayMode tests under both default and Release
@@ -43,20 +223,21 @@ cause; it still read 607-611 B/op at 4096. HeapDelta is coarse and process-wide:
 zero does not prove zero allocation. The control does not replace the default
 workload or demonstrate a runtime optimization.
 
-Keep `FlowExecutionContext = true` by default to preserve ambient-context
-semantics. Neither superiority nor the intermediate 1.2x timing milestone is
-established. Separate optimized Development IL2CPP profiles passed all eight
+At the time `FlowExecutionContext = true` stayed the default to preserve
+ambient-context semantics; since 0.6.0 flow is off by default (UniTask
+semantics) and flow on is an opt-in reported separately. Neither superiority nor
+the intermediate 1.2x timing milestone was established by this run. Separate optimized Development IL2CPP profiles passed all eight
 configurations and captured all resumptions and deferred returns. They identify
 native source synchronization as the next bounded investigation: five of nine
 operation-related monitor acquisitions occur in registration, completion and
 result consumption. Their instrumented durations do not establish a Release
 bottleneck percentage. See the [verification report and raw samples](../assets/benchmarks/onitytask-player-verification-2026-09-27.md)
 for startup diagnosis, allocation sites, build settings, test freshness and limits.
-That investigation is now implemented: the source bases keep one packed state
-word and enter no monitor on any path. The desktop-Mono before/after numbers
+The subsequent investigation implemented a packed source-state word without
+source-base monitors. The historical desktop-Mono before/after numbers
 are in [plan 12](https://github.com/furkantokkan/Onity/blob/main/docs/Plan/12-OnityTask-PlayerVerification.md#native-synchronization-reduction---2026-09-29);
-the Player suites have not yet been rerun on that build, so the ratios above
-remain the latest Player evidence.
+Unity verification and the further changes are covered by the newer report
+above. These earlier ratios retain their original source identity.
 
 ## Historical Editor measured result
 
@@ -683,14 +864,15 @@ Onity/UniTask mean scheduling ratios; above 1 means Onity is slower.
 | Typed (`int`) | 128 | 2.52x | 1.47x | 2.25x | 1.44x |
 | Typed (`int`) | 4096 | 2.51x | 1.68x | 2.35x | 1.78x |
 
-With flow on, the default, the pooled runner was slower than the previous
-.NET-builder implementation's 1.8x to 1.9x; with flow off it improved on it
-but stayed above the 1.2x target. UniTask's own figures also moved between
-the two blocks, so the raw change cannot be attributed wholly to the setting.
-Allocation values were unavailable in both runs because the heap-delta
-fallback tried to disable the collector, which the Editor rejects. The owner
-kept `FlowExecutionContext = true` as the default because the opt-out changes
-`AsyncLocal` semantics. These are scheduling and `GetResult` slices only, not
+With flow on (then the default; an opt-in since 0.6.0), the pooled runner was
+slower than the previous .NET-builder implementation's 1.8x to 1.9x; with flow
+off it improved on it but stayed above the 1.2x target. UniTask's own figures
+also moved between the two blocks, so the raw change cannot be attributed wholly
+to the setting. Allocation values were unavailable in both runs because the
+heap-delta fallback tried to disable the collector, which the Editor rejects.
+The owner then kept `FlowExecutionContext = true` as the default because turning
+it off changes `AsyncLocal` semantics; 0.6.0 reversed that decision and made
+flow off the default. These are scheduling and `GetResult` slices only, not
 end-to-end await costs. In response the builders now bind the class library's
 `FastCapture` and `RunInternal` pair through reflection, which removes the
 per-suspension context allocation until a thread stores an `AsyncLocal` value
@@ -738,8 +920,9 @@ Action/Func workloads and 0.98–1.14 for IL2CPP. IL2CPP cohort completion favor
 Onity in these runs, while Mono generally favored UniTask. This is not an
 overall async speed result. Allocation values are unavailable because the
 per-thread counters failed calibration; process-wide counters cannot isolate
-concurrent worker allocation. Flow-on remains the default and is a different
-context contract from UniTask. See the [full report and raw samples](../assets/benchmarks/onitytask-stage1-threadpool-2026-09-27.md).
+concurrent worker allocation. Flow on was then the default, a different context
+contract from UniTask; flow off is the default since 0.6.0. See the
+[full report and raw samples](../assets/benchmarks/onitytask-stage1-threadpool-2026-09-27.md).
 
 ## Jobs and Burst additions - 2026-09-27
 
@@ -770,13 +953,16 @@ Another Editor used CPU during these measurements. The slice includes producer
 completion and loser observation; it does not isolate scheduler CPU. See the
 [method, limits and raw evidence](../assets/benchmarks/onitytask-stage3b-whenany-2026-09-27.md).
 
-## Feature coverage
+## Feature coverage in 0.4.0 (superseded)
+
+The table below is the 0.4.0 coverage record; the current coverage is in
+[Feature coverage](#feature-coverage) above.
 
 | Capability | OnityTask status |
 | --- | --- |
 | Frame, fixed-frame, and late-frame waits; scaled and unscaled delays; predicate waits | Available with cancellation and single-consumer pooled sources. |
 | Scene, `AsyncOperation`, and web-request bridges | Available. Deferred scene loads require the caller to activate a started operation, even after cancellation. |
-| `async OnityTask` and `async OnityTask<T>` | Synchronous success stores the result inline; synchronous faults and cancellations are Task-backed. A suspended method uses a pooled native runner holding the state machine by value and a cached continuation delegate; its task is single-consumer. Execution context flows by default through the internal capture/run pair, with a public fallback. Disabling `OnityTask.FlowExecutionContext` changes ambient-context semantics. Both Mono and IL2CPP passed the 13-case Player smoke suite at `528d52c` with the internal pair active. See the latest Player table above for measured scheduling costs and allocation limits. |
+| `async OnityTask` and `async OnityTask<T>` | Synchronous success stores the result inline; synchronous faults and cancellations are Task-backed. A suspended method uses a pooled native runner holding the state machine by value and a cached continuation delegate; its task is single-consumer. Execution context flowed by default until 0.6.0 through the internal capture/run pair, with a public fallback. Both Mono and IL2CPP passed the 13-case Player smoke suite at `528d52c` with the internal pair active. |
 | `WhenAll` | Available, including typed ordered results. Already successful two-input untyped and eligible typed calls avoid Task bridges. Pending two-input untyped calls whose inputs are completion sources without a bridge or unclaimed single-consumer native sources use a pooled coordinator and Task-backed output. Onity 0.4.0 also removes input bridges for 1–16 unique exact built-in typed completion sources without preexisting bridges, mixed with inline/default values. Other pending typed inputs retain the prior fallback. [Construction measurements](../assets/benchmarks/onitytask-stage3a-whenall-2026-09-27.md) show lower heap growth and an IL2CPP construction regression; they do not establish end-to-end speed. |
 | Native `WhenAny` | Pair overloads return winner index or same-type index/value and retain their previous allocation behavior. Onity 0.4.0 adds nonempty arbitrary arrays, snapshots before registration, rejects duplicate single-consumer identities before claiming inputs, and observes every loser without canceling it. Array outputs are native single-consumer tasks with bounded pooling for up to 16 inputs; larger/error paths allocate. Pending callbacks race by observation. Completion-source subclasses and later bridges retain fault observation. Array performance is measured separately from the historical pair results above. |
 | Public completion source | Typed and untyped callback completion with retained tasks for multiple consumers; the Editor/Mono comparison above has mixed results. |
@@ -793,9 +979,5 @@ completion and loser observation; it does not isolate scheduler CPU. See the
 | Channels | Onity 0.4.0 adds bounded/unbounded FIFO channels with multiple producers, a single consumer lease, waiting writes, cancellation and ReadAll cleanup. Full suites pass 913 EditMode/92 PlayMode in both optimizations, with a strengthened 34-case fixture also passing both; each Release Player passes 33 smoke cases. Warmed buffered Try operations show zero HeapDelta in 16 windows per capacity/backend. Exact zero allocation, pending-operation cost and comparative speed are unproven. [Verification and limits](../assets/benchmarks/onitytask-stage4c-channels-2026-09-27.md). |
 | Real rendering end of frame | Onity 0.4.0 uses one shared Unity coroutine, with Update cancellation during stalls and isolated host/session retirement. Both optimizations pass 814 EditMode/84 PlayMode tests; Mono and IL2CPP each pass six graphics groups with pixel/frame proof and 27 paired headless cases. Actual Scene-view interaction, allocation quantities and speed are unmeasured. [Verification and limits](../assets/benchmarks/onitytask-stage3f-endofframe-2026-09-27.md). |
 
-OnityTask is useful for common Unity flows today, but it is **not a full
-UniTask replacement**. Player startup and the scoped semantic suite are now
-verified on both backends, with full-cycle IL2CPP attribution completed. The
-current staged work adds native composition, cancellation helpers, explicit
-timing and async streams while preserving bridge and shared-task semantics.
-Each capability remains a gap until its implementation and tests are complete.
+At 0.4.0 OnityTask covered the common Unity flows but was not a full UniTask
+replacement; 0.6.0 closed most of those gaps (see [Feature coverage](#feature-coverage)).

@@ -3,44 +3,11 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.IL2CPP.CompilerServices;
 using UnityEngine;
 
 namespace Onity.Unity.Async
 {
-    /// <summary>
-    /// Pooled runner behind a suspended <c>async OnityTask</c> method. Untyped builders bind to it
-    /// on the first suspension.
-    /// </summary>
-    internal interface IOnityAsyncStateMachineRunner
-    {
-        Action MoveNextAction { get; }
-
-        OnityTask Task { get; }
-
-        void SetResult();
-
-        void SetException(Exception exception);
-
-        void CaptureExecutionContext();
-    }
-
-    /// <summary>
-    /// Pooled runner behind a suspended <c>async OnityTask&lt;T&gt;</c> method.
-    /// </summary>
-    /// <typeparam name="T">Result type.</typeparam>
-    internal interface IOnityAsyncStateMachineRunner<T>
-    {
-        Action MoveNextAction { get; }
-
-        OnityTask<T> Task { get; }
-
-        void SetResult(T result);
-
-        void SetException(Exception exception);
-
-        void CaptureExecutionContext();
-    }
-
     /// <summary>
     /// Execution-context helpers shared by the native builders and task bridges.
     /// </summary>
@@ -276,30 +243,47 @@ namespace Onity.Unity.Async
     }
 
     /// <summary>
-    /// Runner pool guarded by one compare-and-swap gate instead of a monitor. A rent or return that
-    /// finds the gate taken does not wait: the rent allocates and the return lets the runner be
-    /// collected, which keeps the uncontended path to two interlocked operations.
+    /// Array slot of <see cref="OnityRunnerPool{T}"/>. Storing into a struct field avoids the array
+    /// covariance check of a reference-type element, and clearing with <c>default</c> compiles to
+    /// <c>initobj</c>, which needs no GC write barrier.
     /// </summary>
-    /// <typeparam name="T">Runner type.</typeparam>
+    /// <typeparam name="T">Pooled type.</typeparam>
+    internal struct OnityPoolSlot<T> where T : class
+    {
+        internal T Value;
+    }
+
+    /// <summary>
+    /// Pool guarded by one compare-and-swap gate instead of a monitor. A rent or return that finds
+    /// the gate taken does not wait: the rent allocates and the return lets the object be collected,
+    /// so the uncontended path is one compare-and-swap plus the releasing volatile write. Entries live
+    /// in an array that grows on demand up to the capacity passed to <see cref="TryPush"/>; a pop
+    /// performs no write barrier and no interface call, a push one write barrier.
+    /// </summary>
+    /// <typeparam name="T">Pooled type. <see cref="IOnityPooledRunner{T}"/> stays part of the
+    /// constraint for source compatibility; the pool no longer links entries through it.</typeparam>
+    [Il2CppSetOption(Option.NullChecks, false)]
     internal struct OnityRunnerPool<T> where T : class, IOnityPooledRunner<T>
     {
+        private const int k_initialSlots = 16;
+
         private int m_gate;
-        private int m_size;
-        private T m_head;
+        private int m_count;
+        private OnityPoolSlot<T>[] m_slots;
 
         public bool TryPop(out T runner)
         {
             if (Interlocked.CompareExchange(ref m_gate, 1, 0) == 0)
             {
-                T head = m_head;
-                if (head != null)
+                int count = m_count;
+                if (count > 0)
                 {
-                    ref T next = ref head.NextPooled;
-                    m_head = next;
-                    next = null;
-                    m_size--;
+                    count--;
+                    OnityPoolSlot<T>[] slots = m_slots;
+                    runner = slots[count].Value;
+                    slots[count] = default;
+                    m_count = count;
                     Volatile.Write(ref m_gate, 0);
-                    runner = head;
                     return true;
                 }
 
@@ -314,11 +298,18 @@ namespace Onity.Unity.Async
         {
             if (Interlocked.CompareExchange(ref m_gate, 1, 0) == 0)
             {
-                if (m_size < capacity)
+                int count = m_count;
+                if (count < capacity)
                 {
-                    runner.NextPooled = m_head;
-                    m_head = runner;
-                    m_size++;
+                    OnityPoolSlot<T>[] slots = m_slots;
+                    if (slots == null || count == slots.Length)
+                    {
+                        slots = Grow(slots, count, capacity);
+                        m_slots = slots;
+                    }
+
+                    slots[count].Value = runner;
+                    m_count = count + 1;
                     Volatile.Write(ref m_gate, 0);
                     return true;
                 }
@@ -328,42 +319,174 @@ namespace Onity.Unity.Async
 
             return false;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static OnityPoolSlot<T>[] Grow(OnityPoolSlot<T>[] slots, int count, int capacity)
+        {
+            int length = slots == null ? k_initialSlots : slots.Length * 2;
+            if (length > capacity)
+            {
+                length = capacity;
+            }
+
+            if (length <= count)
+            {
+                length = count + 1;
+            }
+
+            OnityPoolSlot<T>[] grown = new OnityPoolSlot<T>[length];
+            if (slots != null)
+            {
+                Array.Copy(slots, grown, count);
+            }
+
+            return grown;
+        }
+    }
+
+    /// <summary>
+    /// Base of the runners behind suspended untyped async methods. The builder reaches the cached
+    /// resume delegate, the task and completion through this class with field reads and non-virtual
+    /// calls instead of interface dispatch.
+    /// </summary>
+    [Il2CppSetOption(Option.NullChecks, false)]
+    internal abstract class OnityRunnerBase : OnityTaskSourceBase
+    {
+        /// <summary>Cached delegate that resumes the state machine; assigned once by the subclass.</summary>
+        internal Action m_moveNext;
+
+        /// <summary>Context captured at the last suspension when execution-context flow is on.</summary>
+        internal ExecutionContext m_executionContext;
+
+        internal OnityTask Task
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new OnityTask(this, Version);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void CaptureExecutionContext()
+        {
+            m_executionContext = OnityAsyncExecutionContext.Capture();
+        }
+
+        /// <summary>
+        /// Completes the method. Only the method's own state machine completes its runner, so one
+        /// compare-and-swap publishes the result; no field is touched once it is visible.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void SetResult()
+        {
+            TrySetOwnedResult();
+        }
+
+        internal void SetException(Exception exception)
+        {
+            // A method that faults after capturing, for example when its awaiter rejected the
+            // registration, never resumes; drop the captured context now rather than at pool return.
+            if (m_executionContext != null)
+            {
+                m_executionContext = null;
+            }
+
+            if (exception is OperationCanceledException canceled)
+            {
+                TrySetCanceled(canceled);
+            }
+            else
+            {
+                TrySetException(exception);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Base of the runners behind suspended typed async methods; see <see cref="OnityRunnerBase"/>.
+    /// </summary>
+    /// <typeparam name="T">Result type.</typeparam>
+    [Il2CppSetOption(Option.NullChecks, false)]
+    internal abstract class OnityRunnerBase<T> : OnityTaskSourceBase<T>
+    {
+        /// <summary>Cached delegate that resumes the state machine; assigned once by the subclass.</summary>
+        internal Action m_moveNext;
+
+        /// <summary>Context captured at the last suspension when execution-context flow is on.</summary>
+        internal ExecutionContext m_executionContext;
+
+        internal OnityTask<T> Task
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new OnityTask<T>(this, Version);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void CaptureExecutionContext()
+        {
+            m_executionContext = OnityAsyncExecutionContext.Capture();
+        }
+
+        /// <summary>
+        /// Completes the method with its result. Only the method's own state machine completes its
+        /// runner, so one compare-and-swap publishes it; no field is touched once it is visible.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void SetResult(T result)
+        {
+            TrySetOwnedResult(result);
+        }
+
+        internal void SetException(Exception exception)
+        {
+            if (m_executionContext != null)
+            {
+                m_executionContext = null;
+            }
+
+            if (exception is OperationCanceledException canceled)
+            {
+                TrySetCanceled(canceled);
+            }
+            else
+            {
+                TrySetException(exception);
+            }
+        }
     }
 
     /// <summary>
     /// Pooled state machine runner for suspended untyped async methods. The state machine is held
     /// by value, one cached delegate resumes it, and the runner is the method's native task source.
     /// </summary>
+    /// <remarks>
+    /// The runner returns to its pool as soon as its task is consumed, on every backend, even while a
+    /// MoveNext of the same rental is still unwinding on this thread or a worker. That is safe because
+    /// the generated code runs MoveNext directly on the state machine field without copying it back,
+    /// the compiler-generated MoveNext ends with the builder's SetResult or SetException, and the
+    /// completion publishes its status as its last access to the runner. Define
+    /// <c>ONITY_RUNNER_RETURN_GATE</c> to restore the IL2CPP return-on-unwind gate.
+    /// </remarks>
     /// <typeparam name="TStateMachine">Compiler-generated state machine type.</typeparam>
+    [Il2CppSetOption(Option.NullChecks, false)]
     internal sealed class OnityAsyncStateMachineRunner<TStateMachine> :
-        OnityTaskSourceBase, IOnityAsyncStateMachineRunner, IOnityPooledRunner<OnityAsyncStateMachineRunner<TStateMachine>>
+        OnityRunnerBase, IOnityPooledRunner<OnityAsyncStateMachineRunner<TStateMachine>>
         where TStateMachine : IAsyncStateMachine
     {
         private static OnityRunnerPool<OnityAsyncStateMachineRunner<TStateMachine>> s_pool;
         private static readonly ContextCallback s_moveNextInContext = MoveNextInContext;
         private static readonly ContextCallback s_moveNextRestoringContext = MoveNextRestoringContext;
 
-        private readonly Action m_moveNext;
-#if ENABLE_IL2CPP
-        private readonly Action m_returnToPool;
+#if ONITY_RUNNER_RETURN_GATE && ENABLE_IL2CPP
+        // MoveNext frames of the current rental plus the return-pending bit; see OnityRunnerReturnGate.
         private int m_moveNextDepth;
 #endif
         private TStateMachine m_stateMachine;
-        private ExecutionContext m_executionContext;
         private SynchronizationContext m_resumeContext;
         private OnityAsyncStateMachineRunner<TStateMachine> m_nextPooled;
 
         private OnityAsyncStateMachineRunner()
         {
             m_moveNext = MoveNext;
-#if ENABLE_IL2CPP
-            m_returnToPool = ReturnToPool;
-#endif
         }
-
-        public Action MoveNextAction => m_moveNext;
-
-        public OnityTask Task => new OnityTask((IOnityTaskSource)this, Version);
 
         public ref OnityAsyncStateMachineRunner<TStateMachine> NextPooled => ref m_nextPooled;
 
@@ -373,9 +496,11 @@ namespace Onity.Unity.Async
         /// </summary>
         /// <param name="stateMachine">The caller's state machine.</param>
         /// <param name="runnerField">The builder's runner field inside that state machine.</param>
-        public static void Rent(
+        /// <returns>The bound runner.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static OnityRunnerBase Rent(
             ref TStateMachine stateMachine,
-            ref IOnityAsyncStateMachineRunner runnerField)
+            ref OnityRunnerBase runnerField)
         {
             if (!s_pool.TryPop(out OnityAsyncStateMachineRunner<TStateMachine> runner))
             {
@@ -387,40 +512,17 @@ namespace Onity.Unity.Async
             runner.ResetRetired();
             runnerField = runner;
             runner.m_stateMachine = stateMachine;
-        }
-
-        public void SetResult()
-        {
-            TrySetResult();
-        }
-
-        public void SetException(Exception exception)
-        {
-            // A method that faults after capturing, for example when its awaiter rejected the
-            // registration, never resumes; drop the captured context now rather than at pool return.
-            m_executionContext = null;
-            if (exception is OperationCanceledException canceled)
-            {
-                TrySetCanceled(canceled);
-            }
-            else
-            {
-                TrySetException(exception);
-            }
-        }
-
-        public void CaptureExecutionContext()
-        {
-            m_executionContext = OnityAsyncExecutionContext.Capture();
+            return runner;
         }
 
         protected override void ReleaseSource()
         {
             // The base retired the version in the compare-and-swap that released the source.
-#if ENABLE_IL2CPP
-            // IL2CPP may copy a struct back after a method call on it, so the state machine is
-            // cleared and the runner pooled only after the producing MoveNext has unwound.
-            OnityTaskMainThreadDispatcher.Enqueue(m_returnToPool, 0);
+#if ONITY_RUNNER_RETURN_GATE && ENABLE_IL2CPP
+            if (OnityRunnerReturnGate.RequestReturn(ref m_moveNextDepth))
+            {
+                ReturnToPool();
+            }
 #else
             ReturnToPool();
 #endif
@@ -428,32 +530,36 @@ namespace Onity.Unity.Async
 
         private void ReturnToPool()
         {
-#if ENABLE_IL2CPP
-            // A worker that completed the method may still be unwinding its MoveNext call; wait
-            // for a later drain so the copy-back cannot overwrite the next rental.
-            if (Volatile.Read(ref m_moveNextDepth) != 0)
-            {
-                OnityTaskMainThreadDispatcher.Enqueue(m_returnToPool, 0);
-                return;
-            }
-#endif
+            // initobj: clearing the state machine needs no write barrier.
             m_stateMachine = default;
-            m_executionContext = null;
-            m_resumeContext = null;
-            s_pool.TryPush(this, OnityTask.RunnerPoolCapacity);
+            // Both are usually cleared already; skipping the store skips its write barrier.
+            if (m_executionContext != null)
+            {
+                m_executionContext = null;
+            }
+
+            if (m_resumeContext != null)
+            {
+                m_resumeContext = null;
+            }
+
+            s_pool.TryPush(this, OnityTaskSettings.s_runnerPoolCapacity);
         }
 
         private void MoveNext()
         {
-#if ENABLE_IL2CPP
-            Interlocked.Increment(ref m_moveNextDepth);
+#if ONITY_RUNNER_RETURN_GATE && ENABLE_IL2CPP
+            OnityRunnerReturnGate.EnterFrame(ref m_moveNextDepth);
             try
             {
                 MoveNextCore();
             }
             finally
             {
-                Interlocked.Decrement(ref m_moveNextDepth);
+                if (OnityRunnerReturnGate.ExitFrame(ref m_moveNextDepth))
+                {
+                    ReturnToPool();
+                }
             }
         }
 
@@ -467,6 +573,12 @@ namespace Onity.Unity.Async
                 return;
             }
 
+            MoveNextWithContext(context);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void MoveNextWithContext(ExecutionContext context)
+        {
             m_executionContext = null;
             if (OnityAsyncExecutionContext.TryRunPreservingContext(context, s_moveNextInContext, this))
             {
@@ -508,39 +620,32 @@ namespace Onity.Unity.Async
     }
 
     /// <summary>
-    /// Pooled state machine runner for suspended typed async methods.
+    /// Pooled state machine runner for suspended typed async methods; see
+    /// <see cref="OnityAsyncStateMachineRunner{TStateMachine}"/>.
     /// </summary>
     /// <typeparam name="TStateMachine">Compiler-generated state machine type.</typeparam>
     /// <typeparam name="T">Result type.</typeparam>
+    [Il2CppSetOption(Option.NullChecks, false)]
     internal sealed class OnityAsyncStateMachineRunner<TStateMachine, T> :
-        OnityTaskSourceBase<T>, IOnityAsyncStateMachineRunner<T>, IOnityPooledRunner<OnityAsyncStateMachineRunner<TStateMachine, T>>
+        OnityRunnerBase<T>, IOnityPooledRunner<OnityAsyncStateMachineRunner<TStateMachine, T>>
         where TStateMachine : IAsyncStateMachine
     {
         private static OnityRunnerPool<OnityAsyncStateMachineRunner<TStateMachine, T>> s_pool;
         private static readonly ContextCallback s_moveNextInContext = MoveNextInContext;
         private static readonly ContextCallback s_moveNextRestoringContext = MoveNextRestoringContext;
 
-        private readonly Action m_moveNext;
-#if ENABLE_IL2CPP
-        private readonly Action m_returnToPool;
+#if ONITY_RUNNER_RETURN_GATE && ENABLE_IL2CPP
+        // MoveNext frames of the current rental plus the return-pending bit; see OnityRunnerReturnGate.
         private int m_moveNextDepth;
 #endif
         private TStateMachine m_stateMachine;
-        private ExecutionContext m_executionContext;
         private SynchronizationContext m_resumeContext;
         private OnityAsyncStateMachineRunner<TStateMachine, T> m_nextPooled;
 
         private OnityAsyncStateMachineRunner()
         {
             m_moveNext = MoveNext;
-#if ENABLE_IL2CPP
-            m_returnToPool = ReturnToPool;
-#endif
         }
-
-        public Action MoveNextAction => m_moveNext;
-
-        public OnityTask<T> Task => new OnityTask<T>((IOnityTaskSource<T>)this, Version);
 
         public ref OnityAsyncStateMachineRunner<TStateMachine, T> NextPooled => ref m_nextPooled;
 
@@ -550,9 +655,11 @@ namespace Onity.Unity.Async
         /// </summary>
         /// <param name="stateMachine">The caller's state machine.</param>
         /// <param name="runnerField">The builder's runner field inside that state machine.</param>
-        public static void Rent(
+        /// <returns>The bound runner.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static OnityRunnerBase<T> Rent(
             ref TStateMachine stateMachine,
-            ref IOnityAsyncStateMachineRunner<T> runnerField)
+            ref OnityRunnerBase<T> runnerField)
         {
             if (!s_pool.TryPop(out OnityAsyncStateMachineRunner<TStateMachine, T> runner))
             {
@@ -562,38 +669,17 @@ namespace Onity.Unity.Async
             runner.ResetRetired();
             runnerField = runner;
             runner.m_stateMachine = stateMachine;
-        }
-
-        public void SetResult(T result)
-        {
-            TrySetResult(result);
-        }
-
-        public void SetException(Exception exception)
-        {
-            // A method that faults after capturing, for example when its awaiter rejected the
-            // registration, never resumes; drop the captured context now rather than at pool return.
-            m_executionContext = null;
-            if (exception is OperationCanceledException canceled)
-            {
-                TrySetCanceled(canceled);
-            }
-            else
-            {
-                TrySetException(exception);
-            }
-        }
-
-        public void CaptureExecutionContext()
-        {
-            m_executionContext = OnityAsyncExecutionContext.Capture();
+            return runner;
         }
 
         protected override void ReleaseSource()
         {
             // The base retired the version in the compare-and-swap that released the source.
-#if ENABLE_IL2CPP
-            OnityTaskMainThreadDispatcher.Enqueue(m_returnToPool, 0);
+#if ONITY_RUNNER_RETURN_GATE && ENABLE_IL2CPP
+            if (OnityRunnerReturnGate.RequestReturn(ref m_moveNextDepth))
+            {
+                ReturnToPool();
+            }
 #else
             ReturnToPool();
 #endif
@@ -601,32 +687,35 @@ namespace Onity.Unity.Async
 
         private void ReturnToPool()
         {
-#if ENABLE_IL2CPP
-            // A worker that completed the method may still be unwinding its MoveNext call; wait
-            // for a later drain so the copy-back cannot overwrite the next rental.
-            if (Volatile.Read(ref m_moveNextDepth) != 0)
-            {
-                OnityTaskMainThreadDispatcher.Enqueue(m_returnToPool, 0);
-                return;
-            }
-#endif
+            // initobj: clearing the state machine needs no write barrier.
             m_stateMachine = default;
-            m_executionContext = null;
-            m_resumeContext = null;
-            s_pool.TryPush(this, OnityTask.RunnerPoolCapacity);
+            if (m_executionContext != null)
+            {
+                m_executionContext = null;
+            }
+
+            if (m_resumeContext != null)
+            {
+                m_resumeContext = null;
+            }
+
+            s_pool.TryPush(this, OnityTaskSettings.s_runnerPoolCapacity);
         }
 
         private void MoveNext()
         {
-#if ENABLE_IL2CPP
-            Interlocked.Increment(ref m_moveNextDepth);
+#if ONITY_RUNNER_RETURN_GATE && ENABLE_IL2CPP
+            OnityRunnerReturnGate.EnterFrame(ref m_moveNextDepth);
             try
             {
                 MoveNextCore();
             }
             finally
             {
-                Interlocked.Decrement(ref m_moveNextDepth);
+                if (OnityRunnerReturnGate.ExitFrame(ref m_moveNextDepth))
+                {
+                    ReturnToPool();
+                }
             }
         }
 
@@ -640,6 +729,12 @@ namespace Onity.Unity.Async
                 return;
             }
 
+            MoveNextWithContext(context);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void MoveNextWithContext(ExecutionContext context)
+        {
             m_executionContext = null;
             if (OnityAsyncExecutionContext.TryRunPreservingContext(context, s_moveNextInContext, this))
             {
@@ -686,23 +781,28 @@ namespace Onity.Unity.Async
         private readonly IOnityTaskSource m_source;
         private readonly int m_token;
         private readonly Action<Exception> m_exceptionHandler;
+        private readonly int m_trackingId;
 
-        private OnityTaskForgetObserver(IOnityTaskSource source, int token, Action<Exception> exceptionHandler)
+        private OnityTaskForgetObserver(
+            IOnityTaskSource source, int token, Action<Exception> exceptionHandler, int trackingId)
         {
             m_source = source;
             m_token = token;
             m_exceptionHandler = exceptionHandler;
+            m_trackingId = trackingId;
         }
 
         /// <summary>
-        /// Registers the observer as the source's single native consumer.
+        /// Registers the observer as the source's single native consumer. While task tracking is on, the
+        /// task is also recorded as a native tracker row, without a .NET task bridge.
         /// </summary>
         /// <param name="source">Single-consumer source.</param>
         /// <param name="token">Token of the task value.</param>
         /// <param name="exceptionHandler">Optional exception callback.</param>
         public static void Observe(IOnityTaskSource source, int token, Action<Exception> exceptionHandler)
         {
-            OnityTaskForgetObserver observer = new OnityTaskForgetObserver(source, token, exceptionHandler);
+            int trackingId = OnityTaskTracker.IsEnabled ? OnityTaskTracker.BeginNative("OnityTaskExtensions.Forget") : 0;
+            OnityTaskForgetObserver observer = new OnityTaskForgetObserver(source, token, exceptionHandler, trackingId);
             source.OnCompleted(observer.Complete, token);
         }
 
@@ -711,18 +811,35 @@ namespace Onity.Unity.Async
             try
             {
                 m_source.GetResult(m_token);
+                if (m_trackingId != 0)
+                {
+                    OnityTaskTracker.CompleteNative(m_trackingId, null);
+                }
             }
             catch (Exception exception)
             {
+                if (m_trackingId != 0)
+                {
+                    OnityTaskTracker.CompleteNative(m_trackingId, exception);
+                }
+
                 Report(exception, m_exceptionHandler);
             }
         }
 
+        /// <summary>
+        /// Delivers a fault of a forgotten task to its handler, or publishes it as unobserved through
+        /// <see cref="OnityTaskScheduler"/>, which drops <see cref="OperationCanceledException"/> unless
+        /// <see cref="OnityTaskScheduler.PropagateOperationCanceledException"/> is set. A handler that
+        /// throws is published the same way.
+        /// </summary>
+        /// <param name="exception">Fault of the forgotten task.</param>
+        /// <param name="exceptionHandler">Optional handler.</param>
         internal static void Report(Exception exception, Action<Exception> exceptionHandler)
         {
             if (exceptionHandler == null)
             {
-                Debug.LogException(exception);
+                OnityTaskScheduler.PublishUnobservedException(exception);
                 return;
             }
 
@@ -732,7 +849,7 @@ namespace Onity.Unity.Async
             }
             catch (Exception handlerException)
             {
-                Debug.LogException(handlerException);
+                OnityTaskScheduler.PublishUnobservedException(handlerException);
             }
         }
     }
@@ -746,23 +863,28 @@ namespace Onity.Unity.Async
         private readonly IOnityTaskSource<T> m_source;
         private readonly int m_token;
         private readonly Action<Exception> m_exceptionHandler;
+        private readonly int m_trackingId;
 
-        private OnityTaskForgetObserver(IOnityTaskSource<T> source, int token, Action<Exception> exceptionHandler)
+        private OnityTaskForgetObserver(
+            IOnityTaskSource<T> source, int token, Action<Exception> exceptionHandler, int trackingId)
         {
             m_source = source;
             m_token = token;
             m_exceptionHandler = exceptionHandler;
+            m_trackingId = trackingId;
         }
 
         /// <summary>
-        /// Registers the observer as the source's single native consumer.
+        /// Registers the observer as the source's single native consumer; see
+        /// <see cref="OnityTaskForgetObserver.Observe"/>.
         /// </summary>
         /// <param name="source">Single-consumer source.</param>
         /// <param name="token">Token of the task value.</param>
         /// <param name="exceptionHandler">Optional exception callback.</param>
         public static void Observe(IOnityTaskSource<T> source, int token, Action<Exception> exceptionHandler)
         {
-            OnityTaskForgetObserver<T> observer = new OnityTaskForgetObserver<T>(source, token, exceptionHandler);
+            int trackingId = OnityTaskTracker.IsEnabled ? OnityTaskTracker.BeginNative("OnityTaskExtensions.Forget<T>") : 0;
+            OnityTaskForgetObserver<T> observer = new OnityTaskForgetObserver<T>(source, token, exceptionHandler, trackingId);
             source.OnCompleted(observer.Complete, token);
         }
 
@@ -771,9 +893,18 @@ namespace Onity.Unity.Async
             try
             {
                 m_source.GetResult(m_token);
+                if (m_trackingId != 0)
+                {
+                    OnityTaskTracker.CompleteNative(m_trackingId, null);
+                }
             }
             catch (Exception exception)
             {
+                if (m_trackingId != 0)
+                {
+                    OnityTaskTracker.CompleteNative(m_trackingId, exception);
+                }
+
                 OnityTaskForgetObserver.Report(exception, m_exceptionHandler);
             }
         }

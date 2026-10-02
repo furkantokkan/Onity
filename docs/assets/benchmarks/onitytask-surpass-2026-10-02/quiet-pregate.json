@@ -1,0 +1,285 @@
+{
+  "schemaVersion": 1,
+  "startedUtc": "2026-10-02T03:09:22.5544541Z",
+  "elapsedSeconds": 10.869,
+  "maxCpuPercentOfOneCore": 2.0,
+  "powerPlan": "Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance)",
+  "powerPlanOk": true,
+  "processes": [
+    {
+      "pid": 88108,
+      "name": "Unity",
+      "project": "<other Unity project A>",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 10.875,
+      "cpuPercentOfOneCore": 100.06
+    },
+    {
+      "pid": 41116,
+      "name": "UnityPackageManager",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 85432,
+      "name": "UnityShaderCompiler",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 79820,
+      "name": "UnityCrashHandler64",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 109184,
+      "name": "UnityCrashHandler64",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 57740,
+      "name": "Unity",
+      "project": "<other Unity project C>",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.219,
+      "cpuPercentOfOneCore": 2.01
+    },
+    {
+      "pid": 57916,
+      "name": "UnityCrashHandler64",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 57020,
+      "name": "Unity",
+      "project": "<other Unity project C>",
+      "isWorker": true,
+      "isHost": false,
+      "cpuSeconds": 0.062,
+      "cpuPercentOfOneCore": 0.58
+    },
+    {
+      "pid": 95248,
+      "name": "UnityCrashHandler64",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 91548,
+      "name": "UnityShaderCompiler",
+      "project": "",
+      "isWorker": true,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 57368,
+      "name": "UnityShaderCompiler",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 90920,
+      "name": "Unity",
+      "project": "<other Unity project C>",
+      "isWorker": true,
+      "isHost": false,
+      "cpuSeconds": 0.016,
+      "cpuPercentOfOneCore": 0.14
+    },
+    {
+      "pid": 3076,
+      "name": "Unity Hub",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 51484,
+      "name": "unity",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 102836,
+      "name": "unity",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 50068,
+      "name": "UnityShaderCompiler",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 32604,
+      "name": "Unity Hub",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.078,
+      "cpuPercentOfOneCore": 0.72
+    },
+    {
+      "pid": 55028,
+      "name": "UnityPackageManager",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.031,
+      "cpuPercentOfOneCore": 0.29
+    },
+    {
+      "pid": 71224,
+      "name": "UnityCrashHandler64",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 52444,
+      "name": "UnityShaderCompiler",
+      "project": "",
+      "isWorker": true,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 83236,
+      "name": "UnityCrashHandler64",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 65916,
+      "name": "Unity",
+      "project": "<other Unity project B>",
+      "isWorker": true,
+      "isHost": false,
+      "cpuSeconds": 0.031,
+      "cpuPercentOfOneCore": 0.29
+    },
+    {
+      "pid": 27520,
+      "name": "Unity Hub",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 58580,
+      "name": "Unity",
+      "project": "<other Unity project B>",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.234,
+      "cpuPercentOfOneCore": 2.16
+    },
+    {
+      "pid": 49412,
+      "name": "UnityPackageManager",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 67656,
+      "name": "Unity",
+      "project": "<other Unity project B>",
+      "isWorker": true,
+      "isHost": false,
+      "cpuSeconds": 0.031,
+      "cpuPercentOfOneCore": 0.29
+    },
+    {
+      "pid": 69516,
+      "name": "UnityShaderCompiler",
+      "project": "",
+      "isWorker": true,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 22612,
+      "name": "Unity Hub",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 59012,
+      "name": "UnityCrashHandler64",
+      "project": "",
+      "isWorker": false,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    },
+    {
+      "pid": 77364,
+      "name": "UnityShaderCompiler",
+      "project": "",
+      "isWorker": true,
+      "isHost": false,
+      "cpuSeconds": 0.0,
+      "cpuPercentOfOneCore": 0.0
+    }
+  ],
+  "vanishedPids": [],
+  "quiet": false,
+  "refusalReasons": [
+    "CPU above 2%: PIDs 88108,57740,58580"
+  ]
+}

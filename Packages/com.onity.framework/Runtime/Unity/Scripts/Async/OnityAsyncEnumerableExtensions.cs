@@ -6,8 +6,56 @@ namespace Onity.Unity.Async
     /// <summary>Operators, adapters and terminal consumers for native asynchronous streams.</summary>
     /// <remarks>Descriptions are reusable; enumerations are independent and initially unpooled.
     /// Pending operations and terminal storage may allocate. No implicit main-thread hop is added.</remarks>
-    public static class OnityAsyncEnumerableExtensions
+    public static partial class OnityAsyncEnumerableExtensions
     {
+        /// <summary>Buffers a lazy observable subscription for native asynchronous consumption.</summary>
+        /// <typeparam name="T">Item type.</typeparam>
+        /// <param name="source">Observable with public lifecycle subscription support.</param>
+        /// <param name="capacity">Positive per-enumeration buffered item capacity.</param>
+        /// <returns>An inert reusable description with independent subscriptions and buffers.</returns>
+        /// <remarks>Overflow rejects the new value, detaches and drains accepted values before
+        /// faulting. Source errors and failed completion, including OCE, remain faults. Cancellation
+        /// and disposal discard private buffered items without changing the source. Pre-canceled
+        /// first moves skip Subscribe. Unsubscription failure has cleanup precedence. Storage,
+        /// subscriptions and pending sources allocate; no implicit thread hop is added. Callers
+        /// must respect source subscription/disposal affinity; this does not make Subject thread-safe.</remarks>
+        /// <exception cref="ArgumentNullException">Source is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Capacity is not positive.</exception>
+        public static IOnityAsyncEnumerable<T> AsOnityAsyncEnumerable<T>(
+            this Onity.Reactive.IOnityObservable<T> source, int capacity)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+            if (capacity <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity));
+            }
+            return new OnityPushAsyncEnumerable<T>(source, capacity);
+        }
+
+        /// <summary>Starts independent sequential native enumeration for each observable subscription.</summary>
+        /// <typeparam name="T">Item type.</typeparam>
+        /// <param name="source">Reusable native stream description.</param>
+        /// <returns>An observable delivering terminal notification after native cleanup.</returns>
+        /// <remarks>Lifecycle observers receive successful completion or one error. Value-only
+        /// subscribers ignore success and route terminal faults/independent cancellation OCE to
+        /// OnityObservableExceptionHandler. Explicit disposal suppresses terminal notifications;
+        /// callback and post-disposal cleanup failures are reported globally without recursive
+        /// observer notification. The subscription owns one observer.Dispose call. Cancellation
+        /// converted through an observable returns as faulted OCE, since OnityResult has no canceled
+        /// status. Pending observations/owned tokens allocate; no implicit thread/context hop is added.</remarks>
+        /// <exception cref="ArgumentNullException">Source is null.</exception>
+        public static Onity.Reactive.IOnityObservable<T> AsObservable<T>(this IOnityAsyncEnumerable<T> source)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+            return new OnityPullObservable<T>(source);
+        }
+
         /// <summary>Maps each item with one sequential native asynchronous selector.</summary>
         /// <typeparam name="T">Input item type.</typeparam>
         /// <typeparam name="TResult">Selected item type.</typeparam>

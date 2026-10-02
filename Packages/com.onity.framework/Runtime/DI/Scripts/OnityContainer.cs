@@ -22,7 +22,7 @@ namespace Onity.DI
     /// <summary>
     /// Lightweight dependency container with parent-scope support.
     /// </summary>
-    public sealed class OnityContainer : IResolver, IDisposable
+    public sealed class OnityContainer : IResolver, IDisposable, IOnityScopeLifetime
     {
         [ThreadStatic]
         private static Stack<Type> s_resolutionStack;
@@ -90,6 +90,20 @@ namespace Onity.DI
         private bool m_lifecycleReady;
         private Task m_cachedBuildTask;
         private bool m_isDisposed;
+        // Scope lifetime: created by the first LifetimeToken request (a container whose token is
+        // never requested allocates nothing for it) and canceled first in Dispose(). Lifetime and
+        // build state only; the resolve path never reads these fields.
+        private ScopeLifetimeSource m_lifetimeSource;
+        // Caller-and-lifetime linked sources created by BuildAsync calls that pass their own token;
+        // disposed with the scope after the lifetime token is canceled.
+        private List<CancellationTokenSource> m_buildTokenSources;
+        // True once every async build callback completed in one BuildAsync run; later runs (a retry
+        // after an async initializer failed, or late async initializers) skip the callbacks.
+        private bool m_asyncBuildCallbacksCompleted;
+        // Async lifecycle entry points, collected like m_initializables (lazily allocated), and the
+        // number at the front of the list that already completed InitializeAsync.
+        private List<IOnityAsyncInitializable> m_asyncInitializables;
+        private int m_asyncInitializedCount;
         // Compiled, array-backed view of this scope's explicit local bindings.
         // Non-null after Build() runs while UseBakedResolve is true. Replaced when
         // bindings change after Build() so the Resolve hot path sees current providers.
@@ -159,6 +173,34 @@ namespace Onity.DI
             m_isBuildFinalized = false;
             m_cachedBuildTask = null;
         }
+
+        /// <summary>
+        /// Gets a token that is canceled when this container is disposed. <see cref="Dispose" />
+        /// cancels it first, before it disposes child scopes, scoped instances and singletons, so
+        /// work bound to the scope stops before the services it uses are torn down.
+        /// </summary>
+        /// <remarks>
+        /// The source is created on the first request; a container whose token is never requested
+        /// allocates nothing for it. A child container's token is linked to its parent's token, so
+        /// disposing the parent also cancels the child's token. A disposed container returns a
+        /// canceled token. Thread-safe.
+        /// </remarks>
+        public CancellationToken LifetimeToken
+        {
+            get
+            {
+                ScopeLifetimeSource source = Volatile.Read(ref m_lifetimeSource);
+                return source != null ? source.Token : CreateLifetimeToken();
+            }
+        }
+
+        /// <inheritdoc />
+        CancellationToken IOnityScopeLifetime.Token => LifetimeToken;
+
+        /// <summary>
+        /// Gets whether <see cref="Dispose" /> has run.
+        /// </summary>
+        public bool IsDisposed => m_isDisposed;
 
         /// <summary>
         /// Starts a fluent binding for one contract.
@@ -587,6 +629,7 @@ namespace Onity.DI
         // singletons are created eagerly here (like classic entry points); other
         // singletons stay lazy. IDisposable lifecycle objects are disposed by their
         // provider on container Dispose, so no separate disposable list is needed.
+        // Async initializables are collected here too; BuildAsync runs them.
         private void CollectAndInitializeLifecycle()
         {
             HashSet<object> seen = null;
@@ -618,11 +661,13 @@ namespace Onity.DI
                 bool isTickable = typeof(IOnityTickable).IsAssignableFrom(implementationType);
                 bool isFixedTickable = typeof(IOnityFixedTickable).IsAssignableFrom(implementationType);
                 bool isLateTickable = typeof(IOnityLateTickable).IsAssignableFrom(implementationType);
+                bool isAsyncInitializable = typeof(IOnityAsyncInitializable).IsAssignableFrom(implementationType);
 
                 if (isInitializable == false
                     && isTickable == false
                     && isFixedTickable == false
-                    && isLateTickable == false)
+                    && isLateTickable == false
+                    && isAsyncInitializable == false)
                 {
                     continue;
                 }
@@ -657,6 +702,12 @@ namespace Onity.DI
                 if (isLateTickable)
                 {
                     (m_lateTickables ??= new List<IOnityLateTickable>()).Add((IOnityLateTickable)instance);
+                }
+
+                if (isAsyncInitializable)
+                {
+                    (m_asyncInitializables ??= new List<IOnityAsyncInitializable>())
+                        .Add((IOnityAsyncInitializable)instance);
                 }
             }
 
@@ -693,8 +744,10 @@ namespace Onity.DI
             bool isTickable = typeof(IOnityTickable).IsAssignableFrom(implementationType);
             bool isFixedTickable = typeof(IOnityFixedTickable).IsAssignableFrom(implementationType);
             bool isLateTickable = typeof(IOnityLateTickable).IsAssignableFrom(implementationType);
+            bool isAsyncInitializable = typeof(IOnityAsyncInitializable).IsAssignableFrom(implementationType);
             if (isInitializable == false && isTickable == false
-                && isFixedTickable == false && isLateTickable == false)
+                && isFixedTickable == false && isLateTickable == false
+                && isAsyncInitializable == false)
             {
                 return;
             }
@@ -731,6 +784,13 @@ namespace Onity.DI
             if (isLateTickable)
             {
                 (m_lateTickables ??= new List<IOnityLateTickable>()).Add((IOnityLateTickable)instance);
+            }
+
+            if (isAsyncInitializable)
+            {
+                // Runs in the BuildAsync run in progress, or on the next BuildAsync call.
+                (m_asyncInitializables ??= new List<IOnityAsyncInitializable>())
+                    .Add((IOnityAsyncInitializable)instance);
             }
 
             if (isInitializable)
@@ -774,32 +834,45 @@ namespace Onity.DI
         }
 
         /// <summary>
-        /// Executes asynchronous post-build callbacks once and caches the resulting task.
+        /// Executes asynchronous post-build callbacks once, then runs each collected
+        /// <see cref="IOnityAsyncInitializable" /> once, and caches the resulting task.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token for callback execution.</param>
-        /// <returns>Completion task for all async callbacks.</returns>
+        /// <returns>Completion task for all async callbacks and async initializers.</returns>
+        /// <remarks>
+        /// Order: <see cref="Build" /> (sync callbacks and <see cref="IOnityInitializable.Initialize" />),
+        /// then the async build callbacks, then the async initializers one at a time in
+        /// binding-registration order. Each step starts on the context the build started on; no
+        /// step continues on a thread-pool thread just because the previous step completed there.
+        /// Callbacks and initializers receive a token that is canceled when
+        /// <paramref name="cancellationToken" /> is canceled or when this container is disposed,
+        /// whichever comes first; with no caller token (or with <see cref="LifetimeToken" /> itself)
+        /// they receive <see cref="LifetimeToken" />. Disposing the container while the run is in
+        /// progress ends the returned task as canceled. A canceled run reports
+        /// <paramref name="cancellationToken" /> when the caller canceled, otherwise
+        /// <see cref="LifetimeToken" />. A canceled or faulted run is not cached, so
+        /// the next call runs again: it re-runs the async build callbacks unless all of them already
+        /// completed, and resumes at the first async initializer that has not completed. An async
+        /// initializer bound after a completed run is run by the next call.
+        /// </remarks>
         public Task BuildAsync(CancellationToken cancellationToken = default)
         {
             EnsureNotDisposed();
             Build();
 
-            if (m_cachedBuildTask != null)
-            {
-                if (m_cachedBuildTask.IsCanceled == false && m_cachedBuildTask.IsFaulted == false)
-                {
-                    return m_cachedBuildTask;
-                }
+            Task cachedTask = m_cachedBuildTask;
 
-                m_cachedBuildTask = null;
+            if (cachedTask != null
+                && cachedTask.IsCanceled == false
+                && cachedTask.IsFaulted == false
+                && (cachedTask.IsCompleted == false || HasPendingAsyncBuildWork() == false))
+            {
+                return cachedTask;
             }
 
-            if (m_asyncBuildCallbacks.Count == 0)
-            {
-                m_cachedBuildTask = Task.CompletedTask;
-                return m_cachedBuildTask;
-            }
-
-            m_cachedBuildTask = ExecuteBuildCallbacksWithRetryAsync(cancellationToken);
+            m_cachedBuildTask = HasPendingAsyncBuildWork()
+                ? RunAsyncBuildAsync(cancellationToken)
+                : Task.CompletedTask;
             return m_cachedBuildTask;
         }
 
@@ -1290,6 +1363,10 @@ namespace Onity.DI
 
             List<Exception> disposalErrors = null;
 
+            // Cancel the scope lifetime first so bound async work and AddTo registrations stop
+            // before child scopes and owned instances are disposed.
+            CancelLifetime(ref disposalErrors);
+
             if (m_subContainerScopes != null)
             {
                 foreach (OnityContainer child in m_subContainerScopes.Values)
@@ -1342,6 +1419,7 @@ namespace Onity.DI
                 }
             }
 
+            DisposeBuildTokenSources();
             m_ownedProviders.Clear();
             m_providerMap.Clear();
             m_implicitProviderMap.Clear();
@@ -1358,6 +1436,7 @@ namespace Onity.DI
             m_tickables = null;
             m_fixedTickables = null;
             m_lateTickables = null;
+            m_asyncInitializables = null;
             m_multiProviderMap = null;
             m_openGenericMap = null;
             m_closedOpenGenericProviders = null;
@@ -2006,20 +2085,223 @@ namespace Onity.DI
             return false;
         }
 
-        private async Task ExecuteBuildCallbacksWithRetryAsync(CancellationToken cancellationToken)
+        // One BuildAsync run: the async build callbacks (unless an earlier run completed them all),
+        // then the async initializers that have not completed. Awaits keep the caller's context
+        // (no ConfigureAwait(false)), so a step that completes on a worker thread does not make the
+        // next callback or initializer start there; in Play Mode every step starts on the main thread.
+        // Token checks come before the bounds checks, so a run that outlives Dispose (which clears
+        // the lists) ends canceled instead of completing. Steps receive the linked build token; when
+        // a step ends with that token's cancellation, the run reports the token that caused it (the
+        // caller's, otherwise the scope's), never the internal linked token.
+        private async Task RunAsyncBuildAsync(CancellationToken cancellationToken)
         {
-            for (int i = 0; i < m_asyncBuildCallbacks.Count; i++)
+            cancellationToken.ThrowIfCancellationRequested();
+            CancellationToken lifetimeToken = LifetimeToken;
+            CancellationToken buildToken = CreateBuildToken(cancellationToken, lifetimeToken);
+
+            if (m_asyncBuildCallbacksCompleted == false)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                for (int i = 0; ; i++)
+                {
+                    ThrowIfBuildCanceled(cancellationToken, lifetimeToken);
 
-                Task task = m_asyncBuildCallbacks[i](this, cancellationToken);
+                    if (i >= m_asyncBuildCallbacks.Count)
+                    {
+                        break;
+                    }
 
-                if (task == null)
+                    Task task = m_asyncBuildCallbacks[i](this, buildToken);
+
+                    if (task == null)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        await task;
+                    }
+                    catch (OperationCanceledException) when (IsBuildCanceled(cancellationToken, lifetimeToken))
+                    {
+                        throw CreateBuildCanceledException(cancellationToken, lifetimeToken);
+                    }
+                }
+
+                m_asyncBuildCallbacksCompleted = true;
+            }
+
+            while (true)
+            {
+                ThrowIfBuildCanceled(cancellationToken, lifetimeToken);
+                List<IOnityAsyncInitializable> initializables = m_asyncInitializables;
+
+                if (initializables == null || m_asyncInitializedCount >= initializables.Count)
+                {
+                    break;
+                }
+
+                IOnityAsyncInitializable initializable = initializables[m_asyncInitializedCount];
+
+                try
+                {
+                    await initializable.InitializeAsync(buildToken);
+                }
+                catch (OperationCanceledException) when (IsBuildCanceled(cancellationToken, lifetimeToken))
+                {
+                    throw CreateBuildCanceledException(cancellationToken, lifetimeToken);
+                }
+
+                MarkAsyncInitialized(initializable);
+            }
+        }
+
+        private bool HasPendingAsyncBuildWork()
+        {
+            return (m_asyncBuildCallbacksCompleted == false && m_asyncBuildCallbacks.Count > 0)
+                || (m_asyncInitializables != null && m_asyncInitializedCount < m_asyncInitializables.Count);
+        }
+
+        // Advances past the initializer that just completed. Unbinding while it ran may have shifted
+        // the list (see RemoveAsyncInitializable), so the cursor only moves when it still points at it.
+        private void MarkAsyncInitialized(IOnityAsyncInitializable initializable)
+        {
+            List<IOnityAsyncInitializable> initializables = m_asyncInitializables;
+            int index = m_asyncInitializedCount;
+
+            if (initializables != null
+                && index < initializables.Count
+                && ReferenceEquals(initializables[index], initializable))
+            {
+                m_asyncInitializedCount = index + 1;
+            }
+        }
+
+        private void RemoveAsyncInitializable(object instance)
+        {
+            List<IOnityAsyncInitializable> initializables = m_asyncInitializables;
+
+            if (initializables == null)
+            {
+                return;
+            }
+
+            for (int i = initializables.Count - 1; i >= 0; i--)
+            {
+                if (ReferenceEquals(initializables[i], instance) == false)
                 {
                     continue;
                 }
 
-                await task.ConfigureAwait(false);
+                initializables.RemoveAt(i);
+
+                if (i < m_asyncInitializedCount)
+                {
+                    m_asyncInitializedCount--;
+                }
+            }
+        }
+
+        // The token handed to async build work: the scope lifetime token, linked with the caller's
+        // token when the caller passes its own cancelable token. Linked sources live until the scope
+        // is disposed, so work that keeps the token after the build still observes the scope end.
+        private CancellationToken CreateBuildToken(CancellationToken cancellationToken, CancellationToken lifetimeToken)
+        {
+            if (cancellationToken.CanBeCanceled == false || cancellationToken == lifetimeToken)
+            {
+                return lifetimeToken;
+            }
+
+            CancellationTokenSource linkedSource =
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, lifetimeToken);
+            (m_buildTokenSources ??= new List<CancellationTokenSource>(1)).Add(linkedSource);
+            return linkedSource.Token;
+        }
+
+        // The linked build token is canceled exactly when one of its two sources is, so the run checks
+        // the sources and reports the one that caused it: the caller's token first, then the scope's.
+        private static bool IsBuildCanceled(CancellationToken cancellationToken, CancellationToken lifetimeToken)
+        {
+            return cancellationToken.IsCancellationRequested || lifetimeToken.IsCancellationRequested;
+        }
+
+        private static void ThrowIfBuildCanceled(CancellationToken cancellationToken, CancellationToken lifetimeToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            lifetimeToken.ThrowIfCancellationRequested();
+        }
+
+        private static OperationCanceledException CreateBuildCanceledException(
+            CancellationToken cancellationToken,
+            CancellationToken lifetimeToken)
+        {
+            return new OperationCanceledException(
+                cancellationToken.IsCancellationRequested ? cancellationToken : lifetimeToken);
+        }
+
+        private CancellationToken CreateLifetimeToken()
+        {
+            if (Volatile.Read(ref m_isDisposed))
+            {
+                return new CancellationToken(true);
+            }
+
+            ScopeLifetimeSource created = new ScopeLifetimeSource(m_parent);
+            ScopeLifetimeSource published = Interlocked.CompareExchange(ref m_lifetimeSource, created, null);
+
+            if (published != null)
+            {
+                // Another thread published first; release the unused source and its parent link.
+                created.Close();
+                return published.Token;
+            }
+
+            // Pairs with the interlocked read in CancelLifetime: if Dispose ran before this source was
+            // published, it could not see it, so the source is closed here.
+            if (Volatile.Read(ref m_isDisposed))
+            {
+                created.Close();
+            }
+
+            return created.Token;
+        }
+
+        private void CancelLifetime(ref List<Exception> disposalErrors)
+        {
+            // Interlocked read: orders the m_isDisposed write before it (see CreateLifetimeToken).
+            ScopeLifetimeSource source = Interlocked.CompareExchange(ref m_lifetimeSource, null, null);
+
+            if (source == null)
+            {
+                return;
+            }
+
+            try
+            {
+                source.Close();
+            }
+            catch (Exception exception)
+            {
+                disposalErrors ??= new List<Exception>(1);
+                disposalErrors.Add(exception);
+            }
+        }
+
+        private void DisposeBuildTokenSources()
+        {
+            List<CancellationTokenSource> sources = m_buildTokenSources;
+
+            if (sources == null)
+            {
+                return;
+            }
+
+            m_buildTokenSources = null;
+
+            // Each source is already canceled through its link to the lifetime token; disposing
+            // removes its registration from the caller's token.
+            for (int i = 0; i < sources.Count; i++)
+            {
+                sources[i].Dispose();
             }
         }
 
@@ -2035,6 +2317,50 @@ namespace Onity.DI
             public int GetHashCode(object value)
             {
                 return value == null ? 0 : RuntimeHelpers.GetHashCode(value);
+            }
+        }
+
+        // The scope's cancellation source. A child scope links it to the parent's token through one
+        // registration that Close removes, so a disposed child leaves nothing behind in a long-lived
+        // parent. It is never disposed, so Token stays readable after the scope ends.
+        private sealed class ScopeLifetimeSource : CancellationTokenSource
+        {
+            private static readonly Action<object> s_cancelFromParent = CancelFromParent;
+
+            private readonly CancellationTokenRegistration m_parentRegistration;
+            private int m_isClosed;
+
+            public ScopeLifetimeSource(OnityContainer parent)
+            {
+                if (parent != null)
+                {
+                    // Runs inline (canceling this source) when the parent has already ended.
+                    m_parentRegistration = OnityScopeLifetimeExtensions.RegisterWithoutContext(
+                        parent.LifetimeToken, s_cancelFromParent, this);
+                }
+            }
+
+            // Cancels once and unlinks from the parent. Callback exceptions propagate to Dispose.
+            public void Close()
+            {
+                if (Interlocked.Exchange(ref m_isClosed, 1) != 0)
+                {
+                    return;
+                }
+
+                try
+                {
+                    Cancel();
+                }
+                finally
+                {
+                    m_parentRegistration.Dispose();
+                }
+            }
+
+            private static void CancelFromParent(object state)
+            {
+                ((ScopeLifetimeSource)state).Cancel();
             }
         }
 
@@ -2238,6 +2564,7 @@ namespace Onity.DI
                 RemoveLifecycleInstance(m_tickables, instance);
                 RemoveLifecycleInstance(m_fixedTickables, instance);
                 RemoveLifecycleInstance(m_lateTickables, instance);
+                RemoveAsyncInitializable(instance);
             }
         }
 

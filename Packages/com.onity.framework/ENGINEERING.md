@@ -44,7 +44,9 @@ Core runtime/editor domains:
 - `Onity.Reactive`: observable primitives and operators.
 - `Onity.Factory`: factory contracts and implementations.
 - `Onity.Pooling`: pool abstractions and integrations.
-- `Onity.Unity`: contexts, async helpers, scene flow, Unity bridges.
+- `Onity.Unity`: contexts, `OnityTask` async (`Onity.Unity.Async`), scene flow, Unity bridges.
+- `Onity.Unity.UGUI`: optional uGUI async events and bindings, compiled only when
+  `com.unity.ugui` is installed.
 - `Onity.DOTS`: DOTS bridge systems and ECS integration points.
 - `Onity.Editor`: diagnostics, validation, menu tooling.
 
@@ -214,14 +216,15 @@ sync and prefer the design doc when they disagree.
 
 Primary tools:
 
-- `Onity/Diagnostics/Monitor`
-- `Onity/Diagnostics/Container Diagnostics`
-- `Onity/Diagnostics/Task Tracker`
-- `Onity/Diagnostics/Observable Tracker`
-- `Onity/Diagnostics/Pool Monitor`
-- `Onity/Diagnostics/Scene Flow Manager`
+- `Onity/Tools/Monitor`
+- `Onity/Tools/Container Diagnostics`
+- `Onity/Tools/Task Tracker`
+- `Onity/Tools/Observable Tracker`
+- `Onity/Tools/Pool Monitor`
+- `Onity/Tools/Scene Flow Manager`
 - `Onity/Validation/Validate Scene`
 - `Onity/Validation/Validate All Scenes`
+- `Onity/AI/Install Assistant Guidance...`, `Onity/AI/Check Assistant Guidance`
 
 Engineering intent:
 

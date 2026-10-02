@@ -5,7 +5,431 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.0] - 2026-10-02
+
+OnityTask is faster than UniTask 2.5.11 in all 29 gated rows of the published
+IL2CPP Release Player gate (default context flow, pool retention matched for
+large bursts; see Performance), covers UniTask's runtime API under Onity names
+apart from the gaps listed in the OnityTask comparison guide, and connects async
+work to Onity's DI scopes, reactive properties and message bus.
+The package now ships its documentation and AI assistant guidance. Read
+**Breaking** before upgrading.
+
+### Added
+
+- `OnityTaskVoid` and its method builder for fire-and-forget
+  `async OnityTaskVoid` methods, plus the `OnityTask.Void`, `OnityTask.Action`
+  and `OnityTask.UnityAction` factories in UniTask 2.5.11's 17 shapes. A fault
+  goes to `OnityTaskScheduler`, which drops `OperationCanceledException` by
+  default; the builder allocates nothing for a method that completes without
+  suspending.
+- `OnityTask.Create`, `Defer`, `Never` and `Lazy` (`OnityAsyncLazy`,
+  `OnityAsyncLazy<T>`, `ToAsyncLazy`), generic `FromException<T>` and
+  `FromCanceled<T>`, `Status` with `OnityTaskStatus` and
+  `OnityTaskStatusExtensions`, `ToString()`, `OnityTask<T>.AsOnityTask()` and
+  `AsUnitTask()`.
+- `ContinueWith` (8 forms) and `Unwrap` (10 forms); `AsValueTask`, implicit
+  `ValueTask` / `ValueTask<T>` conversions and `ValueTask.AsOnityTask()`;
+  `Task.AsOnityTask(useCurrentSynchronizationContext)`.
+- An implicit `OnityTask<T>` to `OnityTask` conversion: a view on the same
+  source and token that neither consumes nor allocates.
+- Cancellation helpers: `ToCancellationToken` (with an optional link token),
+  `CancellationToken.ToOnityTask()`, an awaitable `WaitUntilCanceled()`,
+  `IDisposable.AddTo(CancellationToken)`, `RegisterWithoutCaptureExecutionContext`,
+  `IsOperationCanceledException` and `OnityCancellationTokenEqualityComparer`.
+- Destroy-bound cancellation: `GetCancellationTokenOnDestroy` for MonoBehaviour,
+  GameObject and Component, and `CancellationTokenSource.RegisterRaiseCancelOnDestroy`
+  for GameObject and Component (UniTask parity).
+- `OnityTaskScheduler` (`UnobservedTaskException`,
+  `PropagateOperationCanceledException`, `UnobservedExceptionWriteLogType`,
+  `DispatchUnityMainThread`) and `Forget(handler, handleExceptionOnMainThread)`.
+- `OnityTask(<T>).ToObservable()`, a native `IOnityObservable<T>.ToOnityTask(ct)`
+  that completes with the last value, and `ToOnityTask(useFirstValue, ct)`;
+  `OnityProgress.Create<T>` and `CreateOnlyValueChanged<T>`.
+- `OnityAutoResetTaskCompletionSource` and `OnityAutoResetTaskCompletionSource<T>`:
+  pooled, single-consumption, version-reset completion sources (UniTask
+  `AutoResetUniTaskCompletionSource` parity).
+- `SwitchToTaskPool`, `SwitchToSynchronizationContext`,
+  `ReturnToSynchronizationContext` and `ReturnToCurrentSynchronizationContext`
+  (`await using` scopes), `SwitchToMainThread(timing, ct)`,
+  `ReturnToMainThread(ct)` and `ReturnToMainThread(timing, ct)`,
+  `Post(action, timing)`, and six more `RunOnThreadPool` overloads (state and
+  async delegates) with the existing main-thread return rules.
+- Coroutine interop: `OnityTask.ToCoroutine(factory)` and `task.ToCoroutine(...)`,
+  awaiting an `IEnumerator`, `WithCancellation`, `ToOnityTask(timing, ct)`
+  (driven by the PlayerLoop), `ToOnityTask(MonoBehaviour)` and
+  `MonoBehaviour.StartAsyncCoroutine`.
+- OnityTask adapters for `ResourceRequest`, `AssetBundleRequest`,
+  `AssetBundleCreateRequest`, `UnityWebRequestAsyncOperation` and
+  `AsyncGPUReadbackRequest`, plus `OnityProgress.Create`.
+- `AsyncOperation.AsOnityTask(IProgress<float>, ct)`, `await` on a `JobHandle`
+  and `JobHandle.WaitAsync(timing, ct)`, `AsInstancesOnityTask` for
+  `AsyncInstantiateOperation(<T>)` (Unity 2022.3.20+ and Unity 6),
+  `Awaitable(<T>).AsOnityTask()` (Unity 2023.1+), the `UnityWebRequest`,
+  `IsNetworkError`, `IsHttpError`, `Error`, `Text` and `ResponseHeaders`
+  members of `OnityUnityWebRequestException`, and the awaiters'
+  `SourceOnCompleted`.
+- `OnityPlayerLoopTiming` gains 16 members appended after `LateUpdate`
+  (values 3-18): `Initialization`, `LastInitialization`, `EarlyUpdate`,
+  `LastEarlyUpdate`, `FixedUpdateBegin`, `LastFixedUpdate`, `PreUpdate`,
+  `LastPreUpdate`, `UpdateBegin`, `LastUpdate`, `PreLateUpdate`,
+  `LastPreLateUpdate`, `PostLateUpdate`, `LastPostLateUpdate`, `TimeUpdate` and
+  `LastTimeUpdate`. Their nodes install on first use; the three existing
+  timings keep their values and eager nodes. UniTask's `Update` and
+  `FixedUpdate` are `UpdateBegin` and `FixedUpdateBegin`.
+- `OnityTaskPlayerLoop.Initialize(params timings)`, `InitializeAll()`,
+  `IsInjected(timing)`, `DumpCurrentPlayerLoop()`, `AddAction(timing,
+  IOnityPlayerLoopItem)`, `AddContinuation(timing, action)`, `IsMainThread`,
+  `MainThreadId` and `UnitySynchronizationContext`.
+- `Yield()` and `Yield(timing)` returning `OnityYieldAwaitable`, `Yield(ct)`,
+  `Yield(ct, cancelImmediately)` and `Yield(timing, ct, cancelImmediately)`;
+  `NextFrame()`, `NextFrame(ct, cancelImmediately)` and
+  `NextFrame(timing, ct, cancelImmediately)`; `DelayFrame(count, timing, ct,
+  cancelImmediately)`; `WaitForFixedUpdate()` and
+  `WaitForFixedUpdate(ct, cancelImmediately)`; `WaitForEndOfFrame(MonoBehaviour)`
+  and `WaitForEndOfFrame(MonoBehaviour, ct, cancelImmediately)`.
+  `cancelImmediately` publishes a cancellation on the canceling thread.
+- Timed waits on any timing: `OnityDelayType` (`DeltaTime`,
+  `UnscaledDeltaTime`, `Realtime`), `Delay(TimeSpan, ignoreTimeScale or
+  OnityDelayType, timing, ct, cancelImmediately)`, `WaitForSeconds(float or
+  int, ...)`, `WaitUntil` / `WaitWhile` with a timing or a state,
+  `WaitUntilCanceled(ct, timing, completeImmediately)` and
+  `WaitUntilValueChanged`. Integer-millisecond `Delay` overloads are
+  deliberately absent because `OnityTask.Delay(2)` already means two seconds.
+- `OnityPlayerLoopTimer` (`Create`, `StartNew`, `Restart`, `Restart(TimeSpan)`,
+  `Stop`, `Dispose`, `IsRunning`); `CancelAfterSlim(TimeSpan or int
+  milliseconds, OnityDelayType, timing)`; `OnityTimeoutController(OnityDelayType,
+  timing)`, its link-source constructor and `Timeout(int millisecondsTimeout)`;
+  `Timeout` and `TimeoutWithoutException(TimeSpan, OnityDelayType, timing,
+  taskCancellationTokenSource)`.
+- `OnityTask.SourcePoolCapacity` (default 256), the per-source-type retention
+  cap next to `RunnerPoolCapacity` (default 128); the equivalent of UniTask's
+  `TaskPool.SetMaxPoolSize`.
+- `OnityTrackedTaskInfo.IsNative` and a constructor overload with `isNative`.
+- Composition: `WhenAll` and `WhenAny` over `IEnumerable<OnityTask>` and
+  `IEnumerable<OnityTask<T>>`; `WhenAny<T>(OnityTask<T> left, OnityTask right)`
+  returning `(bool hasResultLeft, T result)`; generated typed tuple
+  `WhenAll<T1..T15>` and mixed-type `WhenAny<T1..T15>` returning
+  `(int winArgumentIndex, T1 result1, ...)` on pooled native sources; `WhenEach`
+  with `OnityWhenEachResult<T>`; `await` on task arrays, sequences and typed or
+  untyped tuples (2-15 elements); `IEnumerable<T>.Select` to task sequences.
+- Async lifecycle triggers (UniTask parity): `AwakeAsync`, `StartAsync`,
+  `OnEnableAsync` / `OnDisableAsync` handlers, `OnDestroyAsync`,
+  `GetAsync<Name>Trigger()`, and `OnityAsyncTriggerBase<T>` as an
+  `IOnityAsyncEnumerable<T>` (`using Onity.Unity.Async.Triggers;`).
+- 55 generated MonoBehaviour message triggers with `GetAsync<Name>Trigger()`,
+  one-shot `<Message>Async(ct)` waits and reusable handlers, and the public
+  `OnityTriggerEvent<T>` and `IOnityTriggerHandler<T>`. Physics, physics 2D and
+  particle triggers compile only with their Unity modules (`ONITY_PHYSICS`,
+  `ONITY_PHYSICS2D` and `ONITY_PARTICLESYSTEM` version defines); mouse triggers
+  are compiled out on iOS, Android and WSA, as in UniTask.
+- `UnityEvent` and `UnityEvent<T>` waits (`OnInvokeAsync`,
+  `OnInvokeAsAsyncEnumerable`, `GetAsyncEventHandler`) and the eight
+  `IOnityAsync*EventHandler` interfaces. UI Toolkit (beyond UniTask):
+  `Button.OnClickAsync`, `VisualElement.OnEventAsync<TEvent>`,
+  `INotifyValueChanged<T>.OnValueChangedAsync`, their stream forms, and
+  `BindTo` for `TextElement` and value controls, which never raises a
+  `ChangeEvent` and unbinds when the element leaves its panel.
+- The optional `Onity.Unity.UGUI` assembly, compiled only when `com.unity.ugui`
+  is installed (Onity adds no package dependency): 17 EventSystems triggers,
+  `Button`, `Toggle`, `Scrollbar`, `ScrollRect`, `Slider`, `InputField` and
+  `Dropdown` waits, streams and handlers, and `BindTo` for `Text` and
+  `Selectable.interactable`.
+- Reactive stream adapters: `IOnityObservable<T>.AsOnityAsyncEnumerable(capacity)`
+  (lazy, bounded FIFO, overflow faults after draining accepted values) and
+  `IOnityAsyncEnumerable<T>.AsObservable()` (sequential pump per subscription,
+  terminal after native cleanup). Cancellation round-trips as a faulted OCE
+  because `OnityResult` has no canceled status. Pending state allocates; no
+  thread hop is added.
+- Async LINQ operators on `IOnityAsyncEnumerable<T>` (class
+  `OnityAsyncEnumerableLinq`, UniTask parity): `Skip`, `SkipLast`, `TakeLast`,
+  `SkipWhile`, `TakeWhile`, indexed `Select` and `Where`, `Distinct`,
+  `DistinctUntilChanged`, `CountAsync`, `LongCountAsync`, `AnyAsync`,
+  `AllAsync`, `ContainsAsync`, `SequenceEqualAsync`, `AggregateAsync`,
+  `FirstAsync`, `LastAsync`, `SingleAsync`, `ElementAtAsync` (each with an
+  `OrDefault` form), `SumAsync`, `AverageAsync`, `MinAsync` and `MaxAsync` for
+  int, long, float, double, decimal and their nullable forms (generic
+  comparer-based `MinAsync` / `MaxAsync` too), `ToListAsync`, `ToHashSetAsync`,
+  `ToDictionaryAsync`, `ToLookupAsync`, `ForEachAsync` and `ForEachAwaitAsync`,
+  each with `Await` and `AwaitWithCancellation` forms. `ToLookupAsync` returns
+  Onity's `IOnityLookup` / `IOnityGrouping`, not `System.Linq.ILookup`. Numeric
+  aggregates follow System.Linq where UniTask's template differs (a nullable
+  `Sum` starts at zero, `Average` of an empty non-nullable stream faults).
+  Index-only `SelectAwait` and `WhereAwait` are not provided; the indexed forms
+  take a token.
+- `OfType`, `Cast`, `Do`, `DefaultIfEmpty`, `Pairwise`, `Buffer` and `Reverse`;
+  `OnityAsyncEnumerable.Create` with an `IOnityAsyncWriter<T>` (lazy producer,
+  back-pressure, producer token canceled on disposal), `Never`, `Throw` and
+  `Repeat`; `ToOnityAsyncEnumerable` for `IEnumerable<T>`, `Task<T>`,
+  `OnityTask<T>` and `OnityTask`; `Subscribe` (16 overloads) and
+  `SubscribeAwait` (12) consumers, whose handler faults are reported without
+  stopping the loop.
+- `TakeUntil` and `SkipUntil` (task or token-factory signal),
+  `TakeUntilCanceled`, `SkipUntilCanceled`, `Append`, `Prepend`, `Concat`,
+  `Merge` (instance and static), `Zip`, `ZipAwait`, `ZipAwaitWithCancellation`,
+  `CombineLatest` (2-15 sources), `SelectMany` (12 shapes), `GroupBy`
+  (24 shapes), `Join` and `GroupJoin` (with await forms; null keys never match),
+  stable `OrderBy`, `OrderByDescending`, `ThenBy` and `ThenByDescending` (with
+  await forms) and `IOnityOrderedAsyncEnumerable<T>`, `Union`, `Intersect`,
+  `Except`, `Publish` with `IOnityConnectableAsyncEnumerable<T>`, `Queue`, and a
+  generic `BindTo` with UniTask's rebind-once-on-error semantics.
+- Timing streams: `EveryUpdate(timing, cancelImmediately)`, `Timer` (one-shot and
+  periodic), `Interval`, `TimerFrame`, `IntervalFrame` and `EveryValueChanged`.
+- Channels: `Reader.Completion`, `Reader.WaitToReadAsync`, `Writer.Complete`
+  (throws `OnityChannelClosedException` when already completed), implicit
+  conversions from `OnityChannel<T>` to its reader and writer, and message
+  constructors on `OnityChannelClosedException`.
+- `OnityAsyncReactiveProperty<T>`, `OnityReadOnlyAsyncReactiveProperty<T>`, their
+  interfaces and `ToReadOnlyAsyncReactiveProperty` (UniTask
+  `AsyncReactiveProperty` parity). Setting the value from a continuation of its
+  own publication throws `InvalidOperationException`; like UniTask it never
+  skips equal values, unlike `ReactiveProperty<T>`.
+- A scope lifetime token: `OnityContainer` implements `IOnityScopeLifetime`
+  (`Token`, `IsDisposed`) with a lazily created `LifetimeToken` linked to the
+  parent's; `disposable.AddTo(scope)` disposes with the scope; every Unity
+  context binds `IOnityScopeLifetime` and exposes `OnityContext.LifetimeToken`;
+  `component.GetScopeCancellationToken()` returns the nearest context's token.
+- `IOnityAsyncInitializable`, collected like `IOnityInitializable` and awaited
+  one at a time by `BuildAsync` after the async build callbacks, and
+  `OnityContext.WaitReadyAsync(ct)`, a native `OnityTask` that resumes on the
+  main thread.
+- `ReactiveProperty` async bridges: `WaitAsync` and `WaitUntilAsync` on
+  `IReadOnlyReactiveProperty<T>` (pooled waits sharing one subscription per
+  property), the conflating `AsLatestAsyncEnumerable`, `ToAsyncReactiveProperty`,
+  and `BindTo` from an async property into a `ReactiveProperty<T>`.
+- Message-bus async streams: `ReceiveAsync(ct)` and `ReceiveAsync(predicate, ct)`
+  on `ISubscriber<T>`, `ReceiveAllAsync(capacity, OnityBufferOverflow)` with the
+  `Fault`, `DropOldest` and `DropNewest` policies, and
+  `SubscribeQueued(handler, capacity, lifetimeToken)`, a bounded queue between
+  `IAsyncSubscriber<T>` publishers and one ordered handler, so `PublishAsync`
+  waits only while the queue is full.
+- `container.DeclareAsyncMessage<T>()` and
+  `container.BindAsyncReactiveProperty<T>(initialValue)`.
+- The package ships its documentation and AI assistant guidance:
+  `Documentation~/` (generated from `docs/` and the `onity-use` skill by
+  `tools/docs/sync-package-docs.py`, whose `--check` mode runs in CI),
+  `AGENTS.md`, `CLAUDE.md` and `llms.txt` at the package root, and the
+  `Onity/AI/Install Assistant Guidance...` and `Onity/AI/Check Assistant
+  Guidance` Editor commands, which write nothing until the user confirms.
+- Benchmarks: a `throughput` Release Player suite (N concurrent `NextFrame` and
+  `Yield` loops under the real PlayerLoop, control-subtracted ns per await),
+  `-onityTaskBenchmarkRetention default|matched` for `primary` and
+  `builderlifecycle`, `-onityTaskBenchmarkSelfTest`, a build-only Player entry
+  point, and the host tools in `tools/benchmark-host` (`stage-host.ps1`,
+  `verify-host-settings.ps1`, `quiet-check.ps1`, `run-paired-reports.ps1`,
+  `validate-reports.py`, `host-compile-check.py`, `run-attempt.ps1` and
+  `surpass-gate.py`).
+- A Release Player `builderlifecycle` benchmark includes actual typed/untyped
+  1/4-suspension consumers at 1/128/4096 concurrency and both libraries' exact
+  deferred-return queues before reuse. Prior readinesscycle IL2CPP totals
+  exclude UniTask return CPU; that boundary limitation is now explicit in its
+  report and harness documentation.
+- A benchmark-only Release Player `readiness` suite compares C#, synchronous
+  Jobs and Burst frame/delay scans, including representation copies and
+  synthetic managed dispatch. It validates execution proof and generation
+  rejection; it does not measure complete async performance.
+- A controlled `readinesscycle` benchmark joins the same engine to actual
+  OnityTask/UniTask consumers and counts forwarded timer steps, consumption and
+  deferred-return drain work with the default Onity flow and retention policy.
+- A Release Player `buildercycle` benchmark for one manual-awaitable suspension,
+  comparing typed/untyped OnityTask and UniTask with alternating order, checked
+  results and real frame drains. Reports separate schedule, completion and
+  consumption windows; their sum excludes deferred pool-return CPU.
+- `framelifecycle` Player suite: Onity vs UniTask 2.5.11 async lifecycles under
+  the real PlayerLoop. Covers NextFrame, Yield, DelayFrames, Delay and WaitUntil
+  with token none, registered and 50%-canceled. Every library PlayerLoop system
+  is bracketed; control frames are subtracted; a whole-loop sanity bracket
+  checks for work outside the brackets. Allocation is control-subtracted
+  bytes/op, or -1 when no calibrated counter exists. Validator:
+  `tools/benchmark-host/validate-framelifecycle.py`.
+- A documented Mono/IL2CPP runner-dispatch investigation with retained raw
+  evidence. Neither experimental runtime change was retained.
+
+### Changed
+
+- Pooled task sources are class-rooted (`OnityTaskCore`, `OnityTaskSourceCore`)
+  with one int state word holding the status, claim, consumption mode,
+  registration pin, bridge bits and version: owned completion is one
+  compare-and-swap, consumption retires the version in one compare-and-swap,
+  and completers read the registered continuation before publishing.
+- Every pool is an array-slot stack guarded by one compare-and-swap gate; a
+  contended rent allocates and a contended return lets the object be
+  collected. Every pooled source type retains up to `SourcePoolCapacity`
+  (default 256), so the PlayerLoop, end-of-frame and `JobHandle` sources move
+  from 128 to 256; async-method runners keep `RunnerPoolCapacity` (default 128).
+- Array `WhenAny` adds a separate 32-slot bucket retaining up to 128
+  coordinators per output shape. The 16-slot bucket retains up to
+  `SourcePoolCapacity`; arrays above 32 remain unpooled. Shareable-only arrays
+  avoid creating the native-identity HashSet. Loser observation and callback
+  retirement are unchanged.
+- A suspended `async OnityTask` / `async OnityTask<T>` method's runner returns to
+  its pool as soon as its result is consumed, on every backend; the main-thread
+  deferred-return queue is no longer used for runners. The return-on-unwind
+  gate stays available only behind `ONITY_RUNNER_RETURN_GATE`.
+- In Play, frame waits without a cancelable token (`NextFrame()`,
+  `DelayFrames(n)`, `NextFixedFrame()`, `NextLateFrame()` and the token-less
+  explicit-timing waits) are stateless: they rent nothing, any number of
+  consumers may await them, `Preserve()` returns them unchanged, reading the
+  result again does not throw, and `Forget()` does nothing. Cancelable waits
+  are pooled single-consumer sources on the PlayerLoop scheduler; Edit Mode and
+  worker callers keep the legacy runner.
+- `Forget()` always observes single-consumer native tasks directly; while task
+  tracking is on it also records a native tracker row (negative synthetic id)
+  instead of bridging to a .NET task.
+- Unobserved faults of `Forget()` without a handler, `async OnityTaskVoid`
+  methods and unawaited completion sources go to `OnityTaskScheduler`, which
+  drops `OperationCanceledException` unless `PropagateOperationCanceledException`
+  is set; `Forget()` without a handler therefore no longer logs cancellation.
+- `WaitForFixedUpdate()` resumes at `LastFixedUpdate`, after the physics step,
+  like UniTask and Unity's coroutine instruction; `NextFixedFrame()` keeps
+  resuming right after the fixed scripts. `DelayFrame(0)` waits for the next
+  drain, as in UniTask; `DelayFrames(0)` still completes immediately.
+- Posted continuations (`Post`, `AddContinuation`) are dropped, not run, when
+  the session ends; awaited yields still observe the retirement.
+- `OnityContainer.Dispose()` cancels the scope's `LifetimeToken` before it
+  disposes child scopes, scoped instances and singletons. Async build callbacks
+  receive that token (linked with the caller's token), and a pass that outlives
+  `Dispose` ends canceled.
+- `BuildAsync` no longer uses `ConfigureAwait(false)`: every callback and async
+  initializer starts on the context the build started on (the main thread in
+  Play Mode). A retry resumes at the first initializer that has not completed.
+  `OnityContext.IsReady` and `ReadyTask` cover the async initializers, and
+  destroying a context mid-build cancels the build without logging an error.
+- `BindReactiveProperty`, `BindSubject` and `DeclareMessage` register the
+  primitive they create with the scope, so the container disposes it after
+  canceling the lifetime token. `BindInstance` values stay caller-owned.
+- `OnityTask`, `OnityTask<T>` and `OnityTaskExtensions` are `partial`, and
+  `OnityTask` has no static constructor: its settings live in an eagerly
+  constructed holder.
+- Assemblies that call `Onity.Unity.Async` extension methods should reference
+  `Onity.Reactive` (and `Onity.Messaging` for the messaging bridges): the
+  `AsOnityAsyncEnumerable`, `BindTo`, `ToOnityTask` and `WaitAsync` overload
+  sets include `Onity.Reactive` types. The `ISubscriber<T>` buffered stream is
+  named `ReceiveAllAsync` so that it does not join the `AsOnityAsyncEnumerable`
+  set and require `Onity.Messaging` too.
+- Benchmark harness measures at the library default
+  `FlowExecutionContext=false`; flow-on is the explicitly labelled secondary
+  arm. The launcher forwards `-onityTaskBenchmarkRetention default|matched` and
+  rejects a missing or invalid value; matched `builderlifecycle` runs label
+  1/128 arms `retention=default` or `retention=default-after-matched`.
+  `framelifecycle` measures the per-frame harness call count and reports
+  pre-arm discarded events; its validator reports allocation availability and
+  the UniTask denominator CV.
+
+### Breaking
+
+- `OnityTask.FlowExecutionContext` now defaults to `false`, matching UniTask:
+  `AsyncLocal<T>` values no longer flow across awaits of `async OnityTask` and
+  `async OnityTask<T>` methods unless you opt in, and no execution context is
+  captured per suspension. If your code relies on `AsyncLocal<T>` (logging
+  scopes, correlation IDs, ambient services) surviving an await inside an async
+  Onity method, set `OnityTask.FlowExecutionContext = true` once at startup,
+  before any async Onity method runs. Flow-on behaviour is unchanged. Known
+  limitation while flow is on: code before an async method's first await runs
+  without a copy-on-write scope, so an `AsyncLocal<T>` write there can leak to
+  the caller (UniTask behaves the same; a later release will scope it).
+- `OnityTask.WhenAll(a, b, ...)` with 2 to 15 separate typed arguments of the
+  same type now binds to the tuple overload and returns `(T, T, ...)` instead of
+  `T[]`. Pass an array (`WhenAll(new[] { a, b })`) to keep `T[]`.
+- `OnityTask.WhenAny<T>(OnityTask<T>, OnityTask<T>)` returning
+  `(int winnerIndex, T result)` was removed. Two typed arguments bind to the
+  mixed overload, which returns `(int winArgumentIndex, T result1, T result2)`;
+  pass an array for `(winnerIndex, result)`.
+- `OnityTask.Yield()` and `Yield(timing)` return `OnityYieldAwaitable` instead of
+  `OnityTask`. It converts implicitly to `OnityTask`, but extension methods on
+  `OnityTask` need `.ToOnityTask()` first (`Yield().ToOnityTask().Timeout(1f)`).
+- `OnityTask.Yield(default)` is ambiguous between `Yield(timing)` and
+  `Yield(CancellationToken)`; pass a named argument.
+- A `null` literal passed to `Select`, `Where`, `ForEachAsync`, `SelectAwait` or
+  `WhereAwait` on an async stream is ambiguous between the new delegate
+  overloads; cast it to the delegate type. `AsOnityTask(null, ct)` on an
+  `AsyncOperation` (`Action<float>` or `IProgress<float>`) and
+  `new OnityChannelClosedException(null)` (inner exception or message) are
+  ambiguous the same way.
+- In Play, the default frame waits (`NextFrame`, `DelayFrames`, `NextFixedFrame`,
+  `NextLateFrame`) run on Onity's PlayerLoop nodes after the Update, FixedUpdate
+  and LateUpdate scripts instead of on the hidden legacy runner component, and
+  destroying that runner no longer cancels them.
+- `BindPooledFactory(prefab, ...)` pools are now disposed with their scope, so a
+  `Release` into such a pool after its scope ended throws
+  `ObjectDisposedException`. Release pooled instances before the scope ends.
+- An assembly definition without an `Onity.Reactive` reference that calls the
+  0.5.0 `AsOnityAsyncEnumerable()` adapter on an `IAsyncEnumerable<T>` now fails
+  with CS0012, because the new `IOnityObservable<T>` overload of that name joins
+  overload resolution; add the reference.
+
+### Fixed
+
+- The ONITY003 analyzer reports only `Subscribe` / `SubscribeAwait` expression
+  statements whose result is an `IDisposable` that is discarded; the `void`
+  overloads that take a `CancellationToken` are no longer flagged, and the
+  message names the invoked method.
+- The prefab pool that `BindPooledFactory(prefab, ...)` creates is disposed with
+  its container or context: it leaves `OnityPoolDiagnosticsRegistry` and its
+  inactive clones are destroyed, while checked-out instances stay with their
+  owners. A pool passed to `BindPooledFactory(pool)` stays caller-owned; tie it
+  to the scope with `pool.AddTo(container)`.
+- Native task bridges reserve the current source cycle before publishing their
+  reference. Continuation registration pins that cycle until publication
+  finishes, preventing a paused caller from modifying a later rental. Repeated
+  bridge reads validate the token after reading the reference. Typed and
+  untyped paths preserve single consumption, cancellation and context flow.
+- A session retirement during a PlayerLoop drain restores the markers'
+  pre-drain stamps, so waits that the drain had not resumed report the
+  retirement instead of success.
+
+### Performance
+
+- In the 2026-10-02 Release Player gate (Unity 2022.3.62f2, Windows x64,
+  non-development Players, UniTask 2.5.11 at `2e993ff18f`, three processes per
+  backend and suite), OnityTask was faster than UniTask in all 29 gated IL2CPP
+  rows: `primary`, `builderlifecycle` and `throughput`, median Onity/UniTask
+  time ratios 0.085-0.808, worst process 0.906. Onity ran at its default
+  `FlowExecutionContext = false`, with pool retention matched for the 1,024-
+  and 4,096-operation bursts. Mono (reported, not gated) is faster in 25 of 29
+  rows; its four synchronous completed-result rows are 1.09x-1.92x slower.
+  Report-only: with opt-in flow, the 4-suspension lifecycle is 1.5x-1.6x slower
+  on IL2CPP and 2.6x-2.7x on Mono; at default retention, 4,096-call lifecycle
+  bursts are up to 2.6x slower. Evidence and raw-data hashes:
+  `docs/assets/benchmarks/onitytask-surpass-2026-10-02.md` in the repository.
+- `OnityTask` is free of a static constructor, and completed awaits store no
+  write barrier; the hot task, runner, source and PlayerLoop types turn off
+  IL2CPP null checks (`Il2CppSetOption`), and the settings holder and
+  PlayerLoop owner use eager static construction. The generated IL2CPP C++ of
+  the measured Player contains no class-initialization check for them.
+- The small typed/untyped builder result paths and awaiter completion fast
+  paths are inlined.
+- The awaited `Yield` appends its continuation inline when the timing's node is
+  installed on the main thread, and drains skip the item pass when no item is
+  queued.
+
+### Tested
+
+- The Mono and IL2CPP Release Players measured by the gate (build GUIDs
+  `ad8bc783e0d34baab4bf1afb000e3141` and `a1e17c822d2b46799b38e6621ec43969`)
+  pass all 42 Player smoke cases.
+- Release Player gate: PASS, 29 of 29 IL2CPP rows (see Performance).
+- Unity 2022.3.62f2 EditMode, batch mode, with default and with Release code
+  optimization: 2,290 tests, 2,287 passed, 0 failed, 3 explicit benchmarks
+  skipped.
+- Unity 2022.3.62f2 PlayMode, batch mode: 253 tests. Default code optimization:
+  250 passed, 0 failed, 2 skipped, 1 inconclusive. Release code optimization:
+  249 passed, 0 failed, 3 skipped, 1 inconclusive. The skipped cases are an
+  explicit benchmark and tests that need a graphics device or `AsyncGPUReadback`
+  support; the inconclusive case is the end-of-frame coroutine test, which needs
+  a graphics device.
+- With `com.unity.ugui` 1.0.0 added to a scratch copy of the project (the
+  published manifest is unchanged), the optional `Onity.Unity.UGUI` assembly
+  compiles and its 32 PlayMode tests pass.
+- New regression coverage: twenty-four source-state cases (typed/untyped
+  completion outcomes, native/AsTask/Preserve consumption, cancellation token
+  identity, registration disposal before callbacks and stale cancellation
+  after same-runner reuse), twelve typed/untyped builder cases for context
+  capture, caller isolation and flow-setting changes across two pending
+  suspensions, 28 cases for competing consumers and the 16/17/32/33-input
+  array boundaries, and EditMode/PlayMode fixtures for the new APIs. The paired
+  lifecycle experiment's small disposal guard was reverted because consistent
+  complete-cycle benefit was not established.
 
 ## [0.5.0] - 2026-10-02
 

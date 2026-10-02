@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,12 +7,10 @@ namespace Onity.Unity.Async
 {
     // Only exact, nonpooled completion sources enter this path. Their callbacks and
     // outcome reads remain shareable if another consumer creates an AsTask bridge.
-    internal sealed class OnityWhenAllTypedCoordinator<T>
+    internal sealed class OnityWhenAllTypedCoordinator<T> : IOnityPooledRunner<OnityWhenAllTypedCoordinator<T>>
     {
         private const int k_maxInputs = 16;
-        private const int k_maxPoolSize = 256;
-        private static readonly Stack<OnityWhenAllTypedCoordinator<T>> s_pool =
-            new Stack<OnityWhenAllTypedCoordinator<T>>(32);
+        private static OnityRunnerPool<OnityWhenAllTypedCoordinator<T>> s_pool;
 
         private readonly OnityTask<T>[] m_inputs = new OnityTask<T>[k_maxInputs];
         private readonly Action[] m_callbacks = new Action[k_maxInputs];
@@ -21,6 +18,7 @@ namespace Onity.Unity.Async
         private readonly CancellationToken[] m_cancellationTokens = new CancellationToken[k_maxInputs];
         private readonly bool[] m_canceled = new bool[k_maxInputs];
         private readonly bool[] m_settled = new bool[k_maxInputs];
+        private OnityWhenAllTypedCoordinator<T> m_nextPooled;
         private TaskCompletionSource<T[]> m_completion;
         private T[] m_results;
         private int m_count;
@@ -39,6 +37,9 @@ namespace Onity.Unity.Async
             }
         }
 
+        ref OnityWhenAllTypedCoordinator<T> IOnityPooledRunner<OnityWhenAllTypedCoordinator<T>>.NextPooled =>
+            ref m_nextPooled;
+
         internal static bool TryRent(OnityTask<T>[] inputs, out OnityWhenAllTypedCoordinator<T> coordinator)
         {
             coordinator = null;
@@ -47,10 +48,10 @@ namespace Onity.Unity.Async
                 return false;
             }
 
-            OnityWhenAllTypedCoordinator<T> rented;
-            lock (s_pool)
+            // A contended rent allocates instead of waiting.
+            if (!s_pool.TryPop(out OnityWhenAllTypedCoordinator<T> rented))
             {
-                rented = s_pool.Count == 0 ? new OnityWhenAllTypedCoordinator<T>() : s_pool.Pop();
+                rented = new OnityWhenAllTypedCoordinator<T>();
             }
 
             lock (rented)
@@ -314,13 +315,9 @@ namespace Onity.Unity.Async
             m_completion = null;
             m_count = 0;
             m_factoryFailed = false;
-            lock (s_pool)
-            {
-                if (s_pool.Count < k_maxPoolSize)
-                {
-                    s_pool.Push(this);
-                }
-            }
+            // The caller holds lock(this); the gate never waits, so a contended or full return
+            // lets the coordinator be collected.
+            s_pool.TryPush(this, OnityTaskSettings.s_sourcePoolCapacity);
         }
     }
 }

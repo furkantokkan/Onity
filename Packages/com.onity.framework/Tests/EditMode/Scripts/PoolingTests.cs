@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
@@ -926,6 +927,161 @@ namespace Onity.Tests.EditMode
                 pool.Clear();
                 UnityEngine.Object.DestroyImmediate(prefabRoot);
             }
+        }
+
+        [Test]
+        public void BindPooledFactory_ContainerDispose_DisposesPrefabPoolItCreated()
+        {
+            GameObject prefabRoot = new GameObject("ScopedPoolPrefab-" + Guid.NewGuid().ToString("N"));
+            FactoryProbe prefabProbe = prefabRoot.AddComponent<FactoryProbe>();
+            OnityContainer container = new OnityContainer();
+            FactoryProbe inactive = null;
+            FactoryProbe active = null;
+
+            try
+            {
+                container.BindPooledFactory(prefabProbe);
+                IFactory<FactoryProbe> factory = container.Resolve<IFactory<FactoryProbe>>();
+                IPool<FactoryProbe> pool = container.Resolve<IPool<FactoryProbe>>();
+                IOnityPoolDiagnosticsSource diagnostics = (IOnityPoolDiagnosticsSource)pool;
+                string poolName = diagnostics.GetDiagnosticsSnapshot().PoolName;
+                inactive = factory.Create();
+                active = factory.Create();
+                pool.Release(inactive);
+
+                Assert.That(IsRegisteredInDiagnostics(poolName), Is.True);
+
+                container.Dispose();
+
+                Assert.That(IsRegisteredInDiagnostics(poolName), Is.False);
+                Assert.That(diagnostics.GetDiagnosticsSnapshot().IsDisposed, Is.True);
+                Assert.That(() => pool.Get(), Throws.TypeOf<ObjectDisposedException>());
+                Assert.That(inactive == null, Is.True, "The inactive instance is destroyed with the pool.");
+                Assert.That(active != null, Is.True, "A checked-out instance stays with its owner.");
+            }
+            finally
+            {
+                container.Dispose();
+
+                if (active != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(active.gameObject);
+                }
+
+                UnityEngine.Object.DestroyImmediate(prefabRoot);
+            }
+        }
+
+        [Test]
+        public void BindPooledFactory_ContainerDispose_LeavesCallerSuppliedPoolUndisposed()
+        {
+            GameObject prefabRoot = new GameObject("CallerPoolPrefab-" + Guid.NewGuid().ToString("N"));
+            FactoryProbe prefabProbe = prefabRoot.AddComponent<FactoryProbe>();
+            PrefabComponentPool<FactoryProbe> pool = new PrefabComponentPool<FactoryProbe>(prefabProbe);
+            string poolName = pool.GetDiagnosticsSnapshot().PoolName;
+            OnityContainer container = new OnityContainer();
+            FactoryProbe item = null;
+
+            try
+            {
+                container.BindPooledFactory(pool);
+
+                container.Dispose();
+
+                Assert.That(pool.GetDiagnosticsSnapshot().IsDisposed, Is.False);
+                Assert.That(IsRegisteredInDiagnostics(poolName), Is.True);
+
+                item = pool.Get();
+                Assert.That(item.gameObject.activeSelf, Is.True);
+                pool.Release(item);
+                item = null;
+            }
+            finally
+            {
+                container.Dispose();
+                pool.Dispose();
+
+                if (item != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(item.gameObject);
+                }
+
+                UnityEngine.Object.DestroyImmediate(prefabRoot);
+            }
+
+            Assert.That(IsRegisteredInDiagnostics(poolName), Is.False);
+        }
+
+        [Test]
+        public void BindPooledFactory_CallerSuppliedPoolAddedToScope_DisposesWithContainer()
+        {
+            GameObject prefabRoot = new GameObject("TiedPoolPrefab-" + Guid.NewGuid().ToString("N"));
+            FactoryProbe prefabProbe = prefabRoot.AddComponent<FactoryProbe>();
+            PrefabComponentPool<FactoryProbe> pool = new PrefabComponentPool<FactoryProbe>(prefabProbe);
+            string poolName = pool.GetDiagnosticsSnapshot().PoolName;
+            OnityContainer container = new OnityContainer();
+
+            try
+            {
+                container.BindPooledFactory(pool);
+                pool.AddTo(container);
+
+                Assert.That(pool.GetDiagnosticsSnapshot().IsDisposed, Is.False);
+
+                container.Dispose();
+
+                Assert.That(pool.GetDiagnosticsSnapshot().IsDisposed, Is.True);
+                Assert.That(IsRegisteredInDiagnostics(poolName), Is.False);
+            }
+            finally
+            {
+                container.Dispose();
+                pool.Dispose();
+                UnityEngine.Object.DestroyImmediate(prefabRoot);
+            }
+        }
+
+        [Test]
+        public void BindPooledFactory_OnDisposedContainer_ThrowsWithoutLeavingARegisteredPool()
+        {
+            GameObject prefabRoot = new GameObject("DisposedScopePrefab-" + Guid.NewGuid().ToString("N"));
+            FactoryProbe prefabProbe = prefabRoot.AddComponent<FactoryProbe>();
+            OnityContainer container = new OnityContainer();
+            container.Dispose();
+            int registeredBefore = CountRegisteredInDiagnostics();
+
+            try
+            {
+                Assert.That(() => container.BindPooledFactory(prefabProbe), Throws.Exception);
+                Assert.That(CountRegisteredInDiagnostics(), Is.EqualTo(registeredBefore));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(prefabRoot);
+            }
+        }
+
+        private static bool IsRegisteredInDiagnostics(string poolName)
+        {
+            List<OnityPoolDiagnosticsSnapshot> snapshots = new List<OnityPoolDiagnosticsSnapshot>();
+            OnityPoolDiagnosticsRegistry.GetSnapshots(snapshots);
+
+            for (int i = 0; i < snapshots.Count; i++)
+            {
+                if (snapshots[i].PoolName == poolName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static int CountRegisteredInDiagnostics()
+        {
+            List<OnityPoolDiagnosticsSnapshot> snapshots = new List<OnityPoolDiagnosticsSnapshot>();
+            OnityPoolDiagnosticsRegistry.GetSnapshots(snapshots);
+            return snapshots.Count;
         }
 
         private sealed class PooledReference

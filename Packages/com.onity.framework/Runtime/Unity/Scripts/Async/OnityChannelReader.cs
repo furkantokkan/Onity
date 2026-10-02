@@ -32,6 +32,26 @@ namespace Onity.Unity.Async
         public OnityTask<T> ReadAsync(CancellationToken cancellationToken = default) =>
             m_channel.ReadAsync(cancellationToken);
 
+        /// <summary>Waits until an item can be read, without consuming it.</summary>
+        /// <param name="cancellationToken">Cancels only an uncommitted wait.</param>
+        /// <returns>True when an item is buffered; false when the channel completed normally and is
+        /// drained. An error closure faults with the original error (an OperationCanceledException stays a
+        /// fault) once the channel is drained.</returns>
+        /// <remarks>A pending wait holds the consumer lease, like a pending ReadAsync, and releases it when
+        /// it completes; then read with TryRead. Pre-cancellation wins before a lease conflict. Pending waits
+        /// allocate.</remarks>
+        /// <exception cref="InvalidOperationException">Another consumer holds the lease.</exception>
+        public OnityTask<bool> WaitToReadAsync(CancellationToken cancellationToken = default) =>
+            m_channel.WaitToReadAsync(cancellationToken);
+
+        /// <summary>Gets a task that completes when the channel is completed and every accepted item has
+        /// been read.</summary>
+        /// <remarks>Normal completion succeeds; an error closure faults with the original error (an
+        /// OperationCanceledException stays a fault). The task can be awaited by several consumers. It
+        /// completes inside the read that removes the last accepted item (or inside the completing call
+        /// when the channel is already empty), so its continuations may run before that read returns.</remarks>
+        public OnityTask Completion => m_channel.Completion;
+
         /// <summary>Creates an inert stream that drains items before terminal end/error.</summary>
         /// <param name="cancellationToken">Captured cooperative token.</param>
         /// <returns>An independent enumerator description with no initial consumer lease.</returns>

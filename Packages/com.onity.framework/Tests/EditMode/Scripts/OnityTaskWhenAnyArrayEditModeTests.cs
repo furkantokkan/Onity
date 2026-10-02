@@ -36,7 +36,9 @@ namespace Onity.Tests.EditMode
 
         [TestCase(2)]
         [TestCase(16)]
+        [TestCase(17)]
         [TestCase(32)]
+        [TestCase(33)]
         public void PendingInputs_WinnerKeepsIndexAndValue_AndEveryLoserSettles(int count)
         {
             var sources = Sources(count);
@@ -104,21 +106,40 @@ namespace Onity.Tests.EditMode
             Assert.DoesNotThrow(() => plain.GetAwaiter().GetResult());
         }
 
-        [TestCase(0)]
-        [TestCase(1)]
-        [TestCase(2)]
-        public void ShareablePreservedAndTaskDuplicates_AreAllowed(int kind)
+        [TestCase(0, 3)]
+        [TestCase(1, 3)]
+        [TestCase(2, 3)]
+        [TestCase(0, 17)]
+        [TestCase(1, 17)]
+        [TestCase(2, 17)]
+        [TestCase(0, 32)]
+        [TestCase(1, 32)]
+        [TestCase(2, 32)]
+        [TestCase(0, 33)]
+        [TestCase(1, 33)]
+        [TestCase(2, 33)]
+        public void ShareablePreservedAndTaskDuplicates_AreAllowed(int kind, int count)
         {
             var source = new OnityTaskCompletionSource<int>();
             var gate = new Gate();
             OnityTask<int> input = kind == 0 ? source.Task : kind == 1
                 ? Native(gate, 44).Preserve() : OnityTask<int>.FromTask(source.Task.AsTask());
-            var race = OnityTask.WhenAny(new[] { input, input, input });
+            var inputs = new OnityTask<int>[count];
+            for (int i = 0; i < count; i++)
+            {
+                inputs[i] = input;
+            }
+            var race = OnityTask.WhenAny(inputs);
             var plainSource = new OnityTaskCompletionSource();
             var plainGate = new Gate();
             OnityTask plain = kind == 0 ? plainSource.Task : kind == 1
                 ? NativeUntyped(plainGate).Preserve() : OnityTask.FromTask(plainSource.Task.AsTask());
-            var plainRace = OnityTask.WhenAny(new[] { plain, plain, plain });
+            var plainInputs = new OnityTask[count];
+            for (int i = 0; i < count; i++)
+            {
+                plainInputs[i] = plain;
+            }
+            var plainRace = OnityTask.WhenAny(plainInputs);
             try
             {
                 source.TrySetResult(44);
@@ -128,7 +149,7 @@ namespace Onity.Tests.EditMode
                 Assert.That(result.result, Is.EqualTo(44));
                 if (kind == 2)
                 {
-                    Assert.That(result.winnerIndex, Is.InRange(0, 2));
+                    Assert.That(result.winnerIndex, Is.InRange(0, count - 1));
                 }
                 else
                 {
@@ -140,7 +161,7 @@ namespace Onity.Tests.EditMode
                 int plainIndex = plainRace.GetAwaiter().GetResult();
                 if (kind == 2)
                 {
-                    Assert.That(plainIndex, Is.InRange(0, 2));
+                    Assert.That(plainIndex, Is.InRange(0, count - 1));
                 }
                 else
                 {
@@ -153,6 +174,149 @@ namespace Onity.Tests.EditMode
                 plainSource.TrySetResult();
                 gate.Complete();
                 plainGate.Complete();
+            }
+        }
+
+        [TestCase(17)]
+        [TestCase(32)]
+        [TestCase(33)]
+        public void LargeDuplicateNative_RejectionClaimsNothing_AndNextRentalIsUsable(int count)
+        {
+            var gate = new Gate();
+            var native = Native(gate, 73);
+            var completed = OnityTask.WhenAny(new[] { OnityTask.Completed });
+            var inputs = new OnityTask<int>[count];
+            inputs[0] = completed;
+            inputs[count - 2] = native;
+            inputs[count - 1] = native;
+            var plainGate = new Gate();
+            var plain = NativeUntyped(plainGate);
+            var plainInputs = new OnityTask[count];
+            plainInputs[count - 2] = plain;
+            plainInputs[count - 1] = plain;
+            try
+            {
+                Assert.Throws<ArgumentException>(() => OnityTask.WhenAny(inputs));
+                Assert.That(completed.GetAwaiter().GetResult(), Is.Zero);
+                gate.Complete();
+                Assert.That(native.GetAwaiter().GetResult(), Is.EqualTo(73));
+                Assert.Throws<ArgumentException>(() => OnityTask.WhenAny(plainInputs));
+                plainGate.Complete();
+                Assert.DoesNotThrow(() => plain.GetAwaiter().GetResult());
+
+                var sources = Sources(count);
+                try
+                {
+                    var recovered = OnityTask.WhenAny(Inputs(sources));
+                    sources[count - 1].TrySetResult(91);
+                    Assert.That(recovered.GetAwaiter().GetResult(), Is.EqualTo((count - 1, 91)));
+                }
+                finally
+                {
+                    Finish(sources);
+                }
+            }
+            finally
+            {
+                gate.Complete();
+                plainGate.Complete();
+            }
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void MediumPool_32Then17Then32_ReusesSourceWithoutRetainedInputsOrIndexState(bool typed)
+        {
+            object previous = null;
+            foreach (int count in new[] { 32, 17, 32 })
+            {
+                var sources = Sources(count);
+                var plainSources = new OnityTaskCompletionSource[count];
+                for (int i = 0; i < count; i++)
+                {
+                    plainSources[i] = new OnityTaskCompletionSource();
+                }
+                try
+                {
+                    object state;
+                    if (typed)
+                    {
+                        var race = OnityTask.WhenAny(Inputs(sources));
+                        state = GetState(race);
+                        if (previous != null)
+                        {
+                            Assert.That(state, Is.SameAs(previous));
+                        }
+                        sources[count - 1].TrySetResult(count * 10);
+                        Assert.That(race.GetAwaiter().GetResult(), Is.EqualTo((count - 1, count * 10)));
+                    }
+                    else
+                    {
+                        var inputs = new OnityTask[count];
+                        for (int i = 0; i < count; i++)
+                        {
+                            inputs[i] = plainSources[i].Task;
+                        }
+                        var race = OnityTask.WhenAny(inputs);
+                        state = GetState(race);
+                        if (previous != null)
+                        {
+                            Assert.That(state, Is.SameAs(previous));
+                        }
+                        plainSources[count - 1].TrySetResult();
+                        Assert.That(race.GetAwaiter().GetResult(), Is.EqualTo(count - 1));
+                    }
+                    Finish(sources);
+                    foreach (var source in plainSources)
+                    {
+                        source.TrySetResult();
+                    }
+                    Array retainedInputs = (Array)state.GetType().GetField("m_inputs", k_private).GetValue(state);
+                    for (int i = 0; i < retainedInputs.Length; i++)
+                    {
+                        object input = retainedInputs.GetValue(i);
+                        Assert.That(input.GetType().GetField("m_state", k_private).GetValue(input), Is.Null,
+                            "A settled pool entry must not retain input " + i);
+                    }
+                    previous = state;
+                }
+                finally
+                {
+                    Finish(sources);
+                    foreach (var source in plainSources)
+                    {
+                        source.TrySetResult();
+                    }
+                }
+            }
+        }
+
+        [TestCase(16)]
+        [TestCase(17)]
+        [TestCase(32)]
+        [TestCase(33)]
+        public void ReleasedOutput_IsNotRentedWhileLosersArePending_AndLateLosersLeaveFreshRaceAlone(int count)
+        {
+            var oldSources = Sources(count);
+            var freshSources = Sources(count);
+            var old = OnityTask.WhenAny(Inputs(oldSources));
+            object oldState = GetState(old);
+            try
+            {
+                oldSources[0].TrySetResult(1);
+                Assert.That(old.GetAwaiter().GetResult(), Is.EqualTo((0, 1)));
+                var fresh = OnityTask.WhenAny(Inputs(freshSources));
+                Assert.That(GetState(fresh), Is.Not.SameAs(oldState));
+                Finish(oldSources);
+                Assert.That(fresh.IsCompleted, Is.False);
+                freshSources[count - 1].TrySetResult(2);
+                Assert.That(fresh.GetAwaiter().GetResult(), Is.EqualTo((count - 1, 2)));
+                Assert.Throws<InvalidOperationException>(() => old.GetAwaiter().GetResult());
+            }
+            finally
+            {
+                Finish(oldSources);
+                Finish(freshSources);
             }
         }
 
@@ -520,6 +684,9 @@ namespace Onity.Tests.EditMode
                 }
             }
         }
+
+        private static object GetState<T>(OnityTask<T> task) =>
+            typeof(OnityTask<T>).GetField("m_state", k_private).GetValue(task);
 
         private sealed class DerivedSource<T> : OnityTaskCompletionSource<T>
         {

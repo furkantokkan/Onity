@@ -42,7 +42,52 @@ Disposing a child container disposes its own singletons and scoped instances; it
 
 ## Disposal ownership
 
-`Dispose()` disposes a container's singletons, scoped instances, and installed sub-containers. Bound instances passed in via `BindInstance` are owned by the caller — the container does not dispose them. In a Unity scene, the context disposes its container automatically on `OnDestroy`, so you rarely call `Dispose()` by hand.
+`Dispose()` disposes a container's singletons, scoped instances, and installed sub-containers. Bound instances passed in via `BindInstance` are owned by the caller — the container does not dispose them. Objects created by the binding helpers are created by the container's helper, so the container owns and disposes them: the primitives of `BindReactiveProperty`, `BindSubject`, `DeclareMessage`, `DeclareAsyncMessage` and `BindAsyncReactiveProperty`, and the prefab pool of `BindPooledFactory(prefab, ...)` (its inactive clones are destroyed; checked-out instances stay with their owners, and a later `Release` into it throws `ObjectDisposedException`). A pool you build and pass to `BindPooledFactory(pool)` stays caller-owned; tie it to the scope with `pool.AddTo(container)`. See [Factories & Pooling](factories-and-pooling.html#pool-lifetime). In a Unity scene, the context disposes its container automatically on `OnDestroy`, so you rarely call `Dispose()` by hand.
+
+## Scope lifetime token
+
+Every container has a lifetime: `container.LifetimeToken` is a `CancellationToken` that `Dispose()` cancels **first**, before it disposes child scopes, scoped instances, and singletons. Async work started with it stops before the services it uses are torn down. The token source is created on the first request, so a container whose token is never requested allocates nothing for it.
+
+| Member | What it does |
+| --- | --- |
+| `OnityContainer.LifetimeToken` | Canceled when the container is disposed; a disposed container returns a canceled token. A child container's token is linked to its parent's, so disposing the parent cancels the child's token too. |
+| `IOnityScopeLifetime` (`Token`, `IsDisposed`) | The scope as an injectable contract. `OnityContainer` implements it, and every Unity context binds it to its own container, so a service that injects it receives the scope that owns it. |
+| `disposable.AddTo(scope)` | Disposes the `IDisposable` when the scope ends (immediately if it already ended). The scope keeps the disposable until then. |
+| `OnityContext.LifetimeToken` | The context's container token, canceled when the context is destroyed (or its scene unloads). |
+| `component.GetScopeCancellationToken()` | The `LifetimeToken` of the nearest `OnityContext` on the component's GameObject or its parents; without one, the component's destroy token. |
+
+```csharp
+using System.Threading;
+using Onity.DI;
+using Onity.Messaging;
+using Onity.Unity.Async;
+
+public sealed class RespawnTimer : IOnityInitializable
+{
+    private readonly IOnityScopeLifetime m_scope;
+
+    public RespawnTimer(IOnityScopeLifetime scope, IMessageBroker broker)
+    {
+        m_scope = scope;
+        broker.Subscribe<PlayerDied>(OnPlayerDied).AddTo(scope);  // unsubscribed when the scope ends
+    }
+
+    public void Initialize() => RunAsync(m_scope.Token).Forget();
+
+    private async OnityTaskVoid RunAsync(CancellationToken token)
+    {
+        while (true)
+        {
+            await OnityTask.Delay(5f, token);  // canceled when the owning context is destroyed
+            // ...
+        }
+    }
+
+    private void OnPlayerDied(PlayerDied message) { /* ... */ }
+}
+```
+
+Outside a Unity context, bind the scope yourself with `container.BindInstance<IOnityScopeLifetime>(container)`, or pass `container.LifetimeToken` directly. Async build callbacks receive the scope token automatically (see [Build and async startup](dependency-injection.html#build-and-async-startup)).
 
 ## The automatic lifecycle
 
@@ -51,6 +96,7 @@ Implement a lifecycle interface (from `Onity.DI`) on a **singleton, local scoped
 | Interface | Method | When it runs |
 | --- | --- | --- |
 | `IOnityInitializable` | `Initialize()` | once, at the end of `Build()`, in binding-registration order — all dependencies are resolvable |
+| `IOnityAsyncInitializable` | `InitializeAsync(CancellationToken)` | once, in `BuildAsync()` after the async build callbacks, one at a time in binding-registration order; a context runs it from `Start` and becomes ready only after it completes |
 | `IOnityTickable` | `Tick()` | once per frame, from the context's `Update` |
 | `IOnityFixedTickable` | `FixedTick()` | once per physics step, from the context's `FixedUpdate` |
 | `IOnityLateTickable` | `LateTick()` | once per frame after all `Tick()` work, from the context's `LateUpdate` |
@@ -78,7 +124,36 @@ public sealed class WaveDirector : IOnityInitializable, IOnityTickable
 container.BindInterfacesAndSelfTo<WaveDirector>().AsSingle();
 ```
 
-`BindInterfacesAndSelfTo` registers the lifecycle interfaces along with the concrete type, so the same instance is both injectable and driven by the lifecycle. Outside a Unity context, drive the ticks yourself by calling `container.Tick()` / `FixedTick()` / `LateTick()`; `Build()` already runs `Initialize()`.
+`BindInterfacesAndSelfTo` registers the lifecycle interfaces along with the concrete type, so the same instance is both injectable and driven by the lifecycle. Outside a Unity context, drive the ticks yourself by calling `container.Tick()` / `FixedTick()` / `LateTick()`; `Build()` already runs `Initialize()`, and `await container.BuildAsync()` runs `InitializeAsync()`.
+
+### Async initialization
+
+`IOnityAsyncInitializable` is the awaitable startup entry point (VContainer's `IAsyncStartable`, but collected and awaited by the container):
+
+```csharp
+using System.Threading;
+using System.Threading.Tasks;
+using Onity.DI;
+using Onity.Unity.Async;
+
+public sealed class SaveLoader : IOnityAsyncInitializable
+{
+    private readonly ISaveStore m_store;
+    public SaveLoader(ISaveStore store) { m_store = store; }
+
+    public async ValueTask InitializeAsync(CancellationToken cancellationToken)
+    {
+        await m_store.LoadAsync(cancellationToken);     // canceled if the scope is destroyed first
+        await OnityTask.NextFrame(cancellationToken);  // OnityTask awaits work here too
+    }
+}
+```
+
+- **Order:** `Build()` (sync callbacks and `Initialize()`), then the async build callbacks, then each async initializer one at a time in binding-registration order.
+- **Thread:** each callback and initializer starts on the context the build started on — the main thread in a Unity context — even when the previous one completed on a worker thread.
+- **Token:** the scope's `LifetimeToken` (linked with the `BuildAsync` caller's token, if any). Destroying the context mid-initialization cancels it, leaves `IsReady` false, and cancels `ReadyTask` without logging an error.
+- **Failure and retry:** a fault ends `BuildAsync` and is logged by the context. The next `BuildAsync()` call resumes at the first initializer that has not completed; initializers that completed do not run again. An initializer bound after a completed `BuildAsync` runs on the next call.
+- **Readiness:** `OnityContext.IsReady`, `ReadyTask` (BCL `Task`), and `WaitReadyAsync(cancellationToken)` (native `OnityTask`, resumes on the main thread) all cover the async initializers.
 
 ### `IOnityTickable` vs `EveryUpdate()`
 
@@ -86,9 +161,9 @@ For a singleton service that ticks for the lifetime of its scope, prefer `IOnity
 
 ## Unity contexts
 
-A context is a `MonoBehaviour` that owns a container for a slice of the scene. On `Awake` it creates the container (discovering its parent context if any), registers the default bindings, runs the assigned installers, calls `Build()`, and — when **Auto Inject Hierarchy** is enabled — member-injects every MonoBehaviour under its root. On `Update` / `FixedUpdate` / `LateUpdate` it pumps the lifecycle ticks; on `OnDestroy` it disposes the container.
+A context is a `MonoBehaviour` that owns a container for a slice of the scene. On `Awake` it creates the container (discovering its parent context if any), registers the default bindings, runs the assigned installers, calls `Build()`, and — when **Auto Inject Hierarchy** is enabled — member-injects every MonoBehaviour under its root. In `Start` it runs `BuildAsync(LifetimeToken)`; on `Update` / `FixedUpdate` / `LateUpdate` it pumps the lifecycle ticks; on `OnDestroy` it disposes the container, which first cancels the scope's `LifetimeToken`. Destroying a context while its async build runs cancels the build without logging an error and leaves `ReadyTask` canceled.
 
-Every context auto-binds: the container, `IResolver`, the context itself, `MessageBroker` (and its interfaces), and `OnityEventHub` (and its interfaces). That is why a service can inject `OnityEventHub` or `IMessageBroker` with no installer line (see [Events & Messaging](events-messaging.html)).
+Every context auto-binds: the container, `IResolver`, `IOnityScopeLifetime` (the container), the context itself, `MessageBroker` (and its interfaces), and `OnityEventHub` (and its interfaces). That is why a service can inject `OnityEventHub` or `IMessageBroker` with no installer line (see [Events & Messaging](events-messaging.html)).
 
 | Context | Role | Notes |
 | --- | --- | --- |
@@ -101,7 +176,7 @@ Serialized context fields:
 - **Installers** — the `MonoInstaller[]` run in order during `Awake`.
 - **Parent Context** — an explicit parent; leave null for automatic parent discovery.
 - **Auto Inject Hierarchy** — member-inject all MonoBehaviours under the root on `Awake` (default on). Installers and context components are skipped.
-- **Run Async Build Callbacks** — run `BuildAsync()` post-build callbacks in `Start` (default on).
+- **Run Async Build Callbacks** — run `BuildAsync()` in `Start`: the async post-build callbacks, then the `IOnityAsyncInitializable` entry points (default on). When off, `Start` marks the context ready without running anything async.
 
 ### Scene wiring
 

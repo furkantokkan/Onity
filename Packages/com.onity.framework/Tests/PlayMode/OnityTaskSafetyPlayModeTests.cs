@@ -73,7 +73,7 @@ namespace Onity.Tests.PlayMode
             int mainThreadId = Thread.CurrentThread.ManagedThreadId;
             OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
             OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
-            OnityTask<(int winnerIndex, int result)> typedRace =
+            OnityTask<(int winArgumentIndex, int result1, int result2)> typedRace =
                 OnityTask.WhenAny(first.Task, second.Task);
             Task<(int winnerIndex, int result, int threadId,
                 SynchronizationContext context)> typedAwaited =
@@ -123,9 +123,9 @@ namespace Onity.Tests.PlayMode
             Assert.That(unityContext, Is.Not.Null);
             OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
             OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
-            OnityTask<(int winnerIndex, int result)> race =
+            OnityTask<(int winArgumentIndex, int result1, int result2)> race =
                 OnityTask.WhenAny(first.Task, second.Task);
-            Task<(int winnerIndex, int result)> bridge = race.AsTask();
+            Task<(int winArgumentIndex, int result1, int result2)> bridge = race.AsTask();
             Task<(int winnerIndex, int result, int threadId,
                 SynchronizationContext context)> awaited =
                 AwaitTypedBridgeAndGetContext(bridge);
@@ -162,7 +162,7 @@ namespace Onity.Tests.PlayMode
             SynchronizationContext unityContext = SynchronizationContext.Current;
             OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
             OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
-            OnityTask<(int winnerIndex, int result)> race =
+            OnityTask<(int winArgumentIndex, int result1, int result2)> race =
                 OnityTask.WhenAny(first.Task, second.Task);
             Task<(int winnerIndex, int result, int threadId,
                 SynchronizationContext context)> awaited =
@@ -566,9 +566,10 @@ namespace Onity.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator NextFrame_RecreatesRunnerAfterDestroy()
+        public IEnumerator NextFrame_IsIndependentOfTheLegacyRunner_AndSurvivesItsDestruction()
         {
-            OnityTask warmupTask = OnityTask.NextFrame();
+            // Default frame waits run on the PlayerLoop scheduler; a legacy delay creates the runner.
+            OnityTask warmupTask = OnityTask.Delay(0.001f);
             yield return WaitForCompletion(warmupTask);
             warmupTask.GetAwaiter().GetResult();
 
@@ -584,12 +585,16 @@ namespace Onity.Tests.PlayMode
             }
 
             Assert.That(runner, Is.Not.Null);
-            UnityEngine.Object.Destroy(runner);
-            yield return null;
+            OnityTask pending = OnityTask.NextFrame();
+            UnityEngine.Object.DestroyImmediate(runner);
+            Assert.That(pending.IsCompleted, Is.False, "destroying the legacy runner must not retire a frame wait");
+            yield return WaitForCompletion(pending);
+            Assert.DoesNotThrow(() => pending.GetAwaiter().GetResult());
 
             OnityTask task = OnityTask.NextFrame();
             yield return WaitForCompletion(task);
             Assert.DoesNotThrow(() => task.GetAwaiter().GetResult());
+            Assert.DoesNotThrow(() => task.GetAwaiter().GetResult(), "a stateless frame wait can be read again");
         }
 
         [UnityTest]
@@ -678,19 +683,19 @@ namespace Onity.Tests.PlayMode
 
         private static async Task<(int winnerIndex, int result, int threadId,
             SynchronizationContext context)> AwaitTypedRaceAndGetContext(
-            OnityTask<(int winnerIndex, int result)> task)
+            OnityTask<(int winArgumentIndex, int result1, int result2)> task)
         {
-            (int winnerIndex, int result) winner = await task;
-            return (winner.winnerIndex, winner.result,
+            (int winArgumentIndex, int result1, int result2) winner = await task;
+            return (winner.winArgumentIndex, winner.winArgumentIndex == 0 ? winner.result1 : winner.result2,
                 Thread.CurrentThread.ManagedThreadId, SynchronizationContext.Current);
         }
 
         private static async Task<(int winnerIndex, int result, int threadId,
             SynchronizationContext context)> AwaitTypedBridgeAndGetContext(
-            Task<(int winnerIndex, int result)> task)
+            Task<(int winArgumentIndex, int result1, int result2)> task)
         {
-            (int winnerIndex, int result) winner = await task;
-            return (winner.winnerIndex, winner.result,
+            (int winArgumentIndex, int result1, int result2) winner = await task;
+            return (winner.winArgumentIndex, winner.winArgumentIndex == 0 ? winner.result1 : winner.result2,
                 Thread.CurrentThread.ManagedThreadId, SynchronizationContext.Current);
         }
 

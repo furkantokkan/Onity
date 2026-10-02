@@ -8,9 +8,18 @@ namespace Onity.Unity.Async
 {
     internal sealed class OnityEndOfFrameRunner : MonoBehaviour
     {
+        /// <summary>
+        /// A queued end-of-frame wait with the version of the cycle that queued it, so an entry whose cycle
+        /// published elsewhere (an immediate cancellation) never touches a later rental of the source.
+        /// </summary>
+        internal struct PendingWait
+        {
+            internal OnityEndOfFrameTaskSource Source;
+            internal int Version;
+        }
+
         private static readonly WaitForEndOfFrame s_wait = new WaitForEndOfFrame();
-        private List<OnityEndOfFrameTaskSource> m_pending =
-            new List<OnityEndOfFrameTaskSource>(32);
+        private List<PendingWait> m_pending = new List<PendingWait>(32);
         private Coroutine m_coroutine;
         private ulong m_pass;
         private int m_pumpGeneration;
@@ -26,12 +35,12 @@ namespace Onity.Unity.Async
             }
         }
 
-        internal OnityTask Schedule(CancellationToken token)
+        internal OnityTask Schedule(CancellationToken token, bool cancelImmediately)
         {
-            OnityEndOfFrameTaskSource source = OnityEndOfFrameTaskSource.Rent(m_pass, token);
-            OnityTask task = new OnityTask(source);
-            m_pending.Add(source);
-            return task;
+            OnityEndOfFrameTaskSource source = OnityEndOfFrameTaskSource.Rent(m_pass, token, cancelImmediately);
+            int version = source.Version;
+            m_pending.Add(new PendingWait { Source = source, Version = version });
+            return new OnityTask(source, version);
         }
 
         private IEnumerator Pump(int generation)
@@ -49,12 +58,19 @@ namespace Onity.Unity.Async
                 int count = m_pending.Count;
                 for (int i = count - 1; i >= 0; i--)
                 {
-                    OnityEndOfFrameTaskSource source = m_pending[i];
-                    if (source.RegisteredPass != m_pass)
+                    PendingWait wait = m_pending[i];
+                    if (!wait.Source.IsAwaitingPublication(wait.Version))
                     {
-                        bool canceled = source.IsCancellationFlagged;
+                        // Published by an immediate cancellation.
                         RemoveAt(i);
-                        Publish(source, canceled, null);
+                        continue;
+                    }
+
+                    if (wait.Source.RegisteredPass != m_pass)
+                    {
+                        bool canceled = wait.Source.IsCancellationFlagged;
+                        RemoveAt(i);
+                        Publish(wait, canceled, null);
                         if (m_retired || generation != m_pumpGeneration)
                         {
                             yield break;
@@ -75,11 +91,17 @@ namespace Onity.Unity.Async
             int count = m_pending.Count;
             for (int i = count - 1; i >= 0; i--)
             {
-                OnityEndOfFrameTaskSource source = m_pending[i];
-                if (source.IsCancellationFlagged)
+                PendingWait wait = m_pending[i];
+                if (!wait.Source.IsAwaitingPublication(wait.Version))
                 {
                     RemoveAt(i);
-                    Publish(source, true, null);
+                    continue;
+                }
+
+                if (wait.Source.IsCancellationFlagged)
+                {
+                    RemoveAt(i);
+                    Publish(wait, true, null);
                     if (m_retired || generation != m_pumpGeneration)
                     {
                         return;
@@ -95,7 +117,7 @@ namespace Onity.Unity.Async
             m_pending.RemoveAt(last);
         }
 
-        internal List<OnityEndOfFrameTaskSource> Detach()
+        internal List<PendingWait> Detach()
         {
             if (m_retired)
             {
@@ -106,7 +128,7 @@ namespace Onity.Unity.Async
             // Invalidate before stopping: an executing publication may return into
             // the old iterator after its callback has created a replacement host.
             m_pumpGeneration++;
-            List<OnityEndOfFrameTaskSource> pending = m_pending;
+            List<PendingWait> pending = m_pending;
             m_pending = null;
             Coroutine coroutine = m_coroutine;
             m_coroutine = null;
@@ -124,7 +146,7 @@ namespace Onity.Unity.Async
             return pending;
         }
 
-        internal static void RetirePending(List<OnityEndOfFrameTaskSource> pending, Exception failure)
+        internal static void RetirePending(List<PendingWait> pending, Exception failure)
         {
             if (pending == null)
             {
@@ -132,17 +154,20 @@ namespace Onity.Unity.Async
             }
             for (int i = pending.Count - 1; i >= 0; i--)
             {
-                OnityEndOfFrameTaskSource source = pending[i];
+                PendingWait wait = pending[i];
                 pending.RemoveAt(i);
-                Publish(source, failure == null, failure);
+                if (wait.Source.IsAwaitingPublication(wait.Version))
+                {
+                    Publish(wait, failure == null, failure);
+                }
             }
         }
 
-        private static void Publish(OnityEndOfFrameTaskSource source, bool canceled, Exception failure)
+        private static void Publish(PendingWait wait, bool canceled, Exception failure)
         {
             try
             {
-                source.Publish(canceled, failure);
+                wait.Source.Publish(wait.Version, canceled, failure);
             }
             catch (Exception exception)
             {

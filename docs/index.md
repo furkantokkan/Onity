@@ -11,7 +11,7 @@ Onity is a Unity-first framework for dependency injection, async gameplay flows,
 reactive state, typed messaging, factories, and pooling. Its core is engine-free,
 and the package has no non-Unity third-party runtime dependencies.
 
-**Current release:** [`v0.5.0`](https://github.com/furkantokkan/Onity/releases/tag/v0.5.0) · **Unity:** 2022.3 LTS or newer
+**Current release:** [`v0.6.0`](https://github.com/furkantokkan/Onity/releases/tag/v0.6.0) · **Unity:** 2022.3 LTS or newer
 
 ## Install
 
@@ -25,21 +25,21 @@ https://github.com/furkantokkan/Onity.git#upm
 To pin the current release:
 
 ```text
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.5.0
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.6.0
 ```
 
 ## Start here
 
 - [Getting Started](Getting-Started.html) — hands-on walkthrough wiring DI, reactive, and events in one scene.
-- [Async with OnityTask](guide/onitytask.html) — frame waits, cancellation, scene loading, web requests, and the pooled-task safety rule.
-- [OnityTask and UniTask comparison](guide/onitytask-comparison.html) — measured Unity 2022 workloads and current feature gaps.
+- [Async with OnityTask](guide/onitytask.html) — frame waits and PlayerLoop timings, cancellation, composition, triggers and UI events, async streams, scene loading, web requests, and the pooled-task safety rule.
+- [OnityTask and UniTask comparison](guide/onitytask-comparison.html) — Release Player gate results, feature coverage and the remaining gaps.
 
 ## What Onity provides
 
 | Area | Main API |
 | --- | --- |
 | Dependency injection | `OnityContainer`, installers, project/scene/game-object contexts |
-| Async | `OnityTask`, scene/web/`AsyncOperation` bridges, cancellation |
+| Async | `OnityTask`, PlayerLoop timings and timers, composition, triggers and UI events, async streams and channels, scene/web/`AsyncOperation` bridges, DI scope tokens |
 | Reactive state | `Subject<T>`, `ReactiveProperty<T>`, synchronous and async operators |
 | Messaging | `IMessageBroker`, `OnityEventHub`, `OnityEvent`, keyed and async channels |
 | Creation and reuse | Typed factories, object/prefab pools, pool hooks |
@@ -52,6 +52,13 @@ VContainer measured `94.39 ns/op`: approximately **80.1% lower resolve time**
 in that run. Results are indicative, not a guarantee; see
 [Performance & IL2CPP](guide/performance-and-il2cpp.html) for the setup and
 caveats.
+
+In the 2026-10-02 Release Player gate (Unity 2022.3.62f2, Windows x64, three
+processes per backend and suite), OnityTask was faster than UniTask 2.5.11 in all
+29 gated IL2CPP rows, with median Onity/UniTask time ratios from 0.085 to 0.808,
+at Onity's default context flow and with pool retention matched for the large
+bursts. Mono, opt-in flow and default-retention results are in the
+[comparison](guide/onitytask-comparison.html).
 
 ## Guides
 

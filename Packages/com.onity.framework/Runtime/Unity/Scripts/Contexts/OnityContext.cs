@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Onity.DI;
 using Onity.Messaging;
+using Onity.Unity.Async;
 using Onity.Unity.Installers;
 using Onity.Unity.Messaging;
 using UnityEngine;
@@ -28,12 +30,15 @@ namespace Onity.Unity.Contexts
         [Tooltip("Inject all MonoBehaviours under this context root during Awake.")]
         [SerializeField] private bool m_autoInjectHierarchy = true;
 
-        [Tooltip("Runs async post-build callbacks after initial context setup.")]
+        [Tooltip("Runs BuildAsync in Start: async post-build callbacks, then IOnityAsyncInitializable entry points.")]
         [SerializeField] private bool m_runAsyncBuildCallbacks = true;
 
         private OnityContainer m_container;
+        private bool m_isDestroyed;
         private readonly TaskCompletionSource<bool> m_readyCompletionSource =
             new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        // Native counterpart of m_readyCompletionSource, created by the first pending WaitReadyAsync.
+        private OnityTaskCompletionSource m_readySource;
 
         /// <summary>
         /// Container instance owned by this context.
@@ -41,14 +46,72 @@ namespace Onity.Unity.Contexts
         public OnityContainer Container => m_container;
 
         /// <summary>
-        /// Gets whether synchronous and configured asynchronous container build callbacks completed.
+        /// Gets a token that is canceled when this context's scope ends. <see cref="OnDestroy" />
+        /// disposes the container, which cancels the token before the scope's services are disposed.
+        /// Main thread only.
+        /// </summary>
+        /// <remarks>
+        /// This is the container's <see cref="OnityContainer.LifetimeToken" />; services in the scope
+        /// get the same token by injecting <see cref="IOnityScopeLifetime" />. Before <c>Awake</c>
+        /// creates the container (an inactive context), the context's destroy token is returned. A
+        /// destroyed context returns a canceled token.
+        /// </remarks>
+        public CancellationToken LifetimeToken
+        {
+            get
+            {
+                OnityContainer container = m_container;
+
+                if (container != null)
+                {
+                    return container.LifetimeToken;
+                }
+
+                return m_isDestroyed ? new CancellationToken(true) : this.GetCancellationTokenOnDestroy();
+            }
+        }
+
+        /// <summary>
+        /// Gets whether synchronous and configured asynchronous container build callbacks completed,
+        /// including every <see cref="IOnityAsyncInitializable" /> entry point.
         /// </summary>
         public bool IsReady { get; private set; }
 
         /// <summary>
-        /// Completes when synchronous and configured asynchronous container build callbacks complete.
+        /// Completes when synchronous and configured asynchronous container build callbacks complete,
+        /// including every <see cref="IOnityAsyncInitializable" /> entry point.
         /// </summary>
         public Task ReadyTask => m_readyCompletionSource.Task;
+
+        /// <summary>
+        /// Waits until the context is ready (<see cref="IsReady" />): the native
+        /// <see cref="OnityTask" /> counterpart of <see cref="ReadyTask" />. Main thread only.
+        /// </summary>
+        /// <param name="cancellationToken">Cancels this wait only; the build keeps running.</param>
+        /// <returns>
+        /// A completed task when the context is already ready. Otherwise a task that completes when
+        /// the context becomes ready, faults with the build failure, or is canceled when the context
+        /// is destroyed first or <paramref name="cancellationToken" /> is canceled.
+        /// </returns>
+        /// <remarks>
+        /// The context becomes ready on Unity's main thread, so the awaiting code resumes there. The
+        /// returned task can be awaited once.
+        /// </remarks>
+        public OnityTask WaitReadyAsync(CancellationToken cancellationToken = default)
+        {
+            if (IsReady)
+            {
+                return OnityTask.CompletedTask;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return OnityTask.FromCanceled(cancellationToken);
+            }
+
+            OnityTaskCompletionSource source = m_readySource ??= CreateReadySource();
+            return source.Task.AttachExternalCancellation(cancellationToken);
+        }
 
         /// <summary>
         /// Creates and configures the container.
@@ -68,11 +131,14 @@ namespace Onity.Unity.Contexts
         }
 
         /// <summary>
-        /// Executes asynchronous post-build callbacks after initial setup.
+        /// Executes asynchronous post-build callbacks after initial setup. The callbacks receive
+        /// <see cref="LifetimeToken" />, so destroying the context cancels them.
         /// </summary>
         protected virtual async void Start()
         {
-            if (m_runAsyncBuildCallbacks == false || m_container == null)
+            OnityContainer container = m_container;
+
+            if (m_runAsyncBuildCallbacks == false || container == null)
             {
                 SetReady();
                 return;
@@ -80,12 +146,21 @@ namespace Onity.Unity.Contexts
 
             try
             {
-                await m_container.BuildAsync();
-                SetReady();
+                await container.BuildAsync(container.LifetimeToken);
+
+                if (container.IsDisposed == false)
+                {
+                    SetReady();
+                }
+            }
+            catch (OperationCanceledException) when (container.IsDisposed)
+            {
+                // Destroyed during the async build: OnDestroy already canceled ReadyTask.
             }
             catch (Exception exception)
             {
                 m_readyCompletionSource.TrySetException(exception);
+                m_readySource?.TrySetException(exception);
                 Debug.LogException(exception, this);
             }
         }
@@ -119,8 +194,10 @@ namespace Onity.Unity.Contexts
         /// </summary>
         protected virtual void OnDestroy()
         {
+            m_isDestroyed = true;
             UnregisterActiveContext();
             m_readyCompletionSource.TrySetCanceled();
+            m_readySource?.TrySetCanceled();
             m_container?.Dispose();
             m_container = null;
         }
@@ -305,6 +382,29 @@ namespace Onity.Unity.Contexts
         {
             IsReady = true;
             m_readyCompletionSource.TrySetResult(true);
+            m_readySource?.TrySetResult();
+        }
+
+        // Mirrors the readiness reached before the first pending WaitReadyAsync call.
+        private OnityTaskCompletionSource CreateReadySource()
+        {
+            OnityTaskCompletionSource source = new OnityTaskCompletionSource();
+            Task readyTask = m_readyCompletionSource.Task;
+
+            if (readyTask.IsCanceled)
+            {
+                source.TrySetCanceled();
+            }
+            else if (readyTask.IsFaulted)
+            {
+                source.TrySetException(readyTask.Exception.InnerException ?? readyTask.Exception);
+            }
+            else if (readyTask.IsCompleted)
+            {
+                source.TrySetResult();
+            }
+
+            return source;
         }
 
         private void RegisterDefaultBindings()
@@ -313,6 +413,7 @@ namespace Onity.Unity.Contexts
             {
                 m_container.BindInstance(m_container);
                 m_container.BindInstance<IResolver>(m_container);
+                m_container.BindInstance<IOnityScopeLifetime>(m_container);
                 m_container.BindInstance(this);
                 m_container.BindInterfacesAndSelfTo<MessageBroker>().AsSingle();
                 m_container.BindInterfacesAndSelfTo<OnityEventHub>().AsSingle();

@@ -133,6 +133,12 @@ public sealed class DamageLogService : IDisposable
 }
 ```
 
+Or tie the subscription to the owning scope instead of implementing `IDisposable`:
+inject `IOnityScopeLifetime` (every context binds it) and call
+`events.Subscribe<PlayerDamaged>(OnPlayerDamaged).AddTo(scope)`; the subscription is
+disposed when the context's scope ends (see
+[Scope lifetime token](lifecycle-and-scopes.html#scope-lifetime-token)).
+
 ### Subscribe from a MonoBehaviour
 
 Use `OnityEvent.Subscribe(this, ...)` when the subscription should be disposed with
@@ -738,9 +744,56 @@ IDisposable token = levelLoaded.Subscribe(async (msg, ct) =>
 await levelLoaded.PublishAsync(new LevelLoaded(/* ... */), CancellationToken.None);   // awaits every handler in turn
 ```
 
-A cancellation surfaces as `OperationCanceledException` and is checked before each handler.
+A cancellation surfaces as `OperationCanceledException` and is checked before each handler. Use `container.DeclareAsyncMessage<T>()` (`Onity.Composition`) to bind one channel as `AsyncMessageChannel<T>`, `IAsyncPublisher<T>`, and `IAsyncSubscriber<T>`; the container disposes it with the scope.
 
-## Message vs ReactiveProperty vs direct call
+## Native async consumption (OnityTask)
+
+`Onity.Unity.Async` adds `OnityTask`-based consumers on top of the channels. Delivery is sequential and awaited, so one slow `SubscribeOnityTask` handler stalls every publisher; these give you a one-shot receive, a buffered stream, and a queue with real backpressure:
+
+| Member | Use |
+| --- | --- |
+| `subscriber.ReceiveAsync(ct)` / `ReceiveAsync(predicate, ct)` | `OnityTask<T>`: the next (matching) message. Pooled, one shared subscription per subscriber; replaces `Observe().Where().FirstOnityTask()`. A canceled receive gets no later message. |
+| `subscriber.ReceiveAllAsync(capacity, overflow)` | `IOnityAsyncEnumerable<T>` over a **synchronous** `ISubscriber<T>`. A synchronous publisher cannot wait, so `OnityBufferOverflow` decides what happens when the buffer is full: `Fault` (default: drain the accepted messages, then fault), `DropOldest`, or `DropNewest`. |
+| `asyncSubscriber.SubscribeQueued(handler, capacity, lifetimeToken)` | A bounded queue between an `IAsyncSubscriber<T>` and your `OnityTask` handler. `PublishAsync` only waits while the queue is full; one consumer runs the handler for each message in order under `lifetimeToken`. |
+
+An assembly definition that uses these extensions needs references to `Onity.Messaging` and `Onity.Reactive` as well as `Onity.Unity`; Unity assembly references are not transitive, and without them the compiler reports CS0012 for the `Onity.Unity.Async` overloads.
+
+```csharp
+using System.Threading;
+using Onity.DI;
+using Onity.Messaging;
+using Onity.Unity.Async;
+
+public sealed class SaveQueue : IOnityInitializable
+{
+    private readonly IAsyncSubscriber<SaveRequested> m_requests;
+    private readonly IOnityScopeLifetime m_scope;
+
+    public SaveQueue(IAsyncSubscriber<SaveRequested> requests, IOnityScopeLifetime scope)
+    {
+        m_requests = requests;
+        m_scope = scope;
+    }
+
+    public void Initialize()
+    {
+        // Publishers return as soon as the request is queued; they wait only when 8 are pending.
+        // The scope token stops the subscription; keep the returned IDisposable to stop it earlier.
+        m_requests.SubscribeQueued(WriteAsync, 8, m_scope.Token);
+    }
+
+    private async OnityTask WriteAsync(SaveRequested request, CancellationToken ct)
+    {
+        await OnityTask.SwitchToThreadPool(ct);
+        // ... write the save file ...
+    }
+}
+```
+
+- **Receive loops:** a receive that starts while the channel is publishing (for example in a continuation that the publication resumed) waits for the following message, so `while (...) await subscriber.ReceiveAsync(ct)` sees each message once.
+- **Stopping a queued subscription:** disposing it, or canceling `lifetimeToken`, unsubscribes, cancels the running handler, discards queued messages, and releases publishers waiting for space without an exception (their messages are dropped). A publisher whose own token is canceled while it waits gets `OperationCanceledException`, and its message is not queued.
+- **Handler faults:** a queued handler's exception is logged with `Debug.LogException`, and the next message is still handled.
+- **Threading:** subscribe, publish, and stop on the channel's thread (the main thread); tokens may be canceled from any thread. A handler that publishes to its own channel while the queue is full waits for itself.
 
 Three ways for one part of the game to tell another that something happened. Pick by the **shape of the information**, not by habit.
 

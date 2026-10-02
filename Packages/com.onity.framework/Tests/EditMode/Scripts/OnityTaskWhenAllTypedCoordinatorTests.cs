@@ -265,7 +265,7 @@ namespace Onity.Tests.EditMode
                     });
                     start.Set();
                 }
-                OnityTask<int[]> output = OnityTask.WhenAll(source.Task, other.Task);
+                OnityTask<int[]> output = OnityTask.WhenAll(new[] { source.Task, other.Task });
                 Exception fault = new InvalidOperationException("materialized typed fault");
                 try
                 {
@@ -355,7 +355,7 @@ namespace Onity.Tests.EditMode
                     try
                     {
                         OnityTaskCompletionSource<int> next = new OnityTaskCompletionSource<int>();
-                        OnityTask<int[]> nested = OnityTask.WhenAll(next.Task, OnityTask.FromResult(99));
+                        OnityTask<int[]> nested = OnityTask.WhenAll(new[] { next.Task, OnityTask.FromResult(99) });
                         next.TrySetResult(73);
                         observed.TrySetResult(nested.GetAwaiter().GetResult());
                     }
@@ -388,13 +388,13 @@ namespace Onity.Tests.EditMode
             {
                 using (ExecutionContext.SuppressFlow())
                 {
-                    output = OnityTask.WhenAll(source.Task, OnityTask.FromResult(17));
+                    output = OnityTask.WhenAll(new[] { source.Task, OnityTask.FromResult(17) });
                     Assert.That(ExecutionContext.IsFlowSuppressed(), Is.True);
                 }
             }
             else
             {
-                output = OnityTask.WhenAll(source.Task, OnityTask.FromResult(17));
+                output = OnityTask.WhenAll(new[] { source.Task, OnityTask.FromResult(17) });
             }
             Assert.That(ExecutionContext.IsFlowSuppressed(), Is.False);
             TaskCompletionSource<int> reference = new TaskCompletionSource<int>();
@@ -415,7 +415,7 @@ namespace Onity.Tests.EditMode
                 OnityTaskTracker.ClearAll();
                 local.Value = "registration";
                 OnityTaskCompletionSource<int> source = new OnityTaskCompletionSource<int>();
-                OnityTask<int[]> output = OnityTask.WhenAll(source.Task, OnityTask.FromResult(17));
+                OnityTask<int[]> output = OnityTask.WhenAll(new[] { source.Task, OnityTask.FromResult(17) });
                 local.Value = "completion";
                 source.TrySetException(new ContextException(local));
                 List<OnityTrackedTaskInfo> rows = new List<OnityTrackedTaskInfo>();

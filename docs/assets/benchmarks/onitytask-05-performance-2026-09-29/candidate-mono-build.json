@@ -1,0 +1,11 @@
+{
+    "generatedAtUtc": "2026-09-29T20:49:24.6542506Z",
+    "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+    "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+    "il2CppCompilerConfiguration": "Release",
+    "managedStrippingLevel": "Disabled",
+    "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+    "onityVersion": "0.3.14",
+    "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+    "uniTaskVersion": "2.5.11"
+}

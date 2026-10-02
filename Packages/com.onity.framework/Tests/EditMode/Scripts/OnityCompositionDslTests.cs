@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using Onity.Composition;
 using Onity.DI;
@@ -118,6 +120,104 @@ namespace Onity.Tests.EditMode
             channel.Publish(new SampleMessage(2));
 
             Assert.That(callCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void DeclareAsyncMessage_ResolvesChannelPublisherAndSubscriberAsSameInstance()
+        {
+            using OnityContainer container = new OnityContainer();
+            AsyncMessageChannel<SampleMessage> returned = container.DeclareAsyncMessage<SampleMessage>();
+
+            AsyncMessageChannel<SampleMessage> channel = container.Resolve<AsyncMessageChannel<SampleMessage>>();
+            IAsyncPublisher<SampleMessage> publisher = container.Resolve<IAsyncPublisher<SampleMessage>>();
+            IAsyncSubscriber<SampleMessage> subscriber = container.Resolve<IAsyncSubscriber<SampleMessage>>();
+
+            Assert.That(channel, Is.SameAs(returned));
+            Assert.That(publisher, Is.SameAs(returned));
+            Assert.That(subscriber, Is.SameAs(returned));
+        }
+
+        [Test]
+        public async Task DeclareAsyncMessage_PublishThroughPublisherReachesSubscriber()
+        {
+            using OnityContainer container = new OnityContainer();
+            container.DeclareAsyncMessage<SampleMessage>();
+
+            IAsyncPublisher<SampleMessage> publisher = container.Resolve<IAsyncPublisher<SampleMessage>>();
+            IAsyncSubscriber<SampleMessage> subscriber = container.Resolve<IAsyncSubscriber<SampleMessage>>();
+
+            int received = 0;
+            using IDisposable subscription = subscriber.Subscribe(
+                (message, _) =>
+                {
+                    received = message.Amount;
+                    return default;
+                });
+
+            await publisher.PublishAsync(new SampleMessage(9), CancellationToken.None);
+
+            Assert.That(received, Is.EqualTo(9));
+        }
+
+        [Test]
+        public void ContainerDispose_DisposesHelperCreatedInstances()
+        {
+            OnityContainer container = new OnityContainer();
+            ReactiveProperty<int> property = container.BindReactiveProperty(1);
+            Subject<int> subject = container.BindSubject<int>();
+            MessageChannel<SampleMessage> channel = container.DeclareMessage<SampleMessage>();
+            AsyncMessageChannel<SampleMessage> asyncChannel = container.DeclareAsyncMessage<SampleMessage>();
+
+            container.Dispose();
+
+            Assert.That(() => property.Subscribe(_ => { }), Throws.TypeOf<ObjectDisposedException>());
+            Assert.That(() => subject.OnNext(2), Throws.TypeOf<ObjectDisposedException>());
+            Assert.That(() => channel.Publish(new SampleMessage(3)), Throws.TypeOf<ObjectDisposedException>());
+            Assert.That(
+                () => asyncChannel.Subscribe((_, _) => default),
+                Throws.TypeOf<ObjectDisposedException>());
+        }
+
+        [Test]
+        public void ContainerDispose_LeavesCallerOwnedInstanceUndisposed()
+        {
+            OnityContainer container = new OnityContainer();
+            ReactiveProperty<int> property = new ReactiveProperty<int>(1);
+            container.BindInstance(property);
+
+            container.Dispose();
+
+            Assert.That(property.SetValue(2), Is.True);
+            property.Dispose();
+        }
+
+        [Test]
+        public async Task ContainerDispose_CancelsPendingHandlerAndDisposesAsyncChannel()
+        {
+            OnityContainer container = new OnityContainer();
+            AsyncMessageChannel<SampleMessage> channel = container.DeclareAsyncMessage<SampleMessage>();
+            CancellationToken scopeToken = container.LifetimeToken;
+            using IDisposable subscription = channel.Subscribe(
+                async (_, _) => await Task.Delay(Timeout.Infinite, scopeToken));
+
+            Task publish = channel.PublishAsync(new SampleMessage(4), CancellationToken.None).AsTask();
+
+            Assert.That(publish.IsCompleted, Is.False);
+
+            container.Dispose();
+
+            try
+            {
+                await publish;
+                Assert.Fail("Expected the pending publish to end canceled.");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+
+            Assert.That(scopeToken.IsCancellationRequested, Is.True);
+            Assert.That(channel.SubscriberCount, Is.EqualTo(0));
+            Assert.That(() => channel.Subscribe((_, _) => default), Throws.TypeOf<ObjectDisposedException>());
         }
 
         private readonly struct SampleMessage

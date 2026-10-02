@@ -34,6 +34,33 @@ namespace Onity.Unity.Async
         {
             return OnityJobHandleRegistry.Register(handle);
         }
+
+        /// <summary>
+        /// Yields to the next drain of <paramref name="waitTiming"/>, then calls Complete on the handle, which
+        /// blocks until the job finishes; the equivalent of UniTask's <c>JobHandle.WaitAsync</c>. The handle
+        /// is completed even when the yield fails, for example because the session ended, so the completion
+        /// obligation is never dropped. Requires an active Play/player session.
+        /// </summary>
+        /// <param name="handle">Scheduled job or combined dependency to complete.</param>
+        /// <param name="waitTiming">PlayerLoop timing to complete the handle at.</param>
+        /// <param name="cancellationToken">Token observed after Complete; it cannot stop the job.</param>
+        /// <returns>Task completed after Complete returned.</returns>
+        public static async OnityTask WaitAsync(
+            this JobHandle handle,
+            OnityPlayerLoopTiming waitTiming,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await OnityTask.Yield(waitTiming);
+            }
+            finally
+            {
+                handle.Complete();
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+        }
     }
 
     internal static class OnityJobHandleRegistry
@@ -334,17 +361,21 @@ namespace Onity.Unity.Async
 #endif
     }
 
-    internal sealed class OnityJobHandleTaskSource : OnityTaskSourceBase
+    internal sealed class OnityJobHandleTaskSource :
+        OnityTaskSourceBase, IOnityPooledRunner<OnityJobHandleTaskSource>
     {
-        private const int k_maxPoolSize = 128;
-        private static readonly Stack<OnityJobHandleTaskSource> s_pool = new Stack<OnityJobHandleTaskSource>(32);
+        private static OnityRunnerPool<OnityJobHandleTaskSource> s_pool;
+
+        private OnityJobHandleTaskSource m_nextPooled;
+
+        ref OnityJobHandleTaskSource IOnityPooledRunner<OnityJobHandleTaskSource>.NextPooled => ref m_nextPooled;
 
         internal static OnityJobHandleTaskSource Rent()
         {
-            OnityJobHandleTaskSource source;
-            lock (s_pool)
+            // A contended rent allocates instead of waiting.
+            if (!s_pool.TryPop(out OnityJobHandleTaskSource source))
             {
-                source = s_pool.Count > 0 ? s_pool.Pop() : new OnityJobHandleTaskSource();
+                source = new OnityJobHandleTaskSource();
             }
 
             source.Reset(default);
@@ -369,14 +400,9 @@ namespace Onity.Unity.Async
 
         protected override void ReleaseSource()
         {
-            InvalidateVersion();
-            lock (s_pool)
-            {
-                if (s_pool.Count < k_maxPoolSize)
-                {
-                    s_pool.Push(this);
-                }
-            }
+            // The compare-and-swap that claimed the release already retired the token version.
+            // A contended or full return lets the source be collected.
+            s_pool.TryPush(this, OnityTaskSettings.s_sourcePoolCapacity);
         }
     }
 }

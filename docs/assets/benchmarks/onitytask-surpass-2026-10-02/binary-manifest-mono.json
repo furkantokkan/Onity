@@ -1,0 +1,833 @@
+{
+  "schemaVersion": 1,
+  "directory": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\Players\\Mono",
+  "excluded": "non-shipping *_BackUpThisFolder_ButDontShipItWithYourGame and *_BurstDebugInformation_DoNotShip folders",
+  "fileCount": 165,
+  "files": [
+    {
+      "path": "MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll",
+      "bytes": 7897520,
+      "sha256": "309CEA0F174B1688E2984C97D8C12B89DB0E60E75375B3C7A1F39D3F2F8D1BF6"
+    },
+    {
+      "path": "MonoBleedingEdge/EmbedRuntime/MonoPosixHelper.dll",
+      "bytes": 611240,
+      "sha256": "085802A35347B99661DC8F9FD23F9E6484A45738C09190641AA73F34629D41D1"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/2.0/Browsers/Compat.browser",
+      "bytes": 1605,
+      "sha256": "8A1082057AC5681DCD4E9C227ED7FB8EB42AC1618963B5DE3B65739DD77E2741"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/2.0/DefaultWsdlHelpGenerator.aspx",
+      "bytes": 60575,
+      "sha256": "751861040B69EA63A3827507B7C8DA9C7F549DC181C1C8AF4B7CA78CC97D710A"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/2.0/machine.config",
+      "bytes": 29066,
+      "sha256": "E91782A27FA39FC6C1D6EE8B08529F5D35052310D0006034B878EB04B8F2AF30"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/2.0/settings.map",
+      "bytes": 2622,
+      "sha256": "49C6160F9D54AF4270A3B4E997FC4A8301F79B9E2070118FA46DDBCBBC44F9A2"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/2.0/web.config",
+      "bytes": 11635,
+      "sha256": "CF2B54339E069B9E42F7D6795EECBF562C50C1011F4CA8F65F578FE52D97FF92"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.0/Browsers/Compat.browser",
+      "bytes": 1605,
+      "sha256": "8A1082057AC5681DCD4E9C227ED7FB8EB42AC1618963B5DE3B65739DD77E2741"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.0/DefaultWsdlHelpGenerator.aspx",
+      "bytes": 60575,
+      "sha256": "751861040B69EA63A3827507B7C8DA9C7F549DC181C1C8AF4B7CA78CC97D710A"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.0/machine.config",
+      "bytes": 33598,
+      "sha256": "E60AEC2C5115D65B3ACB3C55EA21576DBD770F579166C017125571E46AE560ED"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.0/settings.map",
+      "bytes": 2622,
+      "sha256": "CE1DB1AD8A9512073164E3ECCDC193F7EDA036E1A9733CAEC4635DE21B2865C8"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.0/web.config",
+      "bytes": 18802,
+      "sha256": "E38BB8CC68FE5B4EDECDFD288D094B9E8CED7629039B2A347682ABA0D8BD7492"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.5/Browsers/Compat.browser",
+      "bytes": 1605,
+      "sha256": "8A1082057AC5681DCD4E9C227ED7FB8EB42AC1618963B5DE3B65739DD77E2741"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.5/DefaultWsdlHelpGenerator.aspx",
+      "bytes": 60575,
+      "sha256": "751861040B69EA63A3827507B7C8DA9C7F549DC181C1C8AF4B7CA78CC97D710A"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.5/machine.config",
+      "bytes": 34056,
+      "sha256": "EE950004B576FB28DC85F4B0435ED04BF96612DE2E8B53BE84D07AFE85A0DE6C"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.5/settings.map",
+      "bytes": 2622,
+      "sha256": "CE1DB1AD8A9512073164E3ECCDC193F7EDA036E1A9733CAEC4635DE21B2865C8"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.5/web.config",
+      "bytes": 18811,
+      "sha256": "C4CBDDD4FD9347B58CC5A72B36DC4BA1AD2BB699E65869D05CD3FB9865F0D824"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/browscap.ini",
+      "bytes": 311984,
+      "sha256": "4DDD50F31FB968F30BEDEFC253A46DC3F2890192D05CDAA9E0A64A056EEE807E"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/config",
+      "bytes": 3815,
+      "sha256": "5776169973A26A387B8B3E5C0F2301A7AB9A6DD7C7D3EFA22A96ABC47FBF8662"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/mconfig/config.xml",
+      "bytes": 25817,
+      "sha256": "0C56E34C69124510FA8C19E7B4C2CA6C1C4FF460AE19F798DD0CA035809E396D"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/app.info",
+      "bytes": 20,
+      "sha256": "6EE7DEF983126362C335E147ED86024AE993BB407C4960BAED4800B4B08A384E"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/boot.config",
+      "bytes": 164,
+      "sha256": "4223995C7F433F37101358CDD8ACC4ABED42113948459D67EA26E35A150E4F67"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/globalgamemanagers",
+      "bytes": 78428,
+      "sha256": "8AF6D8C41F36D95CD57E85F8490228D9A135EB32FBDDED99882B82E92A5381DE"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/globalgamemanagers.assets",
+      "bytes": 184656,
+      "sha256": "5852BB77C9DBCFEEAFF22D58B1573D86E76C9682868ED8F95E313E1630054885"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/globalgamemanagers.assets.resS",
+      "bytes": 2796240,
+      "sha256": "39DD38FCD8DD95D41D6D55FE16A448D29FE2C31D9A162C825C24C6D99A893D7A"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/level0",
+      "bytes": 756,
+      "sha256": "D7CEA492B25352CDDB3E64B74D6054BA153D1DDE297FFC55894F3B041DFC0007"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Mono.Security.dll",
+      "bytes": 241152,
+      "sha256": "576F911BE2E0DB795EA78F78828F3FAF4B20900BAF1CE8E33CA8FE599370FC1D"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/mscorlib.dll",
+      "bytes": 4631552,
+      "sha256": "98C9B62133DB5DD33B22BC6AAB6F28E4F04F5B5BE6559B28BA5C2738241434D0"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/netstandard.dll",
+      "bytes": 90112,
+      "sha256": "6AE62E082DC494A2433984177F60CA4DB5FAE69B1F360A8B33754172B310B8C5"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Onity.Composition.dll",
+      "bytes": 5632,
+      "sha256": "DA0B456BE7999C427257F13182E5EBC02AE11B049B4AD76F15D02190D31D6B86"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Onity.Core.dll",
+      "bytes": 5120,
+      "sha256": "00D6FC509030D1CA9A7F4F1AB3AC7810F423A343067F513462264797762C727E"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Onity.DI.dll",
+      "bytes": 72192,
+      "sha256": "0939F7779399D904933285E4D37F748B3D4686D263E886F69C781CC3061C8621"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Onity.DOTS.dll",
+      "bytes": 29696,
+      "sha256": "08ECDA820A335DD47280D09C1A563C78D1BAE94994DB1DB5883768549F21BBB3"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Onity.Factory.dll",
+      "bytes": 4608,
+      "sha256": "EB02580244AD01934DD380E42D677C0202CCBD1BBF19BB3FA001E44A684D2849"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Onity.Messaging.dll",
+      "bytes": 15872,
+      "sha256": "039EC41B9534446985BE2E82BC18B5D0A7E5FB02E38D0BE34B90C42EAC88383E"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Onity.Pooling.dll",
+      "bytes": 16384,
+      "sha256": "ACD50CA877986FF92FC5F797F814592B3342CE05A9F576D3CD03F58967E14E07"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Onity.Reactive.dll",
+      "bytes": 69120,
+      "sha256": "AE2EB1B7BC8506C069DD99AB41E9D022AD0A5BF6F83456861DD3B9A1AC1E6F35"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Onity.TaskBenchmarks.dll",
+      "bytes": 476160,
+      "sha256": "88F7881EB52DC8665DE2FAAA37B4F07DE7CF174DFBBA867DC1C62F0D51427B8D"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Onity.Unity.dll",
+      "bytes": 985600,
+      "sha256": "70A3BBF5D8D69C26BA1CF5CC6845166FC71D53A44088CC4F2052A91EA638A969"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.ComponentModel.Composition.dll",
+      "bytes": 257024,
+      "sha256": "2535FD6FAC676852936CB435D917B2D69CC6FCDD391F7B3009898153BA04919F"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Configuration.dll",
+      "bytes": 124928,
+      "sha256": "EC883B49C12AB0E5110337E817A72CF781878D7FAF904AA8ABB1AB1C4B99BD78"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Core.dll",
+      "bytes": 1113088,
+      "sha256": "F1B33EB1AE8522EDCF9BA4C2B85F532D4BAB68BFA2A51527264BB61619BED4EA"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Data.DataSetExtensions.dll",
+      "bytes": 29696,
+      "sha256": "1C88D17E686CAF77551A18D3672A1589143E6B8AE83BFCF7C306478CDB64AB90"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Data.dll",
+      "bytes": 2125312,
+      "sha256": "534AC87E6A7C1E3CE02FF2D88F4FFA45E7B5FC44E6236922C2F46F8174A29E56"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.dll",
+      "bytes": 2639872,
+      "sha256": "ACE2DD6A7D534B581BF4A9D316E743D64508CA2135DB73DBFF0DDB9365FC454E"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Drawing.dll",
+      "bytes": 489984,
+      "sha256": "435CC673A1ABA5AF488D8AF379D96F7E351A4B5ED2A1772892287A8268567DEB"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.EnterpriseServices.dll",
+      "bytes": 44544,
+      "sha256": "03F240D259B9CF27DBC5C9E8F42B8746A50CC5C52395D8E2DE5730321F9DE3B8"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.IO.Compression.dll",
+      "bytes": 114688,
+      "sha256": "15E84F38FB5E6BB926FE92A79374A083B8DFBABFA11F8CD1D409F21B98447CFD"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.IO.Compression.FileSystem.dll",
+      "bytes": 18432,
+      "sha256": "02F749FBE31E54CD8B86A35738E1DDDAE00CCC2E9FDB8990B93F1A494E6E753A"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Net.Http.dll",
+      "bytes": 122880,
+      "sha256": "85F6D618B5DF944D2271E2D028B94A93CD371C6134507997441475B1700623CF"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Numerics.dll",
+      "bytes": 119296,
+      "sha256": "55EDA0FB467F9356D8F63933FB4B237732F1B215CB8EB0380398F05D3E8A3461"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Runtime.dll",
+      "bytes": 12288,
+      "sha256": "E0A7334B7BA419AAAB6BD3BB6992D693E689341A9178172C9BF99C2AA6A085BD"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Runtime.Serialization.dll",
+      "bytes": 934400,
+      "sha256": "C1058A78E3828052B92D535D8FB27F9F3C9EB9CBFCDEE1904898611B44D7CDB7"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Security.dll",
+      "bytes": 320000,
+      "sha256": "F7F53EB1401F2BD70EA1DCAB1C6C30AE7A4A142E26781C4A78BB885D2F6816A3"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.ServiceModel.Internals.dll",
+      "bytes": 215040,
+      "sha256": "5F926225818163439D823F9EF0F6E798E16604D8B75B66F22A133B40615F1B05"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Transactions.dll",
+      "bytes": 35328,
+      "sha256": "8983073E9627B1086102A9871A23E2BA53A0BB9FCC76826CAB9F5DEC9107E21A"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Xml.dll",
+      "bytes": 3160064,
+      "sha256": "7A3587565CABF8294CFC372991545F3AE5790D54264E40069F5E0E460B66BC55"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/System.Xml.Linq.dll",
+      "bytes": 136704,
+      "sha256": "48B11F5D3A51034F9B9D330082F9099A0E68956EE2153D151CDF146BF9E76C78"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UniTask.Addressables.dll",
+      "bytes": 4096,
+      "sha256": "2E0F8316C2538399A593130FFC03D85612A6139DC8D243649ADA9ECFD4EB8EB4"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UniTask.dll",
+      "bytes": 533504,
+      "sha256": "6FB76A79A8C09111B3460F25F90D59465BF7A9D4E07C8CA29B8B2FACE73F42A7"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UniTask.DOTween.dll",
+      "bytes": 4096,
+      "sha256": "13501C6EDB4FD9E93601AB90261C5700D1B669258FBC4E79420A70D035855647"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UniTask.Linq.dll",
+      "bytes": 703488,
+      "sha256": "BAC4A096DA9D0A08DE60464C4E4BEA3F0A9775968E854ECD31157657F20FF126"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UniTask.TextMeshPro.dll",
+      "bytes": 4096,
+      "sha256": "3BC25C11985B830914B3FF2EE4B010CE5866E8674178C531E453AD9A22E121EC"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Burst.dll",
+      "bytes": 304640,
+      "sha256": "F59939EF37E7C1A696A4FF3BF5C3F0965040EEFC623BF014A148A23C843F9556"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Burst.Unsafe.dll",
+      "bytes": 5632,
+      "sha256": "9D9C1FF52411DECBEE5D9F0D1CD61EBEAA222077AA77A52101EA3DEBAFAE98E2"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Collections.dll",
+      "bytes": 454144,
+      "sha256": "7EE692945F270CF1BD11510E1FC7C06574075A02A8C58C4DE5FD32929EDF61ED"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Collections.LowLevel.ILSupport.dll",
+      "bytes": 5120,
+      "sha256": "FF50383F807F9692E4913B97E47D86FEFCB8FAA33D6D48CD3E3FD6FC7FFB448D"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Deformations.dll",
+      "bytes": 8192,
+      "sha256": "2B441202C10A34EFBFC52360124E99944E551342248AFF14E6A71FF57708A8A2"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Entities.dll",
+      "bytes": 1318912,
+      "sha256": "B9CD04B709DA2A509D430E90FBF9B5AFEF2F32465A73B9412E37D6A81ADF6EC3"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Entities.Hybrid.dll",
+      "bytes": 197120,
+      "sha256": "FD5E36EB224073C96D4D82434EB7C8282ADD28499248B2B48FFD955781B88E0B"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Entities.Hybrid.HybridComponents.dll",
+      "bytes": 16896,
+      "sha256": "0BA152E704DA21173DE50A2B004480E303AAB6107CF751E1C35419C74D83FD9E"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Entities.UI.dll",
+      "bytes": 12800,
+      "sha256": "7CD82DD64AC450B6B39E1C2FF75CCD5549BFFC229A1379A3FEC4CD2FD8943583"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.InputSystem.dll",
+      "bytes": 1072640,
+      "sha256": "D0C3E050D109531D81682D37556A2F0CC587EA68ECB8C3CFEB10E0F4676F340F"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.InputSystem.ForUI.dll",
+      "bytes": 4096,
+      "sha256": "D0658DF4F0713B084D5FFEF53CBC031572AA4746A647350D9FE14D7F007743E7"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.InternalAPIEngineBridge.002.dll",
+      "bytes": 45056,
+      "sha256": "469C06E4CA442B2F5D96FEAEC73AAC14A521EDC0C562B4B96AECA3795E5F3FA6"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Mathematics.dll",
+      "bytes": 752128,
+      "sha256": "E3F51A38FAC5EAE9429C195CD49C2E93313631E840448285B7A804EEC54FEB89"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Mathematics.Extensions.dll",
+      "bytes": 8704,
+      "sha256": "621F31895FF68F32B04234DD6335055F1DCD5A2EAE63452BEB901891115E374A"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Mathematics.Extensions.Hybrid.dll",
+      "bytes": 5120,
+      "sha256": "AB58D993DB34B5534CFDB9A52B63E8D2ED1C0E4B24684FF550D2CD3BB679EB3A"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Profiling.Core.dll",
+      "bytes": 10240,
+      "sha256": "EA7BC8842803AE1DEA7FBA73E874860928087A31EAC3058CCE008E9E8FF03611"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Scenes.dll",
+      "bytes": 96768,
+      "sha256": "F13CC929A423C54E57553FD61899ED7EB2BCA388EDF87F65E31215685EF80C53"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.ScriptableBuildPipeline.dll",
+      "bytes": 8704,
+      "sha256": "4EFD2C881773BD28CB475BD3BE3E87E55F251C8006A71FA3A019E667989AF5C0"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Serialization.dll",
+      "bytes": 172544,
+      "sha256": "BE45BEEE220C0FD5CC0C6E186C0627302B07BD58EAEACF4E22028727AAEAE214"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Transforms.dll",
+      "bytes": 38400,
+      "sha256": "BD1294463E5755CDC8B28AC99E83645D76CFA83D7B91609C9FDDC1D3A5D6C723"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/Unity.Transforms.Hybrid.dll",
+      "bytes": 29184,
+      "sha256": "611C084E16A9A9FCBACCCC704ACC58EDC62DE7E8688485CAEEFC8E09B151BCE4"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.AccessibilityModule.dll",
+      "bytes": 23984,
+      "sha256": "E75A852655782C6D38542CEBC6F0EC75BC92FB829E80362DE390B555A148BD5A"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.AIModule.dll",
+      "bytes": 58792,
+      "sha256": "111BBF88581785D6D9F03A33CE8D3D41588AE93B2F3A6F96A08A391C69558F9C"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.AndroidJNIModule.dll",
+      "bytes": 95144,
+      "sha256": "B6E8994FFC29588A50284DDF6B68C9037AA987AF74A07A7285D0F01AA964D493"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.AnimationModule.dll",
+      "bytes": 164272,
+      "sha256": "A3A74A5BC04BB9E5038A6FBF5BD09322DF2565059F0AC269CB2BD7155D2F66D2"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.ARModule.dll",
+      "bytes": 21424,
+      "sha256": "07B93D19076CA2A084457047743795B82F1E22F1F7B17625C3E29E1D4352FFF6"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.AssetBundleModule.dll",
+      "bytes": 33200,
+      "sha256": "44A78ECFBBB79EAC4B9220D1F11F831662BD0616317EE997680065F48DD9FFA7"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.AudioModule.dll",
+      "bytes": 71592,
+      "sha256": "BC58F16249320022780EA78E757773B8311AEA4F5B966C6602C8149794026E54"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.ClothModule.dll",
+      "bytes": 26544,
+      "sha256": "49E071661E7576D7DF1A3B45E409C681AA322A4FE23BDD338BE02619AA480EFF"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.ClusterInputModule.dll",
+      "bytes": 21936,
+      "sha256": "02DF026EBF2D99C513D329386CE76B23342E52C69BCAE7995F94A0280AF06BDA"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.ClusterRendererModule.dll",
+      "bytes": 22440,
+      "sha256": "A240395D879E01790242CEF922FDB080CBDD475184E5317F38932200F5AA8B33"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.ContentLoadModule.dll",
+      "bytes": 27560,
+      "sha256": "5D683422827299A1A0E2F8565660F81AEB417B4BBEBCF6F392378400811723FF"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.CoreModule.dll",
+      "bytes": 1393584,
+      "sha256": "5AFC743D350E95DC30379A6D2BAFA2293B63259ACF196FE3F7370F03644EF6F4"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.CrashReportingModule.dll",
+      "bytes": 21416,
+      "sha256": "AA55CA012CD005AC9C1FA4216369D76337A4F105D93B97DD56971BC22E13ABF6"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.DirectorModule.dll",
+      "bytes": 25000,
+      "sha256": "030B053E3F9DE7D510CB3CFFA6303CA59188227BF5BFE989D42BB9B768FA250D"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.dll",
+      "bytes": 126896,
+      "sha256": "25F9D67576954EE1BAC500C38E3EC07FADCCF7E3E29774D2043D614A8AF953BE"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.DSPGraphModule.dll",
+      "bytes": 29616,
+      "sha256": "B6A1A828DE23D5CF98ACF5640C26A60149D7B1B34D0BB784171D11AF3F727FE8"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.GameCenterModule.dll",
+      "bytes": 40368,
+      "sha256": "FAB6ABB9E3B15762CB97C75E5E55437DE32DE0CE82D47116C8455CEF540BC8B9"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.GIModule.dll",
+      "bytes": 20400,
+      "sha256": "9AA34CC967EB21DD44624EB29245732CAA6E770781527F591E4F5419C1F1B0D1"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.GridModule.dll",
+      "bytes": 25520,
+      "sha256": "89250353446217654B034955F6F8B18F551D524C155035E852A1B0ABCD9C4010"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.HotReloadModule.dll",
+      "bytes": 20400,
+      "sha256": "C56AFC3E655484F3FFA16E89EC565D8D7E27A2283BB2142F74ECA67DF2178648"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.ImageConversionModule.dll",
+      "bytes": 24496,
+      "sha256": "E005F25096418BF163880D1B38AA9F50FD270AE285FE39A064DD3DC1797A9418"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.IMGUIModule.dll",
+      "bytes": 191400,
+      "sha256": "B9720D33D0709863FCC8B10A4F327E3BBF082486E4B544917393F7AC8A78E460"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.InputLegacyModule.dll",
+      "bytes": 39336,
+      "sha256": "BE0FA03C0BD24C778B4CC6E49C26E9302A4AF649E391EE34B379AAAEFD826317"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.InputModule.dll",
+      "bytes": 23984,
+      "sha256": "891D95B45C48EF788F7167F903494C546138AE570C246BC7CA35A095BCDAC2D7"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.JSONSerializeModule.dll",
+      "bytes": 22440,
+      "sha256": "0418491B85B6498558CC1D42D37A8B5D6CC1A5B4D57F51DBDA2C257F315FD5F8"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.LocalizationModule.dll",
+      "bytes": 21416,
+      "sha256": "834697238E4CC147225014A4C2E457525AFD3F58DA96CDD133DFC75087E4E42D"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.NVIDIAModule.dll",
+      "bytes": 34216,
+      "sha256": "EBB9987992CB8B6A82F4EA7ACCAE9CE843CF7BEE96832CCAE751B3E192E386CA"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.ParticleSystemModule.dll",
+      "bytes": 161704,
+      "sha256": "C4638591082025E644AAECF7347061925FD4323FAB3D6465CC4BCA0D50346900"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.PerformanceReportingModule.dll",
+      "bytes": 20912,
+      "sha256": "F62D377527F80AE856381820B2B749C9C3F464F70381C19344B1200C998A56CF"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.Physics2DModule.dll",
+      "bytes": 141744,
+      "sha256": "8AF04F4ACF34735B8682D21B40F549DA67079FC0F794C41E9F2E5CBB5B6304C5"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.PhysicsModule.dll",
+      "bytes": 138664,
+      "sha256": "C6B1CA3C3F4352EA6069726EC4B2C54E5AD637CCC891729299B03D2B398312BE"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.ProfilerModule.dll",
+      "bytes": 20392,
+      "sha256": "65F21D1E2D107988C551D882B5DF6DB8C982F9B2F57B245B3CE003AFD450ACA7"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.PropertiesModule.dll",
+      "bytes": 155560,
+      "sha256": "A50868790BB225C7CEFC2F826172DEB484A2D37A3A29DBA462F246DC8FDA862A"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll",
+      "bytes": 20392,
+      "sha256": "0871E2647FE396BF47770CE2900C6AAAF6D19E3CACECAD929951CC0F9DDA4F6E"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.ScreenCaptureModule.dll",
+      "bytes": 21424,
+      "sha256": "D341C378ADC589D1B889F5E16BC4B8A661D94DA11747F8066762776F97EB0123"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.SharedInternalsModule.dll",
+      "bytes": 33192,
+      "sha256": "AE0DFD2482D85E92ECCC7104F901A8B5A7FDC6F02A52874097223B3EBE739480"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.SpriteMaskModule.dll",
+      "bytes": 22440,
+      "sha256": "81347DF64769B9105736586650A8C6E1C2E21EB72F33A1F9E75841FCFC42F09B"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.SpriteShapeModule.dll",
+      "bytes": 26536,
+      "sha256": "F4E1B14C31203C2303B672218259AE356B49F2B2BBF9AD85A33898A4C0A7C14F"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.StreamingModule.dll",
+      "bytes": 20912,
+      "sha256": "7A03DF8AC4BE8AB245062011B3FD45BB028567225DBA5F035BBA1B2FC27DE338"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.SubstanceModule.dll",
+      "bytes": 25008,
+      "sha256": "02CE7256CAFF2F7CEC5ABAB512FCD2285D0E655E45463FE21F43E085823A2139"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.SubsystemsModule.dll",
+      "bytes": 35240,
+      "sha256": "7C03D33AB477B54C8089CB6FAD136238E88927E9B19E60F4FE34AD691BF362F0"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.TerrainModule.dll",
+      "bytes": 101296,
+      "sha256": "57E224CD40AB83E07847E1D4BAF31539643D84B145DD232E3C102CB9553DF76D"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.TerrainPhysicsModule.dll",
+      "bytes": 21416,
+      "sha256": "34A8F917094EE0F7D8692ACEE633A695110082AB3C43D0B7147436121DBB4317"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.TextCoreFontEngineModule.dll",
+      "bytes": 72616,
+      "sha256": "711C955B00E60AED9F0198FCE6DB9B07462CE7C7D591B3CD8446A3D3AF87DBA2"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.TextCoreTextEngineModule.dll",
+      "bytes": 249256,
+      "sha256": "4361B2CE345BAD5D3AFBCACCED99FB33A015F063621AF684A39D0BF74C9404AC"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.TextRenderingModule.dll",
+      "bytes": 39344,
+      "sha256": "A829AAE9DC1953EFB38E2102284A30A9A8C05891AA4DC6AFABBF3A4ABEF6AF1C"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.TilemapModule.dll",
+      "bytes": 47024,
+      "sha256": "3A625909F6113E06435D751883EFFA77052B5A945968BF62971989AC8FD08D5A"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.TLSModule.dll",
+      "bytes": 27056,
+      "sha256": "A1FCAA2D00F226F37CBE625D064392972F73FC6EA5B83FBAF30293AE480053D0"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UIElementsModule.dll",
+      "bytes": 1536424,
+      "sha256": "A9EC7082901B7024F3BD67B179A201FD145053FD3171AD2B156823A4F55DAF2E"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UIModule.dll",
+      "bytes": 36784,
+      "sha256": "CB320E62D957CF297A643CCD917EE78AA8F8C039FBF032805A9878E6D7ACEF61"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UmbraModule.dll",
+      "bytes": 20392,
+      "sha256": "45B0A39BB4AA83D22B37B7D62A8B161CAB54752F14E166B266B06F6A4C030A67"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UnityAnalyticsCommonModule.dll",
+      "bytes": 21416,
+      "sha256": "BB27338B7F321A44BB0DB13D67C021EA12622CEBA6E0E5FAD54FF503E9E67FE5"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UnityAnalyticsModule.dll",
+      "bytes": 44976,
+      "sha256": "660C74E9F3854CF09AFB26480C05FB9551C4FC71FA094A66C189B8C0C6431A76"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UnityConnectModule.dll",
+      "bytes": 22448,
+      "sha256": "545CD54102E10881F12881CC160C07775FC97DF4FC17C45B370E99B219674D5B"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UnityCurlModule.dll",
+      "bytes": 21936,
+      "sha256": "2C795BE01E9123751FAD27B70B6404C1A4069C5B1DBA2F18FEBC0EFC009CF778"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UnityTestProtocolModule.dll",
+      "bytes": 20392,
+      "sha256": "379CC37F0FEE6FE85A34B3AD25CDAB85CB6B31907C5C3EAE7A0888839FC4B382"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UnityWebRequestAssetBundleModule.dll",
+      "bytes": 23472,
+      "sha256": "170877F521F8B1A6A28FC7AA583F3FF52FC7157DAD7D9F4F4AFCDF91B0E0B589"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UnityWebRequestAudioModule.dll",
+      "bytes": 22952,
+      "sha256": "26AD6A33D7108B1887F1B4B563F84372D536D9CA63754C5476CD9E3CE1D044E0"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UnityWebRequestModule.dll",
+      "bytes": 58792,
+      "sha256": "6602C84B1D2B649847A070333C1169C091BC4D6CD0E2BD23CD3F95DFDAA8971C"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UnityWebRequestTextureModule.dll",
+      "bytes": 21936,
+      "sha256": "977A7AEDF07E58423B2F485B597436614C73826FB70555989AFE13A597AB860E"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.UnityWebRequestWWWModule.dll",
+      "bytes": 31656,
+      "sha256": "D0986B773427BAD97B87DC5D9FE444BB339696F589ED2FF50F7983DFBAE08ECF"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.VehiclesModule.dll",
+      "bytes": 24496,
+      "sha256": "996444F04FE90F20A2FED90F8FFFFB04ED10865BA8F5DB9CC7099A6B93F0F16F"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.VFXModule.dll",
+      "bytes": 58800,
+      "sha256": "96A9D8A706BFCB3EB7999D9CAFE1BBA1CBB6888D21840AC9CF4B4D9A52DEEADE"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.VideoModule.dll",
+      "bytes": 41384,
+      "sha256": "DF8EA5C97000EA356477450754D2BA4500987DF8BE07E81B41DD3C8BF8C2C0D7"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.VirtualTexturingModule.dll",
+      "bytes": 36264,
+      "sha256": "BE7852A2B755E7D7B67F518D51BCF3B6F1E42AFD42DC431BAC363C97315BA546"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.VRModule.dll",
+      "bytes": 27056,
+      "sha256": "7012F5CA67FE463A75C0F0C57FAA3DBC7E1DA7C4806B89B3A28CB07BC94BCBE1"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.WindModule.dll",
+      "bytes": 21416,
+      "sha256": "2AA6FC65EAF443D332AF5187DDA2C9C3018974D21F5B01ABB08FE8A6382F8ADF"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Managed/UnityEngine.XRModule.dll",
+      "bytes": 71080,
+      "sha256": "AF6F858A8F2304DE4F2B477B8487F3DC90DCB702221E308ABA9D47BCDE9373A3"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Plugins/x86_64/lib_burst_generated.dll",
+      "bytes": 1602048,
+      "sha256": "3B529539ACA0FD6E948389986280F0E11FCC67485B01998BE6229D116C882597"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/resources.assets",
+      "bytes": 2248,
+      "sha256": "605BE2D16B2400106D474A78984B5D13F222EB3BB4DEA6C26AFB9E10EF35A545"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Resources/unity default resources",
+      "bytes": 1564240,
+      "sha256": "A11E3E24520676183B3750564B4D9F5A90E8F41FD3523CBFB0C49F3989453DA2"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Resources/unity_builtin_extra",
+      "bytes": 378932,
+      "sha256": "AB0DB034203779804711608B360872D7065F663732849CBE2D397519F30B7EB4"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/RuntimeInitializeOnLoads.json",
+      "bytes": 8102,
+      "sha256": "C5CE8ABD185C8A6E4DFCC1B724F80B4695052D9F0AFBE295F0CC675ADAF3BFDA"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/ScriptingAssemblies.json",
+      "bytes": 3593,
+      "sha256": "38AAC760A3082A56F1741E8F6F54C93FC7C36AA959011DEF5194EF1104B32C7C"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/sharedassets0.assets",
+      "bytes": 7568,
+      "sha256": "EA008A3001601C4AFDC8943D9935DEDEC01A1DA11AC5835AF60F20D30B4D9ECF"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/StreamingAssets/EntityScenes/scene_info.bin",
+      "bytes": 148,
+      "sha256": "70CC76CBFB83E6955F2779B38F3E1093EC4E3C8CD0A97A373EF0D83C5AF7A801"
+    },
+    {
+      "path": "OnityTaskBenchmark.exe",
+      "bytes": 666624,
+      "sha256": "5CC71BF032F440AC46A5D24BB4101050A37001DD8F1B8325AEC1067EA0D1FF52"
+    },
+    {
+      "path": "OnityTaskBenchmark.exe.build.json",
+      "bytes": 719,
+      "sha256": "1200B924FB223E1E8DE32049A2C8F2E74A486A2D9B7A63FF5B2E73922014B82F"
+    },
+    {
+      "path": "OnityTaskBenchmark.exe.buildreport.json",
+      "bytes": 715,
+      "sha256": "81BC7ED8AD157BE2846D876E08A6D169642009FEB40DF00BCCF31CB29B39F4E3"
+    },
+    {
+      "path": "UnityCrashHandler64.exe",
+      "bytes": 1185192,
+      "sha256": "93E0B4B929621C9AAA728E3A6D68EC6D47E6182E7EB9915A4CD5351678EB67E4"
+    },
+    {
+      "path": "UnityPlayer.dll",
+      "bytes": 31100840,
+      "sha256": "A8DCC8F6F4CBEE3DA56552A4ADBE56724228A0EFCC2FCD737B516933F0418081"
+    }
+  ]
+}

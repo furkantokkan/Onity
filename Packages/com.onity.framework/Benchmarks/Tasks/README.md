@@ -51,12 +51,278 @@ player sees. Run the player build for any performance claim:
   thread-switch suite.
 - The command-line entry point is
   `Onity.Editor.Benchmarks.OnityTaskBenchmarkPlayerBuildRunner.BuildAndRunFromCommandLine`
-  with `-onityTaskBenchmarkBackend Mono|IL2CPP` (default IL2CPP),
-  `-onityTaskBenchmarkSuite primary|threadswitch|threadpool|jobs|whenall|whenany|timing|eof|finite|channels|smoke|fullcycle` (default primary),
+  with `-onityTaskBenchmarkBackend Mono|IL2CPP` (default IL2CPP; any other value throws),
+  `-onityTaskBenchmarkSuite primary|buildercycle|builderlifecycle|framelifecycle|throughput|reactive|readiness|readinesscycle|threadswitch|threadpool|jobs|whenall|whenany|timing|eof|finite|channels|smoke|fullcycle` (default primary),
   `-onityTaskBenchmarkBuildPath <exe>`, and `-onityTaskBenchmarkOutput <json>`;
   it may be combined with `-quit`. The player itself accepts
   `-onityRunTaskBenchmark`, the same suite and output arguments, and writes
   the report with `isEditor` false and the backend it was built with.
+- `Onity.Editor.Benchmarks.OnityTaskBenchmarkPlayerBuildRunner.BuildPlayerFromCommandLine`
+  only builds: `-onityTaskBenchmarkBackend Mono|IL2CPP` and the required
+  `-onityTaskBenchmarkBuildPath <exe>` produce one non-development Release Player plus its
+  `<exe>.build.json` sidecar and `<exe>.buildreport.json` (backend, build GUID, result, size, time),
+  so one binary per backend serves every later Player process.
+- `-onityTaskBenchmarkRetention default|matched` is accepted for `primary` and `builderlifecycle`
+  (launcher-validated; other suites throw). `-onityTaskBenchmarkSelfTest` is forwarded for `primary`,
+  `builderlifecycle` and `throughput` (see "Harness self-test" below) and throws with other suites.
+
+### Logical async-builder cycle
+
+Select `-onityTaskBenchmarkSuite buildercycle` with the Player build entry
+point above. This suite requires a non-development Release Player. It measures
+one suspension on the same preallocated manual gate for OnityTask and UniTask,
+at 128 concurrent operations, for typed/untyped outputs and Onity context flow
+off (the library default, measured first and primary) and on (the explicitly
+labelled secondary arm, `onityFlowExecutionContext: true`). UniTask remains the
+no-flow control in both comparisons.
+
+Each library/scenario has two warmup batches and eight measured batches, with
+alternating library order. The report contains separate scheduling, manual-gate
+completion and native-result consumption windows, plus their sum. This is a
+**logical builder cycle**: Unity frame waiting and deferred IL2CPP pool-return
+CPU are excluded. It does not measure a complete physical lifecycle or a
+NextFrame operation. Two real Unity frames drain pools outside timing after
+every batch; the report verifies the frame-count advance.
+
+The harness checks 128 registrations, callbacks, completions, gate-result
+reads and single output consumptions per batch, and checks every typed result.
+Preallocated array-loop/timestamp controls are reported without subtraction;
+they do not model all gate overhead. No allocation counter is used. The short
+batches are an exploratory comparison; retain independent process repeats
+and phase-level results before making performance claims. The default report
+is `Results/onity-task-buildercycle-player-latest.json` (schema 1).
+
+### Controlled manual builder lifecycle
+
+Select `-onityTaskBenchmarkSuite builderlifecycle` for the matched return-boundary
+probe. Actual typed/untyped methods await the same preallocated gates 1 or 4
+times at concurrency 1/128/4096. Flow-off (the library default) is primary and
+flow-on is the explicitly labelled secondary arm (`diagnosticOnly`); Onity
+retention stays 128 unless `-onityTaskBenchmarkRetention matched` is passed and
+UniTask's installed policy is reported separately.
+Two warmups and eight samples (three and twelve at 4096) alternate library order.
+Each sample uses the fixed `max(1, 4096 / concurrency)` completed cohort
+invocations.
+
+`-onityTaskBenchmarkRetention default|matched` (the build launcher validates it
+and forwards it to the Player; a missing or invalid value throws, and so does use
+with another suite) selects the runner-retention policy. `matched` raises
+`OnityTask.RunnerPoolCapacity` to `max(128, cohort)` for each 4096 arm (labelled
+`retention=matched`, `runnerPoolCapacity` 4096) so the pooled-runner retention
+matches UniTask's unbounded pool, then restores 128. The Onity pool is not
+drained between arms, so in a matched run the 1 and 128 cohort arms keep
+capacity 128 and are labelled `retention=default` before the first 4096 arm and
+`retention=default-after-matched` after it. A default run is unchanged, with
+every arm labelled `retention=default`. Compare matched and default at the 4096
+arms only.
+
+Each invocation includes registration, every resumption, one native consumption
+and two common return passes before reuse. A pass calls Onity's production Drain
+and UniTask's exact LastPostLateUpdate ContinuationQueue.Run after producing
+stacks unwind. When the runtime has no Onity deferred-return queue the Onity half
+of the pass is an empty measured call (`onityDeferredReturnQueue: absent`). The
+pinned UniTask queue must hold exactly N returns before the first pass on IL2CPP
+(zero on Mono) and zero after it. Onity's queue count before and between the passes
+is recorded (`onityBeforeFirstPassSum`, `onityBetweenPassesSum`) but never asserted,
+because return-on-unwind (IL2CPP runners pool when the last `MoveNext` frame unwinds)
+legitimately leaves it empty and a redesign may change it; samples carry
+`expectedOnityBeforeFirstPassPerInvocation: -1` for "not asserted". Both libraries
+must be empty and idle after the two passes and before every invocation. Logged
+errors or residual returns reject the report. No unrelated PlayerLoop runner or
+timer work is driven. The execution-context path is recorded but no longer
+required, since the primary arm runs with flow off.
+
+Reports retain phase ticks, sums normalized by operations, fixed forwarding
+goldens, counters, unsubtracted timestamp/array-loop controls and two untimed
+real safety frames per batch. Totals are controlled synchronous elapsed time,
+not thread CPU or natural frame latency. Preallocated gate/array setup and
+reflection validation are excluded; validation can still affect cache/GC.
+Actual builder allocation/reset/capture and pool returns stay timed. Allocation
+is unavailable, not zero. Count 1 is harness-sensitive diagnostic evidence.
+See [Plan 15](../../../../docs/Plan/15-OnityTask-GeneralAsyncPerformance.md) for
+the frozen comparison and retention gates; preserve the old buildercycle boundary.
+The [paired Release report](../../../../docs/assets/benchmarks/onitytask-builderlifecycle-performance-2026-09-30.md)
+retains three matched rounds per backend. The small disposal guard was reverted
+because its benefit was inconsistent; general async superiority remains unmet.
+
+### Frame lifecycle under the real PlayerLoop
+
+Select `-onityTaskBenchmarkSuite framelifecycle` for the plan 16 G2/G3 workloads.
+Each worker is `async OnityTask Worker(n) { for (i < n) await <wait>; }` or its
+UniTask twin, using each library's default API: `NextFrame`, `Yield(Update)`
+(1 and 3 suspensions, 128 and 4096, plus one typed NextFrame-1 arm), and
+`DelayFrames(3)`, `Delay(0.05 s)` and `WaitUntil(counter)` at 128 with no token,
+a live registered token, or 50% of the cohort canceled in frame 1. The 4096 arms
+are labelled `policy: default` until `OnityTask.SourcePoolCapacity` exists; then
+both Onity caps are raised to the cohort and the arm is labelled `matched`.
+
+- Brackets: timestamp markers wrap every system either library runs. Onity:
+  `Update.ScriptRunBehaviourUpdate` (it hosts `OnityTaskRunner.Update`: tick
+  sources, job registry and the IL2CPP `Drain`), the FixedUpdate and LateUpdate
+  behaviour systems, and the three `OnityTaskPlayerLoop` markers. UniTask: every
+  `PlayerLoopHelper` runner, yield queue and its synchronization context system,
+  found by type from the UniTask assembly. The required Update, LastUpdate,
+  PostLateUpdate and LastPostLateUpdate systems are validated at start.
+- Harness: a timed schedule system first in Update and a timed consume system
+  last in PostLateUpdate, after UniTask's LastPostLateUpdate pass. The harness
+  MonoBehaviour has no Update methods; bookkeeping runs after the frame closes.
+- Accounting: library ticks per frame are the active library's brackets plus the
+  harness systems. Eight empty control frames precede each cohort; cost per op is
+  (sum over the cohort's frames - frames x median control) / ops. Both libraries
+  span the same frame count per arm (fixed from warmups 2 and 3), ending one frame
+  after consumption so both return passes are inside it. Schedule, completion,
+  return and trailing frames are reported separately.
+- Protocol: three warmup and eight sample cohorts (six at 4096) per library,
+  A,B,B,A. Flow is off (the library default, UniTask semantics) and restored afterwards;
+  `Time.captureDeltaTime = 0.02` makes `Delay(0.05 s)` a fixed frame count in both
+  libraries while frames stay uncapped. Calibrated allocation slices per control
+  block and per cohort report control-subtracted bytes/op (raw bytes/op alongside),
+  or -1 when unavailable.
+- Goldens and boundary checklist: completions equal operations, canceled counts
+  match, no other exception, every Onity and UniTask queue empty at cohort end,
+  every bracket resolved once per frame, a live token canceled after the window
+  runs no Onity callback, and a whole-loop sanity bracket agrees with the bracket
+  sum within 5% per arm and library, and the frame-begin, schedule and consume
+  harness systems each ran exactly once per frame (`harnessCallAnomalies`, measured;
+  the no-Update structure of the harness MonoBehaviour is checked at install).
+  Events seen before the first arm starts are discarded from the pass/fail counters
+  and reported (`installFrameDiscardedEvents`, `armStartDiscardedEvents`). Any
+  failure fails the Player.
+- `-onityTaskFrameLifecycleArms <id,id>` selects a development subset; the build
+  launcher forwards it. Validate reports with
+  `tools/benchmark-host/validate-framelifecycle.py` (`--allow-subset` for a subset).
+  The validator also prints, informationally, allocation availability (no
+  calibrated counter, or slices reported as -1, is accepted) and the UniTask
+  denominator coefficient of variation per arm (limit 5% at 128, 10% at 4096).
+
+### End-to-end throughput under the real PlayerLoop
+
+Select `-onityTaskBenchmarkSuite throughput` in a non-development Release Player. The default report is
+`onity-task-throughput-player-latest.json` (schema 1, `suite: "throughput"`).
+
+- Workload: per library, N concurrent loops `async X Loop(k) { for (i < k) await <Lib>.NextFrame(); }`
+  with K = 16 and N = 1024 and 4096, the same with `Yield()`, and one typed `NextFrame` arm at N = 1024
+  returning 42. Bodies are identical (one shared completion-counter increment per loop) and each library
+  uses its default timing (Update): `OnityTask.NextFrame()`/`Yield()` and `UniTask.NextFrame()`/`Yield()`.
+- Harness: one PlayerLoop system inserted as the very first system of the first PlayerLoop phase, outside
+  both libraries' systems; the harness MonoBehaviour has no Update methods. That system schedules, polls one
+  counter (O(1) per frame) and consumes every task once with `GetResult`. The report records `rootPhases`;
+  on the benchmark host (Entities installed) the loop is `UpdatePreFrame, TimeUpdate, Initialization, ...,
+  PostLateUpdate, UpdatePostFrame, RuntimeContentSystem`, so the system runs at `UpdatePreFrame[0]`. The same
+  order is why the framelifecycle install check ("does not end with PostLateUpdate") fails on that host.
+- Elapsed: Stopwatch ticks from the frame-start point of the scheduling frame to the frame-start point at
+  which the last loop has completed and every task has been consumed (consumption included). Control: three
+  idle windows of the same frame count, measured adjacent to the cohort (one gap frame between), median
+  per window; ns per await = (elapsed - control per frame x frames) / (N x K). **Scope:** the window holds
+  whole engine frames, so engine frame overhead and its jitter are in the measurement except through that
+  control subtraction; both libraries' idle per-frame costs are in the control too. Work a library defers
+  past the consuming frame start (for example pinned UniTask's IL2CPP runner returns in LastPostLateUpdate)
+  is outside the window; it is reported as `trailingNanosecondsPerAwait` from the following frame, and both
+  libraries must be idle one frame later.
+- Frames to complete are recorded per sample and library; the latest warmup fixes the arm's frame count and
+  every sample of both libraries must match it (`framesMatched`), otherwise the gate rejects the report.
+- Protocol: libraries interleaved A,B,B,A; 2 warmups and 8 samples per library; `ForceFullGc` before every
+  cohort's control block, outside timing; `FlowExecutionContext` false; Onity retention matched to N before
+  the arm's warmup and restored after it (`RunnerPoolCapacity`, plus `OnityTask.SourcePoolCapacity` when
+  the runtime declares that public property; `sourcePoolCapacityMatched` says which).
+- Allocation: the calibrated cross-frame counter (`OnityBenchmarkAllocationCounter`, HeapDelta with the
+  collector disabled inside slices) gives `bytesPerAwait` with the control block subtracted and
+  `rawBytesPerAwait`; -1 when unavailable. Zero is not proof of zero allocation.
+- Goldens: every loop completes and is consumed exactly once, typed results equal 42, no exception or
+  logged error, pinned UniTask runners/queues idle and Onity's bound pending-work probes idle at every
+  sample end (`onityIdleCheck` says which probes bound), and the frame-start system ran exactly once per
+  frame. Any failure fails the Player.
+
+### Harness self-test
+
+`-onityTaskBenchmarkSelfTest` makes `primary`, `builderlifecycle` and `throughput` run every scenario, arm
+and golden with tiny sample counts (primary: 2 samples, 2 batches, 20,000 synchronous calls; lifecycle:
+1 warmup and 2 samples; throughput: 1 warmup and 2 samples, unchanged N and K). The report carries
+`selfTest: true` and must never be used for ratios; `tools/benchmark-host/surpass-gate.py` rejects it
+outside its `--allow-self-test` parse mode. `tools/benchmark-host/run-attempt.ps1 -SelfTest` runs the whole
+attempt pipeline this way.
+
+### Onity internals used by the harness
+
+The primary, builderlifecycle and throughput suites and the shared environment capture use public Onity APIs
+plus the reflection hooks in `Runtime/OnityTaskBenchmarkInternals.cs`, the only file that names Onity
+internals: `OnityTaskMainThreadDispatcher.Drain`/`PendingCount`/`s_drainState` (lifecycle return pass and
+idle checks), `OnityTaskRunner.s_instance` with `m_updateSources`/`m_fixedUpdateSources`/`m_lateUpdateSources`,
+`OnityTaskPlayerLoop.s_phases[].Pending` and `s_timers` (throughput idle probe), and
+`OnityAsyncExecutionContext.s_fastCapture`/`s_runPreservingContext` (environment evidence). Every hook is
+optional and reported; a missing hook degrades to "absent" instead of failing a suite. A runtime redesign
+keeps these members or updates that one file.
+
+### Synchronous Burst readiness feasibility
+
+Select `-onityTaskBenchmarkSuite readiness` with the Player build entry point.
+This benchmark-only probe requires a non-development Release Player and the
+host's existing Burst and Collections packages. It leaves the task runtime
+unchanged. The default report is `onity-task-readiness-player-latest.json`.
+
+- Compare an ordinary C# loop over managed arrays, a non-Burst `IJob.Run` over
+  NativeArrays, and a Burst `IJob.Run` over the same native representation.
+  Both Jobs paths include the synchronous call boundary; no workers are scheduled.
+- Frame/delay records at 1, 32, 128 and 4096 slots have all-pending,
+  every-eighth-ready and all-ready cohorts. Each of the 24 cases has two warmups
+  and eight measured samples per variant/window, with rotating variant order.
+  Raw ticks, invocation counts, per-invocation and per-input-element times and
+  unsubtracted loop controls are retained. Compilation, setup and validation
+  are outside reported windows.
+- Three windows distinguish the kernel, kernel plus synthetic managed sinks,
+  and required managed-to-native staging plus kernel, transfer of every updated
+  record and ready token, and synthetic sink dispatch. The managed baseline needs
+  no representation copies. Use the combined window for the feasibility decision.
+- Every batch verifies updated states, immutable inputs, descending unique
+  generation-tagged outputs, counts/checksums and `BurstDiscard` execution proof.
+  Ten handwritten boundary slots check same-frame skip, scaled pause, unscaled
+  advance, exact/overshoot completion, cancellation precedence and stale/nonpending
+  rejection. Strict float math preserves the existing relative-countdown model.
+- Preallocated sinks are synthetic; no actual task source, continuation,
+  ExecutionContext, deferred return or native lifetime is measured. A kernel
+  win cannot establish general async superiority over UniTask. Report retained
+  native payload bytes separately. Only a calibrated current-thread counter can
+  report managed allocations; otherwise allocation is explicitly unavailable.
+- Retain independent Mono/IL2CPP process repeats, exact source/binary hashes and
+  host-noise observations. The execution plan and advance gate are documented in
+  [`14-OnityTask-BurstReadiness.md`](../../../../docs/Plan/14-OnityTask-BurstReadiness.md).
+  The first [Release feasibility report](../../../../docs/assets/benchmarks/onitytask-readiness-performance-2026-09-30.md)
+  records a narrow 4096 all-ready delay benefit and regressions in many other
+  combined windows; it does not support general scheduler adoption.
+
+### Controlled readiness consumer lifecycle
+
+Select `-onityTaskBenchmarkSuite readinesscycle` with the same Release Player
+entry point. This next feasibility stage compares managed/Burst scans with
+actual typed OnityTask/UniTask consumers of the same manual awaitable. Each
+128/4096-consumer cohort registers timers with 2.25 seconds remaining, feeds
+updated records forward through eight pending 0.25-second steps, then completes
+on step nine. Onity context flow stays at the library default (off) and runner retention stays 128;
+the installed UniTask retention policy is reported separately.
+
+The decision metric sums controlled synchronous phases: gate/record/task
+registration, every scan/staging/transfer/dispatch, actual continuations, one
+native output consumption, and two calls of the exact production deferred-return
+drain in all four arms. The drain delegate and queue-state reflection bind before
+warmup. Every sample requires an empty idle queue before timing and after both
+drains; residual work or a logged callback error fails the run. Validation and
+two later real Unity frames are excluded. This is neither natural PlayerLoop
+timer latency nor a measurement of general async workloads.
+
+Two warmups and eight samples rotate arm order. Independent goldens cover
+countdown forwarding, early cancellation, stale post-scan generations, callback
+reentry and subsequent generation completion. All native buffers are disposed
+after the final synchronous job. Retained native payload and unavailable managed
+allocation are explicit; no allocation conclusion follows from an invalid counter.
+Stop further integration if complete-cycle costs remove the narrow scan benefit.
+
+The [consumer lifecycle report](../../../../docs/assets/benchmarks/onitytask-readinesscycle-performance-2026-09-30.md)
+records passing Mono/IL2CPP correctness and independent artifact verification.
+All four initial timing repeats failed the interference screen; later extras
+provide one accepted process per backend. The suite times only Onity's return
+drain; UniTask IL2CPP return work occurs in the untimed safety frames. It is not
+a matched full physical lifecycle comparison and supports no general speed or
+adoption claim. Frozen binaries and all excluded results are retained.
 
 ### Worker-only thread-pool probes
 
@@ -146,7 +412,7 @@ compute run with its reason retained.
   superiority. Two real drain frames are outside measurements; pending waits
   fail after 30 seconds.
 - Persistent NativeArrays are reused; outstanding jobs Complete before disposal
-  even on failure. Context flow is enabled, tracking and stack traces are disabled,
+  even on failure. Context flow is at the library default (off), tracking and stack traces are disabled,
   and runner retention is 128. The report captures effective environment/build
   evidence before measurement, and original flags restore in finally.
 
@@ -170,7 +436,7 @@ Unity.exe -batchmode -nographics -quit -projectPath <benchmark-host> -executeMet
   `Task<int>[]`, calls each input's `AsTask()`, then uses
   `OnityTask<int[]>.FromTask(OnityAsync.WhenAll<int>(taskArray))`, retaining the
   original tracker label. Tracking/stack traces are off for both; context flow
-  is on, runner retention is 128, and original flags restore in finally.
+  is off (the library default), runner retention is 128, and original flags restore in finally.
 - Stopwatch and allocation slices cover only the 128 aggregate factory calls.
   Counter readings end before any completion. Inputs complete in reverse order;
   every aggregate and every ordered result is checked outside timing. Original
@@ -219,7 +485,7 @@ Unity.exe -batchmode -nographics -quit -projectPath <benchmark-host> -executeMet
   Cleanup settles all prepared producers and consumes each constructed output at
   most once. Unexpected pending outputs retain one fault observer and fail the
   run. Original Onity flags restore in finally. Tracking/stack traces are off,
-  context flow is on and runner retention is 128. UniTask's pinned tracker calls
+  context flow is off (the library default) and runner retention is 128. UniTask's pinned tracker calls
   are conditional on UNITY_EDITOR and absent in Player builds.
 - Reports retain the calibrated allocation-counter chain, positive/empty controls,
   rejected candidates, eight raw sample arrays and valid sample counts. Invalid
@@ -228,8 +494,10 @@ Unity.exe -batchmode -nographics -quit -projectPath <benchmark-host> -executeMet
   256 compositions. Build/environment metadata includes native compiler settings.
 - This success-only public shareable-source workload does not establish native
   single-consumer, cancellation or general performance superiority. Onity retains
-  sources for up to 16 inputs; the 32-input path is unpooled. Run each Release
-  Player twice and retain raw reports before interpreting differences.
+  up to 256 sources with 16 input slots and a separate 128 sources with 32 slots;
+  arrays above 32 remain unpooled. The 128-group warmed cohort fits either bucket.
+  Historical 0.4.0 reports used an unpooled 32-input path. Run each Release Player
+  twice and retain raw reports before interpreting differences.
 
 ### Injected Update allocation bracket
 
@@ -371,8 +639,9 @@ writes a separate `.smoke.json` report.
   Failure identifies the case in JSON and the persistent trace. No reflective
   dispatcher drain or benchmark timing occurs in this suite.
 - Primary runs save and restore tracking, stack traces, flow, and runner capacity.
-  Effective baseline settings are tracker off, stack traces off, flow on, capacity
-  128; flow-off cases remain separately labeled. Schema 6 records these settings,
+  Effective baseline settings are tracker off, stack traces off, flow off (the
+  library default), capacity 128; the flow-on frame-method cases remain separately
+  labeled. Schema 6 records these settings,
   build GUID/development state, runtime internal-pair/public-fallback evidence,
   allocation selection and rejected candidates. The launcher writes a
   `<exe>.build.json` sidecar containing optimization, stripping, and registered
@@ -522,16 +791,25 @@ they are not aggregate active CPU time across all threads.
   six primitive scenarios retain their names, indices and metric fields. Two
   synchronous async-method cases and eight frame-method cases follow them, and
   schema 4 appended the same eight frame-method cases measured with
-  `OnityTask.FlowExecutionContext` off, suffixed ` (flow off)`, for 24 scenarios
-  total. The unsuffixed frame-method cases force the setting on, so they stay
-  comparable with reports from the earlier .NET-builder implementation, and
-  the run restores the caller's setting afterwards. The report records the
-  setting's default at run start (`flowExecutionContextDefault`) and whether
+  `OnityTask.FlowExecutionContext` on, suffixed ` (flow on)`, for 24 scenarios
+  total. The unsuffixed frame-method cases run with the setting off, the library
+  default; before this change they forced it on and the flow-off copies were
+  suffixed ` (flow off)`, so reports from before it are not comparable by name.
+  The run restores the caller's setting afterwards. The report records the
+  setting's value at run start (`flowExecutionContextDefault`) and whether
   the task tracker was enabled (`taskTrackerEnabled`). Consumers should
   identify cases by name and concurrency. Schema 5 adds the per-metric
   `allocationSamplesValid` count and `sampleAllocationValid` flags of the
   calibrated counter chain; the thread-switch report is schema 2 for the same
   reason.
+- `-onityTaskBenchmarkRetention default|matched` (default unchanged). `matched` raises
+  `OnityTask.RunnerPoolCapacity`, and `OnityTask.SourcePoolCapacity` when the runtime declares that public
+  property (detected by reflection on the public API only), to 4096 before each 4096 frame cohort's warmup
+  and restores both after its last sample. Pools are not drained, so 128 cohorts are labelled `default`
+  before the first matched cohort and `default-after-matched` after it. Schema 7 adds `suite`, `selfTest`,
+  `completed`, `retentionArgument`, `retentionPolicy`, `sourcePoolCapacityAvailable`,
+  `synchronousIterations` and per scenario `retentionPolicy`, `onityRunnerPoolCapacity` and
+  `onitySourcePoolCapacity` (-1 when the property does not exist).
 
 The expanded suite requires at least 5,160 rendered frames for its frame cases
 (ten workload/cohort pairs, each with four warmup and 512 measured frame waits).

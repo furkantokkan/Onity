@@ -213,6 +213,9 @@ above. Runtime changes are limited to the two pooled source bases in
   policy, capacity 128 and the deferred IL2CPP return are unchanged, and
   `FlowExecutionContext` stays on by default.
 
+The following counts and desktop measurements describe the original
+`3760ad0` change, before the publication-pin follow-up below.
+
 Uncontended interlocked operations per awaited native cycle: pool pop 1,
 registration 2 (mode claim, continuation slot), completion 2 (claim,
 continuation slot), consumption 2 (claim, pool push): seven against UniTask's
@@ -252,3 +255,52 @@ cancellation with a retired version) pass on three consecutive runs, and the
 Async layer, the test assemblies and the benchmark assemblies compile against
 the Unity stubs with the Editor/Mono and IL2CPP define sets. This is not a
 Unity test run; the Editor and Player suites are still to be run on this build.
+
+## 0.5 development verification checkpoint - 2026-09-29
+
+- Pulled `main` at `5c09749`; added version-safe bridge publication and a
+  registration pin, then replaced the frame pool monitor with the existing
+  intrusive pool. Added a separate 32-input WhenAny bucket and six small
+  builder/awaiter inline sites. Runtime changes remain in two source files.
+- Roslyn checks passed. Release verification covers 983 EditMode cases
+  (977 initial passes plus six test-maintenance repairs passing on focused
+  rerun), 94 PlayMode cases and 35 smoke cases per backend. Default-optimization
+  focused verification passed 127 cases. No full-suite repetition was needed.
+- Three Release processes per revision/backend retain every primary and
+  WhenAny result. Mono synchronous async completion and the 32-input WhenAny
+  paths improved. Default async scheduling at 128 remains 1.177–1.260x UniTask
+  on Mono and 1.576–1.632x on IL2CPP; general superiority is not established.
+- All eight diagnostic configurations per revision capture every resumption
+  and return. Two frame-pool monitors per operation disappeared; one deferred
+  enqueue monitor remains. Allocation events at 128 are unchanged. The new
+  link adds eight bytes per cold Windows x64 frame source, or 61,440 bytes in
+  the captured 8,192-operation burst. Keep the limits and flow-on default.
+- Next runtime investigation: deferred-return dispatcher synchronization,
+  with worker, retirement and reentrancy semantics preserved. Do not interpret
+  lower primary HeapDelta windows as fewer runner/delegate allocations.
+- Added a Release manual-awaitable logical-cycle probe over the same harness
+  on baseline/candidate, two processes per backend. All 640 library batches
+  passed result/count/frame-drain checks. Default-flow candidate totals remain
+  about 1.8–2.1x UniTask; the single Mono flow-off ratio below one did not repeat.
+  This sums scheduling/completion/consumption and excludes deferred drain CPU.
+  Keep the verified runtime packet unchanged; isolate dispatcher enqueue/drain
+  costs before a separate worker/reentry/lifecycle change.
+- [Report and retained evidence](../assets/benchmarks/onitytask-05-performance-2026-09-29.md).
+
+## General async dispatch checkpoint - 2026-09-30
+
+- Tested fused context/continuation retrieval and fieldless runner bases in
+  matched Mono/IL2CPP Release Players. Generated C++ confirmed the dispatch
+  change; neither experiment established a repeatable general timing benefit.
+  Reverted both to the exact previous runtime hashes.
+- Retained all 40 comparison reports plus preliminary/startup reports.
+  Independent checks validated 1,600 library batches and 7,680 primary samples.
+  Final rounds overlapped substantial activity from another Unity project;
+  report observations without claiming a causal improvement or regression.
+- The base candidate passed 91 focused EditMode cases, one focused PlayMode
+  case and 35 smoke cases per Player. Twelve new two-suspension context tests
+  also passed on the restored final runtime. Full suites were not repeated.
+- Keep flow enabled by default. Next: isolate continuation and deferred-return
+  enqueue/drain costs on an idle host, then propose one bounded optimization
+  preserving worker, reentry and retirement semantics. No release claim.
+- [Decision, raw data and provenance](../assets/benchmarks/onitytask-dispatch-performance-2026-09-30.md).

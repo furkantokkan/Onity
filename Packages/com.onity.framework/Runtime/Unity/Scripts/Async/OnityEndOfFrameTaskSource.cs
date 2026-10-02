@@ -1,30 +1,38 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 
 namespace Onity.Unity.Async
 {
-    internal sealed class OnityEndOfFrameTaskSource : OnityTaskSourceBase
+    internal sealed class OnityEndOfFrameTaskSource :
+        OnityTaskSourceBase, IOnityPooledRunner<OnityEndOfFrameTaskSource>
     {
-        private const int k_maxPoolSize = 128;
-        private static readonly Stack<OnityEndOfFrameTaskSource> s_pool =
-            new Stack<OnityEndOfFrameTaskSource>(32);
+        private static OnityRunnerPool<OnityEndOfFrameTaskSource> s_pool;
         private static readonly Action<object> s_cancel = state =>
             Volatile.Write(ref ((OnityEndOfFrameTaskSource)state).m_canceled, 1);
+        private static readonly Action<object> s_cancelImmediately = CancelImmediatelyFromToken;
 
+        private OnityEndOfFrameTaskSource m_nextPooled;
         private CancellationTokenRegistration m_registration;
         private CancellationToken m_token;
         private int m_canceled;
 
+        ref OnityEndOfFrameTaskSource IOnityPooledRunner<OnityEndOfFrameTaskSource>.NextPooled => ref m_nextPooled;
+
         internal ulong RegisteredPass { get; private set; }
         internal bool IsCancellationFlagged => Volatile.Read(ref m_canceled) != 0;
 
-        internal static OnityEndOfFrameTaskSource Rent(ulong pass, CancellationToken token)
+        /// <summary>True while the cycle that issued <paramref name="version"/> has not published.</summary>
+        internal bool IsAwaitingPublication(int version)
         {
-            OnityEndOfFrameTaskSource source;
-            lock (s_pool)
+            return Version == version && IsPending;
+        }
+
+        internal static OnityEndOfFrameTaskSource Rent(ulong pass, CancellationToken token, bool cancelImmediately)
+        {
+            // A contended rent allocates instead of waiting.
+            if (!s_pool.TryPop(out OnityEndOfFrameTaskSource source))
             {
-                source = s_pool.Count == 0 ? new OnityEndOfFrameTaskSource() : s_pool.Pop();
+                source = new OnityEndOfFrameTaskSource();
             }
 
             source.Reset(default);
@@ -33,19 +41,21 @@ namespace Onity.Unity.Async
             source.m_canceled = 0;
             try
             {
-                // Only the main-thread owner can publish, after assignment and enqueue.
+                // Only the main-thread owner can publish, after assignment and enqueue, except an immediate
+                // cancellation, which publishes through the version-checked claim.
                 if (token.CanBeCanceled)
                 {
+                    Action<object> callback = cancelImmediately ? s_cancelImmediately : s_cancel;
                     if (ExecutionContext.IsFlowSuppressed())
                     {
-                        source.m_registration = token.Register(s_cancel, source, false);
+                        source.m_registration = token.Register(callback, source, false);
                     }
                     else
                     {
                         AsyncFlowControl flow = ExecutionContext.SuppressFlow();
                         try
                         {
-                            source.m_registration = token.Register(s_cancel, source, false);
+                            source.m_registration = token.Register(callback, source, false);
                         }
                         finally
                         {
@@ -66,40 +76,47 @@ namespace Onity.Unity.Async
             }
         }
 
-        internal void Publish(bool canceled, Exception failure)
+        /// <summary>
+        /// Publishes the cycle that issued <paramref name="version"/> from the main-thread owner. Disposing
+        /// the registration first waits for a running immediate cancellation, which then wins.
+        /// </summary>
+        internal void Publish(int version, bool canceled, Exception failure)
         {
             CancellationToken token = m_token;
-            CancellationTokenRegistration registration = m_registration;
+            m_registration.Dispose();
             m_registration = default;
             m_token = default;
             RegisteredPass = 0;
-            registration.Dispose();
 
             if (failure != null)
             {
-                TrySetException(failure);
+                TrySetException(failure, version);
             }
             else if (canceled)
             {
-                TrySetCanceled(new OperationCanceledException(token));
+                TrySetCanceled(new OperationCanceledException(token), version);
             }
             else
             {
-                TrySetResult();
+                TrySetOwnedResult(version);
             }
             // Publication can consume and re-rent this source; touch nothing afterward.
         }
 
+        private static void CancelImmediatelyFromToken(object state)
+        {
+            // The registration fires only inside its own pending cycle: the owner disposes it before any
+            // other publication, and that disposal waits for this callback.
+            OnityEndOfFrameTaskSource source = (OnityEndOfFrameTaskSource)state;
+            source.TrySetCanceled(new OperationCanceledException(source.m_token), source.Version);
+        }
+
         protected override void ReleaseSource()
         {
-            InvalidateVersion();
-            lock (s_pool)
-            {
-                if (s_pool.Count < k_maxPoolSize)
-                {
-                    s_pool.Push(this);
-                }
-            }
+            // The compare-and-swap that claimed the release already retired the token version, and the
+            // only other caller is Rent before any task value exists. A contended or full return lets
+            // the source be collected.
+            s_pool.TryPush(this, OnityTaskSettings.s_sourcePoolCapacity);
         }
     }
 }

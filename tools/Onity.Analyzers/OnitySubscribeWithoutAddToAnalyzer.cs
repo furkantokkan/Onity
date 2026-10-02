@@ -7,26 +7,34 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Onity.Analyzers
 {
     /// <summary>
-    /// ONITY003: reports a <c>Subscribe(...)</c> invocation whose returned
-    /// <c>IDisposable</c> is discarded - the call is a standalone expression
-    /// statement and is not chained into an <c>AddTo(...)</c>, assigned, returned,
-    /// awaited, or passed as an argument.
+    /// ONITY003: reports a <c>Subscribe(...)</c> or <c>SubscribeAwait(...)</c>
+    /// invocation whose returned <c>IDisposable</c> is discarded - the call is a
+    /// standalone expression statement and is not chained into an
+    /// <c>AddTo(...)</c>, assigned, returned, awaited, or passed as an argument.
     /// </summary>
     /// <remarks>
-    /// The check is purely syntactic and high-confidence. It only fires when the
-    /// <c>Subscribe</c> call (or a fluent chain whose outermost call is
-    /// <c>Subscribe</c>) is the entire expression of an
+    /// The rule is a cheap syntactic shape check followed by one semantic check.
+    /// The shape check only lets through a member call named <c>Subscribe</c> or
+    /// <c>SubscribeAwait</c> (or a fluent chain whose outermost call is one of
+    /// them) that is the entire expression of an
     /// <see cref="ExpressionStatementSyntax"/>, which is exactly the shape that
-    /// throws away the subscription handle. A <c>Subscribe</c> that is the receiver
-    /// of a following <c>.AddTo(...)</c> is left to that outer call to own and is
-    /// not flagged. It does not bind the receiver type, so a user method also named
-    /// <c>Subscribe</c> that returns <c>void</c> would be flagged; that is accepted
-    /// as a rare, low-cost false positive in exchange for zero project references.
+    /// throws away the subscription handle. A call that is the receiver of a
+    /// following <c>.AddTo(...)</c> is left to that outer call to own and is not
+    /// flagged. Only a call that passes the shape check is bound: the invoked
+    /// method must be named <c>Subscribe</c> or <c>SubscribeAwait</c> and return
+    /// <c>System.IDisposable</c> or a type that implements it. A
+    /// <c>void</c>-returning overload, such as a stream consumer whose lifetime is
+    /// owned by a <c>CancellationToken</c> argument, has no handle to dispose and
+    /// is never reported, nor is a method that returns something that is not
+    /// disposable. The receiver type and the declaring namespace are not
+    /// restricted, as before, and a call that does not bind (a compile error) is
+    /// not reported.
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class OnitySubscribeWithoutAddToAnalyzer : DiagnosticAnalyzer
     {
-        private const string k_subscribeMethodName = "Subscribe";
+        private static readonly ImmutableHashSet<string> s_subscribeMethodNames =
+            ImmutableHashSet.Create("Subscribe", "SubscribeAwait");
 
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
@@ -46,7 +54,7 @@ namespace Onity.Analyzers
         {
             InvocationExpressionSyntax invocation = (InvocationExpressionSyntax)context.Node;
 
-            if (!IsMemberCallNamed(invocation, k_subscribeMethodName))
+            if (!IsSubscribeMemberCall(invocation))
             {
                 return;
             }
@@ -65,18 +73,32 @@ namespace Onity.Analyzers
                 return;
             }
 
+            // Bind only the calls that look discarded, so the semantic model is
+            // never consulted for the vast majority of invocations.
+            IMethodSymbol method = context.SemanticModel
+                .GetSymbolInfo(invocation, context.CancellationToken)
+                .Symbol as IMethodSymbol;
+
+            if (method == null
+                || !s_subscribeMethodNames.Contains(method.Name)
+                || !ReturnsDisposable(method))
+            {
+                return;
+            }
+
             Diagnostic diagnostic = Diagnostic.Create(
                 OnityDiagnostics.SubscribeWithoutAddTo,
-                invocation.GetLocation());
+                invocation.GetLocation(),
+                method.Name);
             context.ReportDiagnostic(diagnostic);
         }
 
         /// <summary>
         /// Returns true when the invocation is a member call whose method name is
-        /// <paramref name="name"/>, covering both <c>x.M(...)</c> and
-        /// <c>x.M&lt;T&gt;(...)</c>.
+        /// <c>Subscribe</c> or <c>SubscribeAwait</c>, covering both <c>x.M(...)</c>
+        /// and <c>x.M&lt;T&gt;(...)</c>.
         /// </summary>
-        private static bool IsMemberCallNamed(InvocationExpressionSyntax invocation, string name)
+        private static bool IsSubscribeMemberCall(InvocationExpressionSyntax invocation)
         {
             if (!(invocation.Expression is MemberAccessExpressionSyntax memberAccess))
             {
@@ -84,7 +106,7 @@ namespace Onity.Analyzers
             }
 
             SimpleNameSyntax memberName = memberAccess.Name;
-            return memberName != null && memberName.Identifier.ValueText == name;
+            return memberName != null && s_subscribeMethodNames.Contains(memberName.Identifier.ValueText);
         }
 
         /// <summary>
@@ -104,8 +126,9 @@ namespace Onity.Analyzers
         /// Returns true when the value of <paramref name="invocation"/> is thrown
         /// away: it is the whole expression of an expression statement (after
         /// unwrapping redundant parentheses). Any other position - assignment
-        /// right-hand side, initializer, return, argument, await, member-access
-        /// receiver, lambda body - consumes the value and is not flagged.
+        /// right-hand side (including a <c>_ =</c> discard), initializer, return,
+        /// argument, await, member-access receiver, lambda body - consumes the
+        /// value and is not flagged.
         /// </summary>
         private static bool IsResultDiscarded(InvocationExpressionSyntax invocation)
         {
@@ -120,6 +143,35 @@ namespace Onity.Analyzers
             }
 
             return parent is ExpressionStatementSyntax statement && statement.Expression == current;
+        }
+
+        /// <summary>
+        /// Returns true when <paramref name="method"/> returns
+        /// <c>System.IDisposable</c> or a type that implements it. A <c>void</c>
+        /// method has no handle to dispose, so it never qualifies.
+        /// </summary>
+        private static bool ReturnsDisposable(IMethodSymbol method)
+        {
+            if (method.ReturnsVoid)
+            {
+                return false;
+            }
+
+            ITypeSymbol returnType = method.ReturnType;
+            if (returnType.SpecialType == SpecialType.System_IDisposable)
+            {
+                return true;
+            }
+
+            foreach (INamedTypeSymbol implemented in returnType.AllInterfaces)
+            {
+                if (implemented.SpecialType == SpecialType.System_IDisposable)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

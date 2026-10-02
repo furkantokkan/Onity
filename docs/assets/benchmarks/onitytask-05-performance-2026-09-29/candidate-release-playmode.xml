@@ -1,0 +1,784 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="94" result="Passed" total="94" passed="94" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:43Z" duration="0.9743291">
+  <test-suite type="TestSuite" id="1120" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="94" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:43Z" duration="0.974329" total="94" passed="94" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1113" name="Onity.Tests.PlayMode.dll" fullname="C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/Library/ScriptAssemblies/Onity.Tests.PlayMode.dll" runstate="Runnable" testcasecount="94" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:43Z" duration="0.969212" total="94" passed="94" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="153184" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1114" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="94" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:43Z" duration="0.967689" total="94" passed="94" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1115" name="Tests" fullname="Onity.Tests" runstate="Runnable" testcasecount="94" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:43Z" duration="0.966604" total="94" passed="94" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1116" name="PlayMode" fullname="Onity.Tests.PlayMode" runstate="Runnable" testcasecount="94" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:43Z" duration="0.965347" total="94" passed="94" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1001" name="OnityAsyncEnumerableAdapterPlayModeTests" fullname="Onity.Tests.PlayMode.OnityAsyncEnumerableAdapterPlayModeTests" classname="Onity.Tests.PlayMode.OnityAsyncEnumerableAdapterPlayModeTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:42Z" duration="0.080444" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1004" name="CallerWorkerCancellation_IsObservedOnMainWithActualOwnedToken" fullname="Onity.Tests.PlayMode.OnityAsyncEnumerableAdapterPlayModeTests.CallerWorkerCancellation_IsObservedOnMainWithActualOwnedToken" methodname="CallerWorkerCancellation_IsObservedOnMainWithActualOwnedToken" classname="Onity.Tests.PlayMode.OnityAsyncEnumerableAdapterPlayModeTests" runstate="Runnable" seed="238982643" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:42Z" duration="0.044089" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1002" name="EveryUpdate_IsIdleWithoutReplay_BeforeNodeCompletesSamePass_ReentrantMoveUsesNext" fullname="Onity.Tests.PlayMode.OnityAsyncEnumerableAdapterPlayModeTests.EveryUpdate_IsIdleWithoutReplay_BeforeNodeCompletesSamePass_ReentrantMoveUsesNext" methodname="EveryUpdate_IsIdleWithoutReplay_BeforeNodeCompletesSamePass_ReentrantMoveUsesNext" classname="Onity.Tests.PlayMode.OnityAsyncEnumerableAdapterPlayModeTests" runstate="Runnable" seed="514148665" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:42Z" duration="0.006148" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1005" name="OrdinaryAwaitOfExportedValueTask_RetainsUnityContextCapture" fullname="Onity.Tests.PlayMode.OnityAsyncEnumerableAdapterPlayModeTests.OrdinaryAwaitOfExportedValueTask_RetainsUnityContextCapture" methodname="OrdinaryAwaitOfExportedValueTask_RetainsUnityContextCapture" classname="Onity.Tests.PlayMode.OnityAsyncEnumerableAdapterPlayModeTests" runstate="Runnable" seed="526825946" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:42Z" duration="0.011991" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1003" name="WorkerDispose_PublishesFalseButAwaitsUnityDrain_AndDoesNotCancelCaller" fullname="Onity.Tests.PlayMode.OnityAsyncEnumerableAdapterPlayModeTests.WorkerDispose_PublishesFalseButAwaitsUnityDrain_AndDoesNotCancelCaller" methodname="WorkerDispose_PublishesFalseButAwaitsUnityDrain_AndDoesNotCancelCaller" classname="Onity.Tests.PlayMode.OnityAsyncEnumerableAdapterPlayModeTests" runstate="Runnable" seed="346577847" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:42Z" duration="0.002844" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1006" name="OnityAsyncEnumerableAwaitPlayModeTests" fullname="Onity.Tests.PlayMode.OnityAsyncEnumerableAwaitPlayModeTests" classname="Onity.Tests.PlayMode.OnityAsyncEnumerableAwaitPlayModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:43Z" duration="0.040929" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1007" name="InternalObservation_PublishesOnWorker_OrdinaryBridgeAwaitReturnsToUnity" fullname="Onity.Tests.PlayMode.OnityAsyncEnumerableAwaitPlayModeTests.InternalObservation_PublishesOnWorker_OrdinaryBridgeAwaitReturnsToUnity" methodname="InternalObservation_PublishesOnWorker_OrdinaryBridgeAwaitReturnsToUnity" classname="Onity.Tests.PlayMode.OnityAsyncEnumerableAwaitPlayModeTests" runstate="Runnable" seed="1094971825" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:42Z" duration="0.017893" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1008" name="RealAwaitForeachBreakThrow_AndForEach_WithFrameSuspendingDelegates" fullname="Onity.Tests.PlayMode.OnityAsyncEnumerableAwaitPlayModeTests.RealAwaitForeachBreakThrow_AndForEach_WithFrameSuspendingDelegates" methodname="RealAwaitForeachBreakThrow_AndForEach_WithFrameSuspendingDelegates" classname="Onity.Tests.PlayMode.OnityAsyncEnumerableAwaitPlayModeTests" runstate="Runnable" seed="1607411024" result="Passed" start-time="2026-09-29 20:47:42Z" end-time="2026-09-29 20:47:43Z" duration="0.022097" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1009" name="OnityAsyncEnumerablePlayModeTests" fullname="Onity.Tests.PlayMode.OnityAsyncEnumerablePlayModeTests" classname="Onity.Tests.PlayMode.OnityAsyncEnumerablePlayModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.012863" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1011" name="ExplicitTerminalTaskBridge_ReturnsToUnitySynchronizationContext" fullname="Onity.Tests.PlayMode.OnityAsyncEnumerablePlayModeTests.ExplicitTerminalTaskBridge_ReturnsToUnitySynchronizationContext" methodname="ExplicitTerminalTaskBridge_ReturnsToUnitySynchronizationContext" classname="Onity.Tests.PlayMode.OnityAsyncEnumerablePlayModeTests" runstate="Runnable" seed="2039895438" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.006356" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1010" name="NativeAwaitForeach_PendingWorkerItemAndBreakCleanup_StayOnProducerThread" fullname="Onity.Tests.PlayMode.OnityAsyncEnumerablePlayModeTests.NativeAwaitForeach_PendingWorkerItemAndBreakCleanup_StayOnProducerThread" methodname="NativeAwaitForeach_PendingWorkerItemAndBreakCleanup_StayOnProducerThread" classname="Onity.Tests.PlayMode.OnityAsyncEnumerablePlayModeTests" runstate="Runnable" seed="1906999432" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.005365" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1012" name="OnityChannelPlayModeTests" fullname="Onity.Tests.PlayMode.OnityChannelPlayModeTests" classname="Onity.Tests.PlayMode.OnityChannelPlayModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.008548" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1013" name="NativePendingReader_PublicationRunsOnProducerWorker" fullname="Onity.Tests.PlayMode.OnityChannelPlayModeTests.NativePendingReader_PublicationRunsOnProducerWorker" methodname="NativePendingReader_PublicationRunsOnProducerWorker" classname="Onity.Tests.PlayMode.OnityChannelPlayModeTests" runstate="Runnable" seed="103947758" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.004495" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1014" name="OrdinaryTaskBridgeAwait_RetainsUnityContextCapture" fullname="Onity.Tests.PlayMode.OnityChannelPlayModeTests.OrdinaryTaskBridgeAwait_RetainsUnityContextCapture" methodname="OrdinaryTaskBridgeAwait_RetainsUnityContextCapture" classname="Onity.Tests.PlayMode.OnityChannelPlayModeTests" runstate="Runnable" seed="1929189662" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003221" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1015" name="OnityContextLifecyclePlayModeTests" fullname="Onity.Tests.PlayMode.OnityContextLifecyclePlayModeTests" classname="Onity.Tests.PlayMode.OnityContextLifecyclePlayModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.062532" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1016" name="ContextPump_RunsInitializeOnceAndTicksEachFrame" fullname="Onity.Tests.PlayMode.OnityContextLifecyclePlayModeTests.ContextPump_RunsInitializeOnceAndTicksEachFrame" methodname="ContextPump_RunsInitializeOnceAndTicksEachFrame" classname="Onity.Tests.PlayMode.OnityContextLifecyclePlayModeTests" runstate="Runnable" seed="1649535903" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.051498" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1017" name="NestedContext_InjectsChildConsumerOnlyFromChildScope" fullname="Onity.Tests.PlayMode.OnityContextLifecyclePlayModeTests.NestedContext_InjectsChildConsumerOnlyFromChildScope" methodname="NestedContext_InjectsChildConsumerOnlyFromChildScope" classname="Onity.Tests.PlayMode.OnityContextLifecyclePlayModeTests" runstate="Runnable" seed="1656135026" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.010049" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1018" name="OnityJobHandlePlayModeTests" fullname="Onity.Tests.PlayMode.OnityJobHandlePlayModeTests" classname="Onity.Tests.PlayMode.OnityJobHandlePlayModeTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.020189" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1022" name="CombinedDependenciesAndWorkerConsumption_PreserveNativeSafety" fullname="Onity.Tests.PlayMode.OnityJobHandlePlayModeTests.CombinedDependenciesAndWorkerConsumption_PreserveNativeSafety" methodname="CombinedDependenciesAndWorkerConsumption_PreserveNativeSafety" classname="Onity.Tests.PlayMode.OnityJobHandlePlayModeTests" runstate="Runnable" seed="993399822" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.006955" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1019" name="PendingJob_CompletesBeforePublicationAndAllowsCallbackRegistration" fullname="Onity.Tests.PlayMode.OnityJobHandlePlayModeTests.PendingJob_CompletesBeforePublicationAndAllowsCallbackRegistration" methodname="PendingJob_CompletesBeforePublicationAndAllowsCallbackRegistration" classname="Onity.Tests.PlayMode.OnityJobHandlePlayModeTests" runstate="Runnable" seed="1588077291" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002563" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1021" name="RetirementCallback_ReplacesFrameRunner_AndKeepsMainDispatcherAlive" fullname="Onity.Tests.PlayMode.OnityJobHandlePlayModeTests.RetirementCallback_ReplacesFrameRunner_AndKeepsMainDispatcherAlive" methodname="RetirementCallback_ReplacesFrameRunner_AndKeepsMainDispatcherAlive" classname="Onity.Tests.PlayMode.OnityJobHandlePlayModeTests" runstate="Runnable" seed="888391648" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.005440" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1020" name="RunnerDestroy_SettlesUnawaitedAndObservedJobs_ThenAcceptsFreshWork" fullname="Onity.Tests.PlayMode.OnityJobHandlePlayModeTests.RunnerDestroy_SettlesUnawaitedAndObservedJobs_ThenAcceptsFreshWork" methodname="RunnerDestroy_SettlesUnawaitedAndObservedJobs_ThenAcceptsFreshWork" classname="Onity.Tests.PlayMode.OnityJobHandlePlayModeTests" runstate="Runnable" seed="542610683" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003050" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1023" name="OnityResolveSoakPlayModeTests" fullname="Onity.Tests.PlayMode.OnityResolveSoakPlayModeTests" classname="Onity.Tests.PlayMode.OnityResolveSoakPlayModeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.030592" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1024" name="ResolveAndSubscribe_UnderChurn_StaysStable" fullname="Onity.Tests.PlayMode.OnityResolveSoakPlayModeTests.ResolveAndSubscribe_UnderChurn_StaysStable" methodname="ResolveAndSubscribe_UnderChurn_StaysStable" classname="Onity.Tests.PlayMode.OnityResolveSoakPlayModeTests" runstate="Runnable" seed="606178820" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.030066" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1025" name="OnitySceneFlowContextReadinessPlayModeTests" fullname="Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests" classname="Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.244720" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1028" name="CanceledLoadingGate_StillCompletesPreparedOperation" fullname="Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests.CanceledLoadingGate_StillCompletesPreparedOperation" methodname="CanceledLoadingGate_StillCompletesPreparedOperation" classname="Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests" runstate="Runnable" seed="1080973312" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.017377" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1029" name="DeferredSceneLoad_CanceledAfterStart_ReturnsActivatableOperation" fullname="Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests.DeferredSceneLoad_CanceledAfterStart_ReturnsActivatableOperation" methodname="DeferredSceneLoad_CanceledAfterStart_ReturnsActivatableOperation" classname="Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests" runstate="Runnable" seed="974337589" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.006992" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1030" name="DeferredSceneLoad_ThrowingProgressCallback_StillReleasesQueue" fullname="Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests.DeferredSceneLoad_ThrowingProgressCallback_StillReleasesQueue" methodname="DeferredSceneLoad_ThrowingProgressCallback_StillReleasesQueue" classname="Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests" runstate="Runnable" seed="1750996290" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.007875" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[InvalidOperationException: deferred scene progress failed
+Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests+<>c__DisplayClass6_0.<DeferredSceneLoad_ThrowingProgressCallback_StillReleasesQueue>b__0 (System.Single _) (at ./Packages/com.onity.framework/Tests/PlayMode/OnitySceneFlowContextReadinessPlayModeTests.cs:226)
+Onity.Unity.Async.OnitySceneLoader.ReportLoadProgress (System.Action`1[System.Single]& onProgress, System.Single progress, System.Boolean activateOnLoad) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnitySceneLoader.cs:146)
+UnityEngine.Debug:LogException(Exception)
+Onity.Unity.Async.OnitySceneLoader:ReportLoadProgress(Action`1&, Single, Boolean) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnitySceneLoader.cs:151)
+Onity.Unity.Async.<LoadAsyncInternal>d__3:MoveNext() (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnitySceneLoader.cs:101)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1:Start(<LoadAsyncInternal>d__3&)
+Onity.Unity.Async.OnitySceneLoader:LoadAsyncInternal(String, LoadSceneMode, Boolean, Action`1, CancellationToken)
+Onity.Unity.Async.OnitySceneLoader:LoadAsync(String, LoadSceneMode, Boolean, Action`1, CancellationToken) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnitySceneLoader.cs:74)
+Onity.Tests.PlayMode.<DeferredSceneLoad_ThrowingProgressCallback_StillReleasesQueue>d__6:MoveNext() (at ./Packages/com.onity.framework/Tests/PlayMode/OnitySceneFlowContextReadinessPlayModeTests.cs:233)
+UnityEngine.SetupCoroutine:InvokeMoveNext(IEnumerator, IntPtr)
+
+]]></output>
+              </test-case>
+              <test-case id="1027" name="LoadingGate_WaitsForFrameAndUnscaledMinimumDuration" fullname="Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests.LoadingGate_WaitsForFrameAndUnscaledMinimumDuration" methodname="LoadingGate_WaitsForFrameAndUnscaledMinimumDuration" classname="Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests" runstate="Runnable" seed="715922760" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.206516" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1026" name="ReadyTask_WaitsForAsyncBuildCallback" fullname="Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests.ReadyTask_WaitsForAsyncBuildCallback" methodname="ReadyTask_WaitsForAsyncBuildCallback" classname="Onity.Tests.PlayMode.OnitySceneFlowContextReadinessPlayModeTests" runstate="Runnable" seed="519037119" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.004781" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1031" name="OnityTaskAsyncBuilderPlayModeTests" fullname="Onity.Tests.PlayMode.OnityTaskAsyncBuilderPlayModeTests" classname="Onity.Tests.PlayMode.OnityTaskAsyncBuilderPlayModeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003227" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1032" name="SuspendedMethod_ConsumedRunner_IsRentedAgainAfterTheNextFrame" fullname="Onity.Tests.PlayMode.OnityTaskAsyncBuilderPlayModeTests.SuspendedMethod_ConsumedRunner_IsRentedAgainAfterTheNextFrame" methodname="SuspendedMethod_ConsumedRunner_IsRentedAgainAfterTheNextFrame" classname="Onity.Tests.PlayMode.OnityTaskAsyncBuilderPlayModeTests" runstate="Runnable" seed="1887262241" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002653" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1033" name="OnityTaskCancellationPlayModeTests" fullname="Onity.Tests.PlayMode.OnityTaskCancellationPlayModeTests" classname="Onity.Tests.PlayMode.OnityTaskCancellationPlayModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.023030" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1035" name="ExplicitCancellationAndSuppressionBridges_ReturnToUnityContext" fullname="Onity.Tests.PlayMode.OnityTaskCancellationPlayModeTests.ExplicitCancellationAndSuppressionBridges_ReturnToUnityContext" methodname="ExplicitCancellationAndSuppressionBridges_ReturnToUnityContext" classname="Onity.Tests.PlayMode.OnityTaskCancellationPlayModeTests" runstate="Runnable" seed="837837118" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.009051" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1034" name="NativeAttachmentAndSuppression_PublishOnCancelingOrProducerWorker" fullname="Onity.Tests.PlayMode.OnityTaskCancellationPlayModeTests.NativeAttachmentAndSuppression_PublishOnCancelingOrProducerWorker" methodname="NativeAttachmentAndSuppression_PublishOnCancelingOrProducerWorker" classname="Onity.Tests.PlayMode.OnityTaskCancellationPlayModeTests" runstate="Runnable" seed="1887132292" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.013037" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1036" name="OnityTaskEndOfFramePlayModeTests" fullname="Onity.Tests.PlayMode.OnityTaskEndOfFramePlayModeTests" classname="Onity.Tests.PlayMode.OnityTaskEndOfFramePlayModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003792" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1037" name="ActualRenderingGuard_PrecedesPrecancellation_AndDoesNotCreateHost" fullname="Onity.Tests.PlayMode.OnityTaskEndOfFramePlayModeTests.ActualRenderingGuard_PrecedesPrecancellation_AndDoesNotCreateHost" methodname="ActualRenderingGuard_PrecedesPrecancellation_AndDoesNotCreateHost" classname="Onity.Tests.PlayMode.OnityTaskEndOfFramePlayModeTests" runstate="Runnable" seed="123653857" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.001129" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1038" name="WorkerAndClosedSession_RejectBeforeRenderingAndPrecancellation" fullname="Onity.Tests.PlayMode.OnityTaskEndOfFramePlayModeTests.WorkerAndClosedSession_RejectBeforeRenderingAndPrecancellation" methodname="WorkerAndClosedSession_RejectBeforeRenderingAndPrecancellation" classname="Onity.Tests.PlayMode.OnityTaskEndOfFramePlayModeTests" runstate="Runnable" seed="811169977" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.001909" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1039" name="OnityTaskPlayerLoopPlayModeTests" fullname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests" classname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests" runstate="Runnable" testcasecount="10" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.097127" total="10" passed="10" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1049" name="EntitiesAppend_PreservesNodes_AndSimulationYieldTargetsNextUpdate" fullname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests.EntitiesAppend_PreservesNodes_AndSimulationYieldTargetsNextUpdate" methodname="EntitiesAppend_PreservesNodes_AndSimulationYieldTargetsNextUpdate" classname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests" runstate="Runnable" seed="121421140" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.020349" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1045" name="FailedRepair_FaultsPendingAndRejectsReentry_ThenRetriesInSameSession" fullname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests.FailedRepair_FaultsPendingAndRejectsReentry_ThenRetriesInSameSession" methodname="FailedRepair_FaultsPendingAndRejectsReentry_ThenRetriesInSameSession" classname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests" runstate="Runnable" seed="1122372944" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.006345" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1046" name="FailedRepairDuringPublication_RetiresOldEpochAndDefersFreshRegistration" fullname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests.FailedRepairDuringPublication_RetiresOldEpochAndDefersFreshRegistration" methodname="FailedRepairDuringPublication_RetiresOldEpochAndDefersFreshRegistration" classname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests" runstate="Runnable" seed="932083773" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.004797" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1043" name="FastPathsAndWorkers_RespectPrecedenceWithoutReinstallingRemovedNodes" fullname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests.FastPathsAndWorkers_RespectPrecedenceWithoutReinstallingRemovedNodes" methodname="FastPathsAndWorkers_RespectPrecedenceWithoutReinstallingRemovedNodes" classname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests" runstate="Runnable" seed="1167227992" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.005498" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1044" name="InitializeRepairsCurrentLoopIdempotently_WithoutLosingPendingTargetsOrForeignNodes" fullname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests.InitializeRepairsCurrentLoopIdempotently_WithoutLosingPendingTargetsOrForeignNodes" methodname="InitializeRepairsCurrentLoopIdempotently_WithoutLosingPendingTargetsOrForeignNodes" classname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests" runstate="Runnable" seed="1927075604" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.004021" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1048" name="LegacyRunnerDestruction_DoesNotRetireInjectedPendingWait" fullname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests.LegacyRunnerDestruction_DoesNotRetireInjectedPendingWait" methodname="LegacyRunnerDestruction_DoesNotRetireInjectedPendingWait" classname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests" runstate="Runnable" seed="504064946" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002396" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1047" name="NativeReuseAndBridges_KeepConsumerAndStaleTokenRules" fullname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests.NativeReuseAndBridges_KeepConsumerAndStaleTokenRules" methodname="NativeReuseAndBridges_KeepConsumerAndStaleTokenRules" classname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests" runstate="Runnable" seed="415249349" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003711" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1041" name="NextFrameAndDelayFrames_CountRenderedFramesDespiteMultipleFixedTicks" fullname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests.NextFrameAndDelayFrames_CountRenderedFramesDespiteMultipleFixedTicks" methodname="NextFrameAndDelayFrames_CountRenderedFramesDespiteMultipleFixedTicks" classname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests" runstate="Runnable" seed="847949037" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003692" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1042" name="PausedFixedWorkerCancellation_PublishesOnMain_AndNewCanceledUpdateWaitNeedsNextPass" fullname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests.PausedFixedWorkerCancellation_PublishesOnMain_AndNewCanceledUpdateWaitNeedsNextPass" methodname="PausedFixedWorkerCancellation_PublishesOnMain_AndNewCanceledUpdateWaitNeedsNextPass" classname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests" runstate="Runnable" seed="1685066463" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.005099" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1040" name="YieldPhaseOrdering_BeforeDrainUsesSameOccurrence_AfterAndReentrantUseNext" fullname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests.YieldPhaseOrdering_BeforeDrainUsesSameOccurrence_AfterAndReentrantUseNext" methodname="YieldPhaseOrdering_BeforeDrainUsesSameOccurrence_AfterAndReentrantUseNext" classname="Onity.Tests.PlayMode.OnityTaskPlayerLoopPlayModeTests" runstate="Runnable" seed="332778363" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.038372" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1050" name="OnityTaskRunnerRetirementPlayModeTests" fullname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests" classname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests" runstate="Runnable" testcasecount="9" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.062211" total="9" passed="9" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1055" name="ActiveCompletion_ConsumeDestroyAndRerentSameSource_OldVersionCannotCancelReplacement" fullname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests.ActiveCompletion_ConsumeDestroyAndRerentSameSource_OldVersionCannotCancelReplacement" methodname="ActiveCompletion_ConsumeDestroyAndRerentSameSource_OldVersionCannotCancelReplacement" classname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests" runstate="Runnable" seed="1625368338" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003522" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1053" name="ActivePredicate_DestroyThenReturnOrThrow_CancelsOnlyAfterCallbackUnwinds" fullname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests.ActivePredicate_DestroyThenReturnOrThrow_CancelsOnlyAfterCallbackUnwinds" methodname="ActivePredicate_DestroyThenReturnOrThrow_CancelsOnlyAfterCallbackUnwinds" classname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests" runstate="Runnable" seed="1265131222" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003586" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1057" name="DeferredOldOnDestroy_DoesNotRetireReplacementWait" fullname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests.DeferredOldOnDestroy_DoesNotRetireReplacementWait" methodname="DeferredOldOnDestroy_DoesNotRetireReplacementWait" classname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests" runstate="Runnable" seed="1689985596" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002238" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1051" name="Destroy_PublishesTokenlessCancellationForEveryLegacyQueueAndFamily" fullname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests.Destroy_PublishesTokenlessCancellationForEveryLegacyQueueAndFamily" methodname="Destroy_PublishesTokenlessCancellationForEveryLegacyQueueAndFamily" classname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests" runstate="Runnable" seed="64644015" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002795" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1052" name="ForcedRetirement_PreservesUnrequestedTokensWithoutCancelingTheirOwners" fullname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests.ForcedRetirement_PreservesUnrequestedTokensWithoutCancelingTheirOwners" methodname="ForcedRetirement_PreservesUnrequestedTokensWithoutCancelingTheirOwners" classname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests" runstate="Runnable" seed="2046421262" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002512" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1058" name="PausedFixed_WorkerCancellationRacingDestroy_CompletesOnceOnMain" fullname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests.PausedFixed_WorkerCancellationRacingDestroy_CompletesOnceOnMain" methodname="PausedFixed_WorkerCancellationRacingDestroy_CompletesOnceOnMain" classname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests" runstate="Runnable" seed="823848730" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002013" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1059" name="RealAsyncOperation_RetiresObservationOnly_AndProgressRetirementDefersActivePublication" fullname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests.RealAsyncOperation_RetiresObservationOnly_AndProgressRetirementDefersActivePublication" methodname="RealAsyncOperation_RetiresObservationOnly_AndProgressRetirementDefersActivePublication" classname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests" runstate="Runnable" seed="81595302" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.037513" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1056" name="RetirementReentry_CreatesReplacementAndKeepsDispatcherAndInjectedWaitAlive" fullname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests.RetirementReentry_CreatesReplacementAndKeepsDispatcherAndInjectedWaitAlive" methodname="RetirementReentry_CreatesReplacementAndKeepsDispatcherAndInjectedWaitAlive" classname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests" runstate="Runnable" seed="2080277988" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002876" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1054" name="ThrowingRetirementConsumer_DoesNotAbandonDetachedQueues" fullname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests.ThrowingRetirementConsumer_DoesNotAbandonDetachedQueues" methodname="ThrowingRetirementConsumer_DoesNotAbandonDetachedQueues" classname="Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests" runstate="Runnable" seed="365784856" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002931" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[InvalidOperationException: Expected retirement consumer failure.
+Onity.Tests.PlayMode.OnityTaskRunnerRetirementPlayModeTests+<>c__DisplayClass4_0.<ThrowingRetirementConsumer_DoesNotAbandonDetachedQueues>b__1 () (at ./Packages/com.onity.framework/Tests/PlayMode/OnityTaskRunnerRetirementPlayModeTests.cs:135)
+Onity.Unity.Async.OnityTaskContinuation.Invoke (System.Action continuation) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:2298)
+UnityEngine.Debug:LogException(Exception)
+Onity.Unity.Async.OnityTaskContinuation:Invoke(Action) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:2302)
+Onity.Unity.Async.OnityTaskSourceBase:TrySetStatus(OnityTaskSourceStatus, Exception, Nullable`1) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:2703)
+Onity.Unity.Async.OnityTaskSourceBase:TrySetRetiredFromRunner(Int32) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:2589)
+Onity.Unity.Async.OnityTaskRunner:CancelRetired(Entry) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:4051)
+Onity.Unity.Async.OnityTaskRunner:RetireEntries(List`1) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:4043)
+Onity.Unity.Async.OnityTaskRunner:Retire() (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:4016)
+Onity.Unity.Async.OnityTaskRunner:OnDestroy() (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:3982)
+UnityEngine.Object:DestroyImmediate(Object)
+Onity.Tests.PlayMode.<ThrowingRetirementConsumer_DoesNotAbandonDetachedQueues>d__4:MoveNext() (at ./Packages/com.onity.framework/Tests/PlayMode/OnityTaskRunnerRetirementPlayModeTests.cs:140)
+UnityEngine.SetupCoroutine:InvokeMoveNext(IEnumerator, IntPtr)
+
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1060" name="OnityTaskSafetyPlayModeTests" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.065842" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1068" name="AsTaskCompletion_ReturnsSourceToPoolWithoutChangingTaskResult" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.AsTaskCompletion_ReturnsSourceToPoolWithoutChangingTaskResult" methodname="AsTaskCompletion_ReturnsSourceToPoolWithoutChangingTaskResult" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="1508845399" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002092" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1071" name="BackgroundCancellation_ContinuationRunsOnMainThread" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.BackgroundCancellation_ContinuationRunsOnMainThread" methodname="BackgroundCancellation_ContinuationRunsOnMainThread" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="1103287696" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002688" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1069" name="CompilerAwaitChain_ReusesSourceWithoutLosingNextOperation" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.CompilerAwaitChain_ReusesSourceWithoutLosingNextOperation" methodname="CompilerAwaitChain_ReusesSourceWithoutLosingNextOperation" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="1957284162" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003664" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1079" name="DelayFrames_ScheduledBeforeRunnerUpdate_CompletesAfterRequestedFrames" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.DelayFrames_ScheduledBeforeRunnerUpdate_CompletesAfterRequestedFrames" methodname="DelayFrames_ScheduledBeforeRunnerUpdate_CompletesAfterRequestedFrames" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="722543624" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.004331" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1076" name="FixedFrameCancellation_CompletesWhenTimeScaleIsZero" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.FixedFrameCancellation_CompletesWhenTimeScaleIsZero" methodname="FixedFrameCancellation_CompletesWhenTimeScaleIsZero" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="1039402310" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002266" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1070" name="NativeAwaitThenAsTask_DoesNotReleaseNewGenerationFromOldCompletion" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.NativeAwaitThenAsTask_DoesNotReleaseNewGenerationFromOldCompletion" methodname="NativeAwaitThenAsTask_DoesNotReleaseNewGenerationFromOldCompletion" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="743988138" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003422" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1078" name="NextFrame_RecreatesRunnerAfterDestroy" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.NextFrame_RecreatesRunnerAfterDestroy" methodname="NextFrame_RecreatesRunnerAfterDestroy" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="1474505720" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.001838" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1077" name="NextFrame_ScheduledBeforeRunnerUpdate_CompletesOnFollowingFrame" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.NextFrame_ScheduledBeforeRunnerUpdate_CompletesOnFollowingFrame" methodname="NextFrame_ScheduledBeforeRunnerUpdate_CompletesOnFollowingFrame" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="606978016" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.001829" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1067" name="PooledTask_SecondNativeConsumptionThrows" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.PooledTask_SecondNativeConsumptionThrows" methodname="PooledTask_SecondNativeConsumptionThrows" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="1543796967" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.001342" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1066" name="PooledTask_StaleCopyThrowsAfterSourceReuse" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.PooledTask_StaleCopyThrowsAfterSourceReuse" methodname="PooledTask_StaleCopyThrowsAfterSourceReuse" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="1229387145" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002714" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1080" name="PositiveDelays_ScheduledBeforeRunnerUpdate_WaitBeyondSchedulingFrame" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.PositiveDelays_ScheduledBeforeRunnerUpdate_WaitBeyondSchedulingFrame" methodname="PositiveDelays_ScheduledBeforeRunnerUpdate_WaitBeyondSchedulingFrame" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="354211124" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003664" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1073" name="Preserve_BackgroundCancellation_CompletesOnMainThreadForBothConsumers" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.Preserve_BackgroundCancellation_CompletesOnMainThreadForBothConsumers" methodname="Preserve_BackgroundCancellation_CompletesOnMainThreadForBothConsumers" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="1656837623" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002241" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1072" name="Preserve_NextFrame_CompletesTwoPendingAndLateConsumers" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.Preserve_NextFrame_CompletesTwoPendingAndLateConsumers" methodname="Preserve_NextFrame_CompletesTwoPendingAndLateConsumers" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="2143026616" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002109" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1074" name="ReusedSource_OldCancellationTokenCannotCancelNewGeneration" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.ReusedSource_OldCancellationTokenCannotCancelNewGeneration" methodname="ReusedSource_OldCancellationTokenCannotCancelNewGeneration" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="1157081810" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002911" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1075" name="ThrowingNativeContinuation_DoesNotFaultReusedSourceOrStopOtherWait" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.ThrowingNativeContinuation_DoesNotFaultReusedSourceOrStopOtherWait" methodname="ThrowingNativeContinuation_DoesNotFaultReusedSourceOrStopOtherWait" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="1455234713" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.004908" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[InvalidOperationException: Continuation failure after source reuse.
+Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests+<>c__DisplayClass15_0.<ThrowingNativeContinuation_DoesNotFaultReusedSourceOrStopOtherWait>b__2 () (at ./Packages/com.onity.framework/Tests/PlayMode/OnityTaskSafetyPlayModeTests.cs:464)
+Onity.Unity.Async.OnityTaskContinuation.Invoke (System.Action continuation) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:2298)
+UnityEngine.Debug:LogException(Exception)
+Onity.Unity.Async.OnityTaskContinuation:Invoke(Action) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:2302)
+Onity.Unity.Async.OnityTaskSourceBase:TrySetStatus(OnityTaskSourceStatus, Exception, Nullable`1) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:2703)
+Onity.Unity.Async.OnityTaskSourceBase:TrySetResult() (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:2647)
+Onity.Unity.Async.OnityPredicateTaskSource:Tick(OnityTaskRunner, Single, Single) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:4447)
+Onity.Unity.Async.OnityTaskRunner:TickSources(List`1, Single, Single) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:4096)
+Onity.Unity.Async.OnityTaskRunner:Update() (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:3949)
+
+]]></output>
+              </test-case>
+              <test-case id="1061" name="WhenAll_NativePendingOutput_ResumesOnMainThread" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.WhenAll_NativePendingOutput_ResumesOnMainThread" methodname="WhenAll_NativePendingOutput_ResumesOnMainThread" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="716400364" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.004026" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1062" name="WhenAll_WorkerCompletedInputs_AwaitResumesOnMainThread" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.WhenAll_WorkerCompletedInputs_AwaitResumesOnMainThread" methodname="WhenAll_WorkerCompletedInputs_AwaitResumesOnMainThread" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="981254552" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002004" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1064" name="WhenAnyTyped_AsTaskAwait_ResumesOnUnityContext" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.WhenAnyTyped_AsTaskAwait_ResumesOnUnityContext" methodname="WhenAnyTyped_AsTaskAwait_ResumesOnUnityContext" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="318670887" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.006668" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1065" name="WhenAnyTyped_MainThreadCompletion_NativeAwaitStaysOnUnityContext" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.WhenAnyTyped_MainThreadCompletion_NativeAwaitStaysOnUnityContext" methodname="WhenAnyTyped_MainThreadCompletion_NativeAwaitStaysOnUnityContext" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="85837129" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003425" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1063" name="WhenAnyTyped_WorkerCompletedInput_NativeAwaitResumesOnCompletionThread" fullname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests.WhenAnyTyped_WorkerCompletedInput_NativeAwaitResumesOnCompletionThread" methodname="WhenAnyTyped_WorkerCompletedInput_NativeAwaitResumesOnCompletionThread" classname="Onity.Tests.PlayMode.OnityTaskSafetyPlayModeTests" runstate="Runnable" seed="900979693" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003815" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1081" name="OnityTaskThreadPoolPlayModeTests" fullname="Onity.Tests.PlayMode.OnityTaskThreadPoolPlayModeTests" classname="Onity.Tests.PlayMode.OnityTaskThreadPoolPlayModeTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.038709" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1083" name="Run_BothOverloads_SuccessCancellationAndFault_CompleteOnSelectedThread" fullname="Onity.Tests.PlayMode.OnityTaskThreadPoolPlayModeTests.Run_BothOverloads_SuccessCancellationAndFault_CompleteOnSelectedThread" methodname="Run_BothOverloads_SuccessCancellationAndFault_CompleteOnSelectedThread" classname="Onity.Tests.PlayMode.OnityTaskThreadPoolPlayModeTests" runstate="Runnable" seed="387134579" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.015641" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1086" name="Run_ConcurrentConsumers_AllReturnCorrectResultsAndThreads" fullname="Onity.Tests.PlayMode.OnityTaskThreadPoolPlayModeTests.Run_ConcurrentConsumers_AllReturnCorrectResultsAndThreads" methodname="Run_ConcurrentConsumers_AllReturnCorrectResultsAndThreads" classname="Onity.Tests.PlayMode.OnityTaskThreadPoolPlayModeTests" runstate="Runnable" seed="151483869" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.006997" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1084" name="Run_PreCanceled_DoesNotInvokeDelegates" fullname="Onity.Tests.PlayMode.OnityTaskThreadPoolPlayModeTests.Run_PreCanceled_DoesNotInvokeDelegates" methodname="Run_PreCanceled_DoesNotInvokeDelegates" classname="Onity.Tests.PlayMode.OnityTaskThreadPoolPlayModeTests" runstate="Runnable" seed="249779830" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.001973" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1082" name="Switch_FromMainAndWorker_ResumesOnThreadPool" fullname="Onity.Tests.PlayMode.OnityTaskThreadPoolPlayModeTests.Switch_FromMainAndWorker_ResumesOnThreadPool" methodname="Switch_FromMainAndWorker_ResumesOnThreadPool" classname="Onity.Tests.PlayMode.OnityTaskThreadPoolPlayModeTests" runstate="Runnable" seed="991843080" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.004464" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1085" name="SwitchAndRun_ContextFlowOnOffAndSuppressed_PreserveUnityReturnContext" fullname="Onity.Tests.PlayMode.OnityTaskThreadPoolPlayModeTests.SwitchAndRun_ContextFlowOnOffAndSuppressed_PreserveUnityReturnContext" methodname="SwitchAndRun_ContextFlowOnOffAndSuppressed_PreserveUnityReturnContext" classname="Onity.Tests.PlayMode.OnityTaskThreadPoolPlayModeTests" runstate="Runnable" seed="1475167137" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.007941" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1087" name="OnityTaskThreadSwitchPlayModeTests" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" testcasecount="12" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.054965" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1096" name="SwitchToMainThread_AfterRunnerDestroyed_RecreatesPumpAndResumes" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests.SwitchToMainThread_AfterRunnerDestroyed_RecreatesPumpAndResumes" methodname="SwitchToMainThread_AfterRunnerDestroyed_RecreatesPumpAndResumes" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" seed="1941810804" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003376" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1094" name="SwitchToMainThread_AsyncLocal_FlowsThroughAsyncTaskAndAsyncOnityTask" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests.SwitchToMainThread_AsyncLocal_FlowsThroughAsyncTaskAndAsyncOnityTask" methodname="SwitchToMainThread_AsyncLocal_FlowsThroughAsyncTaskAndAsyncOnityTask" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" seed="78630197" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.004456" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1091" name="SwitchToMainThread_CanceledWhileQueued_ThrowsOnMainThread" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests.SwitchToMainThread_CanceledWhileQueued_ThrowsOnMainThread" methodname="SwitchToMainThread_CanceledWhileQueued_ThrowsOnMainThread" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" seed="1032783095" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.001942" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1092" name="SwitchToMainThread_ConcurrentProducers_AllResumeOnMainThread" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests.SwitchToMainThread_ConcurrentProducers_AllResumeOnMainThread" methodname="SwitchToMainThread_ConcurrentProducers_AllResumeOnMainThread" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" seed="1736594301" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.020979" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1090" name="SwitchToMainThread_FromWorker_ResumesOnMainThreadDuringUpdate" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests.SwitchToMainThread_FromWorker_ResumesOnMainThreadDuringUpdate" methodname="SwitchToMainThread_FromWorker_ResumesOnMainThreadDuringUpdate" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" seed="874776963" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.006000" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1088" name="SwitchToMainThread_OnMainThread_CompletesSynchronously" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests.SwitchToMainThread_OnMainThread_CompletesSynchronously" methodname="SwitchToMainThread_OnMainThread_CompletesSynchronously" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" seed="1176363832" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.000565" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1089" name="SwitchToMainThread_OnMainThreadWithCanceledToken_ThrowsAtGetResult" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests.SwitchToMainThread_OnMainThreadWithCanceledToken_ThrowsAtGetResult" methodname="SwitchToMainThread_OnMainThreadWithCanceledToken_ThrowsAtGetResult" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" seed="1208493038" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.000552" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1093" name="SwitchToMainThread_ReentrantRegistrationDuringDrain_ResumesInLaterFrame" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests.SwitchToMainThread_ReentrantRegistrationDuringDrain_ResumesInLaterFrame" methodname="SwitchToMainThread_ReentrantRegistrationDuringDrain_ResumesInLaterFrame" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" seed="210968117" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003437" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1099" name="SwitchToMainThread_ReentrantRegistrationsBeyondInitialCapacity_RunInOrderInLaterFrame" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests.SwitchToMainThread_ReentrantRegistrationsBeyondInitialCapacity_RunInOrderInLaterFrame" methodname="SwitchToMainThread_ReentrantRegistrationsBeyondInitialCapacity_RunInOrderInLaterFrame" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" seed="750916226" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002719" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1095" name="SwitchToMainThread_SuppressedFlow_DoesNotFlowAsyncLocal" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests.SwitchToMainThread_SuppressedFlow_DoesNotFlowAsyncLocal" methodname="SwitchToMainThread_SuppressedFlow_DoesNotFlowAsyncLocal" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" seed="473158228" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.004272" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1097" name="SwitchToMainThread_ThrowingContinuation_RestOfBatchRunsInTheSameFrame" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests.SwitchToMainThread_ThrowingContinuation_RestOfBatchRunsInTheSameFrame" methodname="SwitchToMainThread_ThrowingContinuation_RestOfBatchRunsInTheSameFrame" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" seed="1468792808" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002137" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[InvalidOperationException: Thread switch continuation failure.
+Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests+<>c__DisplayClass11_0.<SwitchToMainThread_ThrowingContinuation_RestOfBatchRunsInTheSameFrame>b__0 () (at ./Packages/com.onity.framework/Tests/PlayMode/OnityTaskThreadSwitchPlayModeTests.cs:291)
+Onity.Unity.Async.OnityTaskMainThreadDispatcher.Drain () (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskThreadSwitch.cs:255)
+UnityEngine.Debug:LogException(Exception)
+Onity.Unity.Async.OnityTaskMainThreadDispatcher:ReportContinuationFailure(Exception) (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskThreadSwitch.cs:275)
+Onity.Unity.Async.OnityTaskMainThreadDispatcher:Drain() (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityTaskThreadSwitch.cs:259)
+Onity.Unity.Async.OnityTaskRunner:Update() (at ./Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs:3959)
+
+]]></output>
+              </test-case>
+              <test-case id="1098" name="SwitchToMainThread_WorkerRegistrationsBeyondInitialCapacity_RunInOrderInOneFrame" fullname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests.SwitchToMainThread_WorkerRegistrationsBeyondInitialCapacity_RunInOrderInOneFrame" methodname="SwitchToMainThread_WorkerRegistrationsBeyondInitialCapacity_RunInOrderInOneFrame" classname="Onity.Tests.PlayMode.OnityTaskThreadSwitchPlayModeTests" runstate="Runnable" seed="323574727" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002009" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1100" name="OnityTaskTimeoutPlayModeTests" fullname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests" classname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests" runstate="Runnable" testcasecount="9" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.098427" total="9" passed="9" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1107" name="CloseSessionDuringPublicUpdate_CancelsTimersRejectsReentryAndPreventsOldExpiry" fullname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests.CloseSessionDuringPublicUpdate_CancelsTimersRejectsReentryAndPreventsOldExpiry" methodname="CloseSessionDuringPublicUpdate_CancelsTimersRejectsReentryAndPreventsOldExpiry" classname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests" runstate="Runnable" seed="487797925" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.007176" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1108" name="FailedRepairBetweenPublicAndPrivatePasses_FaultsTimerAndAllowsFreshSessionControl" fullname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests.FailedRepairBetweenPublicAndPrivatePasses_FaultsTimerAndAllowsFreshSessionControl" methodname="FailedRepairBetweenPublicAndPrivatePasses_FaultsTimerAndAllowsFreshSessionControl" classname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests" runstate="Runnable" seed="1549646063" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.003737" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1109" name="LegacyRunnerDestroy_DoesNotRetireTimerOwnedByInjectedLoop" fullname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests.LegacyRunnerDestroy_DoesNotRetireTimerOwnedByInjectedLoop" methodname="LegacyRunnerDestroy_DoesNotRetireTimerOwnedByInjectedLoop" classname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests" runstate="Runnable" seed="1915966258" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.012901" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1101" name="PausedScaledClock_IncludingPositiveEpsilon_DoesNotExpireUntilTimeAdvances" fullname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests.PausedScaledClock_IncludingPositiveEpsilon_DoesNotExpireUntilTimeAdvances" methodname="PausedScaledClock_IncludingPositiveEpsilon_DoesNotExpireUntilTimeAdvances" classname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests" runstate="Runnable" seed="2047666383" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.044923" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1102" name="PendingProducerOutcomes_AllShapesPreserveFaultsTokensAndWorkerPublicationWithoutContextCapture" fullname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests.PendingProducerOutcomes_AllShapesPreserveFaultsTokensAndWorkerPublicationWithoutContextCapture" methodname="PendingProducerOutcomes_AllShapesPreserveFaultsTokensAndWorkerPublicationWithoutContextCapture" classname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests" runstate="Runnable" seed="541688431" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.011301" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1103" name="PendingTaskAndGenuinePreservedNativeInputs_KeepResultAndOutputBridgeSharing" fullname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests.PendingTaskAndGenuinePreservedNativeInputs_KeepResultAndOutputBridgeSharing" methodname="PendingTaskAndGenuinePreservedNativeInputs_KeepResultAndOutputBridgeSharing" classname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests" runstate="Runnable" seed="893853543" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.007007" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1104" name="PositivePreclaimedNativeRegistration_FaultsWrapperWithoutStealingFirstConsumer" fullname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests.PositivePreclaimedNativeRegistration_FaultsWrapperWithoutStealingFirstConsumer" methodname="PositivePreclaimedNativeRegistration_FaultsWrapperWithoutStealingFirstConsumer" classname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests" runstate="Runnable" seed="788690056" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.002999" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1105" name="PublicUpdateProducerWinsBeforePrivateTimer_EvenWhenDurationHasElapsed" fullname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests.PublicUpdateProducerWinsBeforePrivateTimer_EvenWhenDurationHasElapsed" methodname="PublicUpdateProducerWinsBeforePrivateTimer_EvenWhenDurationHasElapsed" classname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests" runstate="Runnable" seed="1093453547" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.001385" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1106" name="TimersRegisteredDuringCancellationPublicUpdateAndExpiryCallbacks_WaitForNextPass" fullname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests.TimersRegisteredDuringCancellationPublicUpdateAndExpiryCallbacks_WaitForNextPass" methodname="TimersRegisteredDuringCancellationPublicUpdateAndExpiryCallbacks_WaitForNextPass" classname="Onity.Tests.PlayMode.OnityTaskTimeoutPlayModeTests" runstate="Runnable" seed="1605149385" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.004978" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1110" name="OnityTaskWhenAnyArrayPlayModeTests" fullname="Onity.Tests.PlayMode.OnityTaskWhenAnyArrayPlayModeTests" classname="Onity.Tests.PlayMode.OnityTaskWhenAnyArrayPlayModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.012738" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1112" name="ExplicitArrayBridgeAwait_ReturnsToUnityContext" fullname="Onity.Tests.PlayMode.OnityTaskWhenAnyArrayPlayModeTests.ExplicitArrayBridgeAwait_ReturnsToUnityContext" methodname="ExplicitArrayBridgeAwait_ReturnsToUnityContext" classname="Onity.Tests.PlayMode.OnityTaskWhenAnyArrayPlayModeTests" runstate="Runnable" seed="1417825737" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.005295" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1111" name="NativeArrayWinner_ResumesTypedAndUntypedOnProducerWorker" fullname="Onity.Tests.PlayMode.OnityTaskWhenAnyArrayPlayModeTests.NativeArrayWinner_ResumesTypedAndUntypedOnProducerWorker" methodname="NativeArrayWinner_ResumesTypedAndUntypedOnProducerWorker" classname="Onity.Tests.PlayMode.OnityTaskWhenAnyArrayPlayModeTests" runstate="Runnable" seed="1896950" result="Passed" start-time="2026-09-29 20:47:43Z" end-time="2026-09-29 20:47:43Z" duration="0.006610" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/e-fur/AppData/LocalLow/DefaultCompany/Onity\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

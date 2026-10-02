@@ -1,0 +1,3590 @@
+{
+  "schemaVersion": 1,
+  "generatedUtc": "2026-10-02T03:11:44.635356+00:00",
+  "mode": "gate",
+  "primaryStatistic": "mean",
+  "thresholds": {
+    "primarySyncMedian": 1.0,
+    "median": 0.95,
+    "worstProcess": 1.0
+  },
+  "gateBackend": "IL2CPP",
+  "inputs": [
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\il2cpp-builderlifecycle-default-p1.json",
+      "sha256": "5389DEAA7F3381A753A5F269464A6ED7A14EA1D6EFC6085ECA89762D9712FC9E",
+      "suite": "builderlifecycle",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "IL2CPP",
+      "buildGuid": "a1e17c822d2b46799b38e6621ec43969",
+      "retention": "default"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\il2cpp-builderlifecycle-matched-p1.json",
+      "sha256": "85CBF16E2C46068E0B61FC13C8BF0772A7DF37B2DA23AB00C3CE40A8139C942B",
+      "suite": "builderlifecycle",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "IL2CPP",
+      "buildGuid": "a1e17c822d2b46799b38e6621ec43969",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\il2cpp-builderlifecycle-matched-p2.json",
+      "sha256": "F46D475C714B4D0FF899662A2E2FF7234CD2C63BB653AFD4BA482C1DF608A8E7",
+      "suite": "builderlifecycle",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "IL2CPP",
+      "buildGuid": "a1e17c822d2b46799b38e6621ec43969",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\il2cpp-builderlifecycle-matched-p3.json",
+      "sha256": "57F8B42B624571E6CCA1D732C09D3F9815A796728A00E53F65CB4F81529503E3",
+      "suite": "builderlifecycle",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "IL2CPP",
+      "buildGuid": "a1e17c822d2b46799b38e6621ec43969",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\il2cpp-primary-default-p1.json",
+      "sha256": "6505CDE9886AB4CC7646A1A3209E1864C871AB8ADB7ECAB09AA2C9FA971B9F92",
+      "suite": "primary",
+      "copies": [
+        "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\onity-task-benchmark-20261002-031123.json"
+      ],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "IL2CPP",
+      "buildGuid": "a1e17c822d2b46799b38e6621ec43969",
+      "retention": "default"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\il2cpp-primary-matched-p1.json",
+      "sha256": "8E61A4B26F8CAD3302D9E19AEDC3FBE005B259AC6E18920EB37500A9F32E7954",
+      "suite": "primary",
+      "copies": [
+        "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\onity-task-benchmark-20261002-030958.json"
+      ],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "IL2CPP",
+      "buildGuid": "a1e17c822d2b46799b38e6621ec43969",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\il2cpp-primary-matched-p2.json",
+      "sha256": "85E716A74EA4981D10DBDB13C45941988136908143EF21EF30ABD37C0626191D",
+      "suite": "primary",
+      "copies": [
+        "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\onity-task-benchmark-20261002-031049.json"
+      ],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "IL2CPP",
+      "buildGuid": "a1e17c822d2b46799b38e6621ec43969",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\il2cpp-primary-matched-p3.json",
+      "sha256": "E8045F0124BCD60FB67428C715BC5C57C6E6425CFDA5D421714DBB00A200B96A",
+      "suite": "primary",
+      "copies": [
+        "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\onity-task-benchmark-20261002-031056.json"
+      ],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "IL2CPP",
+      "buildGuid": "a1e17c822d2b46799b38e6621ec43969",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\il2cpp-throughput-matched-p1.json",
+      "sha256": "09BC787F295BF35B4DB0639A50111DCF332A17788BD865EC4073E2D0C091C0D3",
+      "suite": "throughput",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "IL2CPP",
+      "buildGuid": "a1e17c822d2b46799b38e6621ec43969",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\il2cpp-throughput-matched-p2.json",
+      "sha256": "BA3361E886B861DCA93741C2DDF7BAC7CF87E329922B31272AD8605BE70E6731",
+      "suite": "throughput",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "IL2CPP",
+      "buildGuid": "a1e17c822d2b46799b38e6621ec43969",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\il2cpp-throughput-matched-p3.json",
+      "sha256": "098FB9DB247C892CCB0A4E83779528B40BD4CBEF0C643662671D3A03A7C35978",
+      "suite": "throughput",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "IL2CPP",
+      "buildGuid": "a1e17c822d2b46799b38e6621ec43969",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\mono-builderlifecycle-default-p1.json",
+      "sha256": "9E887C4FEF44C51F82133F3156DEC3CAB1F740A7BDD88018345DE8C2A717F12A",
+      "suite": "builderlifecycle",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "Mono",
+      "buildGuid": "ad8bc783e0d34baab4bf1afb000e3141",
+      "retention": "default"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\mono-builderlifecycle-matched-p1.json",
+      "sha256": "243012587E946B9F3CE54CFCE4ACBE42AB9FB5445BF24A2BCFDA30838D095D84",
+      "suite": "builderlifecycle",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "Mono",
+      "buildGuid": "ad8bc783e0d34baab4bf1afb000e3141",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\mono-builderlifecycle-matched-p2.json",
+      "sha256": "0D0228DACC65207B80ACF3188E42EDEB44265C2847B299A1179B555490E4BE29",
+      "suite": "builderlifecycle",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "Mono",
+      "buildGuid": "ad8bc783e0d34baab4bf1afb000e3141",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\mono-builderlifecycle-matched-p3.json",
+      "sha256": "F736E71D60502F77FFCC3E5A830DEC8C479012A7BDC7C92FB5371E44616D1F97",
+      "suite": "builderlifecycle",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "Mono",
+      "buildGuid": "ad8bc783e0d34baab4bf1afb000e3141",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\mono-primary-default-p1.json",
+      "sha256": "F92909484E619AF48511809C5EE975A908584F0622FC6576FF630F96867DC92A",
+      "suite": "primary",
+      "copies": [
+        "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\onity-task-benchmark-20261002-031138.json"
+      ],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "Mono",
+      "buildGuid": "ad8bc783e0d34baab4bf1afb000e3141",
+      "retention": "default"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\mono-primary-matched-p1.json",
+      "sha256": "469E2C67A75E942AFFA702A42A4D667724E72446599D67D8EC2F3D022D49E6C7",
+      "suite": "primary",
+      "copies": [
+        "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\onity-task-benchmark-20261002-031014.json"
+      ],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "Mono",
+      "buildGuid": "ad8bc783e0d34baab4bf1afb000e3141",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\mono-primary-matched-p2.json",
+      "sha256": "EC70CF2C17867041CD424E54ECC0C3051E2027CB127D4718E599E6A815A17A07",
+      "suite": "primary",
+      "copies": [
+        "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\onity-task-benchmark-20261002-031034.json"
+      ],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "Mono",
+      "buildGuid": "ad8bc783e0d34baab4bf1afb000e3141",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\mono-primary-matched-p3.json",
+      "sha256": "CAA216DDE55E088E68359D3D1F14A7B12BAFDE42D1F4354682BD97351FD03534",
+      "suite": "primary",
+      "copies": [
+        "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\onity-task-benchmark-20261002-031111.json"
+      ],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "Mono",
+      "buildGuid": "ad8bc783e0d34baab4bf1afb000e3141",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\mono-throughput-matched-p1.json",
+      "sha256": "E7C91FF35C006835A6D129DE8CEFC9C0DDD50CD51BF56416C8CA0311ABF6369B",
+      "suite": "throughput",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "Mono",
+      "buildGuid": "ad8bc783e0d34baab4bf1afb000e3141",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\mono-throughput-matched-p2.json",
+      "sha256": "24A129CDEF2D12912CF3304D0BB4D5C8F0BABF469C6CAE317329917521A01475",
+      "suite": "throughput",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "Mono",
+      "buildGuid": "ad8bc783e0d34baab4bf1afb000e3141",
+      "retention": "matched"
+    },
+    {
+      "path": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\runs\\mono-throughput-matched-p3.json",
+      "sha256": "0CA052F810BBBE91B49DE205B20CA5745707E3B46311930FDB185DC8BC08A3F8",
+      "suite": "throughput",
+      "copies": [],
+      "noise": "flagged",
+      "selfTest": false,
+      "backend": "Mono",
+      "buildGuid": "ad8bc783e0d34baab4bf1afb000e3141",
+      "retention": "matched"
+    }
+  ],
+  "ignored": [],
+  "backends": {
+    "IL2CPP": {
+      "valid": true,
+      "problems": [],
+      "notes": [],
+      "rows": [
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Completed GetResult",
+          "count": 1,
+          "processRatios": [
+            0.5163439542089363,
+            0.5124261538571439,
+            0.5154434923967894
+          ],
+          "median": 0.5154434923967894,
+          "worst": 0.5163439542089363,
+          "onityMedianNs": 2.6746875,
+          "uniTaskMedianNs": 5.18005,
+          "threshold": "median<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "FromResult<int> GetResult",
+          "count": 1,
+          "processRatios": [
+            0.780094319280359,
+            0.9062495863651514,
+            0.8075361223911607
+          ],
+          "median": 0.8075361223911607,
+          "worst": 0.9062495863651514,
+          "onityMedianNs": 9.4514375,
+          "uniTaskMedianNs": 11.7802625,
+          "threshold": "median<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "NextFrame scheduling",
+          "count": 128,
+          "processRatios": [
+            0.10773211784535765,
+            0.10799172850018246,
+            0.1096951524237881
+          ],
+          "median": 0.10799172850018246,
+          "worst": 0.1096951524237881,
+          "onityMedianNs": 13.5467529296875,
+          "uniTaskMedianNs": 125.4425048828125,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "NextFrame GetResult",
+          "count": 128,
+          "processRatios": [
+            0.12412335478912483,
+            0.12575574365175332,
+            0.1249746192893401
+          ],
+          "median": 0.1249746192893401,
+          "worst": 0.12575574365175332,
+          "onityMedianNs": 3.80859375,
+          "uniTaskMedianNs": 30.28564453125,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "NextFrame scheduling",
+          "count": 4096,
+          "processRatios": [
+            0.09783649835311858,
+            0.09779673684880097,
+            0.09825547168434098
+          ],
+          "median": 0.09783649835311858,
+          "worst": 0.09825547168434098,
+          "onityMedianNs": 11.81039810180664,
+          "uniTaskMedianNs": 120.20092010498047,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "NextFrame GetResult",
+          "count": 4096,
+          "processRatios": [
+            0.08646620279977592,
+            0.08448252685855699,
+            0.08478908663440772
+          ],
+          "median": 0.08478908663440772,
+          "worst": 0.08646620279977592,
+          "onityMedianNs": 2.3662567138671875,
+          "uniTaskMedianNs": 27.907562255859375,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method completed GetResult",
+          "count": 1,
+          "processRatios": [
+            0.6194407986702795,
+            0.633633523981504,
+            0.6288712233839954
+          ],
+          "median": 0.6288712233839954,
+          "worst": 0.633633523981504,
+          "onityMedianNs": 9.59685,
+          "uniTaskMedianNs": 15.2604375,
+          "threshold": "median<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method completed<int> GetResult",
+          "count": 1,
+          "processRatios": [
+            0.7418649676873705,
+            0.7501588893239793,
+            0.7533599426331365
+          ],
+          "median": 0.7501588893239793,
+          "worst": 0.7533599426331365,
+          "onityMedianNs": 15.5880625,
+          "uniTaskMedianNs": 20.6913875,
+          "threshold": "median<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame scheduling",
+          "count": 128,
+          "processRatios": [
+            0.41524261348049896,
+            0.4148823577301962,
+            0.4111123758109888
+          ],
+          "median": 0.4148823577301962,
+          "worst": 0.41524261348049896,
+          "onityMedianNs": 77.7587890625,
+          "uniTaskMedianNs": 187.6800537109375,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame GetResult",
+          "count": 128,
+          "processRatios": [
+            0.3254655695106107,
+            0.32881384838407096,
+            0.3262547420747395
+          ],
+          "median": 0.3262547420747395,
+          "worst": 0.32881384838407096,
+          "onityMedianNs": 22.9339599609375,
+          "uniTaskMedianNs": 70.465087890625,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame scheduling",
+          "count": 4096,
+          "processRatios": [
+            0.4112669537775976,
+            0.41295227257541,
+            0.4093833135474595
+          ],
+          "median": 0.4112669537775976,
+          "worst": 0.41295227257541,
+          "onityMedianNs": 77.11992263793945,
+          "uniTaskMedianNs": 188.38071823120117,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame GetResult",
+          "count": 4096,
+          "processRatios": [
+            0.30685182291702673,
+            0.30607387926324464,
+            0.3168408791890234
+          ],
+          "median": 0.30685182291702673,
+          "worst": 0.3168408791890234,
+          "onityMedianNs": 22.02463150024414,
+          "uniTaskMedianNs": 69.51322555541992,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> scheduling",
+          "count": 128,
+          "processRatios": [
+            0.41806729005682675,
+            0.4007975914629341,
+            0.41484308075695037
+          ],
+          "median": 0.41484308075695037,
+          "worst": 0.41806729005682675,
+          "onityMedianNs": 81.2835693359375,
+          "uniTaskMedianNs": 195.9381103515625,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> GetResult",
+          "count": 128,
+          "processRatios": [
+            0.3414535774784222,
+            0.325946173254836,
+            0.3300439949015254
+          ],
+          "median": 0.3300439949015254,
+          "worst": 0.3414535774784222,
+          "onityMedianNs": 24.4964599609375,
+          "uniTaskMedianNs": 74.2218017578125,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> scheduling",
+          "count": 4096,
+          "processRatios": [
+            0.39892171326685183,
+            0.38508175042786097,
+            0.3966494751805891
+          ],
+          "median": 0.3966494751805891,
+          "worst": 0.39892171326685183,
+          "onityMedianNs": 77.11524963378906,
+          "uniTaskMedianNs": 194.14024353027344,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> GetResult",
+          "count": 4096,
+          "processRatios": [
+            0.31101431516502936,
+            0.31147749394144053,
+            0.3251405086783221
+          ],
+          "median": 0.31147749394144053,
+          "worst": 0.3251405086783221,
+          "onityMedianNs": 22.559642791748047,
+          "uniTaskMedianNs": 72.35260009765625,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=128 1-susp",
+          "count": 128,
+          "processRatios": [
+            0.4978738236319275,
+            0.510659395141299,
+            0.5335865513118098
+          ],
+          "median": 0.510659395141299,
+          "worst": 0.5335865513118098,
+          "onityMedianNs": 88.0126953125,
+          "uniTaskMedianNs": 173.54736328125,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=128 4-susp",
+          "count": 128,
+          "processRatios": [
+            0.6033095262046072,
+            0.6124929193058345,
+            0.5948884226587832
+          ],
+          "median": 0.6033095262046072,
+          "worst": 0.6124929193058345,
+          "onityMedianNs": 146.42333984375,
+          "uniTaskMedianNs": 242.7001953125,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=4096 1-susp",
+          "count": 4096,
+          "processRatios": [
+            0.4940246979152835,
+            0.48987411056376573,
+            0.48547149122807015
+          ],
+          "median": 0.48987411056376573,
+          "worst": 0.4940246979152835,
+          "onityMedianNs": 87.40234375,
+          "uniTaskMedianNs": 178.41796875,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=4096 4-susp",
+          "count": 4096,
+          "processRatios": [
+            0.5977266551942759,
+            0.5983682191248604,
+            0.5955725634566944
+          ],
+          "median": 0.5977266551942759,
+          "worst": 0.5983682191248604,
+          "onityMedianNs": 150.40283203125,
+          "uniTaskMedianNs": 252.001953125,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=128 1-susp",
+          "count": 128,
+          "processRatios": [
+            0.5014890227855114,
+            0.623189424834763,
+            0.5007756310816528
+          ],
+          "median": 0.5014890227855114,
+          "worst": 0.623189424834763,
+          "onityMedianNs": 88.39111328125,
+          "uniTaskMedianNs": 173.6083984375,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=128 4-susp",
+          "count": 128,
+          "processRatios": [
+            0.6033810801235006,
+            0.8740395451285728,
+            0.6052232007288187
+          ],
+          "median": 0.6052232007288187,
+          "worst": 0.8740395451285728,
+          "onityMedianNs": 145.9716796875,
+          "uniTaskMedianNs": 241.17431640625,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=4096 1-susp",
+          "count": 4096,
+          "processRatios": [
+            0.4946826758147513,
+            0.5228255646323883,
+            0.4909646739130435
+          ],
+          "median": 0.4946826758147513,
+          "worst": 0.5228255646323883,
+          "onityMedianNs": 88.22021484375,
+          "uniTaskMedianNs": 177.91748046875,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=4096 4-susp",
+          "count": 4096,
+          "processRatios": [
+            0.5870842414479295,
+            0.636865706868067,
+            0.5937632683870359
+          ],
+          "median": 0.5937632683870359,
+          "worst": 0.636865706868067,
+          "onityMedianNs": 153.6376953125,
+          "uniTaskMedianNs": 258.60595703125,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "throughput",
+          "retention": "matched",
+          "row": "NextFrame loops N=1024 K=16",
+          "count": 1024,
+          "processRatios": [
+            0.29941018444868006,
+            0.29300411522633746,
+            0.2900453529643749
+          ],
+          "median": 0.29300411522633746,
+          "worst": 0.29941018444868006,
+          "onityMedianNs": 59.75341796875,
+          "uniTaskMedianNs": 203.3416748046875,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "throughput",
+          "retention": "matched",
+          "row": "NextFrame loops N=4096 K=16",
+          "count": 4096,
+          "processRatios": [
+            0.2782267587311118,
+            0.28043070969954,
+            0.2799232497951435
+          ],
+          "median": 0.2799232497951435,
+          "worst": 0.28043070969954,
+          "onityMedianNs": 52.646636962890625,
+          "uniTaskMedianNs": 188.07525634765625,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "throughput",
+          "retention": "matched",
+          "row": "Yield loops N=1024 K=16",
+          "count": 1024,
+          "processRatios": [
+            0.3768844221105528,
+            0.35184176482603663,
+            0.3502282171810069
+          ],
+          "median": 0.35184176482603663,
+          "worst": 0.3768844221105528,
+          "onityMedianNs": 31.5399169921875,
+          "uniTaskMedianNs": 89.593505859375,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "throughput",
+          "retention": "matched",
+          "row": "Yield loops N=4096 K=16",
+          "count": 4096,
+          "processRatios": [
+            0.3533877874131913,
+            0.3545682644056065,
+            0.33572156996051566
+          ],
+          "median": 0.3533877874131913,
+          "worst": 0.3545682644056065,
+          "onityMedianNs": 29.9713134765625,
+          "uniTaskMedianNs": 87.53128051757812,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "throughput",
+          "retention": "matched",
+          "row": "NextFrame<int> loops N=1024 K=16",
+          "count": 1024,
+          "processRatios": [
+            0.2849366252758049,
+            0.2748007320356338,
+            0.2882286030496803
+          ],
+          "median": 0.2849366252758049,
+          "worst": 0.2882286030496803,
+          "onityMedianNs": 55.4473876953125,
+          "uniTaskMedianNs": 198.53515625,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        }
+      ],
+      "reportOnlyRows": [
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame scheduling (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.5122863077168877,
+            0.524488429441641,
+            0.5257543239489963
+          ],
+          "median": 0.524488429441641,
+          "worst": 0.5257543239489963,
+          "onityMedianNs": 98.01025390625,
+          "uniTaskMedianNs": 191.009521484375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame GetResult (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.3206472491909385,
+            0.31984234616036616,
+            0.33363274733735404
+          ],
+          "median": 0.3206472491909385,
+          "worst": 0.33363274733735404,
+          "onityMedianNs": 23.0316162109375,
+          "uniTaskMedianNs": 71.3470458984375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame scheduling (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.5087430548863466,
+            0.5067682074039376,
+            0.5140946309786147
+          ],
+          "median": 0.5087430548863466,
+          "worst": 0.5140946309786147,
+          "onityMedianNs": 95.15600204467773,
+          "uniTaskMedianNs": 185.7463836669922,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame GetResult (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.31265856054003954,
+            0.30113714152257776,
+            0.3156173434425743
+          ],
+          "median": 0.31265856054003954,
+          "worst": 0.3156173434425743,
+          "onityMedianNs": 21.555328369140625,
+          "uniTaskMedianNs": 69.16780471801759,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> scheduling (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.5257470400300696,
+            0.5070287101057741,
+            0.5254978450309875
+          ],
+          "median": 0.5254978450309875,
+          "worst": 0.5257470400300696,
+          "onityMedianNs": 101.953125,
+          "uniTaskMedianNs": 194.86083984375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> GetResult (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.32602363515312915,
+            0.31906758756783427,
+            0.3254750030911264
+          ],
+          "median": 0.3254750030911264,
+          "worst": 0.32602363515312915,
+          "onityMedianNs": 23.9105224609375,
+          "uniTaskMedianNs": 74.0447998046875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> scheduling (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.49881468552764807,
+            0.49657084000982044,
+            0.5006564876153913
+          ],
+          "median": 0.49881468552764807,
+          "worst": 0.5006564876153913,
+          "onityMedianNs": 99.0945816040039,
+          "uniTaskMedianNs": 197.9292869567871,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> GetResult (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.3161325162653848,
+            0.3122449379106932,
+            0.3251158605232779
+          ],
+          "median": 0.3161325162653848,
+          "worst": 0.3251158605232779,
+          "onityMedianNs": 23.280620574951172,
+          "uniTaskMedianNs": 73.4431266784668,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=1 1-susp",
+          "count": 1,
+          "processRatios": [
+            0.8619480774444455,
+            0.883206554665487,
+            0.8573244928327902
+          ],
+          "median": 0.8619480774444455,
+          "worst": 0.883206554665487,
+          "onityMedianNs": 1121.1181640625,
+          "uniTaskMedianNs": 1296.1181640625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=1 4-susp",
+          "count": 1,
+          "processRatios": [
+            0.901438508813399,
+            0.9103547032263811,
+            0.8938693277083671
+          ],
+          "median": 0.901438508813399,
+          "worst": 0.9103547032263811,
+          "onityMedianNs": 1621.93603515625,
+          "uniTaskMedianNs": 1805.56640625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=1 1-susp",
+          "count": 1,
+          "processRatios": [
+            0.8674076287606397,
+            0.8578788366653093,
+            0.8738557183189635
+          ],
+          "median": 0.8674076287606397,
+          "worst": 0.8738557183189635,
+          "onityMedianNs": 1105.7861328125,
+          "uniTaskMedianNs": 1284.14306640625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=1 4-susp",
+          "count": 1,
+          "processRatios": [
+            0.8914826411965824,
+            0.8930056684829603,
+            0.8855152621615613
+          ],
+          "median": 0.8914826411965824,
+          "worst": 0.8930056684829603,
+          "onityMedianNs": 1588.46435546875,
+          "uniTaskMedianNs": 1781.60400390625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=1 1-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            0.9550020088388911,
+            0.9476581170847368,
+            0.9696352189167107
+          ],
+          "median": 0.9550020088388911,
+          "worst": 0.9696352189167107,
+          "onityMedianNs": 1229.47998046875,
+          "uniTaskMedianNs": 1276.0986328125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=1 4-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            1.0658089615397741,
+            1.0710871792755805,
+            1.0721288850324193
+          ],
+          "median": 1.0710871792755805,
+          "worst": 1.0721288850324193,
+          "onityMedianNs": 1906.21337890625,
+          "uniTaskMedianNs": 1786.65771484375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=128 1-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.8175861340097231,
+            0.8453108535300317,
+            0.8362151777137368
+          ],
+          "median": 0.8362151777137368,
+          "worst": 0.8453108535300317,
+          "onityMedianNs": 146.88720703125,
+          "uniTaskMedianNs": 173.76708984375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=128 4-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            1.6013178730142514,
+            1.6224578214995669,
+            1.5974071654690718
+          ],
+          "median": 1.6013178730142514,
+          "worst": 1.6224578214995669,
+          "onityMedianNs": 388.0615234375,
+          "uniTaskMedianNs": 239.48974609375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=4096 1-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.8162482566248257,
+            0.8379963594687521,
+            0.8073914216347451
+          ],
+          "median": 0.8162482566248257,
+          "worst": 0.8379963594687521,
+          "onityMedianNs": 146.142578125,
+          "uniTaskMedianNs": 181.005859375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=4096 4-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            1.5177613455125416,
+            1.568337183536844,
+            1.48790341091677
+          ],
+          "median": 1.5177613455125416,
+          "worst": 1.568337183536844,
+          "onityMedianNs": 395.64208984375,
+          "uniTaskMedianNs": 258.92333984375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=1 1-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            0.9585359853144338,
+            0.9456421020782512,
+            0.9452187138306726
+          ],
+          "median": 0.9456421020782512,
+          "worst": 0.9585359853144338,
+          "onityMedianNs": 1220.86181640625,
+          "uniTaskMedianNs": 1290.0634765625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=1 4-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            1.0869935836863076,
+            1.0746883126685376,
+            1.0695817724006633
+          ],
+          "median": 1.0746883126685376,
+          "worst": 1.0869935836863076,
+          "onityMedianNs": 1913.37890625,
+          "uniTaskMedianNs": 1788.90380859375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=128 1-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.8098143236074271,
+            0.8264768293517695,
+            0.8279489105935387
+          ],
+          "median": 0.8264768293517695,
+          "worst": 0.8279489105935387,
+          "onityMedianNs": 147.9736328125,
+          "uniTaskMedianNs": 178.72314453125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=128 4-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            1.5706860197126464,
+            1.548072206416168,
+            1.5721124773231203
+          ],
+          "median": 1.5706860197126464,
+          "worst": 1.5721124773231203,
+          "onityMedianNs": 385.24169921875,
+          "uniTaskMedianNs": 248.8525390625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=4096 1-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.814972235552204,
+            0.8637655657823498,
+            0.822642296198485
+          ],
+          "median": 0.822642296198485,
+          "worst": 0.8637655657823498,
+          "onityMedianNs": 145.1171875,
+          "uniTaskMedianNs": 178.06396484375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=4096 4-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            1.5138426945238206,
+            1.5699399759903963,
+            1.4720494134376112
+          ],
+          "median": 1.5138426945238206,
+          "worst": 1.5699399759903963,
+          "onityMedianNs": 399.0966796875,
+          "uniTaskMedianNs": 260.58349609375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Completed GetResult",
+          "count": 1,
+          "processRatios": [
+            0.5383280007602875
+          ],
+          "median": 0.5383280007602875,
+          "worst": 0.5383280007602875,
+          "onityMedianNs": 3.1862625,
+          "uniTaskMedianNs": 5.918812500000001,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "FromResult<int> GetResult",
+          "count": 1,
+          "processRatios": [
+            0.7649440180219467
+          ],
+          "median": 0.7649440180219467,
+          "worst": 0.7649440180219467,
+          "onityMedianNs": 9.5162,
+          "uniTaskMedianNs": 12.4403875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "NextFrame scheduling",
+          "count": 128,
+          "processRatios": [
+            0.10679716067971606
+          ],
+          "median": 0.10679716067971606,
+          "worst": 0.10679716067971606,
+          "onityMedianNs": 15.1519775390625,
+          "uniTaskMedianNs": 141.876220703125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "NextFrame GetResult",
+          "count": 128,
+          "processRatios": [
+            0.1233749461902712
+          ],
+          "median": 0.1233749461902712,
+          "worst": 0.1233749461902712,
+          "onityMedianNs": 4.3731689453125,
+          "uniTaskMedianNs": 35.4461669921875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "NextFrame scheduling",
+          "count": 4096,
+          "processRatios": [
+            0.09592058994483242
+          ],
+          "median": 0.09592058994483242,
+          "worst": 0.09592058994483242,
+          "onityMedianNs": 13.582038879394531,
+          "uniTaskMedianNs": 141.59669876098633,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "NextFrame GetResult",
+          "count": 4096,
+          "processRatios": [
+            0.08272898579795063
+          ],
+          "median": 0.08272898579795063,
+          "worst": 0.08272898579795063,
+          "onityMedianNs": 2.792644500732422,
+          "uniTaskMedianNs": 33.75654220581055,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method completed GetResult",
+          "count": 1,
+          "processRatios": [
+            0.6228023138098795
+          ],
+          "median": 0.6228023138098795,
+          "worst": 0.6228023138098795,
+          "onityMedianNs": 9.974,
+          "uniTaskMedianNs": 16.0147125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method completed<int> GetResult",
+          "count": 1,
+          "processRatios": [
+            0.6898357474083416
+          ],
+          "median": 0.6898357474083416,
+          "worst": 0.6898357474083416,
+          "onityMedianNs": 18.180612500000002,
+          "uniTaskMedianNs": 26.3549875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame scheduling",
+          "count": 128,
+          "processRatios": [
+            0.4076897339288052
+          ],
+          "median": 0.4076897339288052,
+          "worst": 0.4076897339288052,
+          "onityMedianNs": 85.5255126953125,
+          "uniTaskMedianNs": 209.7808837890625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame GetResult",
+          "count": 128,
+          "processRatios": [
+            0.33269561143214116
+          ],
+          "median": 0.33269561143214116,
+          "worst": 0.33269561143214116,
+          "onityMedianNs": 26.0040283203125,
+          "uniTaskMedianNs": 78.16162109375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame scheduling",
+          "count": 4096,
+          "processRatios": [
+            0.7151242375016201
+          ],
+          "median": 0.7151242375016201,
+          "worst": 0.7151242375016201,
+          "onityMedianNs": 151.0120391845703,
+          "uniTaskMedianNs": 211.1689567565918,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame GetResult",
+          "count": 4096,
+          "processRatios": [
+            0.26853426362568594
+          ],
+          "median": 0.26853426362568594,
+          "worst": 0.26853426362568594,
+          "onityMedianNs": 20.451736450195312,
+          "uniTaskMedianNs": 76.16062164306639,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> scheduling",
+          "count": 128,
+          "processRatios": [
+            0.40214927378053905
+          ],
+          "median": 0.40214927378053905,
+          "worst": 0.40214927378053905,
+          "onityMedianNs": 87.70751953125,
+          "uniTaskMedianNs": 218.09692382812497,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> GetResult",
+          "count": 128,
+          "processRatios": [
+            0.32033633454870153
+          ],
+          "median": 0.32033633454870153,
+          "worst": 0.32033633454870153,
+          "onityMedianNs": 26.275634765625,
+          "uniTaskMedianNs": 82.025146484375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> scheduling",
+          "count": 4096,
+          "processRatios": [
+            0.7103499751133782
+          ],
+          "median": 0.7103499751133782,
+          "worst": 0.7103499751133782,
+          "onityMedianNs": 163.46302032470703,
+          "uniTaskMedianNs": 230.1161766052246,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> GetResult",
+          "count": 4096,
+          "processRatios": [
+            0.27632317333285267
+          ],
+          "median": 0.27632317333285267,
+          "worst": 0.27632317333285267,
+          "onityMedianNs": 21.929931640625,
+          "uniTaskMedianNs": 79.36334609985352,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame scheduling (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.5095046128842079
+          ],
+          "median": 0.5095046128842079,
+          "worst": 0.5095046128842079,
+          "onityMedianNs": 97.5830078125,
+          "uniTaskMedianNs": 191.5252685546875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame GetResult (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.31854140914709517
+          ],
+          "median": 0.31854140914709517,
+          "worst": 0.31854140914709517,
+          "onityMedianNs": 23.5931396484375,
+          "uniTaskMedianNs": 74.066162109375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame scheduling (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.8942988882241565
+          ],
+          "median": 0.8942988882241565,
+          "worst": 0.8942988882241565,
+          "onityMedianNs": 197.15852737426758,
+          "uniTaskMedianNs": 220.4615592956543,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame GetResult (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.2929789603307023
+          ],
+          "median": 0.2929789603307023,
+          "worst": 0.2929789603307023,
+          "onityMedianNs": 22.757911682128906,
+          "uniTaskMedianNs": 77.67763137817383,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> scheduling (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.5057803063212029
+          ],
+          "median": 0.5057803063212029,
+          "worst": 0.5057803063212029,
+          "onityMedianNs": 110.150146484375,
+          "uniTaskMedianNs": 217.7825927734375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> GetResult (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.323167044595616
+          ],
+          "median": 0.323167044595616,
+          "worst": 0.323167044595616,
+          "onityMedianNs": 26.0955810546875,
+          "uniTaskMedianNs": 80.74951171875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> scheduling (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.8008681437673548
+          ],
+          "median": 0.8008681437673548,
+          "worst": 0.8008681437673548,
+          "onityMedianNs": 186.84568405151367,
+          "uniTaskMedianNs": 233.30392837524414,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> GetResult (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.2705326231849986
+          ],
+          "median": 0.2705326231849986,
+          "worst": 0.2705326231849986,
+          "onityMedianNs": 21.619033813476562,
+          "uniTaskMedianNs": 79.9128532409668,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=1 1-susp",
+          "count": 1,
+          "processRatios": [
+            0.8531789851953059
+          ],
+          "median": 0.8531789851953059,
+          "worst": 0.8531789851953059,
+          "onityMedianNs": 1112.90283203125,
+          "uniTaskMedianNs": 1304.4189453125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=1 4-susp",
+          "count": 1,
+          "processRatios": [
+            0.8966736798626618
+          ],
+          "median": 0.8966736798626618,
+          "worst": 0.8966736798626618,
+          "onityMedianNs": 1695.99609375,
+          "uniTaskMedianNs": 1891.4306640625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=128 1-susp",
+          "count": 128,
+          "processRatios": [
+            0.5110158708899752
+          ],
+          "median": 0.5110158708899752,
+          "worst": 0.5110158708899752,
+          "onityMedianNs": 93.15185546875,
+          "uniTaskMedianNs": 182.28759765625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=128 4-susp",
+          "count": 128,
+          "processRatios": [
+            0.6106632375488402
+          ],
+          "median": 0.6106632375488402,
+          "worst": 0.6106632375488402,
+          "onityMedianNs": 150.72021484375,
+          "uniTaskMedianNs": 246.81396484375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=4096 1-susp",
+          "count": 4096,
+          "processRatios": [
+            2.574794026776519
+          ],
+          "median": 2.574794026776519,
+          "worst": 2.574794026776519,
+          "onityMedianNs": 488.3056640625,
+          "uniTaskMedianNs": 189.6484375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=4096 4-susp",
+          "count": 4096,
+          "processRatios": [
+            1.8200461768300964
+          ],
+          "median": 1.8200461768300964,
+          "worst": 1.8200461768300964,
+          "onityMedianNs": 490.75927734375,
+          "uniTaskMedianNs": 269.64111328125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=1 1-susp",
+          "count": 1,
+          "processRatios": [
+            0.9268430296577393
+          ],
+          "median": 0.9268430296577393,
+          "worst": 0.9268430296577393,
+          "onityMedianNs": 1243.26171875,
+          "uniTaskMedianNs": 1341.39404296875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=1 4-susp",
+          "count": 1,
+          "processRatios": [
+            0.8928932433950173
+          ],
+          "median": 0.8928932433950173,
+          "worst": 0.8928932433950173,
+          "onityMedianNs": 1649.79248046875,
+          "uniTaskMedianNs": 1847.69287109375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=128 1-susp",
+          "count": 128,
+          "processRatios": [
+            0.4990082757677313
+          ],
+          "median": 0.4990082757677313,
+          "worst": 0.4990082757677313,
+          "onityMedianNs": 89.0625,
+          "uniTaskMedianNs": 178.47900390625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=128 4-susp",
+          "count": 128,
+          "processRatios": [
+            0.6075112669003505
+          ],
+          "median": 0.6075112669003505,
+          "worst": 0.6075112669003505,
+          "onityMedianNs": 148.095703125,
+          "uniTaskMedianNs": 243.7744140625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=4096 1-susp",
+          "count": 4096,
+          "processRatios": [
+            1.4719223195491276
+          ],
+          "median": 1.4719223195491276,
+          "worst": 1.4719223195491276,
+          "onityMedianNs": 264.61181640625,
+          "uniTaskMedianNs": 179.77294921875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=4096 4-susp",
+          "count": 4096,
+          "processRatios": [
+            0.945526576427864
+          ],
+          "median": 0.945526576427864,
+          "worst": 0.945526576427864,
+          "onityMedianNs": 244.7265625,
+          "uniTaskMedianNs": 258.82568359375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=1 1-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            0.9266898268457477
+          ],
+          "median": 0.9266898268457477,
+          "worst": 0.9266898268457477,
+          "onityMedianNs": 1240.61279296875,
+          "uniTaskMedianNs": 1338.75732421875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=1 4-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            1.0727875372886975
+          ],
+          "median": 1.0727875372886975,
+          "worst": 1.0727875372886975,
+          "onityMedianNs": 1975.4638671875,
+          "uniTaskMedianNs": 1841.4306640625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=128 1-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.8187578331708676
+          ],
+          "median": 0.8187578331708676,
+          "worst": 0.8187578331708676,
+          "onityMedianNs": 143.54248046875,
+          "uniTaskMedianNs": 175.3173828125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=128 4-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            1.586171886897812
+          ],
+          "median": 1.586171886897812,
+          "worst": 1.586171886897812,
+          "onityMedianNs": 381.4208984375,
+          "uniTaskMedianNs": 240.46630859375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=4096 1-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            1.8012696291346475
+          ],
+          "median": 1.8012696291346475,
+          "worst": 1.8012696291346475,
+          "onityMedianNs": 329.052734375,
+          "uniTaskMedianNs": 182.67822265625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=4096 4-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            1.8792351559879235
+          ],
+          "median": 1.8792351559879235,
+          "worst": 1.8792351559879235,
+          "onityMedianNs": 478.6865234375,
+          "uniTaskMedianNs": 254.72412109375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=1 1-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            0.9367831049803871
+          ],
+          "median": 0.9367831049803871,
+          "worst": 0.9367831049803871,
+          "onityMedianNs": 1230.23681640625,
+          "uniTaskMedianNs": 1313.2568359375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=1 4-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            1.0800142798445382
+          ],
+          "median": 1.0800142798445382,
+          "worst": 1.0800142798445382,
+          "onityMedianNs": 1957.275390625,
+          "uniTaskMedianNs": 1812.26806640625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=128 1-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.820505772402419
+          ],
+          "median": 0.820505772402419,
+          "worst": 0.820505772402419,
+          "onityMedianNs": 145.751953125,
+          "uniTaskMedianNs": 177.63671875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=128 4-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            1.5788157631526305
+          ],
+          "median": 1.5788157631526305,
+          "worst": 1.5788157631526305,
+          "onityMedianNs": 385.3759765625,
+          "uniTaskMedianNs": 244.091796875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=4096 1-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            1.5785548104557274
+          ],
+          "median": 1.5785548104557274,
+          "worst": 1.5785548104557274,
+          "onityMedianNs": 281.60400390625,
+          "uniTaskMedianNs": 178.3935546875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=4096 4-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            2.3951508154134795
+          ],
+          "median": 2.3951508154134795,
+          "worst": 2.3951508154134795,
+          "onityMedianNs": 607.763671875,
+          "uniTaskMedianNs": 253.74755859375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        }
+      ],
+      "processes": {
+        "builderlifecycle-default": [
+          "il2cpp-builderlifecycle-default-p1.json"
+        ],
+        "builderlifecycle-matched": [
+          "il2cpp-builderlifecycle-matched-p1.json",
+          "il2cpp-builderlifecycle-matched-p2.json",
+          "il2cpp-builderlifecycle-matched-p3.json"
+        ],
+        "primary-default": [
+          "il2cpp-primary-default-p1.json"
+        ],
+        "primary-matched": [
+          "il2cpp-primary-matched-p1.json",
+          "il2cpp-primary-matched-p2.json",
+          "il2cpp-primary-matched-p3.json"
+        ],
+        "throughput-matched": [
+          "il2cpp-throughput-matched-p1.json",
+          "il2cpp-throughput-matched-p2.json",
+          "il2cpp-throughput-matched-p3.json"
+        ]
+      },
+      "buildGuids": [
+        "a1e17c822d2b46799b38e6621ec43969"
+      ]
+    },
+    "Mono": {
+      "valid": true,
+      "problems": [],
+      "notes": [],
+      "rows": [
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Completed GetResult",
+          "count": 1,
+          "processRatios": [
+            1.3194713155684443,
+            1.27301435589624,
+            1.2907404072812991
+          ],
+          "median": 1.2907404072812991,
+          "worst": 1.3194713155684443,
+          "onityMedianNs": 3.94705,
+          "uniTaskMedianNs": 3.0544,
+          "threshold": "median<=1.00",
+          "result": "FAIL"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "FromResult<int> GetResult",
+          "count": 1,
+          "processRatios": [
+            1.9240168475324353,
+            1.923020140285729,
+            1.9253697688250402
+          ],
+          "median": 1.9240168475324353,
+          "worst": 1.9253697688250402,
+          "onityMedianNs": 14.7777,
+          "uniTaskMedianNs": 7.68065,
+          "threshold": "median<=1.00",
+          "result": "FAIL"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "NextFrame scheduling",
+          "count": 128,
+          "processRatios": [
+            0.31114249037227215,
+            0.3142615774518086,
+            0.31979201352424375
+          ],
+          "median": 0.3142615774518086,
+          "worst": 0.31979201352424375,
+          "onityMedianNs": 37.46337890625,
+          "uniTaskMedianNs": 119.1436767578125,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "NextFrame GetResult",
+          "count": 128,
+          "processRatios": [
+            0.1325591127851015,
+            0.13321565777177863,
+            0.13818219121871153
+          ],
+          "median": 0.13321565777177863,
+          "worst": 0.13818219121871153,
+          "onityMedianNs": 3.9154052734375,
+          "uniTaskMedianNs": 29.391479492187504,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "NextFrame scheduling",
+          "count": 4096,
+          "processRatios": [
+            0.3182127179178968,
+            0.321433962024331,
+            0.3187970824749283
+          ],
+          "median": 0.3187970824749283,
+          "worst": 0.321433962024331,
+          "onityMedianNs": 37.365055084228516,
+          "uniTaskMedianNs": 117.42162704467773,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "NextFrame GetResult",
+          "count": 4096,
+          "processRatios": [
+            0.11561872177908619,
+            0.12007859926736113,
+            0.12538363575302336
+          ],
+          "median": 0.12007859926736113,
+          "worst": 0.12538363575302336,
+          "onityMedianNs": 3.5200119018554688,
+          "uniTaskMedianNs": 28.766441345214844,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method completed GetResult",
+          "count": 1,
+          "processRatios": [
+            1.086500900153495,
+            1.104227720652892,
+            1.034887427920814
+          ],
+          "median": 1.086500900153495,
+          "worst": 1.104227720652892,
+          "onityMedianNs": 17.81105,
+          "uniTaskMedianNs": 16.393037500000002,
+          "threshold": "median<=1.00",
+          "result": "FAIL"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method completed<int> GetResult",
+          "count": 1,
+          "processRatios": [
+            1.2178745225885517,
+            1.191759333274378,
+            1.196395284849538
+          ],
+          "median": 1.196395284849538,
+          "worst": 1.2178745225885517,
+          "onityMedianNs": 25.7736875,
+          "uniTaskMedianNs": 21.579375,
+          "threshold": "median<=1.00",
+          "result": "FAIL"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame scheduling",
+          "count": 128,
+          "processRatios": [
+            0.5810495626822157,
+            0.5812599398025841,
+            0.5866650173181593
+          ],
+          "median": 0.5812599398025841,
+          "worst": 0.5866650173181593,
+          "onityMedianNs": 144.732666015625,
+          "uniTaskMedianNs": 246.7041015625,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame GetResult",
+          "count": 128,
+          "processRatios": [
+            0.7838645418326693,
+            0.7557658833768495,
+            0.7829887894682711
+          ],
+          "median": 0.7829887894682711,
+          "worst": 0.7838645418326693,
+          "onityMedianNs": 23.2330322265625,
+          "uniTaskMedianNs": 29.6722412109375,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame scheduling",
+          "count": 4096,
+          "processRatios": [
+            0.5814512219380675,
+            0.5882502003982106,
+            0.5858858246393197
+          ],
+          "median": 0.5858858246393197,
+          "worst": 0.5882502003982106,
+          "onityMedianNs": 132.04870223999023,
+          "uniTaskMedianNs": 225.38299560546875,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame GetResult",
+          "count": 4096,
+          "processRatios": [
+            0.811062099215376,
+            0.8257906288261583,
+            0.8140204335981589
+          ],
+          "median": 0.8140204335981589,
+          "worst": 0.8257906288261583,
+          "onityMedianNs": 21.115875244140625,
+          "uniTaskMedianNs": 25.940227508544922,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> scheduling",
+          "count": 128,
+          "processRatios": [
+            0.5636787310585414,
+            0.5696610521938033,
+            0.5588758498007363
+          ],
+          "median": 0.5636787310585414,
+          "worst": 0.5696610521938033,
+          "onityMedianNs": 123.68164062499999,
+          "uniTaskMedianNs": 221.3043212890625,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> GetResult",
+          "count": 128,
+          "processRatios": [
+            0.7891782667265379,
+            0.7658467360454115,
+            0.7452636137274007
+          ],
+          "median": 0.7658467360454115,
+          "worst": 0.7891782667265379,
+          "onityMedianNs": 21.00830078125,
+          "uniTaskMedianNs": 27.18505859375,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> scheduling",
+          "count": 4096,
+          "processRatios": [
+            0.5589907373366773,
+            0.57213306868907,
+            0.5664747018252277
+          ],
+          "median": 0.5664747018252277,
+          "worst": 0.57213306868907,
+          "onityMedianNs": 119.47116851806639,
+          "uniTaskMedianNs": 208.81710052490234,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> GetResult",
+          "count": 4096,
+          "processRatios": [
+            0.7087845236646794,
+            0.7582790700920555,
+            0.7535330754150691
+          ],
+          "median": 0.7535330754150691,
+          "worst": 0.7582790700920555,
+          "onityMedianNs": 20.72305679321289,
+          "uniTaskMedianNs": 27.485370635986328,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=128 1-susp",
+          "count": 128,
+          "processRatios": [
+            0.8726668371260548,
+            0.8854401335002086,
+            0.8868759037169346
+          ],
+          "median": 0.8854401335002086,
+          "worst": 0.8868759037169346,
+          "onityMedianNs": 127.28271484375,
+          "uniTaskMedianNs": 143.51806640625,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=128 4-susp",
+          "count": 128,
+          "processRatios": [
+            0.9426152887411716,
+            0.9315188310351924,
+            0.9241246124917416
+          ],
+          "median": 0.9315188310351924,
+          "worst": 0.9426152887411716,
+          "onityMedianNs": 221.56982421875,
+          "uniTaskMedianNs": 237.255859375,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=4096 1-susp",
+          "count": 4096,
+          "processRatios": [
+            0.8740833333333333,
+            0.8886003852919004,
+            0.8938158341828066
+          ],
+          "median": 0.8886003852919004,
+          "worst": 0.8938158341828066,
+          "onityMedianNs": 128.4423828125,
+          "uniTaskMedianNs": 145.73974609375,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=4096 4-susp",
+          "count": 4096,
+          "processRatios": [
+            1.0088455772113942,
+            0.9255532216305994,
+            0.9351062787736311
+          ],
+          "median": 0.9351062787736311,
+          "worst": 1.0088455772113942,
+          "onityMedianNs": 233.06884765625,
+          "uniTaskMedianNs": 249.89013671875,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "FAIL"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=128 1-susp",
+          "count": 128,
+          "processRatios": [
+            0.8945115810674723,
+            0.912052667116813,
+            0.8856552294336503
+          ],
+          "median": 0.8945115810674723,
+          "worst": 0.912052667116813,
+          "onityMedianNs": 130.76171875,
+          "uniTaskMedianNs": 145.458984375,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=128 4-susp",
+          "count": 128,
+          "processRatios": [
+            0.9725999696678631,
+            0.9761916926378174,
+            0.9615460852329039
+          ],
+          "median": 0.9725999696678631,
+          "worst": 0.9761916926378174,
+          "onityMedianNs": 234.85107421875,
+          "uniTaskMedianNs": 241.46728515625,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "FAIL"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=4096 1-susp",
+          "count": 4096,
+          "processRatios": [
+            0.9092165500561458,
+            0.9073776726104961,
+            0.9161887596264132
+          ],
+          "median": 0.9092165500561458,
+          "worst": 0.9161887596264132,
+          "onityMedianNs": 131.06689453125,
+          "uniTaskMedianNs": 144.44580078125,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=4096 4-susp",
+          "count": 4096,
+          "processRatios": [
+            0.9712318061932207,
+            0.9659560165178143,
+            0.9774417930634721
+          ],
+          "median": 0.9712318061932207,
+          "worst": 0.9774417930634721,
+          "onityMedianNs": 245.56884765625,
+          "uniTaskMedianNs": 252.7099609375,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "FAIL"
+        },
+        {
+          "suite": "throughput",
+          "retention": "matched",
+          "row": "NextFrame loops N=1024 K=16",
+          "count": 1024,
+          "processRatios": [
+            0.3607671575329089,
+            0.3651043771043771,
+            0.3660670297332925
+          ],
+          "median": 0.3651043771043771,
+          "worst": 0.3660670297332925,
+          "onityMedianNs": 83.89892578125,
+          "uniTaskMedianNs": 229.1900634765625,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "throughput",
+          "retention": "matched",
+          "row": "NextFrame loops N=4096 K=16",
+          "count": 4096,
+          "processRatios": [
+            0.3659617047979241,
+            0.3613096343048079,
+            0.354146753066969
+          ],
+          "median": 0.3613096343048079,
+          "worst": 0.3659617047979241,
+          "onityMedianNs": 82.31430053710938,
+          "uniTaskMedianNs": 230.157470703125,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "throughput",
+          "retention": "matched",
+          "row": "Yield loops N=1024 K=16",
+          "count": 1024,
+          "processRatios": [
+            0.6742395071236041,
+            0.7088383233532934,
+            0.6658063910656469
+          ],
+          "median": 0.6742395071236041,
+          "worst": 0.7088383233532934,
+          "onityMedianNs": 43.3013916015625,
+          "uniTaskMedianNs": 63.7054443359375,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "throughput",
+          "retention": "matched",
+          "row": "Yield loops N=4096 K=16",
+          "count": 4096,
+          "processRatios": [
+            0.7210668613604992,
+            0.7295596737620648,
+            0.6737532472071106
+          ],
+          "median": 0.7210668613604992,
+          "worst": 0.7295596737620648,
+          "onityMedianNs": 46.884918212890625,
+          "uniTaskMedianNs": 65.49301147460938,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        },
+        {
+          "suite": "throughput",
+          "retention": "matched",
+          "row": "NextFrame<int> loops N=1024 K=16",
+          "count": 1024,
+          "processRatios": [
+            0.3698606083526933,
+            0.38368619813940025,
+            0.3612008335504038
+          ],
+          "median": 0.3698606083526933,
+          "worst": 0.38368619813940025,
+          "onityMedianNs": 84.6343994140625,
+          "uniTaskMedianNs": 231.9244384765625,
+          "threshold": "median<=0.95, worst<=1.00",
+          "result": "PASS"
+        }
+      ],
+      "reportOnlyRows": [
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame scheduling (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.7633147596216145,
+            0.7776815687110353,
+            0.7692519734369127
+          ],
+          "median": 0.7692519734369127,
+          "worst": 0.7776815687110353,
+          "onityMedianNs": 179.7637939453125,
+          "uniTaskMedianNs": 235.50415039062503,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame GetResult (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.776875400726651,
+            0.7684088269454123,
+            0.7592300410224045
+          ],
+          "median": 0.7684088269454123,
+          "worst": 0.776875400726651,
+          "onityMedianNs": 22.027587890625,
+          "uniTaskMedianNs": 28.558349609375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame scheduling (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.76061142534609,
+            0.7687893383891437,
+            0.7591197509446517
+          ],
+          "median": 0.76061142534609,
+          "worst": 0.7687893383891437,
+          "onityMedianNs": 171.69923782348633,
+          "uniTaskMedianNs": 224.72610473632812,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame GetResult (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.8191948897722106,
+            0.8210145933633781,
+            0.8085552534408748
+          ],
+          "median": 0.8191948897722106,
+          "worst": 0.8210145933633781,
+          "onityMedianNs": 21.07095718383789,
+          "uniTaskMedianNs": 26.007461547851562,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> scheduling (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.7551113130395275,
+            0.783101576334659,
+            0.7577428690731595
+          ],
+          "median": 0.7577428690731595,
+          "worst": 0.783101576334659,
+          "onityMedianNs": 162.3046875,
+          "uniTaskMedianNs": 211.9476318359375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> GetResult (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.7800183318056828,
+            0.7242152466367713,
+            0.6847089206929947
+          ],
+          "median": 0.7242152466367713,
+          "worst": 0.7800183318056828,
+          "onityMedianNs": 19.71435546875,
+          "uniTaskMedianNs": 27.2216796875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> scheduling (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.7337260962364108,
+            0.7606110768053972,
+            0.7533665059934281
+          ],
+          "median": 0.7533665059934281,
+          "worst": 0.7606110768053972,
+          "onityMedianNs": 162.0518684387207,
+          "uniTaskMedianNs": 218.05009841918945,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "matched",
+          "row": "Async method NextFrame<int> GetResult (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.70137335508154,
+            0.7527520051688024,
+            0.7529348436466824
+          ],
+          "median": 0.7527520051688024,
+          "worst": 0.7529348436466824,
+          "onityMedianNs": 21.200942993164062,
+          "uniTaskMedianNs": 28.701114654541016,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=1 1-susp",
+          "count": 1,
+          "processRatios": [
+            0.983210469911993,
+            0.9688734548234994,
+            0.98609449277237
+          ],
+          "median": 0.983210469911993,
+          "worst": 0.98609449277237,
+          "onityMedianNs": 371.22802734375,
+          "uniTaskMedianNs": 377.47802734375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=1 4-susp",
+          "count": 1,
+          "processRatios": [
+            1.0029519131100997,
+            1.0106627224160007,
+            0.9916743340589305
+          ],
+          "median": 1.0029519131100997,
+          "worst": 1.0106627224160007,
+          "onityMedianNs": 543.32275390625,
+          "uniTaskMedianNs": 543.95751953125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=1 1-susp",
+          "count": 1,
+          "processRatios": [
+            0.9614653478106776,
+            0.969662531174038,
+            1.0150806864754098
+          ],
+          "median": 0.969662531174038,
+          "worst": 1.0150806864754098,
+          "onityMedianNs": 374.951171875,
+          "uniTaskMedianNs": 381.25,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=1 4-susp",
+          "count": 1,
+          "processRatios": [
+            0.9874384962474209,
+            0.9921228125139865,
+            1.0198222363665295
+          ],
+          "median": 0.9921228125139865,
+          "worst": 1.0198222363665295,
+          "onityMedianNs": 541.1865234375,
+          "uniTaskMedianNs": 538.36669921875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=1 1-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            1.336166595835104,
+            1.3364360394611778,
+            1.381647583740691
+          ],
+          "median": 1.3364360394611778,
+          "worst": 1.381647583740691,
+          "onityMedianNs": 498.92578125,
+          "uniTaskMedianNs": 372.44873046875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=1 4-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            1.922561141921993,
+            1.8709413067552603,
+            1.9109055612652734
+          ],
+          "median": 1.9109055612652734,
+          "worst": 1.922561141921993,
+          "onityMedianNs": 1031.16455078125,
+          "uniTaskMedianNs": 537.060546875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=128 1-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            1.627089436498363,
+            1.62628714943491,
+            1.6235095137420719
+          ],
+          "median": 1.62628714943491,
+          "worst": 1.627089436498363,
+          "onityMedianNs": 234.3505859375,
+          "uniTaskMedianNs": 144.34814453125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=128 4-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            2.7379665109443074,
+            2.7214991136996707,
+            2.720090067550663
+          ],
+          "median": 2.7214991136996707,
+          "worst": 2.7379665109443074,
+          "onityMedianNs": 655.95703125,
+          "uniTaskMedianNs": 241.02783203125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=4096 1-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            1.6116818558409278,
+            1.629182389937107,
+            1.6554322623385227
+          ],
+          "median": 1.629182389937107,
+          "worst": 1.6554322623385227,
+          "onityMedianNs": 237.46337890625,
+          "uniTaskMedianNs": 147.3388671875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Untyped N=4096 4-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            2.657200518956321,
+            2.646080296599834,
+            2.6326783080363514
+          ],
+          "median": 2.646080296599834,
+          "worst": 2.657200518956321,
+          "onityMedianNs": 675.03662109375,
+          "uniTaskMedianNs": 254.04052734375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=1 1-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            1.3546734124667574,
+            1.3397724350732836,
+            1.3966767854289823
+          ],
+          "median": 1.3546734124667574,
+          "worst": 1.3966767854289823,
+          "onityMedianNs": 509.8876953125,
+          "uniTaskMedianNs": 379.78515625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=1 4-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            1.87511023675463,
+            1.8725014941231157,
+            1.9704767740032223
+          ],
+          "median": 1.87511023675463,
+          "worst": 1.9704767740032223,
+          "onityMedianNs": 1032.6416015625,
+          "uniTaskMedianNs": 539.83154296875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=128 1-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            1.640940170940171,
+            1.6475423873951018,
+            1.6447768762677484
+          ],
+          "median": 1.6447768762677484,
+          "worst": 1.6475423873951018,
+          "onityMedianNs": 234.86328125,
+          "uniTaskMedianNs": 142.822265625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=128 4-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            2.716415616354135,
+            2.6991370558375634,
+            2.6893165162769828
+          ],
+          "median": 2.6991370558375634,
+          "worst": 2.716415616354135,
+          "onityMedianNs": 649.08447265625,
+          "uniTaskMedianNs": 240.478515625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=4096 1-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            1.6511468086934111,
+            1.6336484564544467,
+            1.6530034158127136
+          ],
+          "median": 1.6511468086934111,
+          "worst": 1.6530034158127136,
+          "onityMedianNs": 238.36669921875,
+          "uniTaskMedianNs": 145.91064453125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "matched",
+          "row": "Typed int N=4096 4-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            2.601711117483988,
+            2.660252026961024,
+            2.6754012763488686
+          ],
+          "median": 2.660252026961024,
+          "worst": 2.6754012763488686,
+          "onityMedianNs": 664.8681640625,
+          "uniTaskMedianNs": 252.490234375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Completed GetResult",
+          "count": 1,
+          "processRatios": [
+            1.3071755899012325
+          ],
+          "median": 1.3071755899012325,
+          "worst": 1.3071755899012325,
+          "onityMedianNs": 4.0184375,
+          "uniTaskMedianNs": 3.0741375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "FromResult<int> GetResult",
+          "count": 1,
+          "processRatios": [
+            1.9354491130588907
+          ],
+          "median": 1.9354491130588907,
+          "worst": 1.9354491130588907,
+          "onityMedianNs": 15.1783,
+          "uniTaskMedianNs": 7.8422625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "NextFrame scheduling",
+          "count": 128,
+          "processRatios": [
+            0.32137825028820294
+          ],
+          "median": 0.32137825028820294,
+          "worst": 0.32137825028820294,
+          "onityMedianNs": 38.2843017578125,
+          "uniTaskMedianNs": 119.12536621093749,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "NextFrame GetResult",
+          "count": 128,
+          "processRatios": [
+            0.12105559729526673
+          ],
+          "median": 0.12105559729526673,
+          "worst": 0.12105559729526673,
+          "onityMedianNs": 3.9337158203125004,
+          "uniTaskMedianNs": 32.4951171875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "NextFrame scheduling",
+          "count": 4096,
+          "processRatios": [
+            0.3150519161215914
+          ],
+          "median": 0.3150519161215914,
+          "worst": 0.3150519161215914,
+          "onityMedianNs": 37.56570816040039,
+          "uniTaskMedianNs": 119.23656463623047,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "NextFrame GetResult",
+          "count": 4096,
+          "processRatios": [
+            0.1006488770109644
+          ],
+          "median": 0.1006488770109644,
+          "worst": 0.1006488770109644,
+          "onityMedianNs": 3.2898902893066406,
+          "uniTaskMedianNs": 32.686805725097656,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method completed GetResult",
+          "count": 1,
+          "processRatios": [
+            1.081878777106292
+          ],
+          "median": 1.081878777106292,
+          "worst": 1.081878777106292,
+          "onityMedianNs": 18.25995,
+          "uniTaskMedianNs": 16.878,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method completed<int> GetResult",
+          "count": 1,
+          "processRatios": [
+            1.2422208242957784
+          ],
+          "median": 1.2422208242957784,
+          "worst": 1.2422208242957784,
+          "onityMedianNs": 26.337612500000002,
+          "uniTaskMedianNs": 21.2020375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame scheduling",
+          "count": 128,
+          "processRatios": [
+            0.6090789133599053
+          ],
+          "median": 0.6090789133599053,
+          "worst": 0.6090789133599053,
+          "onityMedianNs": 136.639404296875,
+          "uniTaskMedianNs": 224.3377685546875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame GetResult",
+          "count": 128,
+          "processRatios": [
+            0.7448523804335985
+          ],
+          "median": 0.7448523804335985,
+          "worst": 0.7448523804335985,
+          "onityMedianNs": 20.8648681640625,
+          "uniTaskMedianNs": 28.0120849609375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame scheduling",
+          "count": 4096,
+          "processRatios": [
+            0.8823775356614033
+          ],
+          "median": 0.8823775356614033,
+          "worst": 0.8823775356614033,
+          "onityMedianNs": 206.29644393920898,
+          "uniTaskMedianNs": 233.7961196899414,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame GetResult",
+          "count": 4096,
+          "processRatios": [
+            0.5838170780342978
+          ],
+          "median": 0.5838170780342978,
+          "worst": 0.5838170780342978,
+          "onityMedianNs": 15.077590942382812,
+          "uniTaskMedianNs": 25.825881958007812,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> scheduling",
+          "count": 128,
+          "processRatios": [
+            0.573393901930624
+          ],
+          "median": 0.573393901930624,
+          "worst": 0.573393901930624,
+          "onityMedianNs": 121.72546386718749,
+          "uniTaskMedianNs": 212.2894287109375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> GetResult",
+          "count": 128,
+          "processRatios": [
+            0.7374888293118856
+          ],
+          "median": 0.7374888293118856,
+          "worst": 0.7374888293118856,
+          "onityMedianNs": 20.147705078125,
+          "uniTaskMedianNs": 27.3193359375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> scheduling",
+          "count": 4096,
+          "processRatios": [
+            0.890912131011998
+          ],
+          "median": 0.890912131011998,
+          "worst": 0.890912131011998,
+          "onityMedianNs": 193.6016082763672,
+          "uniTaskMedianNs": 217.30718612670898,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> GetResult",
+          "count": 4096,
+          "processRatios": [
+            0.5367349048800661
+          ],
+          "median": 0.5367349048800661,
+          "worst": 0.5367349048800661,
+          "onityMedianNs": 14.852428436279297,
+          "uniTaskMedianNs": 27.67181396484375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame scheduling (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.7759270940985411
+          ],
+          "median": 0.7759270940985411,
+          "worst": 0.7759270940985411,
+          "onityMedianNs": 176.42822265625,
+          "uniTaskMedianNs": 227.3773193359375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame GetResult (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.7631696928939701
+          ],
+          "median": 0.7631696928939701,
+          "worst": 0.7631696928939701,
+          "onityMedianNs": 20.779418945312504,
+          "uniTaskMedianNs": 27.227783203125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame scheduling (flow on)",
+          "count": 4096,
+          "processRatios": [
+            1.0439462711009315
+          ],
+          "median": 1.0439462711009315,
+          "worst": 1.0439462711009315,
+          "onityMedianNs": 247.06869125366214,
+          "uniTaskMedianNs": 236.6680145263672,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame GetResult (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.5689849921446994
+          ],
+          "median": 0.5689849921446994,
+          "worst": 0.5689849921446994,
+          "onityMedianNs": 14.748096466064453,
+          "uniTaskMedianNs": 25.92000961303711,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> scheduling (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.7710673745343619
+          ],
+          "median": 0.7710673745343619,
+          "worst": 0.7710673745343619,
+          "onityMedianNs": 160.44921875,
+          "uniTaskMedianNs": 208.087158203125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> GetResult (flow on)",
+          "count": 128,
+          "processRatios": [
+            0.7584778959149412
+          ],
+          "median": 0.7584778959149412,
+          "worst": 0.7584778959149412,
+          "onityMedianNs": 20.6817626953125,
+          "uniTaskMedianNs": 27.2674560546875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> scheduling (flow on)",
+          "count": 4096,
+          "processRatios": [
+            1.0225384397788984
+          ],
+          "median": 1.0225384397788984,
+          "worst": 1.0225384397788984,
+          "onityMedianNs": 233.3860397338867,
+          "uniTaskMedianNs": 228.24182510375977,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "primary",
+          "retention": "default",
+          "row": "Async method NextFrame<int> GetResult (flow on)",
+          "count": 4096,
+          "processRatios": [
+            0.5251768297854296
+          ],
+          "median": 0.5251768297854296,
+          "worst": 0.5251768297854296,
+          "onityMedianNs": 14.763736724853516,
+          "uniTaskMedianNs": 28.111934661865234,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=1 1-susp",
+          "count": 1,
+          "processRatios": [
+            0.9677645409950946
+          ],
+          "median": 0.9677645409950946,
+          "worst": 0.9677645409950946,
+          "onityMedianNs": 370.8740234375,
+          "uniTaskMedianNs": 383.2275390625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=1 4-susp",
+          "count": 1,
+          "processRatios": [
+            0.980701794077057
+          ],
+          "median": 0.980701794077057,
+          "worst": 0.980701794077057,
+          "onityMedianNs": 529.150390625,
+          "uniTaskMedianNs": 539.56298828125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=128 1-susp",
+          "count": 128,
+          "processRatios": [
+            0.8836338298057661
+          ],
+          "median": 0.8836338298057661,
+          "worst": 0.8836338298057661,
+          "onityMedianNs": 123.84033203125,
+          "uniTaskMedianNs": 140.14892578125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=128 4-susp",
+          "count": 128,
+          "processRatios": [
+            0.931000721426363
+          ],
+          "median": 0.931000721426363,
+          "worst": 0.931000721426363,
+          "onityMedianNs": 220.54443359375,
+          "uniTaskMedianNs": 236.8896484375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=4096 1-susp",
+          "count": 4096,
+          "processRatios": [
+            2.4952181012362957
+          ],
+          "median": 2.4952181012362957,
+          "worst": 2.4952181012362957,
+          "onityMedianNs": 391.73583984375,
+          "uniTaskMedianNs": 156.99462890625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=4096 4-susp",
+          "count": 4096,
+          "processRatios": [
+            1.8048690349702037
+          ],
+          "median": 1.8048690349702037,
+          "worst": 1.8048690349702037,
+          "onityMedianNs": 476.9287109375,
+          "uniTaskMedianNs": 264.24560546875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=1 1-susp",
+          "count": 1,
+          "processRatios": [
+            0.9897629310344828
+          ],
+          "median": 0.9897629310344828,
+          "worst": 0.9897629310344828,
+          "onityMedianNs": 381.21337890625,
+          "uniTaskMedianNs": 385.15625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=1 4-susp",
+          "count": 1,
+          "processRatios": [
+            1.0013552543879138
+          ],
+          "median": 1.0013552543879138,
+          "worst": 1.0013552543879138,
+          "onityMedianNs": 550.18310546875,
+          "uniTaskMedianNs": 549.4384765625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=128 1-susp",
+          "count": 128,
+          "processRatios": [
+            0.9100101971447995
+          ],
+          "median": 0.9100101971447995,
+          "worst": 0.9100101971447995,
+          "onityMedianNs": 130.72509765625,
+          "uniTaskMedianNs": 143.65234375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=128 4-susp",
+          "count": 128,
+          "processRatios": [
+            0.9901775029916234
+          ],
+          "median": 0.9901775029916234,
+          "worst": 0.9901775029916234,
+          "onityMedianNs": 242.41943359375,
+          "uniTaskMedianNs": 244.82421875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=4096 1-susp",
+          "count": 4096,
+          "processRatios": [
+            2.369999150598828
+          ],
+          "median": 2.369999150598828,
+          "worst": 2.369999150598828,
+          "onityMedianNs": 340.6005859375,
+          "uniTaskMedianNs": 143.71337890625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=4096 4-susp",
+          "count": 4096,
+          "processRatios": [
+            1.6324713054245845
+          ],
+          "median": 1.6324713054245845,
+          "worst": 1.6324713054245845,
+          "onityMedianNs": 418.42041015625,
+          "uniTaskMedianNs": 256.31103515625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=1 1-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            1.3419825072886298
+          ],
+          "median": 1.3419825072886298,
+          "worst": 1.3419825072886298,
+          "onityMedianNs": 505.70068359375,
+          "uniTaskMedianNs": 376.8310546875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=1 4-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            1.9071890452643592
+          ],
+          "median": 1.9071890452643592,
+          "worst": 1.9071890452643592,
+          "onityMedianNs": 1040.5029296875,
+          "uniTaskMedianNs": 545.56884765625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=128 1-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            1.6366054573536983
+          ],
+          "median": 1.6366054573536983,
+          "worst": 1.6366054573536983,
+          "onityMedianNs": 232.82470703125,
+          "uniTaskMedianNs": 142.2607421875,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=128 4-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            2.773511493370194
+          ],
+          "median": 2.773511493370194,
+          "worst": 2.773511493370194,
+          "onityMedianNs": 661.31591796875,
+          "uniTaskMedianNs": 238.43994140625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=4096 1-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            2.676510067114094
+          ],
+          "median": 2.676510067114094,
+          "worst": 2.676510067114094,
+          "onityMedianNs": 413.7939453125,
+          "uniTaskMedianNs": 154.60205078125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Untyped N=4096 4-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            3.402688679245283
+          ],
+          "median": 3.402688679245283,
+          "worst": 3.402688679245283,
+          "onityMedianNs": 880.57861328125,
+          "uniTaskMedianNs": 258.7890625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=1 1-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            1.3144390089947924
+          ],
+          "median": 1.3144390089947924,
+          "worst": 1.3144390089947924,
+          "onityMedianNs": 508.3984375,
+          "uniTaskMedianNs": 386.77978515625,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=1 4-susp (flow on)",
+          "count": 1,
+          "processRatios": [
+            1.9132582975140693
+          ],
+          "median": 1.9132582975140693,
+          "worst": 1.9132582975140693,
+          "onityMedianNs": 1054.11376953125,
+          "uniTaskMedianNs": 550.9521484375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=128 1-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            1.6766258086482806
+          ],
+          "median": 1.6766258086482806,
+          "worst": 1.6766258086482806,
+          "onityMedianNs": 240.44189453125,
+          "uniTaskMedianNs": 143.408203125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=128 4-susp (flow on)",
+          "count": 128,
+          "processRatios": [
+            2.7118937930351215
+          ],
+          "median": 2.7118937930351215,
+          "worst": 2.7118937930351215,
+          "onityMedianNs": 668.27392578125,
+          "uniTaskMedianNs": 246.42333984375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=4096 1-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            3.1757806180229737
+          ],
+          "median": 3.1757806180229737,
+          "worst": 3.1757806180229737,
+          "onityMedianNs": 479.23583984375,
+          "uniTaskMedianNs": 150.9033203125,
+          "threshold": "report-only",
+          "result": "REPORT"
+        },
+        {
+          "suite": "builderlifecycle",
+          "retention": "default",
+          "row": "Typed int N=4096 4-susp (flow on)",
+          "count": 4096,
+          "processRatios": [
+            3.7550640279394645
+          ],
+          "median": 3.7550640279394645,
+          "worst": 3.7550640279394645,
+          "onityMedianNs": 984.375,
+          "uniTaskMedianNs": 262.14599609375,
+          "threshold": "report-only",
+          "result": "REPORT"
+        }
+      ],
+      "processes": {
+        "builderlifecycle-default": [
+          "mono-builderlifecycle-default-p1.json"
+        ],
+        "builderlifecycle-matched": [
+          "mono-builderlifecycle-matched-p1.json",
+          "mono-builderlifecycle-matched-p2.json",
+          "mono-builderlifecycle-matched-p3.json"
+        ],
+        "primary-default": [
+          "mono-primary-default-p1.json"
+        ],
+        "primary-matched": [
+          "mono-primary-matched-p1.json",
+          "mono-primary-matched-p2.json",
+          "mono-primary-matched-p3.json"
+        ],
+        "throughput-matched": [
+          "mono-throughput-matched-p1.json",
+          "mono-throughput-matched-p2.json",
+          "mono-throughput-matched-p3.json"
+        ]
+      },
+      "buildGuids": [
+        "ad8bc783e0d34baab4bf1afb000e3141"
+      ]
+    }
+  },
+  "unattributedProblems": [],
+  "verdict": "PASS",
+  "failedRows": []
+}

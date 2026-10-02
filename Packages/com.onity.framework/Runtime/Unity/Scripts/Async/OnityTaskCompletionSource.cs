@@ -49,23 +49,19 @@ namespace Onity.Unity.Async
     {
         private const int k_version = 1;
 
+        /// <summary>
+        /// Reports a fault that no consumer observed when the faulted source is collected, through
+        /// <see cref="OnityTaskScheduler"/>, which filters cancellation, dispatches subscribers and
+        /// never throws (safe from a finalizer).
+        /// </summary>
         private sealed class UnobservedFault
         {
-            private static readonly SendOrPostCallback s_reportCallback = ReportPosted;
-
             private readonly ExceptionDispatchInfo m_exception;
-            private readonly SynchronizationContext m_context;
-            private readonly int m_contextThreadId;
             private int m_observed;
 
-            public UnobservedFault(
-                ExceptionDispatchInfo exception,
-                SynchronizationContext context,
-                int contextThreadId)
+            public UnobservedFault(ExceptionDispatchInfo exception)
             {
                 m_exception = exception;
-                m_context = context;
-                m_contextThreadId = contextThreadId;
             }
 
             ~UnobservedFault()
@@ -75,20 +71,7 @@ namespace Onity.Unity.Async
                     return;
                 }
 
-                if (m_context != null)
-                {
-                    try
-                    {
-                        m_context.Post(s_reportCallback, this);
-                        return;
-                    }
-                    catch (Exception)
-                    {
-                        // A context may be unavailable during domain shutdown.
-                    }
-                }
-
-                ReportToConsole();
+                OnityTaskScheduler.PublishUnobservedException(m_exception.SourceException);
             }
 
             public void Observe()
@@ -98,47 +81,8 @@ namespace Onity.Unity.Async
                     GC.SuppressFinalize(this);
                 }
             }
-
-            private static void ReportPosted(object state)
-            {
-                UnobservedFault fault = (UnobservedFault)state;
-                if (Volatile.Read(ref fault.m_observed) != 0)
-                {
-                    return;
-                }
-
-                if (Thread.CurrentThread.ManagedThreadId == fault.m_contextThreadId)
-                {
-                    try
-                    {
-                        Debug.LogException(fault.m_exception.SourceException);
-                        return;
-                    }
-                    catch (Exception)
-                    {
-                        // A custom context may dispatch after Unity shuts down.
-                    }
-                }
-
-                fault.ReportToConsole();
-            }
-
-            private void ReportToConsole()
-            {
-                try
-                {
-                    Console.Error.WriteLine("Unobserved OnityTask exception: "
-                        + m_exception.SourceException);
-                }
-                catch (Exception)
-                {
-                    // Finalizers must never throw during process shutdown.
-                }
-            }
         }
 
-        private readonly SynchronizationContext m_reportingContext = SynchronizationContext.Current;
-        private readonly int m_reportingThreadId = Thread.CurrentThread.ManagedThreadId;
         private readonly object m_gate;
 
         private Action m_firstContinuation;
@@ -463,16 +407,7 @@ namespace Onity.Unity.Async
                 m_exception = capturedException;
                 if (capturedException != null && m_taskBridge == null)
                 {
-                    SynchronizationContext context = m_reportingContext;
-                    int contextThreadId = m_reportingThreadId;
-                    if (context == null)
-                    {
-                        context = SynchronizationContext.Current;
-                        contextThreadId = Thread.CurrentThread.ManagedThreadId;
-                    }
-
-                    m_unobservedFault = new UnobservedFault(
-                        capturedException, context, contextThreadId);
+                    m_unobservedFault = new UnobservedFault(capturedException);
                 }
 
                 m_cancellationToken = cancellationToken;

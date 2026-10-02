@@ -20,9 +20,16 @@ namespace Onity.Benchmarks
         private const int k_samplesPerCase = 8;
         private const int k_synchronousIterations = 1000000;
         private const int k_batchesPerSample = 32;
+        private const int k_selfTestWarmupIterations = 256;
+        private const int k_selfTestSamplesPerCase = 2;
+        private const int k_selfTestSynchronousIterations = 20000;
+        private const int k_selfTestBatchesPerSample = 2;
         private const int k_steadyConcurrency = 128;
         private const int k_burstConcurrency = 4096;
         private const int k_completionTimeoutFrames = 240;
+        private const string k_retentionDefault = "default";
+        private const string k_retentionMatched = "matched";
+        private const string k_retentionAfterMatched = "default-after-matched";
 
         private static bool s_isRunning;
         private static int s_lastInt;
@@ -36,13 +43,22 @@ namespace Onity.Benchmarks
         private string m_latestJson;
         private Action<string, Exception> m_completed;
         private OnityBenchmarkAllocationCounter m_allocationCounter;
-        private bool m_flowExecutionContextDefault;
+        private bool m_primaryFlowExecutionContext;
         private bool m_originalFlow;
         private bool m_originalTracking;
         private bool m_originalStackTrace;
         private int m_originalPoolCapacity;
         private bool m_hasSettings;
         private bool m_drainBetweenBatches;
+        private bool m_selfTest;
+        private int m_warmupIterations = k_warmupIterations;
+        private int m_samplesPerCase = k_samplesPerCase;
+        private int m_synchronousIterations = k_synchronousIterations;
+        private int m_batchesPerSample = k_batchesPerSample;
+        private bool m_matchedRetention;
+        private bool m_matchedPoolTouched;
+        private OnityTaskRetentionScope m_retentionScope;
+        private string m_cohortRetention = k_retentionDefault;
 
         /// <summary>
         /// Queues a benchmark run. The optional callback receives a report path or failure.
@@ -61,11 +77,23 @@ namespace Onity.Benchmarks
                 throw new InvalidOperationException("An OnityTask benchmark is already running.");
             }
 
+            // Read before creating anything so an invalid retention value fails the launch at once.
+            bool matchedRetention = OnityTaskBenchmarkOptions.ReadMatchedRetention();
             GameObject runnerObject = new GameObject("Onity Task Benchmark Runner");
             DontDestroyOnLoad(runnerObject);
             OnityTaskBenchmarkRunner runner = runnerObject.AddComponent<OnityTaskBenchmarkRunner>();
             runner.m_latestJson = Path.GetFullPath(latestJson);
             runner.m_completed = completed;
+            runner.m_matchedRetention = matchedRetention;
+            runner.m_selfTest = OnityTaskBenchmarkOptions.IsSelfTest();
+            if (runner.m_selfTest)
+            {
+                // Harness self-test: every scenario and cohort, tiny sample counts; never used for ratios.
+                runner.m_warmupIterations = k_selfTestWarmupIterations;
+                runner.m_samplesPerCase = k_selfTestSamplesPerCase;
+                runner.m_synchronousIterations = k_selfTestSynchronousIterations;
+                runner.m_batchesPerSample = k_selfTestBatchesPerSample;
+            }
             string[] args = Environment.GetCommandLineArgs();
             for (int i = 0; i < args.Length; i++)
             {
@@ -81,7 +109,9 @@ namespace Onity.Benchmarks
             runner.m_originalStackTrace = OnityTaskTracker.EnableStackTrace;
             runner.m_originalPoolCapacity = OnityTask.RunnerPoolCapacity;
             runner.m_hasSettings = true;
-            OnityTask.FlowExecutionContext = true;
+            // Primary measurements run at the library default (flow off, UniTask semantics). The flow-on arm
+            // of the async-method cases is a separate, explicitly labelled secondary arm.
+            OnityTask.FlowExecutionContext = false;
             OnityTaskTracker.IsEnabled = false;
             OnityTaskTracker.EnableStackTrace = false;
             OnityTask.RunnerPoolCapacity = 128;
@@ -133,6 +163,8 @@ namespace Onity.Benchmarks
             {
                 try
                 {
+                    // Only a fully measured run is written; failures leave no report.
+                    report.completed = true;
                     SaveReport(report, m_latestJson);
                     Debug.Log($"OnityTask benchmark completed: {m_latestJson}", this);
                 }
@@ -168,6 +200,8 @@ namespace Onity.Benchmarks
 
         private void RestoreSettings()
         {
+            m_retentionScope?.Restore();
+            m_retentionScope = null;
             if (!m_hasSettings)
             {
                 return;
@@ -184,7 +218,9 @@ namespace Onity.Benchmarks
         {
             TaskBenchmarkReport report = new TaskBenchmarkReport
             {
-                schemaVersion = 6,
+                schemaVersion = 7,
+                suite = "primary",
+                selfTest = m_selfTest,
                 environment = OnityTaskBenchmarkEnvironment.Capture(),
                 drainBetweenBatches = m_drainBetweenBatches,
                 betweenBatchDrainFrames = m_drainBetweenBatches ? 2 : 0,
@@ -196,21 +232,31 @@ namespace Onity.Benchmarks
                 uniTaskAssembly = typeof(UniTask).Assembly.FullName,
                 stopwatchFrequency = Stopwatch.Frequency,
                 timerResolutionNanoseconds = 1000000000d / Stopwatch.Frequency,
-                samplesPerCase = k_samplesPerCase,
-                warmupIterations = k_warmupIterations,
-                frameBatchesPerSample = k_batchesPerSample,
+                samplesPerCase = m_samplesPerCase,
+                warmupIterations = m_warmupIterations,
+                synchronousIterations = m_synchronousIterations,
+                frameBatchesPerSample = m_batchesPerSample,
+                retentionArgument = m_matchedRetention ? k_retentionMatched : k_retentionDefault,
+                retentionPolicy = m_matchedRetention
+                    ? "matched: before each 4096 frame cohort's warmup OnityTask.RunnerPoolCapacity and, when the runtime "
+                        + "declares it, OnityTask.SourcePoolCapacity are raised to the cohort and restored after its samples "
+                        + "(retentionPolicy=matched). Pools are not drained, so 128 cohorts are labelled default before the "
+                        + "first matched cohort and default-after-matched after it. UniTask keeps its unbounded pools."
+                    : "default: Onity runner retention 128 and the runtime's default source retention throughout.",
+                sourcePoolCapacityAvailable = OnityTaskBenchmarkOptions.SourcePoolCapacityAvailable,
                 measurementScope = "Main-thread synchronous slices only. Scheduling and GetResult are separate. "
                     + "Async-method cases include builder work within those slices. PlayerLoop execution, "
                     + "suspended-frame time, continuation dispatch and builder completion during resumption are excluded. "
-                    + "Async-method NextFrame cases run twice: with OnityTask.FlowExecutionContext on (unsuffixed) "
-                    + "and off (suffixed 'flow off'); UniTask never flows the execution context. "
+                    + "Async-method NextFrame cases run twice: with OnityTask.FlowExecutionContext off, the library "
+                    + "default (unsuffixed, primary), and on (suffixed 'flow on', secondary); UniTask never flows the "
+                    + "execution context. "
                     + "Raw times include harness overhead; no baseline subtraction or overall winner is inferred.",
-                flowExecutionContextDefault = OnityTask.FlowExecutionContext,
+                flowExecutionContextDefault = m_originalFlow,
                 taskTrackerEnabled = OnityTaskTracker.IsEnabled,
                 scenarios = new TaskBenchmarkScenarioReport[24]
             };
 
-            m_flowExecutionContextDefault = report.flowExecutionContextDefault;
+            m_primaryFlowExecutionContext = OnityTask.FlowExecutionContext;
 
             CalibrateAllocationCounter(report);
             return report;
@@ -256,8 +302,8 @@ namespace Onity.Benchmarks
         private void RunSynchronousBenchmarks(TaskBenchmarkReport report)
         {
             Action empty = EmptyOperation;
-            SampleSet baseline = new SampleSet();
-            for (int i = 0; i < k_warmupIterations; i++)
+            SampleSet baseline = new SampleSet(m_samplesPerCase);
+            for (int i = 0; i < m_warmupIterations; i++)
             {
                 empty();
                 MeasureOnityCompleted();
@@ -266,18 +312,19 @@ namespace Onity.Benchmarks
                 MeasureUniTaskResult();
             }
 
-            for (int sample = 0; sample < k_samplesPerCase; sample++)
+            for (int sample = 0; sample < m_samplesPerCase; sample++)
             {
                 MeasureLoop(empty, baseline, sample);
             }
 
-            report.synchronousHarnessBaseline = BuildMetric("Empty delegate loop", baseline, k_synchronousIterations);
+            m_cohortRetention = k_retentionDefault;
+            report.synchronousHarnessBaseline = BuildMetric("Empty delegate loop", baseline, m_synchronousIterations);
             report.scenarios[0] = MeasureSynchronousScenario(
                 "Completed GetResult", MeasureOnityCompleted, MeasureUniTaskCompleted);
             report.scenarios[1] = MeasureSynchronousScenario(
                 "FromResult<int> GetResult", MeasureOnityResult, MeasureUniTaskResult);
 
-            for (int i = 0; i < k_warmupIterations; i++)
+            for (int i = 0; i < m_warmupIterations; i++)
             {
                 MeasureOnityAsyncCompleted();
                 MeasureUniTaskAsyncCompleted();
@@ -294,9 +341,9 @@ namespace Onity.Benchmarks
         private TaskBenchmarkScenarioReport MeasureSynchronousScenario(
             string name, Action onity, Action uniTask)
         {
-            SampleSet onitySamples = new SampleSet();
-            SampleSet uniTaskSamples = new SampleSet();
-            for (int sample = 0; sample < k_samplesPerCase; sample++)
+            SampleSet onitySamples = new SampleSet(m_samplesPerCase);
+            SampleSet uniTaskSamples = new SampleSet(m_samplesPerCase);
+            for (int sample = 0; sample < m_samplesPerCase; sample++)
             {
                 ForceFullGc();
                 if ((sample & 1) == 0)
@@ -312,14 +359,15 @@ namespace Onity.Benchmarks
             }
 
             return BuildScenario(name, "Synchronous; delegate invocation included", 1,
-                k_synchronousIterations, onitySamples, uniTaskSamples);
+                m_synchronousIterations, onitySamples, uniTaskSamples);
         }
 
         private void MeasureLoop(Action operation, SampleSet samples, int sample)
         {
+            int iterations = m_synchronousIterations;
             long bytes = BeginAllocationSlice();
             long started = Stopwatch.GetTimestamp();
-            for (int i = 0; i < k_synchronousIterations; i++)
+            for (int i = 0; i < iterations; i++)
             {
                 operation();
             }
@@ -327,6 +375,29 @@ namespace Onity.Benchmarks
             long stopped = Stopwatch.GetTimestamp();
             EndAllocationSlice(samples, sample, bytes);
             samples.ticks[sample] = stopped - started;
+        }
+
+        /// <summary>
+        /// Labels the cohort's retention and, in matched mode, raises Onity's caps to a 4096 cohort before its
+        /// warmup. <see cref="EndCohortRetention"/> restores them after the cohort's last sample.
+        /// </summary>
+        private void BeginCohortRetention(int concurrency)
+        {
+            if (m_matchedRetention && concurrency == k_burstConcurrency)
+            {
+                m_retentionScope = OnityTaskRetentionScope.Raise(concurrency);
+                m_matchedPoolTouched = true;
+                m_cohortRetention = k_retentionMatched;
+                return;
+            }
+
+            m_cohortRetention = m_matchedRetention && m_matchedPoolTouched ? k_retentionAfterMatched : k_retentionDefault;
+        }
+
+        private void EndCohortRetention()
+        {
+            m_retentionScope?.Restore();
+            m_retentionScope = null;
         }
 
         private IEnumerator RunFrameBenchmarks(TaskBenchmarkReport report)
@@ -337,6 +408,7 @@ namespace Onity.Benchmarks
                 string workload = cohort == 0
                     ? "Warm steady state; 128 concurrent operations; below Onity's 256 source retention cap"
                     : "Repeated burst; 4096 concurrent operations; exceeds Onity's 256 source retention cap";
+                BeginCohortRetention(concurrency);
 
                 // Warm each library with the exact concurrency and completed consumption pattern.
                 for (int warmup = 0; warmup < 2; warmup++)
@@ -363,12 +435,12 @@ namespace Onity.Benchmarks
                     }
                 }
 
-                SampleSet[] creation = { new SampleSet(), new SampleSet() };
-                SampleSet[] consumption = { new SampleSet(), new SampleSet() };
-                for (int sample = 0; sample < k_samplesPerCase; sample++)
+                SampleSet[] creation = { new SampleSet(m_samplesPerCase), new SampleSet(m_samplesPerCase) };
+                SampleSet[] consumption = { new SampleSet(m_samplesPerCase), new SampleSet(m_samplesPerCase) };
+                for (int sample = 0; sample < m_samplesPerCase; sample++)
                 {
                     ForceFullGc();
-                    for (int batch = 0; batch < k_batchesPerSample; batch++)
+                    for (int batch = 0; batch < m_batchesPerSample; batch++)
                     {
                         for (int turn = 0; turn < 2; turn++)
                         {
@@ -407,11 +479,12 @@ namespace Onity.Benchmarks
                 }
 
                 int index = 2 + cohort * 2;
-                int operations = concurrency * k_batchesPerSample;
+                int operations = concurrency * m_batchesPerSample;
                 report.scenarios[index] = BuildScenario("NextFrame scheduling", workload,
                     concurrency, operations, creation[0], creation[1]);
                 report.scenarios[index + 1] = BuildScenario("NextFrame GetResult", workload,
                     concurrency, operations, consumption[0], consumption[1]);
+                EndCohortRetention();
             }
 
             IEnumerator asyncMethodBenchmarks = RunAsyncMethodFrameBenchmarks(report);
@@ -423,9 +496,10 @@ namespace Onity.Benchmarks
 
         private IEnumerator RunAsyncMethodFrameBenchmarks(TaskBenchmarkReport report)
         {
+            // flowMode 0 is the primary arm (flow off, the library default); flowMode 1 is flow on.
             for (int flowMode = 0; flowMode < 2; flowMode++)
             {
-                bool flowExecutionContext = flowMode == 0;
+                bool flowExecutionContext = flowMode == 1;
                 OnityTask.FlowExecutionContext = flowExecutionContext;
                 IEnumerator flowBenchmarks = RunAsyncMethodFrameBenchmarks(report, flowMode, flowExecutionContext);
                 while (flowBenchmarks.MoveNext())
@@ -434,13 +508,13 @@ namespace Onity.Benchmarks
                 }
             }
 
-            OnityTask.FlowExecutionContext = m_flowExecutionContextDefault;
+            OnityTask.FlowExecutionContext = m_primaryFlowExecutionContext;
         }
 
         private IEnumerator RunAsyncMethodFrameBenchmarks(
             TaskBenchmarkReport report, int flowMode, bool flowExecutionContext)
         {
-            string suffix = flowExecutionContext ? string.Empty : " (flow off)";
+            string suffix = flowExecutionContext ? " (flow on)" : string.Empty;
             string flowLabel = flowExecutionContext
                 ? "; OnityTask.FlowExecutionContext on"
                 : "; OnityTask.FlowExecutionContext off";
@@ -456,6 +530,7 @@ namespace Onity.Benchmarks
                         : "Repeated burst; 4096 concurrent operations")
                         + "; one NextFrame suspension; scheduling/consumption slices only; "
                         + "suspended-frame time and resumption excluded" + flowLabel;
+                    BeginCohortRetention(concurrency);
 
                     for (int warmup = 0; warmup < 2; warmup++)
                     {
@@ -481,12 +556,12 @@ namespace Onity.Benchmarks
                         }
                     }
 
-                    SampleSet[] creation = { new SampleSet(), new SampleSet() };
-                    SampleSet[] consumption = { new SampleSet(), new SampleSet() };
-                    for (int sample = 0; sample < k_samplesPerCase; sample++)
+                    SampleSet[] creation = { new SampleSet(m_samplesPerCase), new SampleSet(m_samplesPerCase) };
+                    SampleSet[] consumption = { new SampleSet(m_samplesPerCase), new SampleSet(m_samplesPerCase) };
+                    for (int sample = 0; sample < m_samplesPerCase; sample++)
                     {
                         ForceFullGc();
-                        for (int batch = 0; batch < k_batchesPerSample; batch++)
+                        for (int batch = 0; batch < m_batchesPerSample; batch++)
                         {
                             for (int turn = 0; turn < 2; turn++)
                             {
@@ -525,11 +600,12 @@ namespace Onity.Benchmarks
                     }
 
                     int index = 8 + flowMode * 8 + resultKind * 4 + cohort * 2;
-                    int operations = concurrency * k_batchesPerSample;
+                    int operations = concurrency * m_batchesPerSample;
                     report.scenarios[index] = BuildScenario(name + " scheduling" + suffix, workload,
                         concurrency, operations, creation[0], creation[1]);
                     report.scenarios[index + 1] = BuildScenario(name + " GetResult" + suffix, workload,
                         concurrency, operations, consumption[0], consumption[1]);
+                    EndCohortRetention();
                 }
             }
         }
@@ -685,13 +761,16 @@ namespace Onity.Benchmarks
                 workload = workload,
                 concurrency = concurrency,
                 iterationsPerSample = operations,
+                retentionPolicy = m_cohortRetention,
+                onityRunnerPoolCapacity = OnityTask.RunnerPoolCapacity,
+                onitySourcePoolCapacity = OnityTaskBenchmarkOptions.ReadSourcePoolCapacity(),
                 results = new[] { BuildMetric("OnityTask", onity, operations), BuildMetric("UniTask", uniTask, operations) }
             };
         }
 
         private TaskBenchmarkMetricReport BuildMetric(string label, SampleSet samples, int operations)
         {
-            double[] milliseconds = new double[k_samplesPerCase];
+            double[] milliseconds = new double[samples.ticks.Length];
             double total = 0;
             long totalBytes = 0;
             int validSamples = 0;
@@ -866,7 +945,9 @@ namespace Onity.Benchmarks
             builder.AppendLine("# OnityTask primitive and async-method benchmark").AppendLine();
             builder.AppendLine($"- UTC: {report.generatedAtUtc}");
             builder.AppendLine($"- Unity: {report.unityVersion}; {report.platform}; {report.scriptingBackend}");
-            builder.AppendLine($"- Samples: {report.samplesPerCase}; frame batches/sample: {report.frameBatchesPerSample}");
+            builder.AppendLine($"- Samples: {report.samplesPerCase}; frame batches/sample: {report.frameBatchesPerSample}; synchronous calls/sample: {report.synchronousIterations}");
+            builder.AppendLine($"- Harness self-test (never used for ratios): {report.selfTest}");
+            builder.AppendLine($"- Retention: {report.retentionArgument}; {report.retentionPolicy}; SourcePoolCapacity available: {report.sourcePoolCapacityAvailable}");
             builder.AppendLine($"- Allocation counter: {report.allocationCounter}");
             builder.AppendLine($"- Rejected allocation candidates: {report.allocationRejectedCandidates}");
             builder.AppendLine($"- Drain-between-batches control: {report.drainBetweenBatches}; frames: {report.betweenBatchDrainFrames}");
@@ -884,14 +965,15 @@ namespace Onity.Benchmarks
                 + "Execution order alternates per sample and batch. Burst results include pool retention differences. "
                 + "Unavailable allocations are written as -1, never zero; a metric whose every sample was "
                 + "interrupted by a collection is unavailable too.").AppendLine();
-            builder.AppendLine("| Scenario | Concurrency | Library | Mean ns/op | Bytes/op | Stddev ms |");
-            builder.AppendLine("|---|---:|---|---:|---:|---:|");
+            builder.AppendLine("| Scenario | Concurrency | Retention | Library | Mean ns/op | Bytes/op | Stddev ms |");
+            builder.AppendLine("|---|---:|---|---|---:|---:|---:|");
             foreach (TaskBenchmarkScenarioReport scenario in report.scenarios)
             {
                 foreach (TaskBenchmarkMetricReport metric in scenario.results)
                 {
                     builder.Append("| ").Append(scenario.displayName).Append(" | ");
-                    builder.Append(scenario.concurrency).Append(" | ").Append(metric.library).Append(" | ");
+                    builder.Append(scenario.concurrency).Append(" | ").Append(scenario.retentionPolicy).Append(" | ");
+                    builder.Append(metric.library).Append(" | ");
                     builder.Append(Number(metric.nanosecondsPerOperation)).Append(" | ");
                     builder.Append(metric.allocatedBytesPerOperation >= 0 ? Number(metric.allocatedBytesPerOperation) : "unavailable");
                     builder.Append(" | ").Append(Number(metric.standardDeviationMilliseconds)).AppendLine(" |");
@@ -909,9 +991,16 @@ namespace Onity.Benchmarks
 
         private sealed class SampleSet
         {
-            public readonly long[] ticks = new long[k_samplesPerCase];
-            public readonly long[] bytes = new long[k_samplesPerCase];
-            public readonly bool[] invalid = new bool[k_samplesPerCase];
+            public readonly long[] ticks;
+            public readonly long[] bytes;
+            public readonly bool[] invalid;
+
+            public SampleSet(int samples)
+            {
+                ticks = new long[samples];
+                bytes = new long[samples];
+                invalid = new bool[samples];
+            }
         }
 
         [Serializable]
@@ -921,6 +1010,13 @@ namespace Onity.Benchmarks
             public bool drainBetweenBatches;
             public int betweenBatchDrainFrames;
             public int schemaVersion;
+            public string suite;
+            public bool selfTest;
+            public bool completed;
+            public string retentionArgument;
+            public string retentionPolicy;
+            public bool sourcePoolCapacityAvailable;
+            public int synchronousIterations;
             public string generatedAtUtc;
             public string unityVersion;
             public string platform;
@@ -952,6 +1048,9 @@ namespace Onity.Benchmarks
             public string workload;
             public int concurrency;
             public int iterationsPerSample;
+            public string retentionPolicy;
+            public int onityRunnerPoolCapacity;
+            public int onitySourcePoolCapacity;
             public TaskBenchmarkMetricReport[] results;
         }
 

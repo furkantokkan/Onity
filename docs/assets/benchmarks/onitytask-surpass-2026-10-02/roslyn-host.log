@@ -1,0 +1,17 @@
+host-compile-check: 453 file(s); skipped (assembly not compiled in host): Onity.Benchmarks=3, Onity.Benchmarks.Editor=3, Onity.Tests.UGUI.PlayMode=3, Onity.Unity.UGUI=3
+unity-compile-check: Onity, Unity 2022.3.62f2, 453 C# file(s), 14 assembly(ies) to compile (1 stale .csproj ignored)
+  Onity.Core: OK in 0.8s
+  Onity.Factory: OK in 0.7s
+  Onity.DI: OK in 0.7s
+  Onity.Reactive: OK in 0.7s
+  Onity.Messaging: OK in 0.7s
+  Onity.Composition: OK in 0.7s
+  Onity.DOTS: OK in 0.8s
+  Onity.Pooling: OK in 0.8s
+  Onity.Unity: OK in 0.8s
+  Onity.Editor: OK in 0.8s
+  Onity.TaskBenchmarks: OK in 0.8s
+  Onity.TaskBenchmarks.Editor: OK in 0.8s
+  Onity.Tests.EditMode: OK in 0.8s
+  Onity.Tests.PlayMode: OK in 0.8s
+COMPILE_OK

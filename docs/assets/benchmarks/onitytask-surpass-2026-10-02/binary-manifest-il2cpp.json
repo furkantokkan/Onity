@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "directory": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\BenchmarkResults\\surpass-attempt-1-20261002-0309\\Players\\IL2CPP",
+  "excluded": "non-shipping *_BackUpThisFolder_ButDontShipItWithYourGame and *_BurstDebugInformation_DoNotShip folders",
+  "fileCount": 23,
+  "files": [
+    {
+      "path": "baselib.dll",
+      "bytes": 419760,
+      "sha256": "E4D1FC45C23B320496F851B8BE98914A7507418C174E9A6567AFCC4F92472894"
+    },
+    {
+      "path": "GameAssembly.dll",
+      "bytes": 53789696,
+      "sha256": "B346C887B26219FC5637FC640D93EE85B0E7A8BCB6D5F0B162D18FE362BE21B4"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/app.info",
+      "bytes": 20,
+      "sha256": "6EE7DEF983126362C335E147ED86024AE993BB407C4960BAED4800B4B08A384E"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/boot.config",
+      "bytes": 164,
+      "sha256": "BD64DCC9847606FB7D30F8960F5CFBE57AAA8895F540DD67955A642FC0BD87E3"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/globalgamemanagers",
+      "bytes": 78428,
+      "sha256": "B8C15F6AC011744A68FE4939A83373A55C61229A683545D50163DBF308B0052A"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/globalgamemanagers.assets",
+      "bytes": 184656,
+      "sha256": "5852BB77C9DBCFEEAFF22D58B1573D86E76C9682868ED8F95E313E1630054885"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/globalgamemanagers.assets.resS",
+      "bytes": 2796240,
+      "sha256": "39DD38FCD8DD95D41D6D55FE16A448D29FE2C31D9A162C825C24C6D99A893D7A"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/il2cpp_data/Metadata/global-metadata.dat",
+      "bytes": 9096376,
+      "sha256": "F3EE91BB4969165E84788BBC013037E97132EB17CCCBFFF2AA5679EC647C8692"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/il2cpp_data/Resources/mscorlib.dll-resources.dat",
+      "bytes": 337563,
+      "sha256": "C5BAA176A5B72CD545266340E42102D393A5E43D38C95796BC828918BB95277F"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/level0",
+      "bytes": 756,
+      "sha256": "D7CEA492B25352CDDB3E64B74D6054BA153D1DDE297FFC55894F3B041DFC0007"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Plugins/x86_64/lib_burst_generated.dll",
+      "bytes": 1606656,
+      "sha256": "8D3F392BDDE5ED99B4B31CABF1122C4063B1E96F469E202008FF186EF3A72668"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/resources.assets",
+      "bytes": 2244,
+      "sha256": "25B8C9EEBC23D0BF28D555E8D7ED07C1951E9696F661D428045B89669FDAFA6C"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Resources/unity default resources",
+      "bytes": 1564240,
+      "sha256": "A11E3E24520676183B3750564B4D9F5A90E8F41FD3523CBFB0C49F3989453DA2"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/Resources/unity_builtin_extra",
+      "bytes": 378932,
+      "sha256": "AB0DB034203779804711608B360872D7065F663732849CBE2D397519F30B7EB4"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/RuntimeInitializeOnLoads.json",
+      "bytes": 8102,
+      "sha256": "C5CE8ABD185C8A6E4DFCC1B724F80B4695052D9F0AFBE295F0CC675ADAF3BFDA"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/ScriptingAssemblies.json",
+      "bytes": 3593,
+      "sha256": "38AAC760A3082A56F1741E8F6F54C93FC7C36AA959011DEF5194EF1104B32C7C"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/sharedassets0.assets",
+      "bytes": 7568,
+      "sha256": "EA008A3001601C4AFDC8943D9935DEDEC01A1DA11AC5835AF60F20D30B4D9ECF"
+    },
+    {
+      "path": "OnityTaskBenchmark_Data/StreamingAssets/EntityScenes/scene_info.bin",
+      "bytes": 148,
+      "sha256": "46506EBA3DF6327A022BA98FD5E4E9F7E00E4C8A9225B418FB381467B665CAD1"
+    },
+    {
+      "path": "OnityTaskBenchmark.exe",
+      "bytes": 666624,
+      "sha256": "5DC4AC3627307A53E7C949863A4FEE389D47DEE919B46E90587A1B512EAD840A"
+    },
+    {
+      "path": "OnityTaskBenchmark.exe.build.json",
+      "bytes": 718,
+      "sha256": "AF9630A9748B8BE170365EB5586BD4F43E4375C1442C053F7F69460FBF226F4C"
+    },
+    {
+      "path": "OnityTaskBenchmark.exe.buildreport.json",
+      "bytes": 728,
+      "sha256": "F0F886B8842304555885D984EE3B429D3954398CD668897003F8F259350764E4"
+    },
+    {
+      "path": "UnityCrashHandler64.exe",
+      "bytes": 1185200,
+      "sha256": "96587E7BE1175B2793AF53CE867E4539BAFDE15E8EE4C57141A38290FF60B459"
+    },
+    {
+      "path": "UnityPlayer.dll",
+      "bytes": 31006120,
+      "sha256": "43FB0AEA1B80C74963DAE88EC7FC1C3C1993D893CE94D12972000FCC9B653AD1"
+    }
+  ]
+}

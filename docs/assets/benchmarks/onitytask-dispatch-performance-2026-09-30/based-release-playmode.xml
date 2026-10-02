@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="1" result="Passed" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-09-29 22:33:41Z" end-time="2026-09-29 22:33:41Z" duration="0.047957">
+  <test-suite type="TestSuite" id="1120" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="94" result="Passed" start-time="2026-09-29 22:33:41Z" end-time="2026-09-29 22:33:41Z" duration="0.047957" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1113" name="Onity.Tests.PlayMode.dll" fullname="C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/Library/ScriptAssemblies/Onity.Tests.PlayMode.dll" runstate="Runnable" testcasecount="94" result="Passed" start-time="2026-09-29 22:33:41Z" end-time="2026-09-29 22:33:41Z" duration="0.042664" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="75744" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1114" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="94" result="Passed" start-time="2026-09-29 22:33:41Z" end-time="2026-09-29 22:33:41Z" duration="0.041213" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1115" name="Tests" fullname="Onity.Tests" runstate="Runnable" testcasecount="94" result="Passed" start-time="2026-09-29 22:33:41Z" end-time="2026-09-29 22:33:41Z" duration="0.040077" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1116" name="PlayMode" fullname="Onity.Tests.PlayMode" runstate="Runnable" testcasecount="94" result="Passed" start-time="2026-09-29 22:33:41Z" end-time="2026-09-29 22:33:41Z" duration="0.038771" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1031" name="OnityTaskAsyncBuilderPlayModeTests" fullname="Onity.Tests.PlayMode.OnityTaskAsyncBuilderPlayModeTests" classname="Onity.Tests.PlayMode.OnityTaskAsyncBuilderPlayModeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-09-29 22:33:41Z" end-time="2026-09-29 22:33:41Z" duration="0.035549" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1032" name="SuspendedMethod_ConsumedRunner_IsRentedAgainAfterTheNextFrame" fullname="Onity.Tests.PlayMode.OnityTaskAsyncBuilderPlayModeTests.SuspendedMethod_ConsumedRunner_IsRentedAgainAfterTheNextFrame" methodname="SuspendedMethod_ConsumedRunner_IsRentedAgainAfterTheNextFrame" classname="Onity.Tests.PlayMode.OnityTaskAsyncBuilderPlayModeTests" runstate="Runnable" seed="1647957384" result="Passed" start-time="2026-09-29 22:33:41Z" end-time="2026-09-29 22:33:41Z" duration="0.023510" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/e-fur/AppData/LocalLow/DefaultCompany/Onity\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

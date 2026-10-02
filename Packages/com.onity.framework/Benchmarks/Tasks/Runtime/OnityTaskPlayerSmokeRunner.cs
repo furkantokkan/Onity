@@ -49,7 +49,8 @@ namespace Onity.Benchmarks
             m_hasSettings = true;
             try
             {
-                OnityTask.FlowExecutionContext = true;
+                // Smoke cases run at the library default; cases that need flow on set it explicitly.
+                OnityTask.FlowExecutionContext = false;
                 OnityTaskTracker.IsEnabled = false;
                 OnityTaskTracker.EnableStackTrace = false;
                 OnityTask.RunnerPoolCapacity = 128;
@@ -70,12 +71,19 @@ namespace Onity.Benchmarks
                 new SmokeCase("safe typed/untyped suspension", SafeSuspension),
                 new SmokeCase("typed native/bridge exclusivity and bridge recycling", TypedBridge),
                 new SmokeCase("untyped native/bridge exclusivity and bridge recycling", UntypedBridge),
-                new SmokeCase("typed deferred pool return", TypedPoolReturn),
-                new SmokeCase("untyped deferred pool return", UntypedPoolReturn),
+                new SmokeCase("typed immediate pool return", TypedPoolReturn),
+                new SmokeCase("untyped immediate pool return", UntypedPoolReturn),
                 new SmokeCase("typed consume and re-rent during MoveNext", TypedReentrantConsumption),
                 new SmokeCase("untyped consume and re-rent during MoveNext", UntypedReentrantConsumption),
-                new SmokeCase("typed held-worker pool deferral", TypedHeldWorker),
-                new SmokeCase("untyped held-worker pool deferral", UntypedHeldWorker),
+                new SmokeCase("typed held-worker immediate reuse", TypedHeldWorker),
+                new SmokeCase("untyped held-worker immediate reuse", UntypedHeldWorker),
+                new SmokeCase("worker unwind and immediate re-rent x1000", WorkerUnwindRecycle),
+                new SmokeCase("stateless default frame waits", StatelessDefaultWaits),
+                new SmokeCase("reference-free Yield awaitable", YieldAwaitableSmoke),
+                new SmokeCase("cctor-free task value types", TaskShape),
+                new SmokeCase("appended timings install on use, items and posted actions", AppendedTimingsSmoke),
+                new SmokeCase("immediate cancellation publishes on the canceling worker", CancelImmediatelySmoke),
+                new SmokeCase("timed waits, polled predicates, timers and timed timeouts", TimedWaitsSmoke),
                 new SmokeCase("execution context flow on/off/suppressed and safe await", WorkerContext),
                 new SmokeCase("AsyncLocal isolation and synchronization context restoration", MainThreadContext),
                 new SmokeCase("thread-pool switch and main-thread return", ThreadPoolSwitch),
@@ -336,24 +344,17 @@ namespace Onity.Benchmarks
             object runner = State(first);
             gate.Complete();
             Require(first.GetAwaiter().GetResult() == 41, "Pool result mismatch.");
+            // Runners return to their pool at consumption on every backend (PERF-7).
             CriticalGate earlyGate = new CriticalGate();
             OnityTask<int> early = PoolTypedAsync(earlyGate, 43);
-#if ENABLE_IL2CPP
-            Require(!ReferenceEquals(State(early), runner), "IL2CPP typed runner returned before dispatcher drain.");
-#else
-            Require(ReferenceEquals(State(early), runner), "Mono typed runner did not return immediately.");
+            Require(ReferenceEquals(State(early), runner), "Typed runner did not return at consumption.");
             earlyGate.Complete();
-            early.GetAwaiter().GetResult();
-#endif
+            Require(early.GetAwaiter().GetResult() == 43, "Immediately recycled typed result mismatch.");
             yield return null;
             yield return null;
             CriticalGate lateGate = new CriticalGate();
             OnityTask<int> late = PoolTypedAsync(lateGate, 47);
             Require(ReferenceEquals(State(late), runner), "Typed runner did not return after frames.");
-#if ENABLE_IL2CPP
-            earlyGate.Complete();
-            early.GetAwaiter().GetResult();
-#endif
             lateGate.Complete();
             Require(late.GetAwaiter().GetResult() == 47, "Recycled typed result mismatch.");
             yield return null;
@@ -369,22 +370,14 @@ namespace Onity.Benchmarks
             first.GetAwaiter().GetResult();
             CriticalGate earlyGate = new CriticalGate();
             OnityTask early = PoolUntypedAsync(earlyGate);
-#if ENABLE_IL2CPP
-            Require(!ReferenceEquals(State(early), runner), "IL2CPP untyped runner returned before dispatcher drain.");
-#else
-            Require(ReferenceEquals(State(early), runner), "Mono untyped runner did not return immediately.");
+            Require(ReferenceEquals(State(early), runner), "Untyped runner did not return at consumption.");
             earlyGate.Complete();
             early.GetAwaiter().GetResult();
-#endif
             yield return null;
             yield return null;
             CriticalGate lateGate = new CriticalGate();
             OnityTask late = PoolUntypedAsync(lateGate);
             Require(ReferenceEquals(State(late), runner), "Untyped runner did not return after frames.");
-#if ENABLE_IL2CPP
-            earlyGate.Complete();
-            early.GetAwaiter().GetResult();
-#endif
             lateGate.Complete();
             late.GetAwaiter().GetResult();
             yield return null;
@@ -406,9 +399,8 @@ namespace Onity.Benchmarks
             });
             firstGate.Complete();
             Require(observed == 53 && !next.IsCompleted, "Reentrant typed consumption failed.");
-#if ENABLE_IL2CPP
-            Require(!ReferenceEquals(State(next), runner), "Typed runner was re-rented inside its IL2CPP MoveNext.");
-#endif
+            // The runner is rented again while its MoveNext is still unwinding: the copy-back canary.
+            Require(ReferenceEquals(State(next), runner), "Typed runner was not re-rented inside its MoveNext.");
             nextGate.Complete();
             Require(next.GetAwaiter().GetResult() == 59, "Reentrant typed copy-back corrupted result.");
             yield return null;
@@ -431,9 +423,7 @@ namespace Onity.Benchmarks
             });
             firstGate.Complete();
             Require(observed && !next.IsCompleted, "Reentrant untyped consumption failed.");
-#if ENABLE_IL2CPP
-            Require(!ReferenceEquals(State(next), runner), "Untyped runner was re-rented inside IL2CPP MoveNext.");
-#endif
+            Require(ReferenceEquals(State(next), runner), "Untyped runner was not re-rented inside its MoveNext.");
             nextGate.Complete();
             next.GetAwaiter().GetResult();
             yield return null;
@@ -448,10 +438,8 @@ namespace Onity.Benchmarks
             OnityTask<int> first = PoolTypedAsync(gate, 61);
             object runner = State(first);
             Exception callbackFailure = null;
-#if ENABLE_IL2CPP
             CriticalGate probeGate = new CriticalGate();
             OnityTask<int> probe = default;
-#endif
             first.GetAwaiter().OnCompleted(() =>
             {
                 try
@@ -473,13 +461,9 @@ namespace Onity.Benchmarks
             {
                 Require(consumed.Wait(k_workerTimeoutMilliseconds), "Held typed worker did not reach consumer.");
                 Require(callbackFailure == null, "Held typed consumer failed: " + callbackFailure);
-#if ENABLE_IL2CPP
-                Require(MoveNextDepth(runner) > 0, "Typed held worker did not retain MoveNext depth.");
-                yield return null;
-                yield return null;
+                // The worker's MoveNext is still on its stack; the consumed runner is rented again now.
                 probe = PoolTypedAsync(probeGate, 67);
-                Require(!ReferenceEquals(State(probe), runner), "Typed runner pooled while worker MoveNext was held.");
-#endif
+                Require(ReferenceEquals(State(probe), runner), "Typed runner was not pooled at consumption.");
             }
             finally
             {
@@ -488,14 +472,12 @@ namespace Onity.Benchmarks
             }
 
             yield return null;
-            yield return null;
+            Require(!probe.IsCompleted, "The unwinding worker completed the new rental.");
+            probeGate.Complete();
+            Require(probe.GetAwaiter().GetResult() == 67, "Held-worker rental result corrupted by the unwind.");
             CriticalGate lateGate = new CriticalGate();
             OnityTask<int> late = PoolTypedAsync(lateGate, 71);
             Require(ReferenceEquals(State(late), runner), "Held typed runner was not pooled after unwind.");
-#if ENABLE_IL2CPP
-            probeGate.Complete();
-            Require(probe.GetAwaiter().GetResult() == 67, "Held-worker early rental result mismatch.");
-#endif
             lateGate.Complete();
             late.GetAwaiter().GetResult();
             yield return null;
@@ -510,10 +492,8 @@ namespace Onity.Benchmarks
             OnityTask first = PoolUntypedAsync(gate);
             object runner = State(first);
             Exception callbackFailure = null;
-#if ENABLE_IL2CPP
             CriticalGate probeGate = new CriticalGate();
             OnityTask probe = default;
-#endif
             first.GetAwaiter().OnCompleted(() =>
             {
                 try
@@ -535,13 +515,8 @@ namespace Onity.Benchmarks
             {
                 Require(consumed.Wait(k_workerTimeoutMilliseconds), "Held untyped worker did not reach consumer.");
                 Require(callbackFailure == null, "Held untyped consumer failed: " + callbackFailure);
-#if ENABLE_IL2CPP
-                Require(MoveNextDepth(runner) > 0, "Untyped worker did not retain MoveNext depth.");
-                yield return null;
-                yield return null;
                 probe = PoolUntypedAsync(probeGate);
-                Require(!ReferenceEquals(State(probe), runner), "Untyped runner pooled while worker MoveNext held.");
-#endif
+                Require(ReferenceEquals(State(probe), runner), "Untyped runner was not pooled at consumption.");
             }
             finally
             {
@@ -550,18 +525,255 @@ namespace Onity.Benchmarks
             }
 
             yield return null;
-            yield return null;
+            Require(!probe.IsCompleted, "The unwinding worker completed the new untyped rental.");
+            probeGate.Complete();
+            probe.GetAwaiter().GetResult();
             CriticalGate lateGate = new CriticalGate();
             OnityTask late = PoolUntypedAsync(lateGate);
             Require(ReferenceEquals(State(late), runner), "Held untyped runner was not pooled after unwind.");
-#if ENABLE_IL2CPP
-            probeGate.Complete();
-            probe.GetAwaiter().GetResult();
-#endif
             lateGate.Complete();
             late.GetAwaiter().GetResult();
             yield return null;
             yield return null;
+        }
+
+        private static IEnumerator WorkerUnwindRecycle()
+        {
+            // A worker completes the method and unwinds while the main thread consumes and re-rents the
+            // same runner; every rental must keep its own result.
+            const int iterations = 1000;
+            for (int i = 0; i < iterations; i++)
+            {
+                CriticalGate gate = new CriticalGate();
+                OnityTask<int> task = PoolTypedAsync(gate, i);
+                Task worker = Task.Run(() => gate.Complete());
+                Require(worker.Wait(k_workerTimeoutMilliseconds), "Recycle worker timed out.");
+                Require(task.GetAwaiter().GetResult() == i, "Recycled rental lost its result at " + i);
+                CriticalGate nextGate = new CriticalGate();
+                OnityTask<int> next = PoolTypedAsync(nextGate, -i);
+                nextGate.Complete();
+                Require(next.GetAwaiter().GetResult() == -i, "Re-rented runner result corrupted at " + i);
+                if ((i & 127) == 0)
+                {
+                    yield return null;
+                }
+            }
+        }
+
+        private static IEnumerator StatelessDefaultWaits()
+        {
+            OnityTask frame = OnityTask.NextFrame();
+            Require(ReferenceEquals(State(frame.Preserve()), State(frame)), "Preserve allocated for a stateless wait.");
+            int consumers = 0;
+            frame.GetAwaiter().UnsafeOnCompleted(() => consumers++);
+            frame.GetAwaiter().UnsafeOnCompleted(() => consumers++);
+            Task firstBridge = frame.AsTask();
+            frame.Forget();
+            int workerResumed = 0;
+            int main = Thread.CurrentThread.ManagedThreadId;
+            Task worker = Task.Run(() =>
+            {
+                OnityTask workerWait = OnityTask.NextFrame();
+                workerWait.GetAwaiter().UnsafeOnCompleted(() => workerResumed = Thread.CurrentThread.ManagedThreadId);
+            });
+            IEnumerator wait = WaitForThreadPool(() => consumers == 2 && firstBridge.IsCompleted && workerResumed != 0);
+            while (wait.MoveNext())
+            {
+                yield return null;
+            }
+
+            Require(worker.Wait(k_workerTimeoutMilliseconds) && !worker.IsFaulted, "Worker frame wait failed.");
+            Require(workerResumed == main, "A worker-registered frame wait did not resume on the main thread.");
+            frame.GetAwaiter().GetResult();
+            frame.GetAwaiter().GetResult();
+            Require(frame.AsTask().IsCompleted, "A completed stateless wait gave a pending bridge.");
+        }
+
+        private static IEnumerator YieldAwaitableSmoke()
+        {
+            int created = Time.frameCount;
+            OnityTask<int> resumed = ResumeFrameAfterYieldAsync();
+            IEnumerator wait = WaitForThreadPool(() => resumed.IsCompleted);
+            while (wait.MoveNext())
+            {
+                yield return null;
+            }
+
+            int frame = resumed.GetAwaiter().GetResult();
+            Require(frame - created <= 1, "Yield did not resume at the next Update drain.");
+            OnityTask converted = OnityTask.Yield();
+            wait = WaitForThreadPool(() => converted.IsCompleted);
+            while (wait.MoveNext())
+            {
+                yield return null;
+            }
+
+            converted.GetAwaiter().GetResult();
+            converted.GetAwaiter().GetResult();
+        }
+
+        private static IEnumerator TaskShape()
+        {
+            Require(typeof(OnityTask).TypeInitializer == null, "OnityTask gained a static constructor.");
+            Require(typeof(OnityTask<int>).TypeInitializer == null, "OnityTask<int> gained a static constructor.");
+            yield return null;
+        }
+
+        private static async OnityTask<int> ResumeFrameAfterYieldAsync()
+        {
+            await OnityTask.Yield();
+            return Time.frameCount;
+        }
+
+        private static IEnumerator AppendedTimingsSmoke()
+        {
+            int main = Thread.CurrentThread.ManagedThreadId;
+            int resumed = 0;
+            int wrongThread = 0;
+            for (int timing = 3; timing <= (int)OnityPlayerLoopTiming.LastTimeUpdate; timing++)
+            {
+                OnityTask yieldTask = OnityTask.Yield((OnityPlayerLoopTiming)timing);
+                Require(OnityTaskPlayerLoop.IsInjected((OnityPlayerLoopTiming)timing), "Timing node not installed on use.");
+                yieldTask.GetAwaiter().UnsafeOnCompleted(() =>
+                {
+                    wrongThread += Thread.CurrentThread.ManagedThreadId == main ? 0 : 1;
+                    resumed++;
+                });
+            }
+
+            int itemCalls = 0;
+            int posted = 0;
+            OnityTaskPlayerLoop.AddAction(OnityPlayerLoopTiming.LastPreUpdate, new CountdownItem(() => ++itemCalls < 3));
+            OnityTask.Post(() => posted++, OnityPlayerLoopTiming.PostLateUpdate);
+            Task worker = Task.Run(() => OnityTask.Post(() => posted++, OnityPlayerLoopTiming.LastEarlyUpdate));
+            Require(worker.Wait(k_workerTimeoutMilliseconds) && !worker.IsFaulted, "Worker post failed.");
+            IEnumerator wait = WaitForThreadPool(() => resumed == 16 && itemCalls == 3 && posted == 2);
+            while (wait.MoveNext())
+            {
+                yield return null;
+            }
+
+            Require(wrongThread == 0, "An appended timing resumed off the main thread.");
+            yield return null;
+            Require(itemCalls == 3 && posted == 2, "A PlayerLoop item or posted action ran too often.");
+        }
+
+        private static IEnumerator CancelImmediatelySmoke()
+        {
+            int main = Thread.CurrentThread.ManagedThreadId;
+            for (int round = 0; round < 32; round++)
+            {
+                using (var cancellation = new CancellationTokenSource())
+                using (var nextCancellation = new CancellationTokenSource())
+                {
+                    OnityTask wait = round % 2 == 0
+                        ? OnityTask.Yield(OnityPlayerLoopTiming.Update, cancellation.Token, true)
+                        : OnityTask.DelayFrame(1000, OnityPlayerLoopTiming.PreUpdate, cancellation.Token, true);
+                    int thread = 0;
+                    bool canceled = false;
+                    wait.GetAwaiter().UnsafeOnCompleted(() =>
+                    {
+                        thread = Thread.CurrentThread.ManagedThreadId;
+                        try
+                        {
+                            wait.GetAwaiter().GetResult();
+                        }
+                        catch (OperationCanceledException exception)
+                        {
+                            canceled = exception.CancellationToken == cancellation.Token;
+                        }
+                    });
+                    Task worker = Task.Run(() => cancellation.Cancel());
+                    Require(worker.Wait(k_workerTimeoutMilliseconds), "Immediate cancellation worker timed out.");
+                    Require(canceled && thread != main, "Immediate cancellation did not publish on the worker.");
+
+                    // The released source is rented again while the canceled cycle's entry is still queued
+                    // (in PreUpdate on odd rounds): that stale entry must not publish the new Update wait.
+                    OnityTask next = OnityTask.Yield(OnityPlayerLoopTiming.Update, nextCancellation.Token);
+                    int updateBeginFrame = -1;
+                    bool nextDone = false;
+                    bool nextInOrder = false;
+                    Exception nextError = null;
+                    OnityTask.Post(() => updateBeginFrame = Time.frameCount, OnityPlayerLoopTiming.UpdateBegin);
+                    next.GetAwaiter().UnsafeOnCompleted(() =>
+                    {
+                        try
+                        {
+                            next.GetAwaiter().GetResult();
+                            nextInOrder = updateBeginFrame == Time.frameCount;
+                        }
+                        catch (Exception exception)
+                        {
+                            nextError = exception;
+                        }
+
+                        nextDone = true;
+                    });
+                    IEnumerator settle = WaitForThreadPool(() => nextDone);
+                    while (settle.MoveNext())
+                    {
+                        yield return null;
+                    }
+
+                    Require(nextError == null && nextInOrder, "A stale queue entry published the next rental early.");
+                }
+            }
+        }
+
+        private static IEnumerator TimedWaitsSmoke()
+        {
+            float started = Time.realtimeSinceStartup;
+            OnityTask realtime = OnityTask.Delay(TimeSpan.FromMilliseconds(50), OnityDelayType.Realtime,
+                OnityPlayerLoopTiming.PreLateUpdate);
+            OnityTask unscaled = OnityTask.WaitForSeconds(0.05f, true, OnityPlayerLoopTiming.LastUpdate);
+            var gate = new StrongBox<bool>();
+            OnityTask predicate = OnityTask.WaitUntil(gate, box => box.Value, OnityPlayerLoopTiming.EarlyUpdate);
+            int fired = 0;
+            OnityPlayerLoopTimer timer = OnityPlayerLoopTimer.StartNew(TimeSpan.FromMilliseconds(10), true,
+                OnityDelayType.Realtime, OnityPlayerLoopTiming.PostLateUpdate, CancellationToken.None,
+                state => fired++, null);
+            var never = new OnityTaskCompletionSource<int>();
+            OnityTask<(bool isTimeout, int result)> timeout = never.Task.TimeoutWithoutException(
+                TimeSpan.FromMilliseconds(20), OnityDelayType.Realtime, OnityPlayerLoopTiming.Update);
+            int changedFrom = Time.frameCount;
+            OnityTask<int> changed = OnityTask.WaitUntilValueChanged(gate, box => box.Value ? 1 : 0);
+            IEnumerator wait = WaitForThreadPool(() => realtime.IsCompleted && unscaled.IsCompleted && fired >= 2
+                && timeout.IsCompleted);
+            while (wait.MoveNext())
+            {
+                yield return null;
+            }
+
+            Require(Time.realtimeSinceStartup - started >= 0.045f, "A timed delay completed early.");
+            realtime.GetAwaiter().GetResult();
+            unscaled.GetAwaiter().GetResult();
+            Require(timeout.GetAwaiter().GetResult().isTimeout, "The timed timeout did not win.");
+            Require(!predicate.IsCompleted && !changed.IsCompleted, "A polled wait completed before its change.");
+            gate.Value = true;
+            wait = WaitForThreadPool(() => predicate.IsCompleted && changed.IsCompleted);
+            while (wait.MoveNext())
+            {
+                yield return null;
+            }
+
+            predicate.GetAwaiter().GetResult();
+            Require(changed.GetAwaiter().GetResult() == 1 && Time.frameCount > changedFrom, "Value change result mismatch.");
+            timer.Dispose();
+        }
+
+        private sealed class CountdownItem : IOnityPlayerLoopItem
+        {
+            private readonly Func<bool> m_step;
+
+            internal CountdownItem(Func<bool> step)
+            {
+                m_step = step;
+            }
+
+            public bool MoveNext()
+            {
+                return m_step();
+            }
         }
 
         private static IEnumerator WorkerContext()
@@ -618,7 +830,7 @@ namespace Onity.Benchmarks
             finally
             {
                 local.Value = null;
-                OnityTask.FlowExecutionContext = true;
+                OnityTask.FlowExecutionContext = false;
             }
 
             yield return null;
@@ -655,7 +867,7 @@ namespace Onity.Benchmarks
             {
                 local.Value = null;
                 SynchronizationContext.SetSynchronizationContext(original);
-                OnityTask.FlowExecutionContext = true;
+                OnityTask.FlowExecutionContext = false;
             }
         }
 
@@ -1992,10 +2204,10 @@ namespace Onity.Benchmarks
         {
             using (var cancellation = new CancellationTokenSource())
             {
+                // Default frame waits run on the PlayerLoop scheduler in Play and are retired by session
+                // exit, not by legacy runner destruction (PERF-7).
                 OnityTask[] waits =
                 {
-                    OnityTask.NextFrame(cancellation.Token), OnityTask.DelayFrames(int.MaxValue, cancellation.Token),
-                    OnityTask.NextFixedFrame(cancellation.Token), OnityTask.NextLateFrame(cancellation.Token),
                     OnityTask.DelayUnscaled(1000f, cancellation.Token), OnityTask.WaitUntil(() => false, cancellation.Token),
                     OnityTask.WaitWhile(() => true, cancellation.Token)
                 };
@@ -2338,7 +2550,7 @@ namespace Onity.Benchmarks
             {
                 local.Value = null;
                 runLocal.Value = null;
-                OnityTask.FlowExecutionContext = true;
+                OnityTask.FlowExecutionContext = false;
             }
         }
 
@@ -2484,15 +2696,6 @@ namespace Onity.Benchmarks
             Require(field != null, "Untyped task state field unavailable.");
             return field.GetValue(task);
         }
-
-#if ENABLE_IL2CPP
-        private static int MoveNextDepth(object runner)
-        {
-            FieldInfo field = runner.GetType().GetField("m_moveNextDepth", BindingFlags.Instance | BindingFlags.NonPublic);
-            Require(field != null, "IL2CPP runner depth field unavailable.");
-            return (int)field.GetValue(runner);
-        }
-#endif
 
         private static void Require(bool condition, string message)
         {

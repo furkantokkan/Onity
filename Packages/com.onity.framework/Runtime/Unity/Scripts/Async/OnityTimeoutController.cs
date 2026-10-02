@@ -10,11 +10,17 @@ namespace Onity.Unity.Async
     /// </summary>
     public sealed class OnityTimeoutController : IDisposable
     {
+        private static readonly Action<object> s_timerElapsed = state => ((OnityTimeoutController)state).OnTimerElapsed();
+
         private readonly object m_gate = new object();
         private readonly CancellationToken m_externalCancellationToken;
         private readonly OnityTimeProvider m_timeProvider;
+        private readonly bool m_usePlayerLoop;
+        private readonly OnityDelayType m_delayType;
+        private readonly OnityPlayerLoopTiming m_delayTiming;
 
         private CancellationTokenSource m_timeoutCancellationTokenSource;
+        private OnityPlayerLoopTimer m_timer;
         private int m_timeoutVersion;
         private bool m_isDisposed;
         private bool m_isTimeout;
@@ -30,6 +36,77 @@ namespace Onity.Unity.Async
         {
             m_externalCancellationToken = externalCancellationToken;
             m_timeProvider = timeProvider ?? OnityTimeProvider.System;
+        }
+
+        /// <summary>
+        /// Initializes a timeout controller whose timeouts are measured on a PlayerLoop timing; the
+        /// equivalent of UniTask's <c>TimeoutController(DelayType, PlayerLoopTiming)</c>. Its
+        /// <see cref="Timeout(TimeSpan)"/> requires an active Play/player session.
+        /// </summary>
+        /// <param name="delayType">Clock that measures each timeout.</param>
+        /// <param name="delayTiming">PlayerLoop timing that measures each timeout.</param>
+        /// <exception cref="ArgumentOutOfRangeException">The clock or the timing is not defined.</exception>
+        public OnityTimeoutController(
+            OnityDelayType delayType,
+            OnityPlayerLoopTiming delayTiming = OnityPlayerLoopTiming.Update)
+            : this(default(CancellationToken), delayType, delayTiming)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a PlayerLoop timeout controller whose tokens are also canceled by
+        /// <paramref name="linkCancellationTokenSource"/>; the equivalent of UniTask's
+        /// <c>TimeoutController(CancellationTokenSource, DelayType, PlayerLoopTiming)</c>.
+        /// </summary>
+        /// <param name="linkCancellationTokenSource">Source linked into every timeout token.</param>
+        /// <param name="delayType">Clock that measures each timeout.</param>
+        /// <param name="delayTiming">PlayerLoop timing that measures each timeout.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="linkCancellationTokenSource"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The clock or the timing is not defined.</exception>
+        public OnityTimeoutController(
+            CancellationTokenSource linkCancellationTokenSource,
+            OnityDelayType delayType = OnityDelayType.DeltaTime,
+            OnityPlayerLoopTiming delayTiming = OnityPlayerLoopTiming.Update)
+            : this(
+                (linkCancellationTokenSource ?? throw new ArgumentNullException(nameof(linkCancellationTokenSource))).Token,
+                delayType,
+                delayTiming)
+        {
+        }
+
+        private OnityTimeoutController(
+            CancellationToken externalCancellationToken, OnityDelayType delayType, OnityPlayerLoopTiming delayTiming)
+        {
+            if ((uint)delayType > (uint)OnityDelayType.Realtime)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delayType));
+            }
+
+            if ((uint)delayTiming > (uint)OnityPlayerLoopTiming.LastTimeUpdate)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delayTiming));
+            }
+
+            m_externalCancellationToken = externalCancellationToken;
+            m_usePlayerLoop = true;
+            m_delayType = delayType;
+            m_delayTiming = delayTiming;
+        }
+
+        /// <summary>
+        /// Starts or restarts a timeout of a number of milliseconds; see <see cref="Timeout(TimeSpan)"/>.
+        /// </summary>
+        /// <param name="millisecondsTimeout">Nonnegative timeout in milliseconds.</param>
+        /// <returns>Linked cancellation token.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is negative.</exception>
+        public CancellationToken Timeout(int millisecondsTimeout)
+        {
+            if (millisecondsTimeout < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
+            }
+
+            return Timeout(TimeSpan.FromMilliseconds(millisecondsTimeout));
         }
 
         /// <summary>
@@ -80,8 +157,45 @@ namespace Onity.Unity.Async
                 return timeoutCancellationTokenSource.Token;
             }
 
+            if (m_usePlayerLoop)
+            {
+                StartTimer(timeout);
+                return timeoutCancellationTokenSource.Token;
+            }
+
             _ = RunTimeoutAsync(timeoutVersion, timeoutCancellationTokenSource, timeout);
             return timeoutCancellationTokenSource.Token;
+        }
+
+        private void StartTimer(TimeSpan timeout)
+        {
+            lock (m_gate)
+            {
+                ThrowIfDisposed_NoLock();
+                if (m_timer == null)
+                {
+                    m_timer = OnityPlayerLoopTimer.Create(
+                        timeout, false, m_delayType, m_delayTiming, m_externalCancellationToken, s_timerElapsed, this);
+                }
+
+                m_timer.Restart(timeout);
+            }
+        }
+
+        private void OnTimerElapsed()
+        {
+            CancellationTokenSource timeoutCancellationTokenSource;
+            int timeoutVersion;
+            lock (m_gate)
+            {
+                timeoutCancellationTokenSource = m_timeoutCancellationTokenSource;
+                timeoutVersion = m_timeoutVersion;
+            }
+
+            if (timeoutCancellationTokenSource != null)
+            {
+                MarkTimedOut(timeoutVersion, timeoutCancellationTokenSource);
+            }
         }
 
         /// <summary>
@@ -164,6 +278,15 @@ namespace Onity.Unity.Async
 
         private void DisposeCurrentTimeout_NoLock()
         {
+            if (m_isDisposed)
+            {
+                m_timer?.Dispose();
+            }
+            else
+            {
+                m_timer?.Stop();
+            }
+
             CancellationTokenSource timeoutCancellationTokenSource = m_timeoutCancellationTokenSource;
             m_timeoutCancellationTokenSource = null;
 

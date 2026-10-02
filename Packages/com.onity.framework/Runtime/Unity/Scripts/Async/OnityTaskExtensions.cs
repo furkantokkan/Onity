@@ -1,14 +1,13 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEngine;
 
 namespace Onity.Unity.Async
 {
     /// <summary>
     /// Cancellation, timeout and fire-and-forget task helpers.
     /// </summary>
-    public static class OnityTaskExtensions
+    public static partial class OnityTaskExtensions
     {
         /// <summary>Faults with TimeoutException if a private timer wins before the producer.</summary>
         /// <param name="task">Producer to observe without canceling it.</param>
@@ -239,7 +238,9 @@ namespace Onity.Unity.Async
         }
 
         /// <summary>
-        /// Executes task without awaiting and routes exceptions to callback or Unity log.
+        /// Executes task without awaiting and routes exceptions to the callback or, without one, to
+        /// <see cref="OnityTaskScheduler"/>, which drops an <see cref="OperationCanceledException"/>
+        /// unless <see cref="OnityTaskScheduler.PropagateOperationCanceledException"/> is set.
         /// </summary>
         /// <param name="task">Task instance.</param>
         /// <param name="exceptionHandler">Optional exception callback.</param>
@@ -264,12 +265,15 @@ namespace Onity.Unity.Async
                     return;
                 }
 
-                Debug.LogException(exception);
+                OnityTaskScheduler.PublishUnobservedException(exception);
             }
         }
 
         /// <summary>
-        /// Executes generic task without awaiting and routes exceptions to callback or Unity log.
+        /// Executes generic task without awaiting and routes exceptions to the callback or, without
+        /// one, to <see cref="OnityTaskScheduler"/>, which drops an
+        /// <see cref="OperationCanceledException"/> unless
+        /// <see cref="OnityTaskScheduler.PropagateOperationCanceledException"/> is set.
         /// </summary>
         /// <typeparam name="T">Task result type.</typeparam>
         /// <param name="task">Task instance.</param>
@@ -295,7 +299,7 @@ namespace Onity.Unity.Async
                     return;
                 }
 
-                Debug.LogException(exception);
+                OnityTaskScheduler.PublishUnobservedException(exception);
             }
         }
     }

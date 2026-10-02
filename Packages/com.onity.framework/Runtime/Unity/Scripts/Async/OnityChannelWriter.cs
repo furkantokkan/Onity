@@ -38,5 +38,17 @@ namespace Onity.Unity.Async
         /// <remarks>Unaccepted writers fail. Accepted items drain before readers observe end/error.
         /// An OperationCanceledException supplied as an error remains a fault.</remarks>
         public bool TryComplete(Exception error = null) => m_channel.TryComplete(error);
+
+        /// <summary>Closes acceptance, preserving buffered items for draining.</summary>
+        /// <param name="error">Original terminal error, or null for normal completion.</param>
+        /// <remarks>Same as <see cref="TryComplete"/>, but a channel that is already completed throws.</remarks>
+        /// <exception cref="OnityChannelClosedException">The channel was already completed.</exception>
+        public void Complete(Exception error = null)
+        {
+            if (!m_channel.TryComplete(error))
+            {
+                throw new OnityChannelClosedException();
+            }
+        }
     }
 }

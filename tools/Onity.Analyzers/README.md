@@ -15,7 +15,7 @@ reference `UnityEngine`.
 | ---------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
 | `ONITY001` | Resolve call inside a per-frame Unity method       | A `Resolve<T>(...)` / `Resolve(...)` call sitting directly inside `Update` / `FixedUpdate` / `LateUpdate`. Resolve once in an installer/`Awake` and cache the instance. | Yes      |
 | `ONITY002` | Container modified after `Build()`                 | A `Bind` / `BindInstance` / `BindFactory` / `Resolve` call on a container local after `Build()` was already called on that same local earlier in the method.            | No       |
-| `ONITY003` | Subscribe result is not disposed                   | A `Subscribe(...)` result discarded as a standalone statement instead of `.AddTo(...)`, assigned, or returned. The subscription leaks.                                  | Yes      |
+| `ONITY003` | Subscribe result is not disposed                   | A `Subscribe` / `SubscribeAwait` call returning an `IDisposable` that is discarded instead of `.AddTo(...)`, assigned, or returned. `void` overloads are not reported.   | Yes      |
 | `ONITY004` | Type has multiple `[Inject]` constructors          | A type declaring two or more constructors marked `[Inject]`, leaving the injection constructor ambiguous. Mark exactly one constructor with `[Inject]`.                 | No       |
 | `ONITY005` | `[Inject]` member cannot be injected               | An `[Inject]` property with no setter, an `[Inject]` indexer, a generic `[Inject]` method, or a static `[Inject]` field/property/method.                                 | No       |
 | `ONITY006` | Manual construction of an Onity-managed type       | A `new TService()` on a type the same file also binds/resolves through Onity, so the hand-built instance bypasses the container and its injection.                      | No       |
@@ -27,8 +27,9 @@ which would require type binding and behavior changes).
 
 ### How each rule decides
 
-`ONITY002`, `ONITY003`, `ONITY004`, `ONITY005`, and `ONITY006` are purely
-syntactic and high-confidence:
+`ONITY002`, `ONITY004`, `ONITY005`, and `ONITY006` are purely syntactic and
+high-confidence. `ONITY003` is a syntactic shape check followed by one semantic
+check on the invoked method:
 
 - `ONITY001` matches the member name `Resolve` on a member-access invocation
   whose enclosing method is `Update`/`FixedUpdate`/`LateUpdate`. A `Resolve`
@@ -40,10 +41,15 @@ syntactic and high-confidence:
   `this.container`) and flags a later `x.Bind*`/`x.Resolve` on the same name. It
   does not reason across branches, lambdas, or method calls, so it only fires on
   the unambiguous "build then register on the same local" mistake.
-- `ONITY003` fires only when the `Subscribe(...)` call (or a fluent chain whose
-  outermost call is `Subscribe`) is the entire expression of an expression
-  statement — exactly the shape that throws away the `IDisposable`. A
-  `Subscribe(...).AddTo(...)` (or any chain consuming the result) is not flagged.
+- `ONITY003` fires only when a `Subscribe(...)` or `SubscribeAwait(...)` call (or
+  a fluent chain whose outermost call is one of them) is the entire expression of
+  an expression statement — exactly the shape that throws away the handle — and
+  the invoked method, bound with the semantic model, returns `System.IDisposable`
+  or a type implementing it. A `Subscribe(...).AddTo(...)` (or any chain
+  consuming the result), an explicit `_ =` discard, and a `void`-returning
+  overload such as `Subscribe(..., CancellationToken)`, whose token owns the
+  lifetime, are not flagged. The receiver type and declaring namespace are not
+  restricted, and a call that does not bind is not reported.
 - `ONITY004` counts constructor declarations carrying an attribute whose simple
   name is `Inject`/`InjectAttribute`. Static constructors are ignored.
 - `ONITY005` matches a member carrying an attribute whose simple name is

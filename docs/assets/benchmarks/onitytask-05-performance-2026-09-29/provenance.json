@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "5c09749b7531cdc28678153a0b4421ccc4eafdfe",
+  "candidateBranch": "codex/onity-0.5-async-performance",
+  "candidateCommitted": false,
+  "unity": "2022.3.62f2",
+  "cli": "1.0.0-beta.11",
+  "sourcePackageVersion": "0.4.0 plus unreleased changes",
+  "hostPackageLabel": "0.3.14 (stale; code identity comes from source manifests)",
+  "uniTaskCommit": "2e993ff18f28c931602a07292df0b0804eebef99",
+  "sourceWorkspace": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-release-038\\Onity",
+  "testWorkspace": "C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity",
+  "sourceIdentityNote": "Primary/WhenAny runtime, tests and harness matched the 652-file manifests; Editor28 and analyzer4 files also matched. Later benchmark-only additions are recorded separately.",
+  "artifactHashes": [
+    {
+      "revision": "baseline",
+      "backend": "mono",
+      "files": [
+        {
+          "path": "OnityTaskBenchmark.exe",
+          "sha256": "5CC71BF032F440AC46A5D24BB4101050A37001DD8F1B8325AEC1067EA0D1FF52"
+        },
+        {
+          "path": "OnityTaskBenchmark_Data/Managed/Onity.Unity.dll",
+          "sha256": "736FF6CCAC76297385D60E8DAB9360EC22C678D2F6A9F556714B828D6852F0C4"
+        },
+        {
+          "path": "OnityTaskBenchmark_Data/Managed/Onity.TaskBenchmarks.dll",
+          "sha256": "ECA8A6FD6E537C50E11FD2E85D0C6AF7678E0F49E84750CFF1CDE6785C84C6A7"
+        }
+      ]
+    },
+    {
+      "revision": "baseline",
+      "backend": "il2cpp",
+      "files": [
+        {
+          "path": "OnityTaskBenchmark.exe",
+          "sha256": "5DC4AC3627307A53E7C949863A4FEE389D47DEE919B46E90587A1B512EAD840A"
+        },
+        {
+          "path": "GameAssembly.dll",
+          "sha256": "AD73470B9BE5E2DE4D87D80BC1D7CF8A5E0909AB4790272ED0D6E69D2D766CF8"
+        }
+      ]
+    },
+    {
+      "revision": "candidate",
+      "backend": "mono",
+      "files": [
+        {
+          "path": "OnityTaskBenchmark.exe",
+          "sha256": "5CC71BF032F440AC46A5D24BB4101050A37001DD8F1B8325AEC1067EA0D1FF52"
+        },
+        {
+          "path": "OnityTaskBenchmark_Data/Managed/Onity.Unity.dll",
+          "sha256": "EAB176B3F62E6DF17EE694D3E9E5744901FE1A6B08A0826E608E99CB99162DCA"
+        },
+        {
+          "path": "OnityTaskBenchmark_Data/Managed/Onity.TaskBenchmarks.dll",
+          "sha256": "CA5D4CAA9B83668EA86C07BC5F09062170963DD45C2AEB5CC6D26A48BEB43055"
+        }
+      ]
+    },
+    {
+      "revision": "candidate",
+      "backend": "il2cpp",
+      "files": [
+        {
+          "path": "OnityTaskBenchmark.exe",
+          "sha256": "5DC4AC3627307A53E7C949863A4FEE389D47DEE919B46E90587A1B512EAD840A"
+        },
+        {
+          "path": "GameAssembly.dll",
+          "sha256": "6A2B88C4C30F8A20A24ED7C694EEC2818D88F30896BACE2562E80D286417CD92"
+        }
+      ]
+    }
+  ],
+  "generatedCppSha256": "424C3C1128C31E82CF7E4E0F089FC865ACF44F6B450CF33AA7FE955A6B81D5A5",
+  "sixInlineSites": [
+    {
+      "line": 3320,
+      "declaration": "IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR bool OnityTaskAwaiter_1_get_IsCompleted_mA4FC68C1CD4F81C08FEF99431F8CA7EE183FA924_gshared_inline (OnityTaskAwaiter_1_t0CBEA8EE5F9F3AF8F3429E647A7723F8412715AE* __this, const RuntimeMethod* method) ;"
+    },
+    {
+      "line": 3330,
+      "declaration": "IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR OnityTask_1_t65E442C24A6BA37A991D12CF8BC2555D0A58FF03 OnityTaskMethodBuilder_1_get_Task_m9053A4861683B26751D1F781BA2E652B9B8D31D4_gshared_inline (OnityTaskMethodBuilder_1_t60408CAAAB5972E6DD44A70E6701DACB9D0644F5* __this, const RuntimeMethod* method) ;"
+    },
+    {
+      "line": 3341,
+      "declaration": "IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void OnityTaskMethodBuilder_1_SetResult_m414208372A93E10B4C7F1CB7F008D34A5839B866_gshared_inline (OnityTaskMethodBuilder_1_t60408CAAAB5972E6DD44A70E6701DACB9D0644F5* __this, int32_t ___0_result, const RuntimeMethod* method) ;"
+    },
+    {
+      "line": 3655,
+      "declaration": "IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR bool OnityTaskAwaiter_get_IsCompleted_m0624A9E369C10ECE90D315F2D60402118829D6E1_inline (OnityTaskAwaiter_tC2A95B5BC9D17A1CF7C3C5DD2F1144FE54C150DC* __this, const RuntimeMethod* method) ;"
+    },
+    {
+      "line": 3682,
+      "declaration": "IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR OnityTask_tC3B6AB7E15B43519947247F31CD06D94E3C9537F OnityTaskMethodBuilder_get_Task_m4404845A547C5951E52C0DDA3D9D72C64CCBBC01_inline (OnityTaskMethodBuilder_tCB529473C6B19EF187F7BDB413408286750E5352* __this, const RuntimeMethod* method) ;"
+    },
+    {
+      "line": 3754,
+      "declaration": "IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void OnityTaskMethodBuilder_SetResult_m510F6BFE4B4FA70181E9F87B2B4A027DC4214441_inline (OnityTaskMethodBuilder_tCB529473C6B19EF187F7BDB413408286750E5352* __this, const RuntimeMethod* method) ;"
+    }
+  ],
+  "hostSettings": [
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "sha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33",
+      "restoredSha256": "3784FA54C22D746C4B5D2387680D985570CEAD4827245388448C6EF351F64E33",
+      "matches": true
+    },
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "sha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880",
+      "restoredSha256": "D4C42E505E8A8F6CFC84C14AADFB600651F376790185A160EE6A014DF7769880",
+      "matches": true
+    },
+    {
+      "path": "ProjectSettings/EditorSettings.asset",
+      "sha256": "962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34",
+      "restoredSha256": "962284022C8D5115812826946CD375B7FBED33050AD351C8FA4BCD177A95BA34",
+      "matches": true
+    },
+    {
+      "path": "ProjectSettings/ProjectVersion.txt",
+      "sha256": "21B4CD39F50B6E0B77CC9F18B79C453E9212E19B953A23E0CEB761C627DE97C3",
+      "restoredSha256": "21B4CD39F50B6E0B77CC9F18B79C453E9212E19B953A23E0CEB761C627DE97C3",
+      "matches": true
+    }
+  ],
+  "temporaryBenchmarkSceneAbsent": true
+}

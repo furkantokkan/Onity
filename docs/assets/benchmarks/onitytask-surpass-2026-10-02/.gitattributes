@@ -1,0 +1,2 @@
+# Evidence files are stored byte-for-byte so files.sha256 stays verifiable on every platform.
+* -text

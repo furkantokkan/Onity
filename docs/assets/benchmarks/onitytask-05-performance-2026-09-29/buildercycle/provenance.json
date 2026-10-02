@@ -1,0 +1,113 @@
+{
+  "baseCommit": "5c09749b7531cdc28678153a0b4421ccc4eafdfe",
+  "candidateCommitted": false,
+  "unity": "2022.3.62f2",
+  "hostPackageLabel": "0.3.14 (stale)",
+  "sourcePackageVersion": "0.4.0 plus unreleased changes",
+  "harness": [
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBuilderCycleBenchmarkRunner.cs",
+      "sha256": "069C3664B1EC92FA0B95EE34ACE3BA9EE329254787E58039E6BB8F39554AD4F2"
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBuilderCycleBenchmarkRunner.cs.meta",
+      "sha256": "C2F160B6214FB7BCF1B18DC13EAC4BD789B7C8926461146DFE620CDAD92E5BBA"
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Runtime/OnityTaskBenchmarkPlayerRunner.cs",
+      "sha256": "3CA94D924635FF938C27095173DC5C40219A629AE99CFFD3E538B03611B42D8A"
+    },
+    {
+      "path": "Packages/com.onity.framework/Benchmarks/Tasks/Editor/OnityTaskBenchmarkPlayerBuildRunner.cs",
+      "sha256": "7ED197C63D4386000EE78C5145AF644CA41E597DD1727BE7D6FC44EE918BA3F6"
+    }
+  ],
+  "runtime": {
+    "baseline": [
+      {
+        "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs",
+        "sha256": "AA25130F3C4E27792B5EB4A1C90F83C55C6072638E4FE396F48320DC33C8CA50"
+      },
+      {
+        "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityWhenAnyArrayTaskSource.cs",
+        "sha256": "619426B8C2865EDF711650A11C909DF19FF4D7EBC5E544D2A67EB6CAC00FD509"
+      }
+    ],
+    "candidate": [
+      {
+        "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityAsync.cs",
+        "sha256": "3D66BDB8C0A0F27DFA75649283C75AB9E0289866F9D61DDDA80A99B74685128F"
+      },
+      {
+        "path": "Packages/com.onity.framework/Runtime/Unity/Scripts/Async/OnityWhenAnyArrayTaskSource.cs",
+        "sha256": "26C30E9D4236846C1A9309F8FEDCC8312C73DEF4040FA1589256B13073167B40"
+      }
+    ]
+  },
+  "builds": [
+    {
+      "revision": "baseline",
+      "backend": "mono",
+      "files": [
+        {
+          "path": "OnityTaskBenchmark.exe",
+          "sha256": "5CC71BF032F440AC46A5D24BB4101050A37001DD8F1B8325AEC1067EA0D1FF52"
+        },
+        {
+          "path": "OnityTaskBenchmark_Data/Managed/Onity.Unity.dll",
+          "sha256": "736FF6CCAC76297385D60E8DAB9360EC22C678D2F6A9F556714B828D6852F0C4"
+        },
+        {
+          "path": "OnityTaskBenchmark_Data/Managed/Onity.TaskBenchmarks.dll",
+          "sha256": "95683F0E2478B2EF30F5A7E34A77BF16EF2BBB56B8EE7F5B270903FAEAF5CE26"
+        }
+      ]
+    },
+    {
+      "revision": "baseline",
+      "backend": "il2cpp",
+      "files": [
+        {
+          "path": "OnityTaskBenchmark.exe",
+          "sha256": "5DC4AC3627307A53E7C949863A4FEE389D47DEE919B46E90587A1B512EAD840A"
+        },
+        {
+          "path": "GameAssembly.dll",
+          "sha256": "86D637F61CDA97BF3ED29BB56388093186ADEFB78C455579F4DA5871B345197E"
+        }
+      ]
+    },
+    {
+      "revision": "candidate",
+      "backend": "mono",
+      "files": [
+        {
+          "path": "OnityTaskBenchmark.exe",
+          "sha256": "5CC71BF032F440AC46A5D24BB4101050A37001DD8F1B8325AEC1067EA0D1FF52"
+        },
+        {
+          "path": "OnityTaskBenchmark_Data/Managed/Onity.Unity.dll",
+          "sha256": "EAB176B3F62E6DF17EE694D3E9E5744901FE1A6B08A0826E608E99CB99162DCA"
+        },
+        {
+          "path": "OnityTaskBenchmark_Data/Managed/Onity.TaskBenchmarks.dll",
+          "sha256": "E2F8DF94BA8F170D3E7FDD34194A726EE41B9D1DD9C66B9EEB62409E7DC6A1AD"
+        }
+      ]
+    },
+    {
+      "revision": "candidate",
+      "backend": "il2cpp",
+      "files": [
+        {
+          "path": "OnityTaskBenchmark.exe",
+          "sha256": "5DC4AC3627307A53E7C949863A4FEE389D47DEE919B46E90587A1B512EAD840A"
+        },
+        {
+          "path": "GameAssembly.dll",
+          "sha256": "91AE3A5AA8ED4BEBDCCC9EDD9FFB54D30CDB37A36E3414759A79859C0F11E74A"
+        }
+      ]
+    }
+  ]
+}

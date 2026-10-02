@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="6" result="Passed" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.2111785">
+  <test-suite type="TestSuite" id="1000" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="983" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.211179" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="2134" name="Onity.Tests.EditMode.dll" fullname="C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/Library/ScriptAssemblies/Onity.Tests.EditMode.dll" runstate="Runnable" testcasecount="983" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.198262" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="74792" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="2135" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="983" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.188026" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="2136" name="Tests" fullname="Onity.Tests" runstate="Runnable" testcasecount="983" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.178824" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="2137" name="EditMode" fullname="Onity.Tests.EditMode" runstate="Runnable" testcasecount="983" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.169699" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1190" name="OnityAsyncTests" fullname="Onity.Tests.EditMode.OnityAsyncTests" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" testcasecount="122" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.123487" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1316" name="AsyncOperationAsOnityTask_MissingResource_CompletesWithOriginalOperation" fullname="Onity.Tests.EditMode.OnityAsyncTests.AsyncOperationAsOnityTask_MissingResource_CompletesWithOriginalOperation" methodname="AsyncOperationAsOnityTask_MissingResource_CompletesWithOriginalOperation" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" seed="1393383417" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.025799" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1294" name="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce" fullname="Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.023070" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1290" name="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(False,False)" fullname="Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(False,False)" methodname="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" seed="698972565" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.016994" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1291" name="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(False,True)" fullname="Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(False,True)" methodname="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" seed="1888096496" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.000977" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1292" name="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(True,False)" fullname="Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(True,False)" methodname="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" seed="789562237" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.002407" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1293" name="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(True,True)" fullname="Onity.Tests.EditMode.OnityAsyncTests.OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce(True,True)" methodname="OnityTask_WhenAnyTyped_LateSingleConsumerLoser_IsConsumedOnce" classname="Onity.Tests.EditMode.OnityAsyncTests" runstate="Runnable" seed="2032990972" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.000234" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+            <test-suite type="TestFixture" id="1749" name="OnityTaskPreserveEditModeTests" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" testcasecount="15" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.009592" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1764" name="Preserve_PooledSourceReuse_DoesNotChangePreservedResult" fullname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests.Preserve_PooledSourceReuse_DoesNotChangePreservedResult" methodname="Preserve_PooledSourceReuse_DoesNotChangePreservedResult" classname="Onity.Tests.EditMode.OnityTaskPreserveEditModeTests" runstate="Runnable" seed="854520181" result="Passed" start-time="2026-09-29 20:51:09Z" end-time="2026-09-29 20:51:09Z" duration="0.005622" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/e-fur/AppData/LocalLow/DefaultCompany/Onity\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

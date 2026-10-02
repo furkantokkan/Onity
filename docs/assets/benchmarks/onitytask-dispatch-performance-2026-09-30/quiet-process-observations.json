@@ -1,0 +1,334 @@
+[
+  {
+    "report": "frozen-mono-buildercycle-r2.json",
+    "startedUtc": "2026-09-29T22:23:31.3273111Z",
+    "endedUtc": "2026-09-29T22:23:32.3254123Z",
+    "elapsedSeconds": 0.9981012,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 115480,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "fused-mono-buildercycle-r2.json",
+    "startedUtc": "2026-09-29T22:23:32.4013535Z",
+    "endedUtc": "2026-09-29T22:23:33.2620853Z",
+    "elapsedSeconds": 0.8607318,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 115480,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "frozen-mono-primary-r2.json",
+    "startedUtc": "2026-09-29T22:23:33.3069771Z",
+    "endedUtc": "2026-09-29T22:23:41.1108317Z",
+    "elapsedSeconds": 7.8038546,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.015625
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.03125
+      },
+      {
+        "pid": 115480,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "fused-mono-primary-r2.json",
+    "startedUtc": "2026-09-29T22:23:41.1481953Z",
+    "endedUtc": "2026-09-29T22:23:48.8081108Z",
+    "elapsedSeconds": 7.6599155,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.046875
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.03125
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.015625
+      }
+    ]
+  },
+  {
+    "report": "frozen-il2cpp-buildercycle-r2.json",
+    "startedUtc": "2026-09-29T22:23:48.8410540Z",
+    "endedUtc": "2026-09-29T22:23:49.3118765Z",
+    "elapsedSeconds": 0.4708225,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "fused-il2cpp-buildercycle-r2.json",
+    "startedUtc": "2026-09-29T22:23:49.3461233Z",
+    "endedUtc": "2026-09-29T22:23:49.8200499Z",
+    "elapsedSeconds": 0.4739266,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.015625
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "frozen-il2cpp-primary-r2.json",
+    "startedUtc": "2026-09-29T22:23:49.8556205Z",
+    "endedUtc": "2026-09-29T22:23:58.1763124Z",
+    "elapsedSeconds": 8.3206919,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.1875
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.03125
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.03125
+      }
+    ]
+  },
+  {
+    "report": "fused-il2cpp-primary-r2.json",
+    "startedUtc": "2026-09-29T22:23:58.2188855Z",
+    "endedUtc": "2026-09-29T22:24:06.8275264Z",
+    "elapsedSeconds": 8.6086409,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.078125
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.015625
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.046875
+      }
+    ]
+  },
+  {
+    "report": "fused-il2cpp-buildercycle-r3.json",
+    "startedUtc": "2026-09-29T22:24:06.8615999Z",
+    "endedUtc": "2026-09-29T22:24:07.3284630Z",
+    "elapsedSeconds": 0.4668631,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.015625
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.015625
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "frozen-il2cpp-buildercycle-r3.json",
+    "startedUtc": "2026-09-29T22:24:07.3672535Z",
+    "endedUtc": "2026-09-29T22:24:07.8444689Z",
+    "elapsedSeconds": 0.4772154,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "fused-il2cpp-primary-r3.json",
+    "startedUtc": "2026-09-29T22:24:07.8805401Z",
+    "endedUtc": "2026-09-29T22:24:16.3876669Z",
+    "elapsedSeconds": 8.5071268,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.203125
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.03125
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.015625
+      }
+    ]
+  },
+  {
+    "report": "frozen-il2cpp-primary-r3.json",
+    "startedUtc": "2026-09-29T22:24:16.4215365Z",
+    "endedUtc": "2026-09-29T22:24:25.0363573Z",
+    "elapsedSeconds": 8.6148208,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.171875
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.015625
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.03125
+      }
+    ]
+  },
+  {
+    "report": "fused-mono-buildercycle-r3.json",
+    "startedUtc": "2026-09-29T22:24:25.0762002Z",
+    "endedUtc": "2026-09-29T22:24:25.8871677Z",
+    "elapsedSeconds": 0.8109675,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "frozen-mono-buildercycle-r3.json",
+    "startedUtc": "2026-09-29T22:24:25.9196391Z",
+    "endedUtc": "2026-09-29T22:24:26.7508236Z",
+    "elapsedSeconds": 0.8311845,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.0
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "fused-mono-primary-r3.json",
+    "startedUtc": "2026-09-29T22:24:26.7861201Z",
+    "endedUtc": "2026-09-29T22:24:34.4341596Z",
+    "elapsedSeconds": 7.6480395,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.265625
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.015625
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.0
+      }
+    ]
+  },
+  {
+    "report": "frozen-mono-primary-r3.json",
+    "startedUtc": "2026-09-29T22:24:34.4683389Z",
+    "endedUtc": "2026-09-29T22:24:42.2221076Z",
+    "elapsedSeconds": 7.7537687,
+    "otherUnityCPU": [
+      {
+        "pid": 48360,
+        "cpuSeconds": 0.140625
+      },
+      {
+        "pid": 111640,
+        "cpuSeconds": 0.015625
+      },
+      {
+        "pid": 122860,
+        "cpuSeconds": 0.015625
+      }
+    ]
+  }
+]

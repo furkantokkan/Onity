@@ -10,8 +10,8 @@ using UnityEngine.TestTools;
 namespace Onity.Tests.PlayMode
 {
     /// <summary>
-    /// Covers the pooled builder path that depends on the PlayerLoop: under IL2CPP a consumed
-    /// runner returns to its pool from the task runner's next drain, on Mono it returns at once.
+    /// Covers the pooled builder path in Play: a consumed runner returns to its pool at once on every
+    /// backend and is rented again by the next suspension of the same method.
     /// </summary>
     [TestFixture]
     public sealed class OnityTaskAsyncBuilderPlayModeTests
@@ -26,26 +26,19 @@ namespace Onity.Tests.PlayMode
             first.GetAwaiter().GetResult();
             Assert.Throws<InvalidOperationException>(() => _ = first.IsCompleted, "The token retires synchronously.");
 
-#if ENABLE_IL2CPP
-            // The deferred return has not run yet, so a rent in the same frame gets another runner.
+            // The runner returns to its pool at consumption on every backend.
             ManualAwaitable earlyGate = new ManualAwaitable();
             OnityTask<int> early = ReturnAfterAsync(earlyGate, 2);
-            Assert.That(GetState(early), Is.Not.SameAs(runner),
-                "Under IL2CPP the runner must not be rented again before the dispatcher drained.");
-#endif
+            Assert.That(GetState(early), Is.SameAs(runner), "The consumed runner was not pooled immediately.");
+            earlyGate.Complete();
+            Assert.That(early.GetAwaiter().GetResult(), Is.EqualTo(2));
 
-            // OnityTaskRunner.Update drains the deferred return; the first frame may create the runner.
             yield return null;
             yield return null;
 
             ManualAwaitable lateGate = new ManualAwaitable();
             OnityTask<int> late = ReturnAfterAsync(lateGate, 3);
             Assert.That(GetState(late), Is.SameAs(runner), "The consumed runner was not pooled.");
-
-#if ENABLE_IL2CPP
-            earlyGate.Complete();
-            Assert.That(early.GetAwaiter().GetResult(), Is.EqualTo(2));
-#endif
             lateGate.Complete();
             Assert.That(late.GetAwaiter().GetResult(), Is.EqualTo(3));
         }

@@ -1,0 +1,2250 @@
+﻿{
+    "environment": {
+        "buildGuid": "83bdc9b091bc4dd1a4d47ee3be8f87ac",
+        "isDevelopment": false,
+        "scriptingBackend": "Mono",
+        "trackerEnabled": false,
+        "trackerStackTraceEnabled": false,
+        "flowExecutionContext": true,
+        "runnerPoolCapacity": 128,
+        "executionContextPath": "InternalPair",
+        "executionContextEvidence": "s_fastCapture=True; s_runPreservingContext=True; runtime probe initialized before suppression",
+        "build": {
+            "generatedAtUtc": "2026-09-29T22:19:33.2938796Z",
+            "codeOptimization": "Release (non-development Player; BuildOptions.None)",
+            "managedCompilerOptimization": "Unity non-development default; additional compiler arguments not modified",
+            "il2CppCompilerConfiguration": "Release",
+            "managedStrippingLevel": "Disabled",
+            "onityPackageId": "com.onity.framework@file:C:\\Users\\e-fur\\.codex\\worktrees\\onity-builder-benchmark-4be50dc\\Onity\\Packages\\com.onity.framework",
+            "onityVersion": "0.3.14",
+            "uniTaskPackageId": "com.cysharp.unitask@https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2e993ff18f28c931602a07292df0b0804eebef99",
+            "uniTaskVersion": "2.5.11"
+        }
+    },
+    "drainBetweenBatches": false,
+    "betweenBatchDrainFrames": 0,
+    "schemaVersion": 6,
+    "generatedAtUtc": "2026-09-29T22:24:27.4790969Z",
+    "unityVersion": "2022.3.62f2",
+    "platform": "WindowsPlayer",
+    "isEditor": false,
+    "scriptingBackend": "Mono",
+    "uniTaskAssembly": "UniTask, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "stopwatchFrequency": 10000000,
+    "timerResolutionNanoseconds": 100.0,
+    "samplesPerCase": 8,
+    "warmupIterations": 4096,
+    "frameBatchesPerSample": 32,
+    "measurementScope": "Main-thread synchronous slices only. Scheduling and GetResult are separate. Async-method cases include builder work within those slices. PlayerLoop execution, suspended-frame time, continuation dispatch and builder completion during resumption are excluded. Async-method NextFrame cases run twice: with OnityTask.FlowExecutionContext on (unsuffixed) and off (suffixed 'flow off'); UniTask never flows the execution context. Raw times include harness overhead; no baseline subtraction or overall winner is inferred.",
+    "flowExecutionContextDefault": true,
+    "taskTrackerEnabled": false,
+    "allocationCounterKind": "HeapDelta",
+    "allocationsAvailable": true,
+    "allocationCounter": "GC.GetTotalMemory delta with GarbageCollector.GCMode disabled inside each measured slice; 64 KiB positive control and empty control passed. Process-wide, block granularity: read averages over many operations only.",
+    "allocationCalibrationBytes": 69632,
+    "emptyAllocationDeltaBytes": 0,
+    "allocationRejectedCandidates": "per-thread counter read 0 / 0 bytes for the 64 KiB and empty controls; profiler counter 'GC Allocated In Frame' is not valid",
+    "synchronousHarnessBaseline": {
+        "library": "Empty delegate loop",
+        "meanMilliseconds": 1.6170999999999998,
+        "medianMilliseconds": 1.61605,
+        "minMilliseconds": 1.6031,
+        "maxMilliseconds": 1.6356,
+        "standardDeviationMilliseconds": 0.012159564136925316,
+        "nanosecondsPerOperation": 1.6170999999999998,
+        "allocatedBytesPerOperation": 0.0,
+        "allocationSamplesValid": 8,
+        "sampleMilliseconds": [
+            1.6031,
+            1.6043,
+            1.6054,
+            1.6341,
+            1.6356,
+            1.6222,
+            1.6197,
+            1.6124
+        ],
+        "sampleAllocatedBytes": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        "sampleAllocationValid": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+        ]
+    },
+    "scenarios": [
+        {
+            "displayName": "Completed GetResult",
+            "workload": "Synchronous; delegate invocation included",
+            "concurrency": 1,
+            "iterationsPerSample": 1000000,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 11.1713375,
+                    "medianMilliseconds": 11.1572,
+                    "minMilliseconds": 10.9848,
+                    "maxMilliseconds": 11.3413,
+                    "standardDeviationMilliseconds": 0.10426758769507424,
+                    "nanosecondsPerOperation": 11.1713375,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        11.3413,
+                        11.1578,
+                        11.1566,
+                        11.1071,
+                        11.2348,
+                        11.2769,
+                        11.1114,
+                        10.9848
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 3.0641749999999998,
+                    "medianMilliseconds": 3.01,
+                    "minMilliseconds": 2.9516,
+                    "maxMilliseconds": 3.375,
+                    "standardDeviationMilliseconds": 0.12702776025341865,
+                    "nanosecondsPerOperation": 3.0641749999999998,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        3.375,
+                        3.0032,
+                        2.9958,
+                        3.0168,
+                        3.0393,
+                        3.0005,
+                        2.9516,
+                        3.1312
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "FromResult<int> GetResult",
+            "workload": "Synchronous; delegate invocation included",
+            "concurrency": 1,
+            "iterationsPerSample": 1000000,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 18.22435,
+                    "medianMilliseconds": 18.04315,
+                    "minMilliseconds": 17.2995,
+                    "maxMilliseconds": 20.0719,
+                    "standardDeviationMilliseconds": 0.8722733602489533,
+                    "nanosecondsPerOperation": 18.22435,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        17.4131,
+                        19.0115,
+                        17.2995,
+                        18.2166,
+                        18.3242,
+                        20.0719,
+                        17.5883,
+                        17.8697
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 7.7151749999999998,
+                    "medianMilliseconds": 7.5602,
+                    "minMilliseconds": 7.4685,
+                    "maxMilliseconds": 8.6559,
+                    "standardDeviationMilliseconds": 0.37119181614766269,
+                    "nanosecondsPerOperation": 7.7151749999999998,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        7.5156,
+                        7.4685,
+                        7.5028,
+                        7.5526,
+                        8.6559,
+                        7.8363,
+                        7.6219,
+                        7.5678
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "NextFrame scheduling",
+            "workload": "Warm steady state; 128 concurrent operations; below Onity's 256 source retention cap",
+            "concurrency": 128,
+            "iterationsPerSample": 4096,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 0.4531,
+                    "medianMilliseconds": 0.4337,
+                    "minMilliseconds": 0.4309,
+                    "maxMilliseconds": 0.5702,
+                    "standardDeviationMilliseconds": 0.04475100557529407,
+                    "nanosecondsPerOperation": 110.6201171875,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.4527,
+                        0.5702,
+                        0.4339,
+                        0.4389,
+                        0.4335,
+                        0.4327,
+                        0.432,
+                        0.4309
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 0.5022375,
+                    "medianMilliseconds": 0.48,
+                    "minMilliseconds": 0.4581,
+                    "maxMilliseconds": 0.6859,
+                    "standardDeviationMilliseconds": 0.0712542970195482,
+                    "nanosecondsPerOperation": 122.6165771484375,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.499,
+                        0.6859,
+                        0.4585,
+                        0.4971,
+                        0.4712,
+                        0.4888,
+                        0.4581,
+                        0.4593
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "NextFrame GetResult",
+            "workload": "Warm steady state; 128 concurrent operations; below Onity's 256 source retention cap",
+            "concurrency": 128,
+            "iterationsPerSample": 4096,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 0.1470125,
+                    "medianMilliseconds": 0.14150000000000002,
+                    "minMilliseconds": 0.1405,
+                    "maxMilliseconds": 0.1805,
+                    "standardDeviationMilliseconds": 0.012788807362299265,
+                    "nanosecondsPerOperation": 35.8917236328125,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.1439,
+                        0.1805,
+                        0.1413,
+                        0.1417,
+                        0.1463,
+                        0.1411,
+                        0.1408,
+                        0.1405
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 0.12431249999999999,
+                    "medianMilliseconds": 0.11885000000000001,
+                    "minMilliseconds": 0.1172,
+                    "maxMilliseconds": 0.1544,
+                    "standardDeviationMilliseconds": 0.011794536605988386,
+                    "nanosecondsPerOperation": 30.349731445312498,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.1177,
+                        0.1544,
+                        0.1177,
+                        0.127,
+                        0.1193,
+                        0.1228,
+                        0.1172,
+                        0.1184
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "NextFrame scheduling",
+            "workload": "Repeated burst; 4096 concurrent operations; exceeds Onity's 256 source retention cap",
+            "concurrency": 4096,
+            "iterationsPerSample": 131072,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 16.40875,
+                    "medianMilliseconds": 16.424599999999999,
+                    "minMilliseconds": 16.1287,
+                    "maxMilliseconds": 16.7158,
+                    "standardDeviationMilliseconds": 0.18499789863671474,
+                    "nanosecondsPerOperation": 125.18882751464845,
+                    "allocatedBytesPerOperation": 119.16796875,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        16.7158,
+                        16.475,
+                        16.6006,
+                        16.1287,
+                        16.4637,
+                        16.3058,
+                        16.3855,
+                        16.1949
+                    ],
+                    "sampleAllocatedBytes": [
+                        15601664,
+                        15622144,
+                        15622144,
+                        15622144,
+                        15622144,
+                        15622144,
+                        15622144,
+                        15622144
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 15.439524999999998,
+                    "medianMilliseconds": 15.37105,
+                    "minMilliseconds": 14.8321,
+                    "maxMilliseconds": 16.6774,
+                    "standardDeviationMilliseconds": 0.5557631414325707,
+                    "nanosecondsPerOperation": 117.79422760009764,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        16.6774,
+                        15.3222,
+                        15.4199,
+                        15.4348,
+                        15.1556,
+                        15.8135,
+                        14.8321,
+                        14.8607
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "NextFrame GetResult",
+            "workload": "Repeated burst; 4096 concurrent operations; exceeds Onity's 256 source retention cap",
+            "concurrency": 4096,
+            "iterationsPerSample": 131072,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 2.8389625,
+                    "medianMilliseconds": 2.8186,
+                    "minMilliseconds": 2.7551,
+                    "maxMilliseconds": 2.9697,
+                    "standardDeviationMilliseconds": 0.06821489825360726,
+                    "nanosecondsPerOperation": 21.659564971923829,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        2.8596,
+                        2.8003,
+                        2.7749,
+                        2.9149,
+                        2.8031,
+                        2.7551,
+                        2.8341,
+                        2.9697
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 3.8060125,
+                    "medianMilliseconds": 3.77545,
+                    "minMilliseconds": 3.702,
+                    "maxMilliseconds": 3.9844,
+                    "standardDeviationMilliseconds": 0.09638258968169508,
+                    "nanosecondsPerOperation": 29.03757095336914,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        3.741,
+                        3.9149,
+                        3.8525,
+                        3.7551,
+                        3.7958,
+                        3.9844,
+                        3.702,
+                        3.7024
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method completed GetResult",
+            "workload": "Synchronous; delegate invocation included",
+            "concurrency": 1,
+            "iterationsPerSample": 1000000,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 30.7599,
+                    "medianMilliseconds": 30.769550000000004,
+                    "minMilliseconds": 30.2693,
+                    "maxMilliseconds": 31.6431,
+                    "standardDeviationMilliseconds": 0.4135747967417742,
+                    "nanosecondsPerOperation": 30.7599,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        30.5288,
+                        31.6431,
+                        30.9595,
+                        30.2757,
+                        30.2693,
+                        30.8365,
+                        30.8637,
+                        30.7026
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 16.175075000000004,
+                    "medianMilliseconds": 16.1748,
+                    "minMilliseconds": 16.0367,
+                    "maxMilliseconds": 16.4315,
+                    "standardDeviationMilliseconds": 0.1235478930415243,
+                    "nanosecondsPerOperation": 16.175075000000004,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        16.0367,
+                        16.1491,
+                        16.0618,
+                        16.2005,
+                        16.2294,
+                        16.4315,
+                        16.2417,
+                        16.0499
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method completed<int> GetResult",
+            "workload": "Synchronous; delegate invocation included",
+            "concurrency": 1,
+            "iterationsPerSample": 1000000,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 35.950950000000009,
+                    "medianMilliseconds": 35.90215,
+                    "minMilliseconds": 34.9675,
+                    "maxMilliseconds": 37.3847,
+                    "standardDeviationMilliseconds": 0.6778702733561933,
+                    "nanosecondsPerOperation": 35.950950000000009,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        35.8857,
+                        35.612,
+                        35.4248,
+                        37.3847,
+                        36.4571,
+                        34.9675,
+                        35.9186,
+                        35.9572
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 22.2214625,
+                    "medianMilliseconds": 22.06175,
+                    "minMilliseconds": 21.772,
+                    "maxMilliseconds": 23.1276,
+                    "standardDeviationMilliseconds": 0.4380376494592105,
+                    "nanosecondsPerOperation": 22.2214625,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        22.5997,
+                        21.772,
+                        23.1276,
+                        21.8323,
+                        22.4391,
+                        22.0429,
+                        21.8775,
+                        22.0806
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame scheduling",
+            "workload": "Warm steady state; 128 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext on",
+            "concurrency": 128,
+            "iterationsPerSample": 4096,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 1.125925,
+                    "medianMilliseconds": 1.1286999999999999,
+                    "minMilliseconds": 1.076,
+                    "maxMilliseconds": 1.1728,
+                    "standardDeviationMilliseconds": 0.03091972469152983,
+                    "nanosecondsPerOperation": 274.884033203125,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        1.1399,
+                        1.1104,
+                        1.076,
+                        1.0904,
+                        1.1525,
+                        1.1479,
+                        1.1728,
+                        1.1175
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 0.9149249999999999,
+                    "medianMilliseconds": 0.91795,
+                    "minMilliseconds": 0.8895,
+                    "maxMilliseconds": 0.9383,
+                    "standardDeviationMilliseconds": 0.01444296974309648,
+                    "nanosecondsPerOperation": 223.37036132812498,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.926,
+                        0.898,
+                        0.8895,
+                        0.9113,
+                        0.9204,
+                        0.9163,
+                        0.9196,
+                        0.9383
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame GetResult",
+            "workload": "Warm steady state; 128 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext on",
+            "concurrency": 128,
+            "iterationsPerSample": 4096,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 0.15523749999999998,
+                    "medianMilliseconds": 0.15435,
+                    "minMilliseconds": 0.1477,
+                    "maxMilliseconds": 0.1653,
+                    "standardDeviationMilliseconds": 0.005917756648426839,
+                    "nanosecondsPerOperation": 37.89978027343749,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.1593,
+                        0.1478,
+                        0.1653,
+                        0.1477,
+                        0.1546,
+                        0.1518,
+                        0.1613,
+                        0.1541
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 0.1092125,
+                    "medianMilliseconds": 0.1084,
+                    "minMilliseconds": 0.1043,
+                    "maxMilliseconds": 0.1158,
+                    "standardDeviationMilliseconds": 0.0034933642452512714,
+                    "nanosecondsPerOperation": 26.6632080078125,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.109,
+                        0.1123,
+                        0.1043,
+                        0.1058,
+                        0.1078,
+                        0.1075,
+                        0.1112,
+                        0.1158
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame scheduling",
+            "workload": "Repeated burst; 4096 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext on",
+            "concurrency": 4096,
+            "iterationsPerSample": 131072,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 47.49436250000001,
+                    "medianMilliseconds": 47.276700000000008,
+                    "minMilliseconds": 46.7801,
+                    "maxMilliseconds": 48.6995,
+                    "standardDeviationMilliseconds": 0.6926028460407532,
+                    "nanosecondsPerOperation": 362.35322952270516,
+                    "allocatedBytesPerOperation": 411.234375,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        48.6995,
+                        46.7801,
+                        46.8321,
+                        46.8762,
+                        46.9639,
+                        47.5895,
+                        48.0239,
+                        48.1897
+                    ],
+                    "sampleAllocatedBytes": [
+                        53903360,
+                        53899264,
+                        53903360,
+                        53899264,
+                        53903360,
+                        53899264,
+                        53903360,
+                        53899264
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 30.188875000000004,
+                    "medianMilliseconds": 30.08275,
+                    "minMilliseconds": 29.0399,
+                    "maxMilliseconds": 31.5621,
+                    "standardDeviationMilliseconds": 0.8829598387667472,
+                    "nanosecondsPerOperation": 230.32283782958988,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        30.4374,
+                        29.0399,
+                        29.7281,
+                        29.4548,
+                        29.2631,
+                        31.5621,
+                        31.0537,
+                        30.9719
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame GetResult",
+            "workload": "Repeated burst; 4096 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext on",
+            "concurrency": 4096,
+            "iterationsPerSample": 131072,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 3.1999250000000005,
+                    "medianMilliseconds": 3.18565,
+                    "minMilliseconds": 3.0895,
+                    "maxMilliseconds": 3.3608,
+                    "standardDeviationMilliseconds": 0.09368295936294921,
+                    "nanosecondsPerOperation": 24.41349029541016,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        3.2272,
+                        3.1142,
+                        3.3608,
+                        3.1156,
+                        3.2166,
+                        3.1547,
+                        3.3208,
+                        3.0895
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 3.3941625,
+                    "medianMilliseconds": 3.40465,
+                    "minMilliseconds": 3.3124,
+                    "maxMilliseconds": 3.4643,
+                    "standardDeviationMilliseconds": 0.04751941543990209,
+                    "nanosecondsPerOperation": 25.895404815673829,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        3.3401,
+                        3.3124,
+                        3.4297,
+                        3.4643,
+                        3.4302,
+                        3.3673,
+                        3.4005,
+                        3.4088
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame<int> scheduling",
+            "workload": "Warm steady state; 128 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext on",
+            "concurrency": 128,
+            "iterationsPerSample": 4096,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 1.0732875,
+                    "medianMilliseconds": 1.07505,
+                    "minMilliseconds": 1.0426,
+                    "maxMilliseconds": 1.1075,
+                    "standardDeviationMilliseconds": 0.021536912354142135,
+                    "nanosecondsPerOperation": 262.0330810546875,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        1.0999,
+                        1.0426,
+                        1.0743,
+                        1.1075,
+                        1.056,
+                        1.0758,
+                        1.0501,
+                        1.0801
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 0.8439125000000001,
+                    "medianMilliseconds": 0.84605,
+                    "minMilliseconds": 0.8242,
+                    "maxMilliseconds": 0.8587,
+                    "standardDeviationMilliseconds": 0.011458668934479253,
+                    "nanosecondsPerOperation": 206.03332519531254,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.8465,
+                        0.8242,
+                        0.8408,
+                        0.8587,
+                        0.8288,
+                        0.8504,
+                        0.8563,
+                        0.8456
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame<int> GetResult",
+            "workload": "Warm steady state; 128 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext on",
+            "concurrency": 128,
+            "iterationsPerSample": 4096,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 0.1623,
+                    "medianMilliseconds": 0.15455000000000003,
+                    "minMilliseconds": 0.1508,
+                    "maxMilliseconds": 0.2026,
+                    "standardDeviationMilliseconds": 0.01685133525866719,
+                    "nanosecondsPerOperation": 39.6240234375,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.1534,
+                        0.1512,
+                        0.1557,
+                        0.1746,
+                        0.1508,
+                        0.2026,
+                        0.1525,
+                        0.1576
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 0.10973749999999999,
+                    "medianMilliseconds": 0.1091,
+                    "minMilliseconds": 0.1074,
+                    "maxMilliseconds": 0.1163,
+                    "standardDeviationMilliseconds": 0.002570475393774467,
+                    "nanosecondsPerOperation": 26.791381835937498,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.1091,
+                        0.1081,
+                        0.1097,
+                        0.1163,
+                        0.1074,
+                        0.109,
+                        0.1092,
+                        0.1091
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame<int> scheduling",
+            "workload": "Repeated burst; 4096 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext on",
+            "concurrency": 4096,
+            "iterationsPerSample": 131072,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 46.300200000000007,
+                    "medianMilliseconds": 46.12595,
+                    "minMilliseconds": 44.989,
+                    "maxMilliseconds": 48.2214,
+                    "standardDeviationMilliseconds": 1.0244922827918235,
+                    "nanosecondsPerOperation": 353.2424926757813,
+                    "allocatedBytesPerOperation": 415.41796875,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        47.1702,
+                        46.8522,
+                        44.989,
+                        45.6792,
+                        46.5727,
+                        48.2214,
+                        45.3038,
+                        45.6131
+                    ],
+                    "sampleAllocatedBytes": [
+                        54464512,
+                        54374400,
+                        54468608,
+                        54419456,
+                        54480896,
+                        54480896,
+                        54489088,
+                        54419456
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 27.7931,
+                    "medianMilliseconds": 27.92385,
+                    "minMilliseconds": 26.1676,
+                    "maxMilliseconds": 28.4308,
+                    "standardDeviationMilliseconds": 0.6618746595844264,
+                    "nanosecondsPerOperation": 212.04452514648438,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        27.9624,
+                        27.8043,
+                        28.4308,
+                        27.8853,
+                        28.2879,
+                        28.1765,
+                        26.1676,
+                        27.63
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame<int> GetResult",
+            "workload": "Repeated burst; 4096 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext on",
+            "concurrency": 4096,
+            "iterationsPerSample": 131072,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 3.4857,
+                    "medianMilliseconds": 3.48635,
+                    "minMilliseconds": 3.2348,
+                    "maxMilliseconds": 3.6876,
+                    "standardDeviationMilliseconds": 0.13146498583273048,
+                    "nanosecondsPerOperation": 26.593780517578126,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        3.4726,
+                        3.5001,
+                        3.5754,
+                        3.4324,
+                        3.6876,
+                        3.5991,
+                        3.2348,
+                        3.3836
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 3.6524249999999998,
+                    "medianMilliseconds": 3.6504,
+                    "minMilliseconds": 3.5291,
+                    "maxMilliseconds": 3.8522,
+                    "standardDeviationMilliseconds": 0.08878484879189687,
+                    "nanosecondsPerOperation": 27.865791320800779,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        3.6732,
+                        3.6403,
+                        3.5291,
+                        3.6166,
+                        3.6605,
+                        3.8522,
+                        3.577,
+                        3.6705
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame scheduling (flow off)",
+            "workload": "Warm steady state; 128 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext off",
+            "concurrency": 128,
+            "iterationsPerSample": 4096,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 0.963025,
+                    "medianMilliseconds": 0.95275,
+                    "minMilliseconds": 0.9212,
+                    "maxMilliseconds": 1.0575,
+                    "standardDeviationMilliseconds": 0.040730969482692187,
+                    "nanosecondsPerOperation": 235.113525390625,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.9579,
+                        1.0575,
+                        0.9812,
+                        0.9306,
+                        0.974,
+                        0.9212,
+                        0.9342,
+                        0.9476
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 0.9029375,
+                    "medianMilliseconds": 0.8902,
+                    "minMilliseconds": 0.8841,
+                    "maxMilliseconds": 0.9381,
+                    "standardDeviationMilliseconds": 0.02154013332711756,
+                    "nanosecondsPerOperation": 220.4437255859375,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.8911,
+                        0.9361,
+                        0.9381,
+                        0.8868,
+                        0.9132,
+                        0.8841,
+                        0.8848,
+                        0.8893
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame GetResult (flow off)",
+            "workload": "Warm steady state; 128 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext off",
+            "concurrency": 128,
+            "iterationsPerSample": 4096,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 0.15076250000000003,
+                    "medianMilliseconds": 0.15039999999999999,
+                    "minMilliseconds": 0.1483,
+                    "maxMilliseconds": 0.1554,
+                    "standardDeviationMilliseconds": 0.0020536172355139659,
+                    "nanosecondsPerOperation": 36.80725097656251,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.1498,
+                        0.1554,
+                        0.1518,
+                        0.1511,
+                        0.151,
+                        0.1483,
+                        0.1494,
+                        0.1493
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 0.10735000000000002,
+                    "medianMilliseconds": 0.10694999999999999,
+                    "minMilliseconds": 0.1056,
+                    "maxMilliseconds": 0.11,
+                    "standardDeviationMilliseconds": 0.0014688430821568372,
+                    "nanosecondsPerOperation": 26.208496093750005,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.1056,
+                        0.11,
+                        0.1088,
+                        0.1083,
+                        0.1074,
+                        0.1065,
+                        0.1057,
+                        0.1065
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame scheduling (flow off)",
+            "workload": "Repeated burst; 4096 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext off",
+            "concurrency": 4096,
+            "iterationsPerSample": 131072,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 42.74841250000001,
+                    "medianMilliseconds": 42.2079,
+                    "minMilliseconds": 40.8287,
+                    "maxMilliseconds": 45.0245,
+                    "standardDeviationMilliseconds": 1.5197231396191067,
+                    "nanosecondsPerOperation": 326.1445045471192,
+                    "allocatedBytesPerOperation": 398.54296875,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        40.8287,
+                        41.7187,
+                        41.9324,
+                        44.9716,
+                        43.6891,
+                        45.0245,
+                        42.4834,
+                        41.3389
+                    ],
+                    "sampleAllocatedBytes": [
+                        52191232,
+                        52232192,
+                        52256768,
+                        52236288,
+                        52252672,
+                        52240384,
+                        52252672,
+                        52240384
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 29.9039625,
+                    "medianMilliseconds": 29.9185,
+                    "minMilliseconds": 28.6893,
+                    "maxMilliseconds": 31.5712,
+                    "standardDeviationMilliseconds": 0.9127958752337519,
+                    "nanosecondsPerOperation": 228.14912796020509,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        28.6893,
+                        29.7718,
+                        28.8025,
+                        30.3169,
+                        30.0652,
+                        31.5712,
+                        30.7009,
+                        29.3139
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame GetResult (flow off)",
+            "workload": "Repeated burst; 4096 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext off",
+            "concurrency": 4096,
+            "iterationsPerSample": 131072,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 3.2822875,
+                    "medianMilliseconds": 3.28765,
+                    "minMilliseconds": 3.0772,
+                    "maxMilliseconds": 3.4606,
+                    "standardDeviationMilliseconds": 0.11238481255823664,
+                    "nanosecondsPerOperation": 25.041866302490236,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        3.2198,
+                        3.3476,
+                        3.0772,
+                        3.3629,
+                        3.3503,
+                        3.2277,
+                        3.4606,
+                        3.2122
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 3.549725,
+                    "medianMilliseconds": 3.4397,
+                    "minMilliseconds": 3.3067,
+                    "maxMilliseconds": 3.919,
+                    "standardDeviationMilliseconds": 0.22704623290202367,
+                    "nanosecondsPerOperation": 27.082252502441408,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        3.3067,
+                        3.3489,
+                        3.7986,
+                        3.7796,
+                        3.483,
+                        3.919,
+                        3.3656,
+                        3.3964
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame<int> scheduling (flow off)",
+            "workload": "Warm steady state; 128 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext off",
+            "concurrency": 128,
+            "iterationsPerSample": 4096,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 0.9281875,
+                    "medianMilliseconds": 0.8901,
+                    "minMilliseconds": 0.8678,
+                    "maxMilliseconds": 1.1981,
+                    "standardDeviationMilliseconds": 0.10293447475821692,
+                    "nanosecondsPerOperation": 226.6082763671875,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.9125,
+                        0.8927,
+                        0.8782,
+                        0.8875,
+                        1.1981,
+                        0.8678,
+                        0.8818,
+                        0.9069
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 0.8597374999999999,
+                    "medianMilliseconds": 0.843,
+                    "minMilliseconds": 0.8079,
+                    "maxMilliseconds": 1.0237,
+                    "standardDeviationMilliseconds": 0.06494324324939434,
+                    "nanosecondsPerOperation": 209.89685058593748,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.855,
+                        0.8176,
+                        0.8079,
+                        0.8562,
+                        1.0237,
+                        0.821,
+                        0.831,
+                        0.8655
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame<int> GetResult (flow off)",
+            "workload": "Warm steady state; 128 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext off",
+            "concurrency": 128,
+            "iterationsPerSample": 4096,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 0.156975,
+                    "medianMilliseconds": 0.15489999999999999,
+                    "minMilliseconds": 0.1499,
+                    "maxMilliseconds": 0.1806,
+                    "standardDeviationMilliseconds": 0.009224796745728334,
+                    "nanosecondsPerOperation": 38.323974609375,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.1565,
+                        0.1562,
+                        0.1499,
+                        0.1542,
+                        0.1806,
+                        0.1514,
+                        0.1514,
+                        0.1556
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 0.1138875,
+                    "medianMilliseconds": 0.111,
+                    "minMilliseconds": 0.1073,
+                    "maxMilliseconds": 0.1345,
+                    "standardDeviationMilliseconds": 0.008400809112817648,
+                    "nanosecondsPerOperation": 27.8045654296875,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        0.1123,
+                        0.1128,
+                        0.1073,
+                        0.1097,
+                        0.1345,
+                        0.1088,
+                        0.108,
+                        0.1177
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame<int> scheduling (flow off)",
+            "workload": "Repeated burst; 4096 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext off",
+            "concurrency": 4096,
+            "iterationsPerSample": 131072,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 40.855675,
+                    "medianMilliseconds": 40.8174,
+                    "minMilliseconds": 39.624,
+                    "maxMilliseconds": 41.9123,
+                    "standardDeviationMilliseconds": 0.733166593875498,
+                    "nanosecondsPerOperation": 311.70406341552737,
+                    "allocatedBytesPerOperation": 415.30859375,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        40.0148,
+                        39.624,
+                        41.9123,
+                        41.6269,
+                        40.6232,
+                        40.7915,
+                        40.8433,
+                        41.4094
+                    ],
+                    "sampleAllocatedBytes": [
+                        54468608,
+                        54403072,
+                        54403072,
+                        54398976,
+                        54460416,
+                        54444032,
+                        54460416,
+                        54444032
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 27.712899999999999,
+                    "medianMilliseconds": 27.6477,
+                    "minMilliseconds": 26.7907,
+                    "maxMilliseconds": 29.0465,
+                    "standardDeviationMilliseconds": 0.7302874571016543,
+                    "nanosecondsPerOperation": 211.4326477050781,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        27.0597,
+                        26.7907,
+                        28.0725,
+                        27.0004,
+                        27.5068,
+                        28.438,
+                        27.7886,
+                        29.0465
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        },
+        {
+            "displayName": "Async method NextFrame<int> GetResult (flow off)",
+            "workload": "Repeated burst; 4096 concurrent operations; one NextFrame suspension; scheduling/consumption slices only; suspended-frame time and resumption excluded; OnityTask.FlowExecutionContext off",
+            "concurrency": 4096,
+            "iterationsPerSample": 131072,
+            "results": [
+                {
+                    "library": "OnityTask",
+                    "meanMilliseconds": 3.5191625,
+                    "medianMilliseconds": 3.5088999999999999,
+                    "minMilliseconds": 3.3937,
+                    "maxMilliseconds": 3.6678,
+                    "standardDeviationMilliseconds": 0.08021293439184237,
+                    "nanosecondsPerOperation": 26.849079132080079,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        3.5191,
+                        3.3937,
+                        3.6678,
+                        3.5805,
+                        3.4385,
+                        3.565,
+                        3.49,
+                        3.4987
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                },
+                {
+                    "library": "UniTask",
+                    "meanMilliseconds": 3.6913875,
+                    "medianMilliseconds": 3.68865,
+                    "minMilliseconds": 3.5674,
+                    "maxMilliseconds": 3.8742,
+                    "standardDeviationMilliseconds": 0.09591747022180061,
+                    "nanosecondsPerOperation": 28.16305160522461,
+                    "allocatedBytesPerOperation": 0.0,
+                    "allocationSamplesValid": 8,
+                    "sampleMilliseconds": [
+                        3.5674,
+                        3.6028,
+                        3.6804,
+                        3.8742,
+                        3.6142,
+                        3.7,
+                        3.7952,
+                        3.6969
+                    ],
+                    "sampleAllocatedBytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "sampleAllocationValid": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                }
+            ]
+        }
+    ]
+}

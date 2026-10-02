@@ -78,7 +78,8 @@ namespace Onity.Unity.Installers
     public static class OnityFactoryBindingExtensions
     {
         /// <summary>
-        /// Binds a prefab-backed pool and a default pooled factory in one call.
+        /// Binds a prefab-backed pool and a default pooled factory in one call. The helper creates
+        /// the pool, so the container's scope owns it and disposes it when the container is disposed.
         /// </summary>
         /// <typeparam name="TComponent">Spawned component type.</typeparam>
         /// <param name="container">Target container.</param>
@@ -86,6 +87,14 @@ namespace Onity.Unity.Installers
         /// <param name="parent">Optional parent transform for pooled instances.</param>
         /// <param name="defaultCapacity">Initial pool capacity.</param>
         /// <param name="maxSize">Maximum pool capacity.</param>
+        /// <remarks>
+        /// The scope disposes the pool after it cancels its <see cref="OnityContainer.LifetimeToken" />
+        /// (see <see cref="OnityScopeLifetimeExtensions.AddTo{TDisposable}" />). Disposing a
+        /// <see cref="PrefabComponentPool{TComponent}" /> destroys its inactive items only; items that
+        /// are still checked out stay with their owners, so release them before the scope ends. A pool
+        /// you build yourself and pass to <see cref="BindPooledFactory{TValue}(OnityContainer, IPool{TValue})" />
+        /// stays caller-owned.
+        /// </remarks>
         public static void BindPooledFactory<TComponent>(
             this OnityContainer container,
             TComponent prefab,
@@ -110,15 +119,23 @@ namespace Onity.Unity.Installers
                 defaultCapacity,
                 maxSize);
 
+            // The helper creates the pool, so the scope owns it. Register the disposal before binding,
+            // so a bind that fails (for example on a disposed container) cannot leave the pool behind.
+            pool.AddTo(container);
             BindPooledFactory(container, pool);
         }
 
         /// <summary>
-        /// Binds an existing pool and a default pooled factory in one call.
+        /// Binds an existing pool and a default pooled factory in one call. The pool stays
+        /// caller-owned: the container never disposes it.
         /// </summary>
         /// <typeparam name="TValue">Spawned value type.</typeparam>
         /// <param name="container">Target container.</param>
         /// <param name="pool">Existing pool instance.</param>
+        /// <remarks>
+        /// To dispose the pool with the scope, tie it to the container, for example
+        /// <c>pool.AddTo(container)</c> (see <see cref="OnityScopeLifetimeExtensions.AddTo{TDisposable}" />).
+        /// </remarks>
         public static void BindPooledFactory<TValue>(this OnityContainer container, IPool<TValue> pool)
         {
             if (container == null)

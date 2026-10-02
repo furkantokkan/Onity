@@ -101,7 +101,8 @@ namespace Onity.Tests.PlayMode
                     return true;
                 });
                 active = new Observation(task, () => completedInside |= inside);
-                var other = new Observation(OnityTask.DelayFrames(int.MaxValue));
+                // Default frame waits run on the PlayerLoop scheduler; use another legacy family.
+                var other = new Observation(OnityTask.WaitUntil(() => false));
                 owner = CurrentRunner();
                 try
                 {
@@ -153,7 +154,8 @@ namespace Onity.Tests.PlayMode
         [UnityTest]
         public IEnumerator ActiveCompletion_ConsumeDestroyAndRerentSameSource_OldVersionCannotCancelReplacement()
         {
-            OnityTask first = OnityTask.NextFrame();
+            // Legacy delay sources: default frame waits are stateless and no longer pooled per wait.
+            OnityTask first = OnityTask.Delay(0.001f);
             object originalSource = typeof(OnityTask).GetField("m_state", BindingFlags.Instance | BindingFlags.NonPublic)
                 .GetValue(first);
             GameObject owner = CurrentRunner();
@@ -166,7 +168,7 @@ namespace Onity.Tests.PlayMode
                 {
                     first.GetAwaiter().GetResult();
                     UnityEngine.Object.DestroyImmediate(owner);
-                    OnityTask next = OnityTask.DelayFrames(2);
+                    OnityTask next = OnityTask.Delay(0.001f);
                     rentedSource = typeof(OnityTask).GetField("m_state", BindingFlags.Instance | BindingFlags.NonPublic)
                         .GetValue(next);
                     replacement = new Observation(next);
@@ -245,7 +247,10 @@ namespace Onity.Tests.PlayMode
             // Close through the existing managed retirement method, then defer this old object's OnDestroy.
             Component runner = (Component)s_instance.GetValue(null);
             runner.GetType().GetMethod("Retire", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(runner, null);
-            var replacement = new Observation(OnityTask.DelayFrames(3));
+            // A three-frame predicate wait still runs on the legacy runner and creates the replacement;
+            // DelayFrames(3) runs on Onity's PlayerLoop nodes in Play since PERF-7.
+            int targetFrame = Time.frameCount + 3;
+            var replacement = new Observation(OnityTask.WaitUntil(() => Time.frameCount >= targetFrame));
             GameObject newOwner = CurrentRunner();
             UnityEngine.Object.Destroy(owner);
             try
@@ -392,10 +397,10 @@ namespace Onity.Tests.PlayMode
 
         private static OnityTask[] CreateWaits(CancellationToken token)
         {
+            // In Play the default frame waits run on the PlayerLoop scheduler and are retired by
+            // session exit, not by the legacy runner; they are covered by the PlayerLoop tests.
             return new[]
             {
-                OnityTask.NextFrame(token), OnityTask.DelayFrames(int.MaxValue, token),
-                OnityTask.NextFixedFrame(token), OnityTask.NextLateFrame(token),
                 OnityTask.Delay(1000f, token), OnityTask.WaitUntil(() => false, token),
                 OnityTask.WaitWhile(() => true, token)
             };

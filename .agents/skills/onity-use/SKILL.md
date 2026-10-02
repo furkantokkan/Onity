@@ -1,17 +1,19 @@
 ---
 name: onity-use
-description: Use Onity in a Unity game or migrate game code from Zenject, VContainer, R3, UniRx, or MessagePipe. Covers the shipped DI, reactive, messaging, and Unity context APIs; use onity-develop for changes to the Onity package itself.
+description: Use Onity in a Unity game or migrate game code from Zenject, VContainer, R3, UniRx, MessagePipe, or UniTask. Covers the shipped DI, reactive, messaging, OnityTask async, and Unity context APIs; use onity-develop for changes to the Onity package itself.
 ---
 
 # Use Onity
 
 Work against the Onity version installed in the target project. Find its package source or `Packages/manifest.json` entry first. If the project also contains Onity documentation, read only the guide for the feature being used. The installed public API and tests win when a guide or example disagrees. Do not invent an API from a migration analogy.
 
-In an Onity source checkout, start with `docs/Getting-Started.md`, then the relevant file under `docs/guide/` or `docs/reference/`. Use `docs/Onity-AI-Usage-Guide.md` as an index and verify feature signatures in the installed source and focused tests.
+In an Onity source checkout, start with `docs/Getting-Started.md`, then the relevant file under `docs/guide/` or `docs/reference/`. Use `docs/Onity-AI-Usage-Guide.md` as an index and verify feature signatures in the installed source and focused tests. When this skill was installed by `Onity/AI/Install Assistant Guidance...`, the same usage guide is `references/Onity-AI-Usage-Guide.md` next to this file, and the installed package ships every guide under `Documentation~/`.
 
 ## Choose the right surface
 
-- DI: register services with `OnityContainer` in a `MonoInstaller` owned by `ProjectContext`, `SceneContext`, or `GameObjectContext`. A fluent `Bind` registers only after `AsSingle()` or `AsTransient()`. Use a child container's `AsSingle()` for a per-scope instance. Prefer constructor injection for plain C# services. Use `BindInterfacesAndSelfTo<T>()` when the same singleton must be shared across its interfaces and concrete type.
+- DI: register services with `OnityContainer` in a `MonoInstaller` owned by `ProjectContext`, `SceneContext`, or `GameObjectContext`. A fluent `Bind` registers only after `AsSingle()`, `AsScoped()` or `AsTransient()`. Use `AsScoped()` for a per-scope instance. Prefer constructor injection for plain C# services. Use `BindInterfacesAndSelfTo<T>()` when the same singleton must be shared across its interfaces and concrete type.
+- Factories and pooling: pass runtime arguments through an `IFactory<...>` registered with `BindFactory`, and reuse prefab instances with `BindPooledFactory` by injecting `IFactory<T>` to spawn and `IPool<T>` to release (`OnityObjectPool<T>` for plain C# objects). Release each item exactly once and never touch it afterwards; reset state in `IPoolHooks` or the pool actions. The scope disposes the pool that `BindPooledFactory(prefab, ...)` creates; a pool you build and pass in stays yours, so dispose it or call `pool.AddTo(container)`. See sections 2.5 and 10 of the usage guide.
+- Async: use `OnityTask` (`Onity.Unity.Async`), not UniTask. Give every async loop a token from its owner (`GetCancellationTokenOnDestroy()`, an injected `IOnityScopeLifetime.Token`), await pooled tasks once, and use `async OnityTaskVoid` or `Forget(handler)` instead of `async void`. Assemblies that call its extension methods must reference `Onity.Reactive`. See section 11 of the usage guide and `docs/Migration/From-UniTask.md` for UniTask names.
 - Messaging: use the context-bound `IMessageBroker` or `OnityEventHub` for typed events. Contexts bind these automatically. Use `BindMessageChannel<T>()` when directly injecting `IPublisher<T>` or `ISubscriber<T>` is needed. A message is a future notification; use `ReactiveProperty<T>` for current state.
 - Reactive: compose `IOnityObservable<T>` streams and retain every `Subscribe` result. Use `AddTo(this)` for a Unity `Component`, or `AddTo(CompositeDisposable)` for plain C#; there is no `AddTo(GameObject)` overload. Check threading when an async operator feeds Unity API calls.
 - Unity/DOTS: keep the engine-free core free of `UnityEngine` references. Resolve managed dependencies outside Burst jobs and pass data into jobs.

@@ -10,6 +10,14 @@ on:
       - "Gemfile.lock"
       - ".github/workflows/docs-check.yml"
       - ".github/workflows/pages.yml"
+      # Sources and outputs of the packaged AI documentation (tools/docs/sync-package-docs.py).
+      - ".agents/skills/onity-use/**"
+      - "tools/docs/**"
+      - "Packages/com.onity.framework/Documentation~/**"
+      - "Packages/com.onity.framework/README.md"
+      - "Packages/com.onity.framework/AGENTS.md"
+      - "Packages/com.onity.framework/CLAUDE.md"
+      - "Packages/com.onity.framework/llms.txt"
   workflow_dispatch:
 
 permissions:
@@ -44,3 +52,21 @@ jobs:
           bundle exec htmlproofer ./_site
           --disable-external
           --swap-urls '^/Onity/:/'
+
+  # The UPM package ships a generated copy of the guides and the onity-use skill under
+  # Packages/com.onity.framework/Documentation~ (see tools/docs/sync-package-docs.py).
+  # docs/ and .agents/skills/ stay the source of truth; this fails when the committed copy is stale.
+  package-docs:
+    name: Verify packaged docs are in sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Check Documentation~ is up to date
+        run: python tools/docs/sync-package-docs.py --check

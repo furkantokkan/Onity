@@ -302,6 +302,31 @@ namespace Onity.Tests.EditMode
         }
 
         [Test]
+        public void FlowExecutionContext_DefaultsToFalse()
+        {
+            Assert.That(OnityTask.FlowExecutionContext, Is.False,
+                "The default must match UniTask: no execution context is captured per suspension.");
+        }
+
+        [Test]
+        public void ResumedOnWorker_AtTheDefault_DoesNotFlowAsyncLocal()
+        {
+            // The flag is deliberately not set here: this test pins the out-of-the-box behaviour.
+            AsyncLocal<string> local = new AsyncLocal<string>();
+            ManualAwaitable gate = new ManualAwaitable();
+            local.Value = "before";
+            OnityTask<ResumeObservation> task = ObserveAfterAsync(gate, local);
+            local.Value = null;
+
+            Task.Run(() => gate.Complete()).GetAwaiter().GetResult();
+
+            ResumeObservation observation = task.GetAwaiter().GetResult();
+            Assert.That(observation.ThreadId, Is.Not.EqualTo(Thread.CurrentThread.ManagedThreadId));
+            Assert.That(observation.LocalValue, Is.Null,
+                "An AsyncLocal written before an await must not be visible after it at the default.");
+        }
+
+        [Test]
         public void ResumedOnWorker_FlowsAsyncLocal_WhenFlowIsEnabled()
         {
             OnityTask.FlowExecutionContext = true;
@@ -398,6 +423,7 @@ namespace Onity.Tests.EditMode
         [Test]
         public void SynchronousPartAsyncLocalWrite_ReachesTheCaller()
         {
+            OnityTask.FlowExecutionContext = true;
             AsyncLocal<string> local = new AsyncLocal<string>();
             ManualAwaitable gate = new ManualAwaitable();
             try
@@ -483,6 +509,103 @@ namespace Onity.Tests.EditMode
                 Assert.That(flowed.GetAwaiter().GetResult().LocalValue, Is.EqualTo("captured"));
                 Assert.That(bare.GetAwaiter().GetResult().LocalValue, Is.EqualTo("ambient"));
                 Assert.That(local.Value, Is.EqualTo("ambient"));
+            }
+            finally
+            {
+                local.Value = null;
+            }
+        }
+
+        [TestCase(false, false, true, true)]
+        [TestCase(false, true, true, true)]
+        [TestCase(true, false, true, true)]
+        [TestCase(true, true, true, true)]
+        [TestCase(false, false, true, false)]
+        [TestCase(false, true, true, false)]
+        [TestCase(true, false, true, false)]
+        [TestCase(true, true, true, false)]
+        [TestCase(false, false, false, true)]
+        [TestCase(false, true, false, true)]
+        [TestCase(true, false, false, true)]
+        [TestCase(true, true, false, true)]
+        public void TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(
+            bool typed,
+            bool safeAwaiter,
+            bool firstFlow,
+            bool secondFlow)
+        {
+            AsyncLocal<string> local = new AsyncLocal<string>();
+            string[] observed = new string[2];
+            ManualAwaitable firstGate = new ManualAwaitable();
+            ManualAwaitable secondGate = new ManualAwaitable();
+            SafeManualAwaitable firstSafeGate = new SafeManualAwaitable();
+            SafeManualAwaitable secondSafeGate = new SafeManualAwaitable();
+            OnityTask task = default;
+            OnityTask<string> typedTask = default;
+
+            try
+            {
+                OnityTask.FlowExecutionContext = firstFlow;
+                local.Value = "initial";
+                if (typed)
+                {
+                    typedTask = safeAwaiter
+                        ? ObserveTwiceTypedAsync(firstSafeGate, secondSafeGate, local, observed, secondFlow)
+                        : ObserveTwiceTypedAsync(firstGate, secondGate, local, observed, secondFlow);
+                }
+                else
+                {
+                    task = safeAwaiter
+                        ? ObserveTwiceAsync(firstSafeGate, secondSafeGate, local, observed, secondFlow)
+                        : ObserveTwiceAsync(firstGate, secondGate, local, observed, secondFlow);
+                }
+
+                // Changing the setting before resumption must not replace the first decision.
+                local.Value = "first ambient";
+                OnityTask.FlowExecutionContext = !firstFlow;
+                if (safeAwaiter)
+                {
+                    firstSafeGate.Complete();
+                }
+                else
+                {
+                    firstGate.Complete();
+                }
+
+                Assert.That(observed[0], Is.EqualTo(firstFlow ? "initial" : "first ambient"));
+                Assert.That(typed ? typedTask.IsCompleted : task.IsCompleted, Is.False,
+                    "The same method must suspend again before completing.");
+                if (firstFlow)
+                {
+                    Assert.That(local.Value, Is.EqualTo("first ambient"),
+                        "The write between suspensions leaked into the completing thread.");
+                }
+
+                local.Value = "second ambient";
+                OnityTask.FlowExecutionContext = !secondFlow;
+                if (safeAwaiter)
+                {
+                    secondSafeGate.Complete();
+                }
+                else
+                {
+                    secondGate.Complete();
+                }
+
+                string expected = secondFlow ? "second capture" : "second ambient";
+                if (typed)
+                {
+                    Assert.That(typedTask.GetAwaiter().GetResult(), Is.EqualTo(expected));
+                }
+                else
+                {
+                    task.GetAwaiter().GetResult();
+                }
+
+                Assert.That(observed[1], Is.EqualTo(expected),
+                    "The second suspension must capture the new value or clear the earlier capture.");
+                Assert.That(local.Value, Is.EqualTo(secondFlow ? "second ambient" : "completed"),
+                    "AsyncLocal writes after resumption must follow that suspension's flow choice.");
             }
             finally
             {
@@ -656,7 +779,7 @@ namespace Onity.Tests.EditMode
             OnityTask<int> first = ReturnAfterAsync(firstGate, 1);
             OnityTask<int> second = ReturnAfterAsync(secondGate, 2);
 
-            OnityTask<int[]> combined = OnityTask.WhenAll(first, second);
+            OnityTask<int[]> combined = OnityTask.WhenAll(new[] { first, second });
 
             Assert.That(GetState(combined), Is.InstanceOf<Task<int[]>>(),
                 "Pending typed inputs bridge through AsTask().");
@@ -678,8 +801,10 @@ namespace Onity.Tests.EditMode
             ManualAwaitable firstGate = new ManualAwaitable();
             ManualAwaitable secondGate = new ManualAwaitable();
             InvalidOperationException failure = new InvalidOperationException("typed failure");
-            OnityTask<int[]> combined = OnityTask.WhenAll(
-                ThrowAfterAsync(firstGate, failure), ReturnAfterAsync(secondGate, 2));
+            OnityTask<int[]> combined = OnityTask.WhenAll(new[]
+            {
+                ThrowAfterAsync(firstGate, failure), ReturnAfterAsync(secondGate, 2)
+            });
 
             firstGate.Complete();
             secondGate.Complete();
@@ -985,6 +1110,72 @@ namespace Onity.Tests.EditMode
                 Thread.CurrentThread.ManagedThreadId, local.Value, SynchronizationContext.Current);
             local.Value = value;
             return observation;
+        }
+
+        private static async OnityTask ObserveTwiceAsync(
+            ManualAwaitable firstGate,
+            ManualAwaitable secondGate,
+            AsyncLocal<string> local,
+            string[] observed,
+            bool secondFlow)
+        {
+            await firstGate;
+            observed[0] = local.Value;
+            local.Value = "second capture";
+            OnityTask.FlowExecutionContext = secondFlow;
+            await secondGate;
+            observed[1] = local.Value;
+            local.Value = "completed";
+        }
+
+        private static async OnityTask ObserveTwiceAsync(
+            SafeManualAwaitable firstGate,
+            SafeManualAwaitable secondGate,
+            AsyncLocal<string> local,
+            string[] observed,
+            bool secondFlow)
+        {
+            await firstGate;
+            observed[0] = local.Value;
+            local.Value = "second capture";
+            OnityTask.FlowExecutionContext = secondFlow;
+            await secondGate;
+            observed[1] = local.Value;
+            local.Value = "completed";
+        }
+
+        private static async OnityTask<string> ObserveTwiceTypedAsync(
+            ManualAwaitable firstGate,
+            ManualAwaitable secondGate,
+            AsyncLocal<string> local,
+            string[] observed,
+            bool secondFlow)
+        {
+            await firstGate;
+            observed[0] = local.Value;
+            local.Value = "second capture";
+            OnityTask.FlowExecutionContext = secondFlow;
+            await secondGate;
+            observed[1] = local.Value;
+            local.Value = "completed";
+            return observed[1];
+        }
+
+        private static async OnityTask<string> ObserveTwiceTypedAsync(
+            SafeManualAwaitable firstGate,
+            SafeManualAwaitable secondGate,
+            AsyncLocal<string> local,
+            string[] observed,
+            bool secondFlow)
+        {
+            await firstGate;
+            observed[0] = local.Value;
+            local.Value = "second capture";
+            OnityTask.FlowExecutionContext = secondFlow;
+            await secondGate;
+            observed[1] = local.Value;
+            local.Value = "completed";
+            return observed[1];
         }
 
         private readonly struct ResumeObservation

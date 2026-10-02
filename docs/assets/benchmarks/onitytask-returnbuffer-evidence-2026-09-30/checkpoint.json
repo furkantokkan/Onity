@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "status": "PREPARED_NOT_IMPLEMENTED",
+  "runtimeChanged": false,
+  "currentRuntimeSha256": "3D66BDB8C0A0F27DFA75649283C75AB9E0289866F9D61DDDA80A99B74685128F",
+  "threadSwitchSha256": "CBB4B6666538DB2AE9F0CB206192F8D450BBDD579294956A6F680F2C2FE1C8CA",
+  "stateMachineRunnerSha256": "8D26126887CEE171C85086AF2972C008F659BDDD3357A96DA6F56C0F30E0F11F",
+  "harnessSha256": "C2E7B6A68AD0D72CCFDB03AF95E618B494AD0D54C59EF4B3FED2129436498FE9",
+  "releaseBaselines": "Both validated 48 arms/8 goldens; startup timing only. No candidate or paired timings for this packet.",
+  "profileScope": "Baseline IL2CPP Development,128/flow on/drain; 2 warmups and2 captured batches/library,256 consumed operations. Attribution only;4096 baseline and candidate profiling pending.",
+  "profileWindows": [
+    {
+      "library": "Onity",
+      "resumeSamples": 256,
+      "deepRuntimeSamples": 11776,
+      "gcAllocationSamples": 0,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": -1,
+      "dispatcherMonitors": [
+        {
+          "thread": "Main Thread",
+          "phase": "Consume",
+          "count": 256,
+          "enqueue": true,
+          "drain": false
+        },
+        {
+          "thread": "Main Thread",
+          "phase": "Lifecycle",
+          "count": 6,
+          "enqueue": false,
+          "drain": true
+        }
+      ]
+    },
+    {
+      "library": "UniTask",
+      "resumeSamples": 256,
+      "deepRuntimeSamples": 4096,
+      "gcAllocationSamples": 0,
+      "gcMetadataMissing": 0,
+      "gcAllocationBytes": -1,
+      "dispatcherMonitors": [
+        {
+          "thread": "Main Thread",
+          "phase": "Lifecycle",
+          "count": 6,
+          "enqueue": false,
+          "drain": true
+        }
+      ]
+    }
+  ],
+  "settingsRestored": true,
+  "settingsRepresentationRepair": "Diagnostic compiler-argument setter left empty Standalone entry; exact original empty dictionary restored after Editor exit. All4hashes match.",
+  "temporarySceneRemoved": true,
+  "playerBinariesArchived": false,
+  "fullEditorLogsArchived": false
+}

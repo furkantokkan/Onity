@@ -15,7 +15,7 @@
 - Cancellation callbacks only set flags. Main-thread publication removes a
   source and disposes its registration before invoking consumers. Phase pass
   and session epoch checks protect reentrant registration and teardown.
-- [Usage and ownership](../../guide/onitytask.md#explicit-playerloop-phases).
+- [Usage and ownership](../../guide/onitytask.md#playerloop-timings).
 
 ## Editor verification
 

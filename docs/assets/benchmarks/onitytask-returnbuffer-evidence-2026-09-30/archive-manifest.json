@@ -1,0 +1,127 @@
+[
+  {
+    "path": "after-baseline-settings.json",
+    "bytes": 529,
+    "sha256": "5B0C7BB0BCBA7AAD0A5554A3C6DA485113FE6738E6C702841442CDB1452862E1"
+  },
+  {
+    "path": "after-profile-ProjectSettings.asset.txt",
+    "bytes": 25860,
+    "sha256": "CB5CBD7CAB7ED716154060C35A2C241D2E1F7995451E98C24995C6D2095B04D9"
+  },
+  {
+    "path": "after-profile-settings.json",
+    "bytes": 529,
+    "sha256": "5B0C7BB0BCBA7AAD0A5554A3C6DA485113FE6738E6C702841442CDB1452862E1"
+  },
+  {
+    "path": "baseline-binary-manifest.json",
+    "bytes": 47528,
+    "sha256": "19A12064599B9EDDD460DC45B77DB8031F0DB59928DCEF30F04E9736D796002A"
+  },
+  {
+    "path": "baseline-il2cpp-build-validation.json",
+    "bytes": 1552812,
+    "sha256": "A70EBCE59120ECA6E0EF2BEBDF1BB758349F62F147201381588775E4E558D761"
+  },
+  {
+    "path": "baseline-il2cpp.build.json",
+    "bytes": 719,
+    "sha256": "549A4D6D4815E00F4C1CDE7337FC929B62D5A0C5521A6432201A515255349BB5"
+  },
+  {
+    "path": "baseline-mono-build-validation.json",
+    "bytes": 1546146,
+    "sha256": "2DDBF082B458E05EC5731D2ED9AA36CA0666940B675E0C09652A4521FEF75EBC"
+  },
+  {
+    "path": "baseline-mono.build.json",
+    "bytes": 720,
+    "sha256": "9F603D41C71158FD48C17B1CF8B9268F92C8FFEB539B4EB8939F48ED39287606"
+  },
+  {
+    "path": "baseline-profile-il2cpp.build.json",
+    "bytes": 756,
+    "sha256": "DA42F5F9AA126695D9FB3DEE6B9B4D96A690D76AB8A08457836B86B4221E7767"
+  },
+  {
+    "path": "baseline-staging.json",
+    "bytes": 119779,
+    "sha256": "ACFF6EDCD94DB178F9E301736ABBFE6221EA56AC06F7993FAFB6FFFF5EE50340"
+  },
+  {
+    "path": "before-settings.json",
+    "bytes": 529,
+    "sha256": "5B0C7BB0BCBA7AAD0A5554A3C6DA485113FE6738E6C702841442CDB1452862E1"
+  },
+  {
+    "path": "benchmark-diagnostic-roslyn-observation.json",
+    "bytes": 627,
+    "sha256": "A78CA95E7CA3B258A3D28E07CCC5F822E0175AC402B705AD4EE5C467D0AF1734"
+  },
+  {
+    "path": "benchmark-diagnostic-roslyn.log",
+    "bytes": 206,
+    "sha256": "02ACF6E09ED963C2D5C436DF2A3F6C284C28AD97F540A504F1692ED2636F5E67"
+  },
+  {
+    "path": "checkpoint.json",
+    "bytes": 2135,
+    "sha256": "9839CA9979CA27DB97ADAF08D2E22F4078597AF27A87D2F4380589AEB5311534"
+  },
+  {
+    "path": "frozen-lifecycle-runner.cs.txt",
+    "bytes": 45734,
+    "sha256": "C2E7B6A68AD0D72CCFDB03AF95E618B494AD0D54C59EF4B3FED2129436498FE9"
+  },
+  {
+    "path": "frozen-OnityAsyncStateMachineRunner.cs.txt",
+    "bytes": 29984,
+    "sha256": "8D26126887CEE171C85086AF2972C008F659BDDD3357A96DA6F56C0F30E0F11F"
+  },
+  {
+    "path": "frozen-OnityTaskThreadSwitch.cs.txt",
+    "bytes": 17323,
+    "sha256": "CBB4B6666538DB2AE9F0CB206192F8D450BBDD579294956A6F680F2C2FE1C8CA"
+  },
+  {
+    "path": "frozen-OnityTaskThreadSwitchEditModeTests.cs.txt",
+    "bytes": 11792,
+    "sha256": "96C396E4360D1FDB64446B79012CB7429CE18DBC4E63F2ECAEDF05D8DEAB89AB"
+  },
+  {
+    "path": "frozen-runtime.json",
+    "bytes": 63557,
+    "sha256": "1CBD1A069224235F8229EF240D86DB2BFD76B35A5BD1BB6DFD8517F68CD52D89"
+  },
+  {
+    "path": "fullcycle-baseline-128-on-drain-attribution.json",
+    "bytes": 5494399,
+    "sha256": "C851728EB406B2577A48C09B9658C53887A15F524715B068D4CAD2C38B192628"
+  },
+  {
+    "path": "fullcycle-baseline-128-on-drain.json",
+    "bytes": 2598,
+    "sha256": "72FB3E8A0E2CFC659DFFF0A2A4CCC9611E49D0563C8D5FB56161258A8FF376A5"
+  },
+  {
+    "path": "fullcycle-baseline-128-on-drain.raw",
+    "bytes": 4425172,
+    "sha256": "97BD2F07451FFD370F85E0FD3FAD7A1FC9FCBA5011C771007C8CAF643A79D5D0"
+  },
+  {
+    "path": "generated-summary.json",
+    "bytes": 82436,
+    "sha256": "76A8A9CFF0EAC7781E31EE196B65045979BE9E10697E7F6F291CDF94DF87F156"
+  },
+  {
+    "path": "run-paired-reports.ps1",
+    "bytes": 10029,
+    "sha256": "AC2F77DFC83C4FF2BEF31AFD29EB9F9C624521368B403DDAAB5CDB4E09C6F7A7"
+  },
+  {
+    "path": "validate-reports.py",
+    "bytes": 22375,
+    "sha256": "D29D2229DA77F01B396C8CCEB8087A2E0B69FB68EC081B0428C4E1C2445D2A1D"
+  }
+]

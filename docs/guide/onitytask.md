@@ -2,15 +2,18 @@
 title: "Async with OnityTask"
 parent: "Guides"
 nav_order: 4
-description: "Use OnityTask for cancellable Unity frame waits, scene loading, web requests, reactive streams, and async messaging."
+description: "Use OnityTask for cancellable Unity frame waits, PlayerLoop timings, timers, composition, triggers and UI events, async streams, scene loading, web requests and DI-scoped async work."
 ---
 
 # Async with OnityTask
 
 `OnityTask` and `OnityTask<T>` are Onity's Unity-facing awaitables. They cover
-frame waits, delays, predicates, scene loading, `AsyncOperation`, web requests,
-reactive streams, and async message delivery without adding a third-party
-runtime package.
+frame waits and every PlayerLoop timing, timed waits and timers, composition,
+cancellation, thread switches, Jobs, coroutines, Unity operations, lifecycle
+triggers and UI events, async streams with LINQ-style operators, channels,
+scene loading and web requests, without adding a third-party runtime package.
+They also connect to Onity's container, reactive properties and message
+channels, so async work can end with the scope that owns it.
 
 ```csharp
 using Onity.Unity.Async;
@@ -18,7 +21,10 @@ using Onity.Unity.Async;
 
 Use `OnityTask` for gameplay flows driven by Unity. Keep `Task` when a plain .NET
 service already exposes it as part of its contract; bridge at the boundary with
-`OnityTask.FromTask(...)` or `AsTask()`.
+`task.AsOnityTask()`, `OnityTask.FromTask(...)` or `AsTask()`.
+
+Coming from UniTask? [Migrating from UniTask](../Migration/From-UniTask.html)
+maps every UniTask API to its Onity name and lists the behavior differences.
 
 ## Start and cancel a Unity flow
 
@@ -70,94 +76,213 @@ public sealed class BootFlow : MonoBehaviour
 }
 ```
 
-Cancellation of pooled Unity waits is completed through the Onity player-loop
-runner, so the awaiting continuation resumes on Unity's main thread. Canceling a
+When the work should stop only when the object is destroyed, use
+`this.GetCancellationTokenOnDestroy()` instead of a source of your own. Inside a
+scope with an Onity context, `this.GetScopeCancellationToken()` returns the
+token of the nearest context, which is canceled before the scope's services are
+disposed (see [DI scope tokens](#di-reactive-and-messaging-integration)).
+
+Cancellation of pooled Unity waits is completed through Onity's player-loop
+code, so the awaiting continuation resumes on Unity's main thread. Canceling a
 fixed-frame wait also completes while `Time.timeScale` is zero.
 
-In Onity 0.4.0, destroying the legacy runner also cancels its
-accepted frame, delay, predicate and operation waits on the main thread.
-The cancellation retains each wait's original token, including a token whose
-owner has not requested cancellation. Destruction does not cancel the caller's
-token source or stop the underlying Unity operation. An active predicate or
-progress callback unwinds before its wait publishes cancellation.
-
-Manual destruction permits a replacement runner in the same active session.
-Session exit, reload and shutdown close acceptance before retiring pending
-work; callbacks cannot create a replacement during that closure. The separate
-explicit PlayerLoop waits retain their own session ownership.
-See the [retirement verification and measured limits](../assets/benchmarks/onitytask-legacy-retirement-2026-09-27.md).
+In Play, the default frame waits (`NextFrame`, `DelayFrames`, `NextFixedFrame`,
+`NextLateFrame`) created on the main thread and every explicit-timing wait run
+on Onity's own PlayerLoop nodes; they end with their token or the Play session.
+The float-seconds `Delay`, the token-only `WaitUntil` / `WaitWhile`,
+`AsyncOperation` waits, frame waits with a token created on a worker thread and
+all Edit Mode frame waits are still served by the hidden legacy runner
+component. Destroying that runner cancels the waits it accepted, on the main
+thread, retaining each wait's original token. Destruction does not cancel the caller's token source or
+stop the underlying Unity operation, and a manual destruction permits a
+replacement runner in the same session. Session exit, reload and shutdown close
+acceptance before retiring pending work. See the
+[retirement verification](../assets/benchmarks/onitytask-legacy-retirement-2026-09-27.md).
 
 ## Common operations
 
 | Need | API |
 | --- | --- |
-| Next rendered frame | `await OnityTask.NextFrame(ct)` |
-| Next several rendered frames | `await OnityTask.DelayFrames(frameCount, ct)` |
-| Next fixed update | `await OnityTask.NextFixedFrame(ct)` |
+| Next rendered frame | `await OnityTask.NextFrame()` or `NextFrame(ct)` |
+| Several rendered frames | `await OnityTask.DelayFrames(frameCount, ct)` |
+| Next fixed update, right after the fixed scripts | `await OnityTask.NextFixedFrame(ct)` |
+| After the physics step of the fixed update | `await OnityTask.WaitForFixedUpdate()` |
 | Next late update | `await OnityTask.NextLateFrame(ct)` |
-| Scaled delay | `await OnityTask.Delay(seconds, ct)` |
-| Unscaled delay | `await OnityTask.DelayUnscaled(seconds, ct)` |
-| Wait for a condition | `await OnityTask.WaitUntil(predicate, ct)` |
-| Wait while a condition holds | `await OnityTask.WaitWhile(predicate, ct)` |
-| Wait for several operations | `await OnityTask.WhenAll(tasks)` |
-| Collect typed results in input order | `T[] results = await OnityTask.WhenAll(typedTasks)` |
-| First of two untyped operations | `int winner = await OnityTask.WhenAny(first, second)` |
-| First of two typed operations | `(int winnerIndex, T result) = await OnityTask.WhenAny(first, second)` |
-| First of a nonempty array | `await OnityTask.WhenAny(taskArray)` |
+| Next drain of any PlayerLoop timing | `await OnityTask.Yield(OnityPlayerLoopTiming.PreLateUpdate)` |
+| Scaled or unscaled delay | `await OnityTask.Delay(seconds, ct)`, `DelayUnscaled(seconds, ct)` |
+| Delay with a clock and a timing | `await OnityTask.Delay(TimeSpan.FromSeconds(1), OnityDelayType.Realtime, OnityPlayerLoopTiming.Update, ct)` |
+| Wait for a condition | `await OnityTask.WaitUntil(predicate, ct)`, `WaitWhile(predicate, ct)` |
+| Condition without a closure | `await OnityTask.WaitUntil(this, self => self.m_isReady, OnityPlayerLoopTiming.Update, ct)` |
+| Wait for a value to change | `await OnityTask.WaitUntilValueChanged(transform, t => t.position)` |
+| Wait for several operations | `await OnityTask.WhenAll(tasks)` or `await (first, second)` |
+| Typed results | `T[] all = await OnityTask.WhenAll(typedArray)`; `(a, b) = await OnityTask.WhenAll(taskA, taskB)` |
+| First of several | `int winner = await OnityTask.WhenAny(first, second)`; see [Composition](#composition) for typed forms |
+| Each outcome as it arrives | `await foreach (var item in OnityTask.WhenEach(tasks))` |
 | Stop waiting without canceling the producer | `await task.AttachExternalCancellation(ct)` |
 | Treat actual cancellation as a result | `await task.SuppressCancellationThrow()` |
-| Completed typed result | `await OnityTask.FromResult(value)` |
+| Deadline | `await task.Timeout(seconds)` or `Timeout(TimeSpan, OnityDelayType, timing)` |
+| Completed values | `OnityTask.CompletedTask`, `FromResult(value)`, `FromException`, `FromCanceled` |
+| Start work lazily | `OnityTask.Defer(factory)`, `OnityTask.Lazy(factory)` |
 | Resume on Unity's main thread | `await OnityTask.SwitchToMainThread(ct)` |
-| Queue a continuation to a worker | `await OnityTask.SwitchToThreadPool(ct)` |
-| Run synchronous background work, then return to the main thread | `await OnityTask.RunOnThreadPool(action, cancellationToken: ct)` |
-| Complete a scheduled Unity job safely | `await handle.AsOnityTask()` |
+| Return to the main thread at scope end | `await using (OnityTask.ReturnToMainThread()) { ... }` |
+| Background work | `await OnityTask.SwitchToThreadPool(ct)`, `await OnityTask.RunOnThreadPool(action, cancellationToken: ct)` |
+| Complete a scheduled Unity job | `await handle` or `await handle.AsOnityTask()` |
+| Token canceled on destroy | `this.GetCancellationTokenOnDestroy()` |
+| Token canceled with the DI scope | `this.GetScopeCancellationToken()` |
+| Lifecycle and messages (`using Onity.Unity.Async.Triggers;`) | `await this.StartAsync()`, `await gameObject.OnDestroyAsync()`, `await this.GetAsyncCollisionEnterTrigger().OnCollisionEnterAsync(ct)` |
+| UI Toolkit button | `await button.OnClickAsync(ct)` |
+| Coroutine interop | `await enumerator`, `task.ToCoroutine()`, `OnityTask.ToCoroutine(factory)` |
 
-## Explicit PlayerLoop phases
+## Frame waits, Yield and sharing
 
-Onity 0.4.0 supports three explicit phases:
+In Play, a frame wait without a cancelable token is **stateless**: the task
+holds a per-session marker and a target frame or drain, rents nothing, and may
+be awaited by any number of consumers. `Preserve()` returns it unchanged,
+reading its result again does not throw, and `Forget()` does nothing. This
+covers `NextFrame()`, `DelayFrames(n)`, `NextFixedFrame()`, `NextLateFrame()`
+and the explicit-timing waits `Yield(timing, default)`, `NextFrame(timing)` and
+`DelayFrames(n, timing, default)`. A session exit cancels a pending wait.
+
+A wait with a cancelable token is a pooled **single-consumer** source, as is the
+same wait in Edit Mode or created on a worker thread before the Play-session
+nodes are open. Await it once, or call `Preserve()` once before sharing; see the
+[single-consumer rule](#single-consumer-rule-for-pooled-tasks).
+
+`OnityTask.Yield()` and `Yield(timing)` return `OnityYieldAwaitable`, the
+equivalent of UniTask's `YieldAwaitable`. It holds only the timing, so creating
+and awaiting it allocates nothing and rents nothing; it resumes at the next
+drain of its timing after the await, which can be in the current frame. It
+converts implicitly to `OnityTask`; the converted task completes at the next
+drain after the conversion and is stateless as well. Extension methods do not
+apply implicit conversions, so convert first when you need one:
 
 ```csharp
-await OnityTask.Yield(OnityPlayerLoopTiming.Update, ct);
-await OnityTask.NextFrame(OnityPlayerLoopTiming.LateUpdate, ct);
-await OnityTask.DelayFrames(2, OnityPlayerLoopTiming.FixedUpdate, ct);
+OnityTask yieldTask = OnityTask.Yield();                     // implicit conversion
+await OnityTask.Yield().ToOnityTask().Timeout(1f);           // extension methods need ToOnityTask()
+await OnityTask.Yield(cancellationToken: ct);                // named: Yield(default) is ambiguous
 ```
 
-`Update`, `FixedUpdate` and `LateUpdate` run immediately after Unity's
-corresponding script callbacks. `Yield` waits for the next selected drain,
-which can occur in the current rendered frame. A wait registered during that
-drain resumes on a later occurrence. `NextFrame` requires a later rendered
-frame; `DelayFrames` counts rendered frames, even when fixed updates run
-several times per frame. `LateUpdate` does not mean end of frame.
+`WaitForFixedUpdate()` returns the same awaitable for the `LastFixedUpdate`
+timing, after the physics simulation of the step, like Unity's coroutine
+instruction. `NextFixedFrame()` resumes earlier, right after the fixed scripts.
 
-These factories require the main thread and an active Play/player session.
-Arguments are validated before execution context, cancellation and the
-zero-frame fast path. The explicit `NextFrame` and `DelayFrames` overloads
-require a token argument; use `default` when cancellation is unnecessary.
-Worker cancellation is published on the main thread, including through Update
-when fixed time is paused. Native results remain single-consumer; use one
-`Preserve()` or `AsTask()` conversion before sharing.
+`NextFrame` and `DelayFrames(1)` resume no earlier than the following rendered
+frame. `DelayFrames(0)` completes immediately, while `DelayFrame(0)` (the UniTask
+name) waits for the next drain, as in UniTask. Negative frame counts throw
+`ArgumentOutOfRangeException`.
 
-The nodes install before scene loading and survive normal ECS additions to
-the current loop. If a custom bootstrap replaces the PlayerLoop, call
-`OnityTaskPlayerLoop.Initialize()` afterward. Repair retains pending waits,
-removes only Onity's markers and preserves foreign nodes. Missing script
-anchors fault pending waits and reject new queued work until explicit repair
-succeeds. There is no per-frame loop-replacement watchdog.
+## PlayerLoop timings
 
-Session exit cancels pending timing work and removes owned nodes. This owner
-is independent of the legacy task runner. Default ECS simulation runs after
-the injected Update node, so a Yield requested there normally resumes on the
-next Update occurrence. Both Release Players pass the timing smoke cases.
-Repeated warmed, tokenless Update Yield brackets show no measured heap growth
-with a calibrated coarse counter; other timing paths are not allocation-proven.
-See the [verification report and limits](../assets/benchmarks/onitytask-stage3d-playerloop-2026-09-27.md).
+`OnityPlayerLoopTiming` has 19 members. The first three run immediately after
+Unity's script callbacks of their phase and are installed before scene
+loading. The other 16 match UniTask's `PlayerLoopTiming`: a plain name runs at
+the start of its phase and a `Last` name at its end. They are installed on
+first use, or eagerly with `OnityTaskPlayerLoop.Initialize(timings)` /
+`InitializeAll()`.
+
+| Onity timing | Position | UniTask name |
+| --- | --- | --- |
+| `Update` | after `ScriptRunBehaviourUpdate` (MonoBehaviour `Update`) | none |
+| `FixedUpdate` | after `ScriptRunBehaviourFixedUpdate` | none |
+| `LateUpdate` | after `ScriptRunBehaviourLateUpdate` | none |
+| `UpdateBegin` | start of the Update phase, before the scripts | `Update` |
+| `FixedUpdateBegin` | start of the FixedUpdate phase, before the scripts | `FixedUpdate` |
+| `Initialization`, `LastInitialization`, `EarlyUpdate`, `LastEarlyUpdate`, `LastFixedUpdate`, `PreUpdate`, `LastPreUpdate`, `LastUpdate`, `PreLateUpdate`, `LastPreLateUpdate`, `PostLateUpdate`, `LastPostLateUpdate`, `TimeUpdate`, `LastTimeUpdate` | start or end of the named phase | same name |
+
+UniTask's `PlayerLoopTiming.Update` and `FixedUpdate` therefore map to
+`UpdateBegin` and `FixedUpdateBegin`; Onity's `Update` and `FixedUpdate` name the
+positions after the script callbacks, where Onity's default waits resume.
+
+```csharp
+await OnityTask.Yield(OnityPlayerLoopTiming.PreLateUpdate);
+await OnityTask.NextFrame(OnityPlayerLoopTiming.LateUpdate, ct);
+await OnityTask.DelayFrame(2, OnityPlayerLoopTiming.FixedUpdate, ct);
+await OnityTask.Yield(OnityPlayerLoopTiming.Update, ct, cancelImmediately: true);
+```
+
+- `Yield` waits for the next drain of the timing, which can occur in the current
+  rendered frame; a wait registered during that drain resumes on a later one.
+  `NextFrame` requires a later rendered frame, and `DelayFrames` / `DelayFrame`
+  count rendered frames even when fixed updates run several times per frame.
+  `LateUpdate` does not mean end of frame; use `WaitForEndOfFrame` for that.
+- A flag-only cancellation is published by the next Update drain on the main
+  thread, including when fixed time is paused. `cancelImmediately: true`
+  publishes it on the canceling thread, which then runs the continuation.
+- `OnityTask.Post(action, timing)` queues an action for the next drain from any
+  thread. `OnityTaskPlayerLoop.AddAction(timing, item)` runs an
+  `IOnityPlayerLoopItem` every drain until its `MoveNext()` returns false, and
+  `AddContinuation(timing, action)` runs one action. Posted actions and items
+  are dropped, not run, when the session ends; an exception from a posted action
+  is logged.
+- `OnityTaskPlayerLoop.IsMainThread`, `MainThreadId`,
+  `UnitySynchronizationContext`, `IsInjected(timing)` and
+  `DumpCurrentPlayerLoop()` help diagnose a custom loop.
+
+These waits require Unity's main thread and an active Play/player session.
+Arguments are validated before cancellation and the zero-frame fast path. The
+nodes survive normal ECS additions to the current loop. If a custom bootstrap
+replaces the PlayerLoop, call `OnityTaskPlayerLoop.Initialize()` afterwards.
+Repair retains pending waits, removes only Onity's markers and preserves foreign
+nodes. Missing script anchors fault pending waits and reject new queued work
+until an explicit repair succeeds. There is no per-frame loop-replacement
+watchdog. Session exit cancels pending timing work and removes the owned nodes.
+Default ECS simulation runs after the injected Update node, so a `Yield`
+requested there normally resumes on the next Update occurrence. See the
+[0.4.0 timing verification](../assets/benchmarks/onitytask-stage3d-playerloop-2026-09-27.md)
+for the original three-timing checks.
+
+## Timed waits and timers
+
+The timed overloads use UniTask's names and run on any PlayerLoop timing:
+
+```csharp
+await OnityTask.Delay(TimeSpan.FromSeconds(2), ignoreTimeScale: true);
+await OnityTask.Delay(TimeSpan.FromMilliseconds(250), OnityDelayType.Realtime, OnityPlayerLoopTiming.Update, ct);
+await OnityTask.WaitForSeconds(1.5f, ignoreTimeScale: false, OnityPlayerLoopTiming.FixedUpdate, ct);
+await OnityTask.WaitWhile(m_door, door => door.IsMoving, OnityPlayerLoopTiming.LateUpdate, ct);
+await OnityTask.WaitUntilCanceled(ct);                                  // completes when ct is canceled
+Vector3 moved = await OnityTask.WaitUntilValueChanged(transform, t => t.position, cancellationToken: ct);
+```
+
+- `OnityDelayType` selects the clock: `DeltaTime` (scaled, pauses at
+  `timeScale` zero), `UnscaledDeltaTime`, or `Realtime` (a `Stopwatch`). The
+  frame clocks start counting at the frame after the call.
+- A pending timed wait is a pooled single-consumer task, polled after the
+  continuations of its timing. These overloads require the main thread and an
+  active Play/player session; the float-seconds `Delay` and the token-only
+  `WaitUntil` / `WaitWhile` also work in Edit Mode.
+- There is no integer-milliseconds `Delay` overload: `OnityTask.Delay(2)` already
+  means two seconds. Use `Delay(TimeSpan.FromMilliseconds(ms), ...)`.
+- The predicate overloads that take a state avoid a capturing closure.
+  `WaitUntilValueChanged` resumes with the new value.
+
+`OnityPlayerLoopTimer` is a one-shot or periodic timer whose callback runs on
+the main thread at a timing; it backs the timed `CancelAfterSlim` and
+`OnityTimeoutController` clocks:
+
+```csharp
+OnityPlayerLoopTimer timer = OnityPlayerLoopTimer.StartNew(
+    TimeSpan.FromSeconds(1), periodic: true, OnityDelayType.DeltaTime,
+    OnityPlayerLoopTiming.Update, ct, state => ((Spawner)state).SpawnWave(), this);
+
+timer.Restart(TimeSpan.FromSeconds(0.5));   // new interval
+timer.Stop();
+timer.Dispose();
+```
+
+A session exit stops a running timer, and a callback exception is logged
+without stopping a periodic timer. `cts.CancelAfterSlim(TimeSpan, OnityDelayType,
+timing)` (or the milliseconds overload) cancels a source on that clock and
+returns a handle that stops the pending cancellation. `new
+OnityTimeoutController(OnityDelayType, timing)` and the link-source constructor
+reuse one timer for repeated deadlines (`Timeout(TimeSpan)`, `Timeout(int
+milliseconds)`, `IsTimeout()`, `Reset()`).
 
 ## Rendering end of frame
 
-Onity 0.4.0 adds `WaitForEndOfFrame`, verified in graphics-enabled
-Mono and IL2CPP Release Players. Each passed six render/lifecycle groups and
-27 paired headless checks; both Editor optimizations passed 814 EditMode and
-84 PlayMode tests. See [evidence and limits](../assets/benchmarks/onitytask-stage3f-endofframe-2026-09-27.md).
+`WaitForEndOfFrame` waits for Unity's real rendering end of frame, verified in
+graphics-enabled Mono and IL2CPP Release Players (six render/lifecycle groups
+and 27 paired headless checks in 0.4.0; see [evidence and limits](../assets/benchmarks/onitytask-stage3f-endofframe-2026-09-27.md)).
 
 ```csharp
 static async OnityTask ReadRenderedFrameAsync(
@@ -170,9 +295,11 @@ static async OnityTask ReadRenderedFrameAsync(
 ```
 
 The caller owns the texture and keeps it alive until the read completes. The
-wait uses a shared coroutine yielding Unity's real rendering primitive, which
-can complete in the registration frame. Work queued from its completion callback
-waits for a later drain. Native task values remain single-consumer.
+wait uses a shared coroutine on a hidden host yielding Unity's real rendering
+primitive, which can complete in the registration frame. Work queued from its
+completion callback waits for a later drain. `WaitForEndOfFrame(MonoBehaviour)`
+exists for UniTask parity; the behaviour is only validated, and disabling or
+destroying it does not stop the wait.
 
 Calls require Unity's main thread, an accepting Play/player session and a
 non-null graphics device. Editor batch mode is rejected. These checks precede
@@ -186,12 +313,7 @@ replacement afterward. Session closure cancels all owned lanes; failed loop
 repair faults them. Unity's primitive can stall when the Editor switches to
 Scene view; see [Unity's documented behavior](https://docs.unity3d.com/2022.3/Documentation/ScriptReference/WaitForEndOfFrame.html).
 
-Cold host/coroutine creation allocates. Pending sources use a bounded pool;
-this stage does not establish allocation quantities or speed against UniTask.
-
 ## External cancellation and cancellation results
-
-Onity 0.4.0 adds typed and untyped cancellation decorators:
 
 ```csharp
 static async OnityTask<bool> WaitForScoreAsync(
@@ -236,16 +358,10 @@ Pending wrappers have native single-consumer outputs; use `Preserve()` or
 canceling thread, so switch explicitly before using Unity APIs. Internal
 observation does not capture the creation synchronization/execution context;
 an enclosing async method still follows its own builder's context rules.
-Completed suppression success/cancellation is returned inline. Pending wrappers
-are initially unpooled and allocate; no zero-allocation or speed claim is made.
-See the [verification report](../assets/benchmarks/onitytask-stage3c-cancellation-2026-09-27.md)
-for the 777/54 Editor suites, 20-case Player checks and retention limits.
+Pending wrappers are unpooled and allocate. See the
+[0.4.0 verification report](../assets/benchmarks/onitytask-stage3c-cancellation-2026-09-27.md).
 
 ## Timeouts
-
-Onity 0.4.0 provides typed and untyped timeout decorators.
-Both optimization modes pass 812 EditMode/82 PlayMode tests; both Release
-Players pass 26 smoke cases. See [verification and limits](../assets/benchmarks/onitytask-stage3e-timeout-2026-09-27.md).
 
 ```csharp
 static async OnityTask<int> ReadWithDeadlineAsync(OnityTask<int> producer)
@@ -275,29 +391,85 @@ private timeout becomes `true` / `(true, default)`; producer faults and
 cancellation still propagate, including a producer's own `TimeoutException`
 or a faulted `OperationCanceledException`.
 
+The `TimeSpan` overloads take UniTask's parameters:
+`task.Timeout(TimeSpan, OnityDelayType, OnityPlayerLoopTiming, taskCancellationTokenSource)`.
+They measure the deadline with a PlayerLoop timer on the selected clock
+(`DeltaTime` by default) and, when you pass `taskCancellationTokenSource`,
+cancel that source on timeout so the producer can stop.
+
 Seconds must be finite and nonnegative, checked before inspecting or claiming
 the input. An input already observed complete wins even at zero seconds.
-A pending zero-second input times out immediately. Those paths can be used
-outside Play Mode or on a worker. A positive timeout on a pending input must
-be created on Unity's main thread in an accepting Play/player session; an
-invalid context rejects before claiming the input.
-
-Positive timers use the explicit PlayerLoop owner. They are checked after
-public Update waits, using Unity's double-precision frame clocks. Pass
+A pending zero-second input times out immediately. A positive timeout on a
+pending input must be created on Unity's main thread in an accepting
+Play/player session; an invalid context rejects before claiming the input.
+The float-seconds timers are checked after public Update waits; pass
 `useUnscaledTime: false` for scaled time, which pauses at timeScale zero.
-Timers registered during an Update drain first become eligible in a later
-pass. Session closure cancels pending wrappers; failed loop repair faults them.
 
-Timeout stops waiting without canceling the producer. The wrapper consumes its
-pending input and continues observing it after timeout, including late faults.
-Do not consume that single-consumer input again; preserve it beforehand when
-another consumer needs it. An indefinitely pending producer retains its observer.
-Native wrapper outputs are also single-consumer unless preserved or bridged.
+Timeout stops waiting without canceling the producer (unless you pass a source
+to cancel). The wrapper consumes its pending input and continues observing it
+after timeout, including late faults. Do not consume that single-consumer input
+again; preserve it beforehand when another consumer needs it. Producer
+completion may publish on a worker; timeout/session publication runs on
+Unity's main thread. See the [0.4.0 verification](../assets/benchmarks/onitytask-stage3e-timeout-2026-09-27.md).
 
-Producer completion may publish on a worker; timeout/session publication runs
-on Unity's main thread. There is no implicit return to the creation context.
-Wrappers and private timer entries are initially unpooled and allocate; neither
-zero allocation nor speed equivalence with UniTask is claimed.
+## Composition
+
+```csharp
+// Untyped: wait for all, or learn which finished first.
+await OnityTask.WhenAll(saveTask, uploadTask);
+int winner = await OnityTask.WhenAny(saveTask, uploadTask);
+
+// Typed, separate arguments: a tuple in argument order, any mix of result types.
+(Texture2D icon, string title) = await OnityTask.WhenAll(LoadIconAsync(ct), LoadTitleAsync(ct));
+(int winArgumentIndex, Texture2D icon2, string title2) = await OnityTask.WhenAny(LoadIconAsync(ct), LoadTitleAsync(ct));
+
+// Typed arrays or sequences: T[] in input order, or the winner's index and value.
+int[] scores = await OnityTask.WhenAll(scoreTasks);
+(int winnerIndex, int fastest) = await OnityTask.WhenAny(scoreTasks);
+
+// A typed and an untyped input: did the typed one win?
+(bool hasResultLeft, int score) = await OnityTask.WhenAny(scoreTask, timeoutTask);
+
+// Await a tuple, array or sequence directly.
+await (saveTask, uploadTask);
+int[] values = await scoreTasks;
+```
+
+- `WhenAll(a, b, ...)` with 2 to 15 typed arguments returns a tuple
+  `(T1, ..., Tn)`, even when every argument has the same type. Pass an array
+  (or an `IEnumerable<OnityTask<T>>`) for a `T[]`.
+- `WhenAny(a, b, ...)` with 2 to 15 typed arguments returns
+  `(int winArgumentIndex, T1 result1, ..., Tn resultN)`; only the winner's
+  element is set. An array or sequence of `OnityTask<T>` returns
+  `(int winnerIndex, T result)`, and untyped inputs return the winner's index.
+- Every input is observed once. `WhenAny` never cancels the losers; it consumes
+  them when they complete. A repeated single-consumer input throws
+  `ArgumentException` before anything is claimed. Already completed inputs
+  favor the lowest index; pending inputs race by observation.
+- `WhenAll` publishes the first fault in argument order ahead of the first
+  cancellation. The tuple `WhenAll` completes without allocating when every
+  input already succeeded; otherwise it, like the mixed `WhenAny`, returns a
+  single-consumer native task backed by a pooled source.
+- `OnityTask.WhenEach(tasks)` returns an `IOnityAsyncEnumerable<OnityWhenEachResult<T>>`
+  that yields every input's result, fault or cancellation in completion order.
+  `OnityWhenEachResult<T>` has `Result`, `Exception`, `IsCompletedSuccessfully`,
+  `IsFaulted`, `TryThrow()` and `GetResult()`. Early disposal keeps observing
+  the inputs and discards their outcomes.
+- `items.Select(item => LoadAsync(item))` over an `IEnumerable<T>` produces a
+  sequence of tasks that the sequence overloads accept.
+
+The array `WhenAny` keeps its 0.4.0 contract: inputs are snapshotted before
+registration, null or empty arrays and repeated single-consumer identities are
+rejected before any input is claimed, and every loser is observed, including
+faults on completion-source subclasses and later Task bridges. Its coordinators
+use two bounded buckets per output shape (up to `SourcePoolCapacity` sources
+with 16 input slots, and up to 128 with 32 slots); arrays above 32 inputs are
+not pooled. The untyped `WhenAll(first, second)` keeps its pooled coordinator
+for eligible pending inputs, and the untyped and typed array `WhenAll` calls keep
+their 0.4.0 behavior: a completed fast path, the bounded typed coordinator for
+up to 16 completion sources, and a shareable Task-backed output otherwise. See
+the [0.4.0 WhenAll measurements](../assets/benchmarks/onitytask-stage3a-whenall-2026-09-27.md)
+and [WhenAny comparison](../assets/benchmarks/onitytask-stage3b-whenany-2026-09-27.md).
 
 ## Background work
 
@@ -325,37 +497,42 @@ static async OnityTask SumAsync(int[] snapshot, CancellationToken cancellationTo
 }
 ```
 
-Both `Action` and `Func<T>` overloads reject null delegates. Pre-canceled work
-returns a canceled task without dispatching. Once dispatched, cancellation is
-checked before invocation and before publishing successful completion, including
-after the optional return hop; it cannot interrupt an executing delegate.
-A delegate exception takes precedence over cancellation.
-The default `returnToMainThread: true` returns through the existing dispatcher
-before publishing success, fault or cancellation, using an uncanceled cleanup
-hop and the session captured before dispatch. Returns from ended sessions are
-discarded; they do not resume in a later Play session. Background work itself
-is not forcibly stopped when its session ends.
+`RunOnThreadPool` also accepts a state argument (`Action<object>`,
+`Func<object, T>`) and async delegates (`Func<OnityTask>`,
+`Func<OnityTask<T>>`, and their state forms).
+
+Every overload rejects null delegates. Pre-canceled work returns a canceled task
+without dispatching. Once dispatched, cancellation is checked before invocation
+and before publishing successful completion, including after the optional
+return hop; it cannot interrupt an executing delegate. A delegate exception
+takes precedence over cancellation. The default `returnToMainThread: true`
+returns through the existing dispatcher before publishing success, fault or
+cancellation, using an uncanceled cleanup hop and the session captured before
+dispatch. Returns from ended sessions are discarded; they do not resume in a
+later Play session. Background work itself is not forcibly stopped when its
+session ends.
 
 Set `returnToMainThread: false` to publish completion on the worker. An await
 of an already completed task can still run inline on the consumer's thread.
 For a direct switch, `await OnityTask.SwitchToThreadPool(ct)` always queues,
 even when already on a worker, and observes cancellation on that worker.
-Its awaiter does not capture execution context for either registration method;
-async builders retain responsibility for context flow. Keep the process-wide
-`FlowExecutionContext` setting configured before starting async methods.
-Disabling or suppressing flow prevents caller-context capture; it does not clear
-ambient values already present on a reused worker thread.
+`SwitchToTaskPool()` queues through the .NET task scheduler instead.
+`SwitchToSynchronizationContext(context, ct)` moves to a given context, and
+`await using (OnityTask.ReturnToSynchronizationContext(context))`,
+`ReturnToCurrentSynchronizationContext()` and `ReturnToMainThread()` (or
+`ReturnToMainThread(timing)`) return there when the scope ends.
 
+The switch awaiters do not capture execution context; async builders retain
+responsibility for context flow (see [Async methods](#async-methods)).
 Thread-pool factories and queue entry throw `PlatformNotSupportedException`
-in WebGL Players. The Editor remains supported when WebGL is selected. These
-APIs do not introduce an allocation or speed guarantee; measurements and
-Player verification are recorded in the [thread-pool report](../assets/benchmarks/onitytask-stage1-threadpool-2026-09-27.md).
+in WebGL Players. The Editor remains supported when WebGL is selected. See the
+[thread-pool report](../assets/benchmarks/onitytask-stage1-threadpool-2026-09-27.md).
 
 ## Unity Jobs and Burst
 
-Schedule a job normally, then call `JobHandle.AsOnityTask()` on Unity's main
-thread. The adapter calls `Complete()` before publishing the result, so the
-caller can safely read and dispose its native containers after the await:
+Schedule a job normally, then await its handle on Unity's main thread. The
+adapter calls `Complete()` before publishing the result, so the caller can
+safely read and dispose its native containers after the await:
 
 ```csharp
 using Unity.Collections;
@@ -379,7 +556,7 @@ static async OnityTask<int> DoubleAsync(int value)
     {
         values[0] = value;
         handle = new DoubleJob { Values = values }.Schedule();
-        await handle.AsOnityTask();
+        await handle;                                     // same as await handle.AsOnityTask()
         return values[0];
     }
     finally
@@ -395,32 +572,117 @@ The adapter owns the obligation to complete an accepted handle, including an
 unawaited handle. It never owns or disposes your containers. Pending handles are
 polled in Update; Edit Mode uses the Editor update callback. A completed or
 default handle completes inline. Pending tasks are single-consumer; use
-`Preserve()` before sharing.
+`Preserve()` before sharing. `handle.WaitAsync(timing, ct)` (UniTask's name)
+polls at any PlayerLoop timing and can be canceled; cancellation stops the wait,
+not the job.
 
-There is no job-cancellation overload. Runner destruction and session teardown
-finish accepted jobs before canceling their tasks; cleanup can therefore wait
-for computation. A `Complete()` failure faults the task. Calls from workers or
-during a closed/retiring session throw before accepting the handle, leaving
-completion with the caller.
+`AsOnityTask()` has no cancellation overload. Runner destruction and session
+teardown finish accepted jobs before canceling their tasks; cleanup can
+therefore wait for computation. A `Complete()` failure faults the task. Calls
+from workers or during a closed/retiring session throw before accepting the
+handle, leaving completion with the caller.
 
 Burst can compile a compatible job's computation. Managed delegates, task
-sources and execution-context flow remain outside that job. The benchmark's
-serial C#, Jobs without Burst and Jobs with Burst rows measure computation
-including scheduling/completion where applicable. Its separate adapter panel
-measures Onity/UniTask registration and observed completion latency; the two
-adapters run at different positions within Update.
-
-Both Release backends passed the bridge and computation checks. See the
+sources and execution-context flow remain outside that job. The
 [Jobs/Burst report](../assets/benchmarks/onitytask-stage2-jobs-2026-09-27.md)
-for measured benefits, remaining adapter overhead and allocation limits.
+records the measured computation benefits and adapter overhead in 0.4.0; the
+later benchmark-only [readiness probe](../assets/benchmarks/onitytask-readiness-performance-2026-09-30.md)
+and [consumer lifecycle probe](../assets/benchmarks/onitytask-readinesscycle-performance-2026-09-30.md)
+do not establish a general async speed result.
+
+## Unity lifetime, triggers and UI events
+
+**Destroy tokens.** `this.GetCancellationTokenOnDestroy()` works on a
+`MonoBehaviour` (Unity's own `destroyCancellationToken`), a `GameObject` or any
+`Component` (a hidden `OnityAsyncDestroyTrigger` per GameObject).
+`cts.RegisterRaiseCancelOnDestroy(gameObjectOrComponent)` cancels (never
+disposes) your source when the object is destroyed. An already destroyed owner
+returns a canceled token. In Edit Mode, Unity sends no messages, so the
+GameObject and Component forms are not raised on destroy.
+
+**Lifecycle triggers** (`Onity.Unity.Async.Triggers`):
+
+```csharp
+using Onity.Unity.Async.Triggers;
+
+await this.AwakeAsync();
+await this.StartAsync();
+await gameObject.OnDestroyAsync();
+
+OnityAsyncEnableTrigger enable = this.GetAsyncEnableTrigger();
+await enable.OnEnableAsync(ct);                           // one-shot wait
+IOnityAsyncOnEnableHandler handler = enable.GetOnEnableAsyncHandler(ct);
+await handler.OnEnableAsync();                            // reusable: wait again on each call
+```
+
+**MonoBehaviour message triggers.** 55 generated triggers cover the frame
+messages, collisions and triggers (3D and 2D), mouse, visibility, application,
+animator, rendering, transform, joint, particle, audio, GUI and Editor
+(`OnValidate`, `Reset`, gizmos) messages. Each has a
+`GetAsync<Name>Trigger()` extension on `GameObject` and `Component`, a one-shot
+`<Message>Async(ct)` wait and a reusable `Get<Message>AsyncHandler(ct)`; every
+trigger is also an `IOnityAsyncEnumerable<T>` of its payload:
+
+```csharp
+Collision hit = await this.GetAsyncCollisionEnterTrigger().OnCollisionEnterAsync(ct);
+
+await foreach (Collider other in this.GetAsyncTriggerEnterTrigger().WithCancellation(ct))
+{
+    // Every OnTriggerEnter while the loop is waiting.
+}
+```
+
+When `Physics.reuseCollisionCallbacks` (or `Physics2D.reuseCollisionCallbacks`)
+is enabled, Unity may refill the same `Collision` instance for later callbacks,
+so read its data (such as `hit.collider`) right after the await, before the
+method first yields again; that code still runs inside the message callback.
+
+The physics, physics 2D and particle triggers compile only when their Unity
+modules are present (`ONITY_PHYSICS`, `ONITY_PHYSICS2D`, `ONITY_PARTICLESYSTEM`
+version defines), and the mouse triggers are compiled out on iOS, Android and
+WSA, as in UniTask. Every waiter registered when a message fires resumes once;
+messages while no wait is pending are skipped. Destroying the object completes
+pending waits as canceled and ends enumerations. `OnityAsyncTriggerBase<T>`,
+`OnityTriggerEvent<T>` and `IOnityTriggerHandler<T>` are public for custom
+triggers; a derived trigger must not declare its own `Awake` or `OnDestroy`.
+
+**UnityEvent.** `unityEvent.OnInvokeAsync(ct)`, `OnInvokeAsAsyncEnumerable(ct)`
+and `GetAsyncEventHandler(ct)` for `UnityEvent` and `UnityEvent<T>`, main thread
+only.
+
+**UI Toolkit** (in `Onity.Unity`, beyond UniTask):
+
+```csharp
+await m_playButton.OnClickAsync(ct);
+float volume = await m_volumeSlider.OnValueChangedAsync(ct);
+PointerDownEvent down = await m_panel.OnEventAsync<PointerDownEvent>(ct);
+
+m_score.AsLatestAsyncEnumerable().BindTo(m_scoreLabel, ct);   // TextElement text, unbinds when it leaves its panel
+```
+
+`OnClickAsAsyncEnumerable`, `OnValueChangedAsAsyncEnumerable` and
+`OnEventAsAsyncEnumerable<TEvent>` return streams. `BindTo` writes each item to a
+`TextElement` (`ToString`) or, for an `INotifyValueChanged<T>` control, with
+`SetValueWithoutNotify`, so it never raises a `ChangeEvent`.
+
+**uGUI** (optional `Onity.Unity.UGUI` assembly, compiled only when
+`com.unity.ugui` is installed; Onity adds no package dependency):
+`Button.OnClickAsync`, `Toggle` / `Scrollbar` / `ScrollRect` / `Slider` /
+`InputField` / `Dropdown` `OnValueChangedAsync`, `InputField.OnEndEditAsync`,
+their `...AsAsyncEnumerable` and `GetAsync...EventHandler` forms, 17 generated
+EventSystems triggers, and `BindTo` for `Text` and `Selectable.interactable`.
+
+The generic `stream.BindTo(target, (target, value) => ..., ct)` works with any
+target; the `MonoBehaviour` form unbinds when the object is destroyed. Like
+UniTask, `rebindOnError: true` (the default) re-acquires the stream after an
+error and reports an error that follows without a successful move in between.
 
 ## Finite async streams
 
-Onity 0.4.0 adds native `IOnityAsyncEnumerable<T>` and
-`IOnityAsyncEnumerator<T>` in `Onity.Unity.Async`. Descriptions are reusable;
-each enumeration owns its state and cleanup. C# `await foreach` uses the native
-`OnityTask` move and disposal methods, including cleanup on `break` or an
-exception in the loop body.
+Native `IOnityAsyncEnumerable<T>` and `IOnityAsyncEnumerator<T>` live in
+`Onity.Unity.Async`. Descriptions are reusable; each enumeration owns its state
+and cleanup. C# `await foreach` uses the native `OnityTask` move and disposal
+methods, including cleanup on `break` or an exception in the loop body.
 
 ```csharp
 private static async OnityTask ReadValues(CancellationToken ct)
@@ -441,20 +703,19 @@ private static async OnityTask ReadValues(CancellationToken ct)
 }
 ```
 
-- Factories: `Empty<T>()`, `Return(value)` and `Range(start, count)`.
-- Operators: synchronous `Select` / `Where`, `Take(count)` and
-  `WithCancellation(token)`. Operators acquire their upstream lazily.
-- Consumers: `FirstAsync(token)` and `ToArrayAsync(token)` await cleanup on
-  every exit. Empty `FirstAsync` faults. `Take` awaits cleanup before exposing
-  its final item; cleanup failure takes precedence over an ordinary result.
+- Factories: `Empty<T>()`, `Return(value)`, `Range(start, count)`,
+  `Repeat(value, count)`, `Never<T>()`, `Throw<T>(exception)`, and
+  `Create<T>((writer, token) => ...)`, whose producer awaits
+  `writer.YieldAsync(value)` for each item (back-pressure, a token canceled on
+  disposal, cleanup that waits for the producer).
+- Conversions: `ToOnityAsyncEnumerable()` on an `IEnumerable<T>`, a `Task<T>`,
+  an `OnityTask<T>` or an `OnityTask` (one `Unit` item).
 - Each enumerator accepts one outstanding move. `Current` is valid after a
   true result until the next move or disposal. Normal exhaustion stays false;
   faults and cancellation keep their status and exception/token until disposal.
 - `WithCancellation` combines wrapper and enumeration tokens. It owns only
   any needed linked source; the caller retains ownership of its token source.
   Arbitrary upstream implementations must cooperate with the supplied token.
-- `Empty`, zero-count `Range`, and `Take(0)` complete without upstream work,
-  even when pre-canceled. Their terminal consumers preserve that empty result.
 - Explicit disposal closes the enumerator, ends an uncommitted move false and
   waits for upstream cleanup and pending observation. A cleanup failure is
   reported by `DisposeAsync`; it cannot replace that false move result.
@@ -462,20 +723,11 @@ private static async OnityTask ReadValues(CancellationToken ct)
 These APIs add no implicit thread hop. Switch to Unity's main thread when a
 producer completes on a worker and the next action needs Unity APIs. Native
 interfaces support consumption by `await foreach`; compiler-generated
-`async` / `yield return` methods use BCL async interfaces. The adapters below
-connect those interfaces. Sequential awaitable operators and channels are
-documented below; reactive adapters follow in [Plan 13](https://github.com/furkantokkan/Onity/blob/v0.4.0/docs/Plan/13-OnityTask-ApiCoverageAndJobs.md).
+`async` / `yield return` methods use BCL async interfaces, which the adapters
+below connect. Descriptions, enumerators, linked token sources and pending
+completion state may allocate. See the [finite-stream verification](../assets/benchmarks/onitytask-stage4a-streams-2026-09-27.md).
 
-Descriptions, enumerators, linked token sources and pending completion state
-may allocate; `ToArrayAsync` also allocates storage. Inline finite iteration
-does not establish a general allocation or speed claim.
-See the [finite-stream verification and bounded measurement](../assets/benchmarks/onitytask-stage4a-streams-2026-09-27.md)
-for both Player backends, full suites and retained-heap limits.
-
-## Update streams and BCL async iterators
-
-Onity 0.4.0 adds `OnityAsyncEnumerable.EveryUpdate()` and two
-adapters for `System.Collections.Generic.IAsyncEnumerable<T>`:
+## Update and timing streams, BCL async iterators
 
 ```csharp
 private static async OnityTask ReadUpdates(CancellationToken ct)
@@ -499,38 +751,94 @@ System.Collections.Generic.IAsyncEnumerable<int> bcl =
     OnityAsyncEnumerable.Range(0, 3).AsAsyncEnumerable();
 ```
 
-- `EveryUpdate` is pull-based: each accepted move schedules one `Yield(Update)`.
-  Creation and idle disposal need no Unity access. Active moves require the
-  main thread and an accepting Play/player session, including pre-canceled
-  moves. There is no buffering or replay while the consumer is idle.
-- A move created before the Update node may complete in the same frame.
-  A move created from its continuation waits for a later Update pass. Worker
-  disposal can end the exposed move false immediately; cleanup still waits
-  for the underlying Unity wait to be observed on the main thread.
+- `EveryUpdate()` and `EveryUpdate(timing, cancelImmediately)` are pull-based:
+  each accepted move schedules one yield. There is no buffering or replay while
+  the consumer is idle. Active moves require the main thread and an accepting
+  Play/player session.
+- `Timer(dueTime[, period], timing, ignoreTimeScale)`, `Interval(period, ...)`,
+  `TimerFrame(dueFrames[, periodFrames], timing)`, `IntervalFrame(frames, timing)`
+  and `EveryValueChanged(target, selector, timing, comparer)` are timing streams
+  of `Unit` (or the changed value). Zero durations and frame counts wait for the
+  next drain, so a stream never spins inline. `EveryValueChanged` yields the
+  current value first and ends when its target is collected or destroyed.
 - BCL imports acquire the upstream enumerator lazily with an owned cancellation
-  token. They consume each `ValueTask` exactly once and wait for a pending move
-  to be consumed before invoking upstream `DisposeAsync`. An uncooperative
-  pending move can therefore keep disposal pending. The caller retains its CTS.
+  token, consume each `ValueTask` exactly once and wait for a pending move to
+  be consumed before invoking upstream `DisposeAsync`.
 - Both adapters preserve actual cancellation status and tokens. A faulted
-  `OperationCanceledException` remains a fault. Repeated disposal shares cleanup;
-  one move may be outstanding per enumerator. Cleanup failure takes precedence
+  `OperationCanceledException` remains a fault. Cleanup failure takes precedence
   over an ordinary terminal result, while explicit-disposal false stays false.
-- Internal observation adds no creator-context dispatch. An ordinary BCL caller
-  awaiting an exported Task-backed `ValueTask` keeps normal context-capture
-  behavior. Use an explicit main-thread switch when consuming a worker producer
-  before calling Unity APIs.
 
-These adapters and pending Update moves allocate enumerator, cancellation and
-completion state. No zero-allocation or comparative speed claim is made.
-Both Editor optimizations pass 879 EditMode and 90 PlayMode cases; both Release
-Players pass 31 smoke cases. See the [adapter verification and limits](../assets/benchmarks/onitytask-stage4b-adapters-2026-09-27.md).
+See the [adapter verification](../assets/benchmarks/onitytask-stage4b-adapters-2026-09-27.md).
+
+## Stream operators
+
+`OnityAsyncEnumerableLinq` (in `Onity.Unity.Async`) adds UniTask's async LINQ
+surface to `IOnityAsyncEnumerable<T>`. Each operator with a delegate has an
+`...Await` form (the delegate returns an `OnityTask`) and an
+`...AwaitWithCancellation` form (it also receives a token), as in UniTask.
+
+| Group | Operators |
+| --- | --- |
+| Projection and filtering | `Select` / `Where` (also indexed), `SelectAwait`, `WhereAwait`, `OfType`, `Cast`, `Do`, `DefaultIfEmpty`, `Distinct`, `DistinctUntilChanged`, `Pairwise`, `Buffer(count[, skip])`, `Reverse` |
+| Paging | `Take`, `Skip`, `TakeLast`, `SkipLast`, `TakeWhile`, `SkipWhile` |
+| Signals | `TakeUntil(task or token factory)`, `SkipUntil(...)`, `TakeUntilCanceled(ct)`, `SkipUntilCanceled(ct)` |
+| Combining | `Append`, `Prepend`, `Concat`, `Merge` (2, 3 or a sequence of sources; also `OnityAsyncEnumerable.Merge(params)`), `Zip` / `ZipAwait`, `CombineLatest` (2 to 15 sources), `SelectMany` (all 12 shapes) |
+| Grouping and sets | `GroupBy` (`IOnityGrouping<TKey, T>`), `Join`, `GroupJoin`, `OrderBy` / `OrderByDescending` / `ThenBy` / `ThenByDescending` (stable), `Union`, `Intersect`, `Except` |
+| Sharing | `Publish()` (an `IOnityConnectableAsyncEnumerable<T>` started by `Connect()`), `Queue()` |
+| Terminal | `FirstAsync`, `LastAsync`, `SingleAsync` (and `OrDefault`), `ElementAtAsync`, `CountAsync`, `LongCountAsync`, `AnyAsync`, `AllAsync`, `ContainsAsync`, `SequenceEqualAsync`, `AggregateAsync`, `SumAsync`, `AverageAsync`, `MinAsync`, `MaxAsync` |
+| Materialization | `ToArrayAsync`, `ToListAsync`, `ToHashSetAsync`, `ToDictionaryAsync`, `ToLookupAsync` (`IOnityLookup<TKey, T>`) |
+| Consumers | `ForEachAsync` (`Action<T>`, `Action<T, int>`, `Func<T, OnityTask>`, `Func<T, CancellationToken, OnityTask>`), `ForEachAwaitAsync`, `ForEachAwaitWithCancellationAsync`, `Subscribe`, `SubscribeAwait` |
+
+```csharp
+await m_hits
+    .Where(hit => hit.Damage > 0)
+    .Select(hit => hit.Damage)
+    .Buffer(3)
+    .ForEachAsync(batch => Debug.Log(batch.Count), ct);
+
+// Fire-and-forget consumption with a lifetime token; handler faults are reported, not thrown.
+m_messages.Subscribe(message => Show(message), destroyCancellationToken);
+m_saves.SubscribeAwait(async (request, token) => await WriteAsync(request, token), destroyCancellationToken);
+```
+
+Notes that differ from what you may expect:
+
+- Onity's `SelectAwait`, `WhereAwait` and `ForEachAsync` from 0.4.0 already take
+  a token (`Func<T, CancellationToken, OnityTask<...>>`); they stay, and the
+  UniTask names (`SelectAwaitWithCancellation`, token-less `SelectAwait`, ...)
+  are added. Index-only `SelectAwait(Func<T, int, OnityTask<R>>)` and
+  `WhereAwait(Func<T, int, OnityTask<bool>>)` are not provided, because they are
+  ambiguous with the token forms; use the `...AwaitWithCancellation` overload
+  with an index and a token.
+- Because these methods now have several delegate overloads, a `null` literal
+  passed to `Select`, `Where`, `SelectAwait`, `WhereAwait` or `ForEachAsync` no
+  longer compiles; cast it to the delegate type.
+- `CombineLatest` yields one result for every arriving item and queues results
+  that arrive between moves instead of overwriting them; a source that ends
+  without an item ends the stream.
+- `Publish()` buffers, per registered enumerator and without bound, every item
+  published after the enumerator was created, so a slow enumerator loses
+  nothing; items published while no enumerator is registered are dropped, and
+  disposing the connection ends the enumerators normally.
+- `Join` and `GroupJoin` never match a `null` key (System.Linq semantics).
+  `GroupBy` and `ToLookupAsync` keep first-seen key order and allow a `null` key.
+- `ToLookupAsync` returns Onity's `IOnityLookup` / `IOnityGrouping`, not
+  `System.Linq.ILookup`. Numeric `Sum` / `Average` follow System.Linq: a
+  nullable `Sum` starts at zero, and `Average` of an empty non-nullable stream
+  faults.
+- `Subscribe` and `SubscribeAwait` start the enumeration on the calling thread.
+  The overloads that take a `CancellationToken` return nothing (the token owns
+  the lifetime); the others return an `IDisposable`. A handler fault is reported
+  and does not stop the loop, and cancellation ends it silently.
+
+Operators acquire their upstream lazily, dispose it exactly once, and keep fault
+and cancellation status. No operator adds a thread hop.
 
 ## Sequential awaitable operators
 
-Onity 0.4.0 adds SelectAwait, WhereAwait and ForEachAsync. Each
-delegate receives an item and a cooperative cancellation token. Only one
-upstream move and one delegate run at a time; these operators do not prefetch
-or run items in parallel.
+`SelectAwait`, `WhereAwait` and `ForEachAsync` with token delegates process one
+item at a time: only one upstream move and one delegate run at a time; they do
+not prefetch or run items in parallel.
 
 ```csharp
 private static async OnityTask PrintValues(CancellationToken ct)
@@ -552,35 +860,20 @@ private static async OnityTask<int> DoubleNextFrame(int value, CancellationToken
 }
 ```
 
-Start this frame-wait example on Unity's main thread in Play Mode.
-SelectAwait and WhereAwait descriptions are lazy and reusable; ForEachAsync
-starts consuming immediately. An empty upstream returning normal end succeeds
-even with a pre-canceled token. An upstream that returns cancellation retains
-that outcome.
-
-- The original enumeration token goes upstream. Delegates receive a lazily
-  created owned token, which disposal cancels without canceling the caller's
-  token source. A successful delegate that ignores cancellation retains its
-  result; later upstream work can still cancel the overall enumeration.
-- Synchronously thrown exceptions, including OCE, are faults. Returned task
-  fault/cancellation status and actual cancellation token remain authoritative.
-- Disposal signals pending delegate work, starts eligible native upstream
-  cleanup and waits for accepted work, cleanup and cancellation callbacks to
-  settle. An uncooperative delegate can keep disposal pending. Upstream cleanup
-  failure takes precedence over operation or cancellation-callback failure.
-- There is no implicit thread/context switch. Descriptions, enumerators, owned
-  tokens and pending observation state may allocate; no speed or zero-allocation
-  claim is made.
-
-Both Editor optimizations pass 947 EditMode and 94 PlayMode cases; fresh Mono
-and IL2CPP Release Players each pass 35 smoke cases. See the
+Descriptions are lazy and reusable; `ForEachAsync` starts consuming immediately.
+The original enumeration token goes upstream. Delegates receive a lazily
+created owned token, which disposal cancels without canceling the caller's
+token source. Synchronously thrown exceptions, including OCE, are faults;
+returned task fault/cancellation status and the actual cancellation token
+remain authoritative. Disposal signals pending delegate work and waits for
+accepted work, cleanup and cancellation callbacks to settle. See the
 [awaitable-operator checkpoint](../assets/benchmarks/onitytask-stage4c-await-operators-2026-09-27.md).
 
 ## Channels
 
-Onity 0.4.0 adds single-consumer channels with multiple producers:
-`OnityChannel.CreateBounded<T>(capacity)` and `CreateUnbounded<T>()`.
-The bounded channel waits when full; it never drops accepted values to make space.
+`OnityChannel.CreateBounded<T>(capacity)` and `CreateUnbounded<T>()` create
+single-consumer channels with multiple producers. The bounded channel waits when
+full; it never drops accepted values to make space.
 
 ```csharp
 private static async OnityTask ReadChannel()
@@ -598,157 +891,118 @@ private static async OnityTask ReadChannel()
     {
         UnityEngine.Debug.Log(value); // 2, then 3, then normal completion.
     }
+
+    await channel.Reader.Completion;                       // completed and drained
 }
 ```
 
 - `TryWrite` and `TryRead` are immediate. Queued writers keep FIFO priority;
-  `TryWrite` cannot overtake them. FIFO follows acceptance under the channel
-  gate, not the wall-clock order of calls on different threads.
+  `TryWrite` cannot overtake them.
+- `Reader.WaitToReadAsync(ct)` waits for an item without consuming it and holds
+  the consumer lease while pending. `Reader.Completion` completes when the
+  channel is completed and drained, and keeps the original error as a fault.
 - `ReadAllAsync` acquires the consumer lease on its first move and holds it
-  while idle. Dispose it when stopping early. Disposal releases only that
-  consumer; it neither closes the channel nor clears buffered items.
-- A pending standalone `ReadAsync` also owns a consumer lease. Conflicting
-  reads and overlapping enumeration moves throw synchronously; `TryRead`
-  returns false while another consumer owns the lease.
-- Cancellation removes an unaccepted read or write. A committed delivery or
-  write remains successful. Direct operations preserve the supplied token.
-  ReadAll observes both its captured and enumeration tokens directly: captured
-  token wins when both are pre-canceled; the first pending cancellation committed
-  under the gate supplies its exact token. Caller token sources remain owned
-  by the caller.
-- `TryComplete(error)` closes admission once and drains accepted buffered
-  values before the terminal result. Normal empty closure ends ReadAll and
-  faults ReadAsync with `OnityChannelClosedException`. Error closure faults
-  reads with the original error, including faulted OCE. Rejected writes use
-  the closed exception with the terminal error as its inner exception.
+  while idle. Dispose it when stopping early. A pending standalone `ReadAsync`
+  also owns a consumer lease. Conflicting reads throw synchronously.
+- `TryComplete(error)` closes admission once and drains accepted buffered values
+  before the terminal result; `Writer.Complete(error)` does the same but throws
+  `OnityChannelClosedException` when the channel is already completed.
+- A channel converts implicitly to its reader and writer.
 
 Pending waiters, registrations, descriptions and unbounded growth may allocate.
-Warmed bounded immediate operations showed no retained-heap increase in 16
-calibrated windows per capacity/backend; this does not prove exact zero allocated
-bytes. Full suites passed 913 EditMode/92 PlayMode cases in both optimizations;
-the strengthened 34-case channel fixture also passed both. Each Release Player
-passed 33 smoke cases. Channels add no implicit Unity thread switch. See the
-[channel verification and measurement limits](../assets/benchmarks/onitytask-stage4c-channels-2026-09-27.md).
+Channels add no implicit Unity thread switch. See the
+[channel verification](../assets/benchmarks/onitytask-stage4c-channels-2026-09-27.md).
+
+## Async reactive properties
+
+`OnityAsyncReactiveProperty<T>` is UniTask's `AsyncReactiveProperty`: a value
+that is also an `IOnityAsyncEnumerable<T>`.
+
+```csharp
+OnityAsyncReactiveProperty<int> coins = new OnityAsyncReactiveProperty<int>(0);
+
+int next = await coins.WaitAsync(ct);                 // the next set value
+await foreach (int value in coins.WithCancellation(ct))
+{
+    // The current value first, then every set.
+}
+```
+
+Every set publishes, including an equal value (unlike `ReactiveProperty<T>`,
+which skips equal values). Setting the value from a continuation of its own
+publication throws `InvalidOperationException`. `WithoutCurrent()` skips the
+current value, and `stream.ToReadOnlyAsyncReactiveProperty(ct)` follows a stream.
+Use it on the main thread. To await an Onity `ReactiveProperty<T>` instead, see
+the next section.
+
+## DI, reactive and messaging integration
+
+UniTask has no container, reactive property or message bus to integrate with.
+Onity connects its async layer to all three:
+
+| Need | API | Guide |
+| --- | --- | --- |
+| Stop async work when the scope ends | inject `IOnityScopeLifetime` (`Token`), `container.LifetimeToken`, `OnityContext.LifetimeToken`, `component.GetScopeCancellationToken()` | [Lifecycle & Scopes](lifecycle-and-scopes.html#scope-lifetime-token) |
+| Dispose with the scope | `disposable.AddTo(scope)` | [Lifecycle & Scopes](lifecycle-and-scopes.html#scope-lifetime-token) |
+| Awaited startup | `IOnityAsyncInitializable.InitializeAsync(ct)`; `await context.WaitReadyAsync(ct)` | [Async initialization](lifecycle-and-scopes.html#async-initialization) |
+| Await a `ReactiveProperty<T>` | `property.WaitAsync(ct)`, `WaitUntilAsync(predicate, ct)`, `AsLatestAsyncEnumerable()`, `ToAsyncReactiveProperty(ct)` | [Reactive](reactive.html#await-a-reactiveproperty-with-onitytask) |
+| Receive messages | `subscriber.ReceiveAsync(ct)`, `ReceiveAllAsync(capacity, overflow)`, `asyncSubscriber.SubscribeQueued(handler, capacity, token)` | [Events & Messaging](events-messaging.html#native-async-consumption-onitytask) |
+| Declare shared primitives | `container.DeclareAsyncMessage<T>()`, `container.BindAsyncReactiveProperty(initial)` | [Dependency Injection](dependency-injection.html#shared-reactive-and-messaging-primitives) |
+
+```csharp
+using System.Threading;
+using Onity.DI;
+using Onity.Reactive;
+using Onity.Unity.Async;
+
+public sealed class WaveDirector : IOnityInitializable
+{
+    private readonly IReadOnlyReactiveProperty<int> m_enemiesAlive;
+    private readonly IOnityScopeLifetime m_scope;
+
+    public WaveDirector(IReadOnlyReactiveProperty<int> enemiesAlive, IOnityScopeLifetime scope)
+    {
+        m_enemiesAlive = enemiesAlive;
+        m_scope = scope;
+    }
+
+    public void Initialize() => RunAsync(m_scope.Token).Forget();
+
+    private async OnityTaskVoid RunAsync(CancellationToken token)
+    {
+        while (true)
+        {
+            await m_enemiesAlive.WaitUntilAsync(count => count == 0, token);   // no subscription to manage
+            await OnityTask.Delay(2f, token);                                   // ends with the scope
+            // Spawn the next wave here.
+        }
+    }
+}
+```
 
 ## Single-consumer rule for pooled tasks
 
-Frame, delay, predicate, `JobHandle.AsOnityTask()` and `AsyncOperation.AsOnityTask()` operations use pooled
-sources. Each returned `OnityTask` value is **single-consumer**:
+Cancelable frame waits, explicit-timing waits with a token, delays, predicates,
+`JobHandle` and `AsyncOperation` waits, and suspended `async OnityTask` methods
+use pooled sources. Each returned `OnityTask` value is **single-consumer**:
 
 - Await the value once, or call `AsTask()` once.
 - Do not copy the value to several consumers.
 - Do not await it and then call `AsTask()` on the old copy.
-- Do not read `IsCompleted` or `IsCompletedSuccessfully` after the value was
-  consumed; the pooled source has retired its token and the read throws
-  `InvalidOperationException`. Keep the awaited result instead.
+- Do not read `IsCompleted`, `IsCompletedSuccessfully` or `Status` after the
+  value was consumed. After native consumption or completed bridge
+  materialization, the pooled source has retired its token and the read throws
+  `InvalidOperationException`. Keep the awaited result, or inspect completion
+  before consuming it.
 - `WhenAll` and `WhenAny` consume their input task values; do not await those
   inputs separately. `WhenAny` does not cancel the loser, which is consumed
   when it eventually completes.
 - Call `Preserve()` once before sharing a pooled task with multiple consumers.
   Consume only the returned task; the original is claimed by `Preserve()`.
 
-For two inputs with the same result type, `WhenAny<T>` returns the winner's
-argument index (zero or one) and value:
-
-```csharp
-using Onity.Unity.Async;
-
-OnityTaskCompletionSource<int> first = new OnityTaskCompletionSource<int>();
-OnityTaskCompletionSource<int> second = new OnityTaskCompletionSource<int>();
-OnityTask<(int winnerIndex, int result)> race =
-    OnityTask.WhenAny(first.Task, second.Task);
-
-second.TrySetResult(20);
-(int winnerIndex, int result) = await race; // (1, 20)
-first.TrySetResult(10); // The loser is still observed.
-```
-
-The pair consumes each input once and observes the loser without canceling it.
-Passing the same single-consumer native input twice throws `ArgumentException`.
-A winning fault or cancellation propagates; an `OperationCanceledException`
-reported as a fault remains a fault. The result source is single-consumer and
-allocates rather than using a pool. Native awaits follow the input's completion
-thread; creation and native await registration do not capture Unity's
-`SynchronizationContext`. When a Unity main-thread continuation is required,
-await `race.AsTask()` instead of `race` from the Unity context so the .NET Task
-await captures it.
-
-Onity 0.4.0 also supports arbitrary nonempty arrays. Typed arrays
-return `(winnerIndex, result)` and untyped arrays return the winner index:
-
-```csharp
-var sources = new[]
-{
-    new OnityTaskCompletionSource<int>(),
-    new OnityTaskCompletionSource<int>(),
-    new OnityTaskCompletionSource<int>()
-};
-var race = OnityTask.WhenAny(new[] { sources[0].Task, sources[1].Task, sources[2].Task });
-sources[1].TrySetResult(42);
-var (winnerIndex, result) = await race; // (1, 42)
-sources[0].TrySetResult(10);
-sources[2].TrySetResult(30); // Every loser is consumed, without cancellation.
-```
-
-Array inputs are snapshotted before registration. Null/empty arrays and repeated
-single-consumer source/token identities are rejected before any input is claimed.
-One/default input and duplicated shareable, preserved or Task-backed inputs are
-supported. Already-terminal inputs favor the lowest index; pending callbacks
-race by observation, so repeated pending Task-backed inputs need not choose index
-zero. Caller mutation after the factory returns does not change the race.
-
-Array outputs are single-consumer native tasks. Call `Preserve()` once for
-sharing or use `AsTask()` for an explicit bridge. Publication can run on a
-producer worker; internal Task-backed observers do not capture the creator's
-Unity context. Stale/preclaimed inputs become fault outcomes, and a later
-registration failure does not replace an earlier winner. Every accepted loser
-is observed, including faults on completion-source subclasses and later Task
-bridges. An indefinitely pending loser retains its observer.
-
-Coordinators retain storage for up to 16 inputs, with at most 256 pooled sources
-per output shape. Reuse waits for output release, all input observations and
-in-flight callbacks. Larger arrays and registration-error instances are not
-pooled. Caller-created `params` arrays and cold pool growth can allocate; this
-API has no general zero-allocation claim.
-
-The [Release Player comparison](../assets/benchmarks/onitytask-stage3b-whenany-2026-09-27.md)
-verified 18 smoke cases per backend. UniTask had lower measured composition
-times. Onity reported no measurable heap growth at 2/16 inputs with a coarse
-counter, but substantially greater growth at 32 inputs. These results are
-specific to the measured completion-source workloads.
-
-`NextFrame` and `DelayFrames(1)` resume no earlier than the following rendered
-frame in Play Mode. `DelayFrames(0)` completes immediately. Negative frame
-counts throw `ArgumentOutOfRangeException`. Positive `Delay` and `DelayUnscaled`
-waits also skip the frame in which they are scheduled in Play Mode.
-
-Two successful, already completed inputs to the untyped
-`WhenAll(first, second)` are consumed immediately and return the completed
-task without .NET task bridges or a tracker entry. Pending untyped inputs use
-a pooled coordinator with a Task-backed output when each input is a completion
-source without an `AsTask()` bridge or an unclaimed single-consumer native
-source, such as a frame wait or a suspended async method; Task-backed,
-preserved, bridged, or already awaited inputs use the .NET `Task.WhenAll`
-path. Typed `WhenAll` also collects eligible already successful results directly
-in input order, without .NET task bridges or a tracker entry. Onity 0.4.0
-additionally handles 1–16 unique exact built-in typed completion
-sources without existing bridges, mixed with inline/default values, through
-a pooled coordinator when at least one source is pending. Its output remains
-Task-backed, tracked and shareable; faults retain input order and take precedence
-over cancellation. Pooled native, preserved, derived, duplicate, prebridged,
-Task-backed or larger typed sets keep the previous bridge fallback.
-The [construction measurements](../assets/benchmarks/onitytask-stage3a-whenall-2026-09-27.md)
-show lower heap growth but slower IL2CPP construction; they do not measure the
-complete lifecycle. Typed calls still need a result array and callers using inline
-`params` arguments create an input array. Untyped calls with other input counts
-also materialize their inputs as .NET `Task` values. Methods declared
-`async OnityTask` that suspend are backed by a pooled native runner; see
-"Async methods" below. The two-input
-untyped `WhenAny` uses a native result source, but currently allocates that
-source and two continuation delegates per call. The typed pair also uses a
-nonpooled source that allocates.
-Use the pooled frame, delay, predicate, and `AsyncOperation` waits directly in
-hot paths; do not assume every OnityTask composition is allocation-free.
+The stateless waits of [Frame waits, Yield and sharing](#frame-waits-yield-and-sharing)
+are the exception: in Play, a frame wait without a cancelable token and a yield
+may be awaited by any number of consumers.
 
 When several consumers must observe one operation, preserve it before the first
 consumer starts. Both pending and later consumers can await the retained result:
@@ -756,7 +1010,7 @@ consumer starts. Both pending and later consumers can await the retained result:
 ```csharp
 using Onity.Unity.Async;
 
-OnityTask shared = OnityTask.NextFrame().Preserve();
+OnityTask shared = OnityTask.NextFrame(ct).Preserve();
 OnityTask first = ObserveAsync(shared);
 OnityTask second = ObserveAsync(shared);
 await OnityTask.WhenAll(first, second);
@@ -767,12 +1021,18 @@ static async OnityTask ObserveAsync(OnityTask task)
 }
 ```
 
-`Preserve()` returns completed, Task-backed, and completion-source tasks without
-an additional allocation. For a pooled native task it allocates one retained
-source and registers one native continuation. Use it only when sharing is needed;
-directly awaiting a pooled task remains cheaper. The retained result, fault, or
-cancellation can be observed repeatedly. Use `AsTask()` once when a .NET API
-requires a `Task`; the returned `Task` can also be shared.
+`Preserve()` returns completed, stateless, Task-backed, and completion-source
+tasks without an additional allocation. For a pooled native task it allocates
+one retained source and registers one native continuation. Use it only when
+sharing is needed; directly awaiting a pooled task remains cheaper. The
+retained result, fault, or cancellation can be observed repeatedly. Use
+`AsTask()` once when a .NET API requires a `Task`; the returned `Task` can also
+be shared.
+
+`OnityTask<T>` converts implicitly to `OnityTask`. The conversion is a view on
+the same source and token that neither consumes nor allocates; awaiting the view
+consumes the shared source, so treat the view and the original as one
+single-consumer value.
 
 ## Async methods
 
@@ -784,93 +1044,103 @@ suspends binds a pooled runner that stores the state machine by value and
 resumes it through one cached delegate, so no .NET `Task`, boxed state machine,
 or per-suspension delegate is created.
 
-Released runners return to a per-method pool guarded by one compare-and-swap
-gate rather than a lock, and `OnityTask.RunnerPoolCapacity` (default 128)
-caps how many are kept per method; a burst above the cap allocates a runner
-per extra call and lets it be collected, so raise the cap before a burst
-whose retained memory is acceptable. The task returned by a suspended method
-is a **single-consumer native task**, like a frame wait: await it once, or
-call `AsTask()` once, and call `Preserve()` before sharing it. Reading its status after it was consumed
-throws `InvalidOperationException`. A fault thrown after a suspension is
-rethrown as the same instance with its stack trace, and an
-`OperationCanceledException` thrown after a suspension cancels the task and is
-rethrown as the same instance.
-
-Inside a pooled source the token version, the completion claim, the
-consumption mode and the lifecycle bits share one state word, and every
-transition is a single compare-and-swap that validates the version it read.
-Registering, completing and consuming a native task therefore take no lock; a
-stale token, a second awaiter, or `AsTask()` racing `GetResult()` is rejected
-with `InvalidOperationException` by the same compare-and-swap that would
-otherwise have changed a later cycle of the reused source.
-
-By default the builder flows the execution context across awaits, so
-`AsyncLocal<T>` values set before an await are visible after it, and a value
-written after an await does not leak into the resuming thread. The capture
-detaches Unity's synchronization context for its duration and restores the
-resuming thread's context before the method continues, so
-`SynchronizationContext.Current` after an await is the resuming thread's
-context. Unlike the .NET builder, writes made before the first await are not
-isolated from the caller: on the main thread they persist in the thread's
-ambient context, as any synchronous code's writes do. A
-`SetSynchronizationContext` call made before the first await persists on the
-thread as well; one made after an await is reverted when that resumption
-unwinds. The builders bind the class library's own capture and run pair, the
-internal `ExecutionContext.FastCapture` and
-`RunInternal(context, callback, state, preserveSyncCtx: true)` that .NET's
-`AsyncTaskMethodBuilder` uses, through reflection, proven with a probe at
-first use. Managed code stripping keeps both members because the binding
-class references the class library's own async builder, whose completion path
-calls them; Unity ignores a `link.xml` inside a package, so none is shipped.
-A development player logs one warning when the pair is unavailable. On that
-path a suspension on a thread that has never stored an
-`AsyncLocal<T>` value captures the shared default context without
-allocating, and resumption keeps the thread's synchronization context; once a
-thread has stored a value, each suspension captures a context of about 72
-bytes, as the .NET builder does. When the pair is missing the builders fall
-back to the public `ExecutionContext.Capture()` and `Run`, which allocate the
-captured context on every suspension, about 72 bytes plus a call-context
-object of about 56 bytes on the Mono JIT profile, and re-install the resuming
-thread's synchronization context inside the callback. The fast path binds on
-Unity 2022.3.62f2 Mono, where a test asserts it, and the 2026-09-25 Release
-verification at `f682b7c` measured async-method scheduling with it at 1.62x
-to 2.10x UniTask against 2.25x to 2.55x on the public path; flow off measured
-1.40x to 1.83x. On desktop Mono 6.8, which compiles the same reference-source
-`ExecutionContext`, a capture-and-run pair measured 0 bytes and about 93 ns
-on the fast path without stored values against 72 bytes and about 135 ns on
-the public path; that is not a Unity measurement.
-Set `OnityTask.FlowExecutionContext = false` before any async Onity method
-starts to skip the capture entirely; that gives UniTask's semantics, where
-`AsyncLocal<T>` does not flow, writes after an await stay on the resuming
-thread, and a `SetSynchronizationContext` call after an await persists. The
-primary benchmark measures the async-method cases under both settings.
-Suppressing flow with `ExecutionContext.SuppressFlow()`
-around the call skips the capture for the awaits reached while flow is
-suppressed, normally the first one; later awaits capture on the resuming
-thread again, as they do with the .NET builder.
-
-The same-instance guarantee for a fault or cancellation holds for the native
-await. A consumer of `AsTask()` receives a `TaskCanceledException` for a
+The task returned by a suspended method is a **single-consumer native task**:
+await it once, or call `AsTask()` once, and call `Preserve()` before sharing
+it. Reading its status after it was consumed throws
+`InvalidOperationException`. A fault thrown after a suspension is rethrown as
+the same instance with its stack trace, and an `OperationCanceledException`
+thrown after a suspension cancels the task and is rethrown as the same
+instance. A consumer of `AsTask()` receives a `TaskCanceledException` for a
 canceled method, and `Preserve()` re-raises the cancellation as a new
 `OperationCanceledException` with the same token.
 
-`Forget()` on a single-consumer native task registers a direct observer when
-task tracking is disabled and bridges the task when tracking is enabled, which
-it is by default, so tracked tasks stay visible. Two suspended methods passed
-to the two-input untyped `WhenAll`, including the `params` overload with
-exactly two inputs, use the pooled coordinator. Suspended async-method inputs
-to typed `WhenAll<T>` and untyped `params` calls with other input counts still
-bridge through `AsTask()`. The bounded pending typed optimization described
-above applies to public completion sources, not pooled async-method runners.
+The runner returns to a per-method pool as soon as its result is consumed, on
+every backend, so the next call can reuse it in the same frame. The pool is an
+array guarded by one compare-and-swap gate instead of a lock: a contended rent
+allocates and a contended return lets the runner be collected.
+`OnityTask.RunnerPoolCapacity` (default 128) caps how many runners are kept per
+method; see [Bursts and pool retention](#bursts-and-pool-retention).
+
+Inside a pooled source, the token version, completion claim, consumption mode
+and lifecycle bits share one state word. Owned completion is one
+compare-and-swap, consumption retires the version in one compare-and-swap, and
+completers read the registered continuation before publishing and touch no
+field afterwards. A stale token is rejected by the same compare-and-swap that
+would change a later cycle. Registration, completion and consumption do not
+enter a monitor.
+
+`async OnityTaskVoid` methods are fire-and-forget: they start immediately, and a
+fault goes to `OnityTaskScheduler`, which drops `OperationCanceledException` by
+default (see [Fire and forget](#fire-and-forget)). `OnityTask.Void(...)`,
+`OnityTask.Action(...)` and `OnityTask.UnityAction(...)` wrap such methods for
+callbacks and UnityEvents.
+
+### Execution context
+
+By default the builder does not flow the execution context, as in UniTask:
+`AsyncLocal<T>` values set before an await are not visible after it on a
+resumed worker, writes after an await stay on the resuming thread, and a
+`SetSynchronizationContext` call after an await persists. No context is captured
+per suspension.
+
+Set `OnityTask.FlowExecutionContext = true` before any async Onity method
+starts to flow the context, isolate post-await writes and restore the resuming
+thread's synchronization context. The setting is read at each suspension and
+applies process-wide. With flow on, the builders bind the class library's own
+capture and run pair (the internal `ExecutionContext.FastCapture` and
+`RunInternal(context, callback, state, preserveSyncCtx: true)` that .NET's
+`AsyncTaskMethodBuilder` uses) through reflection, proven with a probe at first
+use; managed code stripping keeps both members because the binding class
+references the class library's own async builder. On that path a suspension
+on a thread that has never stored an `AsyncLocal<T>` value captures the shared
+default context without allocating; once a thread has stored a value, each
+suspension captures a context of about 72 bytes, as the .NET builder does. When
+the pair is unavailable (a development player logs one warning), the builders
+fall back to the public `ExecutionContext.Capture()` and `Run`, which allocate
+on every suspension.
+
+Known limitation while flow is on: code before an async method's first await
+runs without a copy-on-write scope, so an `AsyncLocal<T>` write there can leak
+to the caller, and a `SetSynchronizationContext` call made before the first
+await persists on the thread. Suppressing flow with
+`ExecutionContext.SuppressFlow()` around a call skips the capture for the awaits
+reached while flow is suppressed.
+
+Flow costs time: in the 2026-10-02 Release Player gate, the complete lifecycle
+of a method with four suspensions was 1.5x to 1.6x slower than UniTask on IL2CPP
+with flow on, and about 1.7x faster with flow off. See the
+[comparison](onitytask-comparison.html).
+
+## Bursts and pool retention
+
+Onity keeps at most `OnityTask.RunnerPoolCapacity` (default 128) released
+runners per async method and `OnityTask.SourcePoolCapacity` (default 256)
+released sources per source type. UniTask keeps every released object. A burst
+of more concurrent operations than the cap allocates an object for each extra
+operation and lets it be collected afterwards, which costs time. At 4,096
+concurrent calls of one method in the 2026-10-02 gate, the default caps made
+three of the four IL2CPP lifecycle rows 1.5x to 2.6x slower than UniTask, while
+caps raised to the burst size made all four 1.7x to 2.0x faster.
+
+When a method or wait regularly runs in large bursts and the retained memory is
+acceptable, raise the caps once at startup, before the burst:
+
+```csharp
+OnityTask.RunnerPoolCapacity = 4096;   // per async method (state machine type)
+OnityTask.SourcePoolCapacity = 4096;   // per pooled source type
+```
+
+The retained objects live until the domain reloads. A running method may
+observe the previous value once. Steady workloads within the defaults need no
+change.
 
 ## Switch to the main thread
 
 `OnityTask.SwitchToMainThread` returns an awaitable that resumes on Unity's main
 thread. Awaiting it on the main thread completes synchronously without a frame
-delay, on a path designed not to allocate; that target is not yet measured, see
-the [comparison](onitytask-comparison.html). Awaiting it on a worker thread
-queues the continuation, which resumes during the Update phase of a following
-frame.
+delay. Awaiting it on a worker thread queues the continuation, which resumes
+during the Update phase of a following frame. `SwitchToMainThread(timing, ct)`
+resumes at a chosen PlayerLoop timing instead.
 
 ```csharp
 using System.Threading;
@@ -901,11 +1171,8 @@ and quitting the player, ends the current session: continuations queued in an
 earlier session are discarded rather than resumed in the next one. Compiler
 generated `async Task` methods, and `async OnityTask` methods while
 `OnityTask.FlowExecutionContext` is on, flow `AsyncLocal` values across the
-switch through their builders and keep Unity's synchronization context;
-`OnityTaskThreadSwitchAwaiter.OnCompleted` itself does not capture an
-execution context, like the other native Onity awaiters. Use
-`OnityTask.SwitchToThreadPool` or `OnityTask.RunOnThreadPool` for worker work;
-the background-work section above describes cancellation and return behavior.
+switch through their builders; `OnityTaskThreadSwitchAwaiter.OnCompleted` itself
+does not capture an execution context, like the other native Onity awaiters.
 
 ## Complete a task from a callback
 
@@ -931,8 +1198,15 @@ string second = await completion; // Retained result; no pool token is consumed.
 
 Use `TrySetCanceled(cancellationToken)` for cancellation. `TrySetException`
 also treats `OperationCanceledException` as cancellation and preserves its
-token. A fault that nobody observes may be reported to the Unity log after
-garbage collection; use `Forget` with an error handler for fire-and-forget work.
+token. A fault that nobody observes is published through `OnityTaskScheduler`
+after garbage collection.
+
+`OnityAutoResetTaskCompletionSource` and `OnityAutoResetTaskCompletionSource<T>`
+are UniTask's pooled `AutoResetUniTaskCompletionSource`: `Create()`, `Task`,
+`TrySetResult`, `TrySetException`, `TrySetCanceled`, plus `CreateFromCanceled`,
+`CreateFromException` and `CreateCompleted` / `CreateFromResult` with an
+`out int` token. The task is single-consumer, and consuming it returns the
+source to its pool, so the producer must not touch the source afterwards.
 
 Generation checks reject stale pooled task copies instead of letting them read a
 later operation that reused the same source.
@@ -978,17 +1252,34 @@ finally
 The built-in loading-scene initiator follows this ownership rule when its
 minimum display duration is canceled.
 
-## Unity AsyncOperation bridge
+## Unity operations
 
 ```csharp
 ResourceRequest request = Resources.LoadAsync<TextAsset>("GameConfig");
-ResourceRequest completed = await request.AsOnityTask(
-    cancellationToken: cancellationToken);
+ResourceRequest completed = await request.AsOnityTask(cancellationToken: cancellationToken);
+
+TextAsset config = await Resources.LoadAsync<TextAsset>("GameConfig")
+    .AsAssetOnityTask<TextAsset>(OnityProgress.Create(p => Debug.Log(p)), cancellationToken);
 ```
 
-For a general `AsyncOperation.AsOnityTask()` bridge, cancellation stops the
-await and reports `OperationCanceledException`; the Unity operation may
-continue. Deferred scene loading has the ownership rule described above.
+| Operation | Adapter | Result |
+| --- | --- | --- |
+| Any `AsyncOperation` | `AsOnityTask(Action<float> onProgress, ct)` or `AsOnityTask(IProgress<float>, ct)` | the operation |
+| `ResourceRequest`, `AssetBundleRequest` | `AsAssetOnityTask()` / `AsAssetOnityTask<T>()` | the asset |
+| `AssetBundleRequest` | `AwaitForAllAssets()` | `Object[]` |
+| `AssetBundleCreateRequest` | `AsAssetBundleOnityTask()` | the `AssetBundle` |
+| `UnityWebRequestAsyncOperation` | `AsWebRequestOnityTask()` | the request; failure throws `OnityUnityWebRequestException`, cancellation aborts it |
+| `AsyncGPUReadbackRequest` | `AsOnityTask(ct)` | the request; an error faults |
+| `AsyncInstantiateOperation` (Unity 2022.3.20+ or Unity 6) | `AsInstancesOnityTask()` / `AsInstancesOnityTask<T>()` | the instances |
+| `Awaitable` / `Awaitable<T>` (Unity 2023.1 or newer) | `AsOnityTask()` | completion or the result |
+
+For an `AsyncOperation`, cancellation stops the await and reports
+`OperationCanceledException`; the Unity operation may continue (a pending web
+request is aborted). These adapters poll at Update and have no
+`cancelImmediately` or timing overloads. Deferred scene loading has the
+ownership rule described above. `OnityProgress.Create(callback)`,
+`Create<T>` and `CreateOnlyValueChanged<T>` build `IProgress<T>` reporters
+that call back inline.
 
 ## Web requests
 
@@ -1006,7 +1297,9 @@ UnityWebRequest completed = await OnityTask.Send(
 
 `GetJson<TResponse>` and `PostJson<TRequest, TResponse>` provide compact
 `JsonUtility`-based DTO helpers. Failed requests throw
-`OnityUnityWebRequestException` with the response details.
+`OnityUnityWebRequestException`, which carries `UnityWebRequest`, `Url`,
+`ResponseCode`, `Result`, `Error`, `Text`, `ResponseHeaders`, `IsNetworkError`
+and `IsHttpError`.
 
 ## Reactive and messaging bridges
 
@@ -1016,32 +1309,119 @@ public readonly struct SaveRequested
 }
 
 int firstScore = await scoreStream.FirstOnityTask(cancellationToken);
+int finalScore = await scoreStream.ToOnityTask(useFirstValue: false, cancellationToken);
+
+IOnityObservable<int> resultStream = LoadScoreAsync(cancellationToken).ToObservable();
 
 await asyncPublisher.PublishOnityTask(
     new SaveRequested(),
     cancellationToken);
 ```
 
-Use `FirstOnityTask` / `ToOnityTask` for reactive streams and
-`PublishOnityTask` / `SubscribeOnityTask` for Onity's async message channels.
+- `FirstOnityTask` completes with the first value. `ToOnityTask(useFirstValue,
+  ct)` completes with the first value or, as UniTask's default, the last value
+  when the source completes; hot streams that never complete need a token.
+  `ToOnityTask(ct)` on an `IOnityObservable<T>` uses the last value; a `Unit`
+  stream converted without `useFirstValue` keeps the 0.5 first-value overload.
+- `task.ToObservable()` exposes a task as an `IOnityObservable<T>`.
+- `observable.AsOnityAsyncEnumerable(capacity)` and `stream.AsObservable()`
+  convert between reactive streams and async streams.
+- `PublishOnityTask` / `SubscribeOnityTask` bridge Onity's async message
+  channels; see [Events & Messaging](events-messaging.html#native-async-consumption-onitytask)
+  for `ReceiveAsync`, `ReceiveAllAsync` and `SubscribeQueued`.
+
+## Coroutines
+
+```csharp
+// Await a coroutine enumerator: advanced at once, then once per Update.
+await MyLegacyCoroutine();
+await MyLegacyCoroutine().ToOnityTask(OnityPlayerLoopTiming.LateUpdate, ct);
+
+// Run it as a real Unity coroutine when it yields unusual instructions.
+await MyLegacyCoroutine().ToOnityTask(this);
+
+// Hand an OnityTask to code that expects a coroutine.
+StartCoroutine(LoadAsync(ct).ToCoroutine(exceptionHandler: Debug.LogException));
+StartCoroutine(OnityTask.ToCoroutine(() => LoadAsync(ct)));
+
+// An async method canceled when this behaviour is destroyed.
+this.StartAsyncCoroutine(token => RunAsync(token));
+```
+
+The PlayerLoop driver supports `null`, `CustomYieldInstruction`,
+`AsyncOperation`, nested enumerators, `WaitForSeconds` (scaled time),
+`WaitForFixedUpdate` and `WaitForEndOfFrame`; any other yielded value logs a
+warning and waits one drain, so use the `MonoBehaviour` form for such coroutines.
+
+## Interop and utilities
+
+| Need | API |
+| --- | --- |
+| Start lazily, once | `OnityTask.Create(factory)`, `Defer(factory)`, `Lazy(factory)` (`OnityAsyncLazy`, awaitable any number of times), `task.ToAsyncLazy()` |
+| A task that never completes | `OnityTask.Never(ct)`, `Never<T>(ct)` |
+| Typed faults and cancellations | `OnityTask.FromException<T>(ex)`, `FromCanceled<T>(ct)` |
+| Inspect status | `task.Status` (`OnityTaskStatus`: `Pending`, `Succeeded`, `Faulted`, `Canceled`) |
+| Continue or unwrap | `task.ContinueWith(...)` (8 forms), `Unwrap()` (for `OnityTask<OnityTask>`, `Task<OnityTask>`, `OnityTask<Task>`) |
+| `ValueTask` | `task.AsValueTask()`, implicit `ValueTask` conversion, `valueTask.AsOnityTask()` |
+| `Task` | `task.AsOnityTask(useCurrentSynchronizationContext)`, `OnityTask.FromTask(task)`, `onityTask.AsTask()` |
+| Unit results | `task.AsUnitTask()` |
+| Token helpers | `task.ToCancellationToken()`, `ct.ToOnityTask()`, `await ct.WaitUntilCanceled()`, `disposable.AddTo(ct)`, `ct.RegisterWithoutCaptureExecutionContext(...)`, `exception.IsOperationCanceledException()`, `OnityCancellationTokenEqualityComparer.Default` |
+
+`ContinueWith` and `Unwrap` consume the task they extend and return a
+single-consumer task; a continuation runs on the thread that completes the
+antecedent.
 
 ## Fire and forget
 
-Prefer `await`. When a detached operation is intentional, call `Forget` so
-exceptions reach a callback or the Unity log:
+Prefer `await`. When a detached operation is intentional, call `Forget` or
+write an `async OnityTaskVoid` method:
 
 ```csharp
-OnityTask.LoadScene("Gameplay").Forget(Debug.LogException);
+OnityTask.LoadScene("Gameplay").Forget(Debug.LogException);   // the handler sees every exception
+OnityTask.LoadScene("Gameplay").Forget();                       // unobserved faults go to OnityTaskScheduler
+OnityTask.LoadScene("Gameplay").Forget(Debug.LogException, handleExceptionOnMainThread: true);
 ```
 
-Long-running operations appear in **Onity → Diagnostics → Task Tracker** when
-tracking is enabled. Stack-trace capture is useful for leak diagnosis but adds
-Editor allocation overhead, so leave it disabled during performance runs.
+Without a handler, an unobserved fault of `Forget()`, an `async OnityTaskVoid`
+method or an unawaited completion source goes to `OnityTaskScheduler`. It drops
+`OperationCanceledException` unless `PropagateOperationCanceledException` is
+true, raises `UnobservedTaskException` when it has a subscriber (on the main
+thread while `DispatchUnityMainThread` is true, the default), and otherwise
+logs with `UnobservedExceptionWriteLogType` (`LogType.Exception` by default).
+A handler passed to `Forget` receives every exception, including cancellation.
+
+`Forget()` observes a single-consumer native task directly, without a .NET task
+bridge. Task tracking (`OnityTaskTracker.IsEnabled`) is on by default; while it
+is on, forgotten tasks appear in **Onity → Tools → Task Tracker**. Stack-trace
+capture is useful for leak diagnosis but adds Editor allocation overhead, so
+leave it disabled during performance runs.
+
+## Assembly references
+
+Unity assembly references are not transitive. An assembly definition that calls
+`Onity.Unity.Async` extension methods should reference `Onity.Reactive` as well as
+`Onity.Unity`, and `Onity.Messaging` when it uses the messaging bridges. Several
+extension names (`AsOnityAsyncEnumerable`, `BindTo`, `ToOnityTask`, `WaitAsync`)
+have overloads whose receiver or parameters are `Onity.Reactive` types, and the
+compiler reports CS0012 when it must examine one of them without that reference.
+Assemblies that use the uGUI extensions also reference `Onity.Unity.UGUI` and
+`UnityEngine.UI`.
+
+## Performance
+
+The [2026-10-02 Release Player gate](../assets/benchmarks/onitytask-surpass-2026-10-02.md)
+measured OnityTask faster than UniTask 2.5.11 in all 29 gated IL2CPP rows
+(median ratios 0.085 to 0.808) at Onity's default context flow, with pool
+retention matched for the 1,024- and 4,096-operation bursts. Mono, opt-in flow
+and default-retention results are in the
+[comparison](onitytask-comparison.html). These are timing results for the
+measured workloads; no allocation or other-platform claim follows from them.
 
 ## See also
 
 - [Migrating from UniTask](../Migration/From-UniTask.html)
 - [OnityTask and UniTask comparison](onitytask-comparison.html)
+- [Lifecycle & Scopes](lifecycle-and-scopes.html)
 - [Reactive](reactive.html)
 - [Events & Messaging](events-messaging.html)
 - [Performance & IL2CPP](performance-and-il2cpp.html)

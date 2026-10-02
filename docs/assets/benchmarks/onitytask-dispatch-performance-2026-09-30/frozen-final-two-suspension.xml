@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="12" result="Passed" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.1629094">
+  <test-suite type="TestSuite" id="1000" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="995" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.162909" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="2147" name="Onity.Tests.EditMode.dll" fullname="C:/Users/e-fur/.codex/worktrees/onity-builder-benchmark-4be50dc/Onity/Library/ScriptAssemblies/Onity.Tests.EditMode.dll" runstate="Runnable" testcasecount="995" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.117003" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="101388" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="2148" name="Onity" fullname="Onity" runstate="Runnable" testcasecount="995" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.089542" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="2149" name="Tests" fullname="Onity.Tests" runstate="Runnable" testcasecount="995" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.076357" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="2150" name="EditMode" fullname="Onity.Tests.EditMode" runstate="Runnable" testcasecount="995" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.063285" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1599" name="OnityTaskAsyncBuilderEditModeTests" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" testcasecount="54" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.048566" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="ParameterizedMethod" id="1635" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" testcasecount="12" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.041919" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1623" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(False,False,True,True)" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(False,False,True,True)" methodname="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="2131589747" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.022526" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1624" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(False,True,True,True)" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(False,True,True,True)" methodname="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="577170074" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.001362" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1625" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(True,False,True,True)" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(True,False,True,True)" methodname="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="2110524041" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.002685" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1626" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(True,True,True,True)" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(True,True,True,True)" methodname="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="401240054" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.001160" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1627" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(False,False,True,False)" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(False,False,True,False)" methodname="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1311939923" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.000116" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1628" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(False,True,True,False)" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(False,True,True,False)" methodname="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="840546774" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.000110" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1629" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(True,False,True,False)" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(True,False,True,False)" methodname="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1009716231" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.000104" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1630" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(True,True,True,False)" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(True,True,True,False)" methodname="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1719681734" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.000102" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1631" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(False,False,False,True)" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(False,False,False,True)" methodname="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="621961132" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.000097" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1632" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(False,True,False,True)" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(False,True,False,True)" methodname="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="2110454971" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.000100" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1633" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(True,False,False,True)" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(True,False,False,True)" methodname="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="159020996" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.000096" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1634" name="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(True,True,False,True)" fullname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests.TwoSuspensions_UseEachSuspensionsContextAndFlowDecision(True,True,False,True)" methodname="TwoSuspensions_UseEachSuspensionsContextAndFlowDecision" classname="Onity.Tests.EditMode.OnityTaskAsyncBuilderEditModeTests" runstate="Runnable" seed="1972364845" result="Passed" start-time="2026-09-29 22:45:18Z" end-time="2026-09-29 22:45:18Z" duration="0.000107" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[Saving results to: C:/Users/e-fur/AppData/LocalLow/DefaultCompany/Onity\TestResults.xml
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>
