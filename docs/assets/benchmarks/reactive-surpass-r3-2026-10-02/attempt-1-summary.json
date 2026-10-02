@@ -1,0 +1,943 @@
+{
+  "schemaVersion": 1,
+  "generatedUtc": "2026-10-02T13:35:46.549527+00:00",
+  "evidenceRoot": "<host path>",
+  "selfTest": false,
+  "reportCount": 6,
+  "processesPerBackend": 3,
+  "warmupSamples": 2,
+  "measuredSamples": 15,
+  "libraryVersions": {
+    "Onity": "0.6.0",
+    "R3": "1.3.0",
+    "UniRx": "7.1.0"
+  },
+  "rule": "ratio = Onity process median / other library process median (time per operation, so below 1 means Onity is faster); faster when the median ratio over processes <= 0.95 and the worst process ratio <= 1.00; slower when the median ratio >= 1.05; otherwise on par",
+  "thresholds": {
+    "fasterMedian": 0.95,
+    "fasterWorst": 1.0,
+    "slowerMedian": 1.05
+  },
+  "backends": [
+    {
+      "backend": "IL2CPP",
+      "processes": [
+        "il2cpp-reactive-p1",
+        "il2cpp-reactive-p2",
+        "il2cpp-reactive-p3"
+      ],
+      "buildGuid": "d3ced29dbec449d98d1a120372dd55d8",
+      "unityVersion": "2022.3.62f2",
+      "onityVersion": "0.6.0",
+      "sourceHead": "b73c20ecce1aa7290e35a32a6d7de9cce2e0228b",
+      "processorType": "AMD Ryzen 9 5900X 12-Core Processor ",
+      "allocationAvailable": false,
+      "allocationDetail": [
+        "Unavailable on IL2CPP: the counter is not called because the DI harness observed IL2CPP crashes with it."
+      ],
+      "scenarios": [
+        {
+          "id": "SubjectOnNext1",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              4.651,
+              4.747,
+              4.68
+            ],
+            "R3": [
+              4.393,
+              4.3885,
+              4.4095
+            ],
+            "UniRx": [
+              3.7315,
+              3.6905,
+              3.7095
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 4.68,
+            "R3": 4.393,
+            "UniRx": 3.7095
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                1.0587297974049625,
+                1.0816907827275835,
+                1.0613448236761536
+              ],
+              "median": 1.0613448236761536,
+              "worst": 1.0816907827275835,
+              "class": "slower"
+            },
+            "UniRx": {
+              "perProcess": [
+                1.2464156505426771,
+                1.2862755724156618,
+                1.2616255560048524
+              ],
+              "median": 1.2616255560048524,
+              "worst": 1.2862755724156618,
+              "class": "slower"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "SubjectOnNext8",
+          "operationsPerSample": 50000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              17.944,
+              17.532,
+              17.422
+            ],
+            "R3": [
+              24.574,
+              23.758,
+              23.786
+            ],
+            "UniRx": [
+              29.388,
+              28.456,
+              28.352
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 17.532,
+            "R3": 23.786,
+            "UniRx": 28.456
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.7302026532107104,
+                0.7379409041165081,
+                0.7324476582863869
+              ],
+              "median": 0.7324476582863869,
+              "worst": 0.7379409041165081,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.6105893561998094,
+                0.6161090806859714,
+                0.6144892776523703
+              ],
+              "median": 0.6144892776523703,
+              "worst": 0.6161090806859714,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "SubjectSubscribeDispose",
+          "operationsPerSample": 20000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              103.645,
+              90.3,
+              88.65
+            ],
+            "R3": [
+              271.52,
+              250.045,
+              271.765
+            ],
+            "UniRx": [
+              507.405,
+              504.835,
+              491.09
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 90.3,
+            "R3": 271.52,
+            "UniRx": 504.835
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.3817214201532116,
+                0.36113499570077384,
+                0.32620094566997226
+              ],
+              "median": 0.36113499570077384,
+              "worst": 0.3817214201532116,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.20426483775287985,
+                0.17887032396723682,
+                0.18051680954611174
+              ],
+              "median": 0.18051680954611174,
+              "worst": 0.20426483775287985,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "PropertySetChanged",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              7.015,
+              6.954,
+              6.8865
+            ],
+            "R3": [
+              12.1365,
+              12.1545,
+              11.88
+            ],
+            "UniRx": [
+              14.328,
+              14.763,
+              14.1165
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 6.954,
+            "R3": 12.1365,
+            "UniRx": 14.328
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.5780084867960285,
+                0.5721337776132296,
+                0.5796717171717172
+              ],
+              "median": 0.5780084867960285,
+              "worst": 0.5796717171717172,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.4896007816862088,
+                0.47104247104247104,
+                0.48783338646265006
+              ],
+              "median": 0.48783338646265006,
+              "worst": 0.4896007816862088,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "PropertySetSame",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              4.948,
+              4.807,
+              4.7345
+            ],
+            "R3": [
+              6.839,
+              6.6675,
+              6.558
+            ],
+            "UniRx": [
+              7.8275,
+              7.5885,
+              7.4585
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 4.807,
+            "R3": 6.6675,
+            "UniRx": 7.5885
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.7234975873665741,
+                0.7209598800149981,
+                0.7219426654467825
+              ],
+              "median": 0.7219426654467825,
+              "worst": 0.7234975873665741,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.6321303098051742,
+                0.6334585227647098,
+                0.6347791110813166
+              ],
+              "median": 0.6334585227647098,
+              "worst": 0.6347791110813166,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "PropertySubscribeDispose",
+          "operationsPerSample": 20000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              109.05,
+              96.335,
+              100.01
+            ],
+            "R3": [
+              282.895,
+              276.165,
+              295.48
+            ],
+            "UniRx": [
+              176.86,
+              168.72,
+              182.34
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 100.01,
+            "R3": 282.895,
+            "UniRx": 176.86
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.38547871118259425,
+                0.34883131461264094,
+                0.3384662244483552
+              ],
+              "median": 0.34883131461264094,
+              "worst": 0.38547871118259425,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.6165893927400203,
+                0.5709755808440019,
+                0.5484808599319952
+              ],
+              "median": 0.5709755808440019,
+              "worst": 0.6165893927400203,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "WhereSelectOnNext",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              7.544,
+              7.5715,
+              7.4845
+            ],
+            "R3": [
+              9.291,
+              9.297,
+              9.397
+            ],
+            "UniRx": [
+              9.9065,
+              10.0495,
+              9.9455
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 7.544,
+            "R3": 9.297,
+            "UniRx": 9.9455
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.8119685717360886,
+                0.8144024954286329,
+                0.796477599233798
+              ],
+              "median": 0.8119685717360886,
+              "worst": 0.8144024954286329,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.7615202140009085,
+                0.753420568187472,
+                0.7525514051581117
+              ],
+              "median": 0.753420568187472,
+              "worst": 0.7615202140009085,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "ChainSubscribeDispose",
+          "operationsPerSample": 10000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              305.61,
+              392.39,
+              317.63
+            ],
+            "R3": [
+              576.68,
+              656.57,
+              574.4
+            ],
+            "UniRx": [
+              860.05,
+              1020.1,
+              863.69
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 317.63,
+            "R3": 576.68,
+            "UniRx": 863.69
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.5299472844558508,
+                0.597636200252829,
+                0.5529770194986072
+              ],
+              "median": 0.5529770194986072,
+              "worst": 0.597636200252829,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.35533980582524277,
+                0.3846583668267817,
+                0.3677592654771967
+              ],
+              "median": 0.3677592654771967,
+              "worst": 0.3846583668267817,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "CombineLatestOnNext",
+          "operationsPerSample": 100000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              7.685,
+              7.655,
+              7.679
+            ],
+            "R3": [
+              42.31,
+              43.183,
+              43.073
+            ],
+            "UniRx": [
+              50.825,
+              49.913,
+              50.033
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 7.679,
+            "R3": 43.073,
+            "UniRx": 50.033
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.1816355471519735,
+                0.17726883264247506,
+                0.17827873609918046
+              ],
+              "median": 0.17827873609918046,
+              "worst": 0.1816355471519735,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.1512051155927201,
+                0.1533668583335003,
+                0.1534787040553235
+              ],
+              "median": 0.1533668583335003,
+              "worst": 0.1534787040553235,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        }
+      ]
+    },
+    {
+      "backend": "Mono",
+      "processes": [
+        "mono-reactive-p1",
+        "mono-reactive-p2",
+        "mono-reactive-p3"
+      ],
+      "buildGuid": "d0c5043e8e6242bd818bd80d01d06d36",
+      "unityVersion": "2022.3.62f2",
+      "onityVersion": "0.6.0",
+      "sourceHead": "b73c20ecce1aa7290e35a32a6d7de9cce2e0228b",
+      "processorType": "AMD Ryzen 9 5900X 12-Core Processor ",
+      "allocationAvailable": false,
+      "allocationDetail": [
+        "Unavailable: the positive control read 0 bytes for a 64 KiB array and the empty control read 0 bytes."
+      ],
+      "scenarios": [
+        {
+          "id": "SubjectOnNext1",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              8.295,
+              8.388,
+              8.175
+            ],
+            "R3": [
+              8.843,
+              8.885,
+              8.5855
+            ],
+            "UniRx": [
+              4.7475,
+              4.7675,
+              4.7515
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 8.295,
+            "R3": 8.843,
+            "UniRx": 4.7515
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.9380300802894945,
+                0.9440630275745638,
+                0.9521868266262886
+              ],
+              "median": 0.9440630275745638,
+              "worst": 0.9521868266262886,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                1.7472353870458137,
+                1.7594126900891451,
+                1.7205093128485742
+              ],
+              "median": 1.7472353870458137,
+              "worst": 1.7594126900891451,
+              "class": "slower"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "SubjectOnNext8",
+          "operationsPerSample": 50000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              25.754,
+              26.184,
+              25.626
+            ],
+            "R3": [
+              51.904,
+              52.694,
+              52.062
+            ],
+            "UniRx": [
+              33.274,
+              33.728,
+              33.162
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 25.754,
+            "R3": 52.062,
+            "UniRx": 33.274
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.49618526510480887,
+                0.49690666869093253,
+                0.49222081364526915
+              ],
+              "median": 0.49618526510480887,
+              "worst": 0.49690666869093253,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.7739977159343632,
+                0.7763282732447818,
+                0.772751944997286
+              ],
+              "median": 0.7739977159343632,
+              "worst": 0.7763282732447818,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "SubjectSubscribeDispose",
+          "operationsPerSample": 20000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              79.36,
+              89.55,
+              82.525
+            ],
+            "R3": [
+              276.835,
+              280.82,
+              282.42
+            ],
+            "UniRx": [
+              469.715,
+              466.025,
+              457.16
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 82.525,
+            "R3": 280.82,
+            "UniRx": 466.025
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.28666895443134,
+                0.31888754362224914,
+                0.29220664258905177
+              ],
+              "median": 0.29220664258905177,
+              "worst": 0.31888754362224914,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.16895351436509373,
+                0.19215707311839494,
+                0.18051666812494532
+              ],
+              "median": 0.18051666812494532,
+              "worst": 0.19215707311839494,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "PropertySetChanged",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              11.185,
+              11.1025,
+              10.938
+            ],
+            "R3": [
+              19.04,
+              18.756,
+              18.5885
+            ],
+            "UniRx": [
+              13.2425,
+              12.9375,
+              12.9145
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 11.1025,
+            "R3": 18.756,
+            "UniRx": 12.9375
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.5874474789915967,
+                0.5919439112817231,
+                0.5884283293434113
+              ],
+              "median": 0.5884283293434113,
+              "worst": 0.5919439112817231,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.8446290353030017,
+                0.8581642512077294,
+                0.8469549730922606
+              ],
+              "median": 0.8469549730922606,
+              "worst": 0.8581642512077294,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "PropertySetSame",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              4.8725,
+              4.7795,
+              4.9645
+            ],
+            "R3": [
+              5.812,
+              5.072,
+              5.7485
+            ],
+            "UniRx": [
+              5.342,
+              5.913,
+              5.9225
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 4.8725,
+            "R3": 5.7485,
+            "UniRx": 5.913
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.8383516861665519,
+                0.9423304416403785,
+                0.8636165956336436
+              ],
+              "median": 0.8636165956336436,
+              "worst": 0.9423304416403785,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.9121115687008611,
+                0.8083037375274817,
+                0.8382439848037146
+              ],
+              "median": 0.8382439848037146,
+              "worst": 0.9121115687008611,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "PropertySubscribeDispose",
+          "operationsPerSample": 20000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              84.44,
+              89.97,
+              85.69
+            ],
+            "R3": [
+              264.23,
+              272.835,
+              274.69
+            ],
+            "UniRx": [
+              186.64,
+              182.23,
+              186.08
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 85.69,
+            "R3": 272.835,
+            "UniRx": 186.08
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.31957007152859246,
+                0.3297597449007642,
+                0.31195165459244967
+              ],
+              "median": 0.31957007152859246,
+              "worst": 0.3297597449007642,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.4524217745392199,
+                0.4937167316029194,
+                0.4605008598452278
+              ],
+              "median": 0.4605008598452278,
+              "worst": 0.4937167316029194,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "WhereSelectOnNext",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              10.6895,
+              10.8935,
+              10.914
+            ],
+            "R3": [
+              11.8805,
+              12.31,
+              12.2095
+            ],
+            "UniRx": [
+              8.3765,
+              8.488,
+              8.5175
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 10.8935,
+            "R3": 12.2095,
+            "UniRx": 8.488
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.8997516939522748,
+                0.8849309504467912,
+                0.893894098857447
+              ],
+              "median": 0.893894098857447,
+              "worst": 0.8997516939522748,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                1.2761296484211784,
+                1.283400094250707,
+                1.2813619019665394
+              ],
+              "median": 1.2813619019665394,
+              "worst": 1.283400094250707,
+              "class": "slower"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "ChainSubscribeDispose",
+          "operationsPerSample": 10000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              318.78,
+              309.73,
+              301.11
+            ],
+            "R3": [
+              550.25,
+              512.31,
+              536.58
+            ],
+            "UniRx": [
+              682.98,
+              654.34,
+              668.23
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 309.73,
+            "R3": 536.58,
+            "UniRx": 668.23
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                0.5793366651522035,
+                0.6045753547656694,
+                0.5611651571061165
+              ],
+              "median": 0.5793366651522035,
+              "worst": 0.6045753547656694,
+              "class": "faster"
+            },
+            "UniRx": {
+              "perProcess": [
+                0.4667486602828779,
+                0.4733471895344928,
+                0.45060832348143603
+              ],
+              "median": 0.4667486602828779,
+              "worst": 0.4733471895344928,
+              "class": "faster"
+            }
+          },
+          "allocatedBytesPerOp": null
+        },
+        {
+          "id": "CombineLatestOnNext",
+          "operationsPerSample": 100000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              52.363,
+              52.435,
+              53.321
+            ],
+            "R3": [
+              32.587,
+              32.325,
+              34.688
+            ],
+            "UniRx": [
+              29.876,
+              29.585,
+              30.403
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 52.435,
+            "R3": 32.587,
+            "UniRx": 29.876
+          },
+          "ratios": {
+            "R3": {
+              "perProcess": [
+                1.606867769355878,
+                1.6221191028615622,
+                1.537159824723247
+              ],
+              "median": 1.606867769355878,
+              "worst": 1.6221191028615622,
+              "class": "slower"
+            },
+            "UniRx": {
+              "perProcess": [
+                1.7526777346364975,
+                1.7723508534730439,
+                1.7538071900799264
+              ],
+              "median": 1.7538071900799264,
+              "worst": 1.7723508534730439,
+              "class": "slower"
+            }
+          },
+          "allocatedBytesPerOp": null
+        }
+      ]
+    }
+  ]
+}

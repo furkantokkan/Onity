@@ -1,0 +1,20 @@
+{
+    "name": "Onity.ReactiveBenchmarks",
+    "rootNamespace": "Onity.Benchmarks",
+    "references": [
+        "Onity.Core",
+        "Onity.Reactive",
+        "UniRx"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "ONITY_REACTIVE_BENCHMARKS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

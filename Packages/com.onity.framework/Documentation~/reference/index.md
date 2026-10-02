@@ -2,8 +2,12 @@
 
 # Reference
 
-Complete API catalogs for each Onity pillar.
+Catalogs of the public API, one per pillar. Each row carries the signature and the rule that goes with
+it; the guides explain when to use what.
 
-- [DI API](di-api.md)
-- [Reactive Operators](reactive-operators.md)
-- [Messaging API](messaging-api.md)
+- [DI API](di-api.md): container, binding builders, resolve and inject, build and lifecycle, scope lifetime, composition helpers, factories, exceptions.
+- [Reactive Operators](reactive-operators.md): every operator, factory, bridge and provider, with signatures.
+- [Messaging API](messaging-api.md): broker, channels, hub, `OnityEvent`, binding helpers and async consumers.
+
+OnityTask has no separate catalog in 0.7.0. Its reference material, organized by task, is the
+[Async with OnityTask](../guide/onitytask.md) guide.

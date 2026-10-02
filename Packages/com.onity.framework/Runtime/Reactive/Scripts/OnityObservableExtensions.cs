@@ -30,16 +30,7 @@ namespace Onity.Reactive
                 throw new ArgumentNullException(nameof(predicate));
             }
 
-            return new OnityObservable<T>(
-                observer =>
-                    source.Subscribe(
-                        value =>
-                        {
-                            if (predicate(value))
-                            {
-                                observer(value);
-                            }
-                        }));
+            return new OnityWhereObservable<T>(source, predicate);
         }
 
         /// <summary>
@@ -64,8 +55,16 @@ namespace Onity.Reactive
                 throw new ArgumentNullException(nameof(selector));
             }
 
-            return new OnityObservable<TResult>(
-                observer => source.Subscribe(value => observer(selector(value))));
+            // Where followed by Select runs as one operator with the same call order.
+            if (source is OnityWhereObservable<TSource> whereObservable)
+            {
+                return new OnityWhereSelectObservable<TSource, TResult>(
+                    whereObservable.Source,
+                    whereObservable.Predicate,
+                    selector);
+            }
+
+            return new OnitySelectObservable<TSource, TResult>(source, selector);
         }
 
         /// <summary>
@@ -86,25 +85,7 @@ namespace Onity.Reactive
 
             IEqualityComparer<T> equalityComparer = comparer ?? EqualityComparer<T>.Default;
 
-            return new OnityObservable<T>(
-                observer =>
-                {
-                    bool hasValue = false;
-                    T lastValue = default;
-
-                    return source.Subscribe(
-                        value =>
-                        {
-                            if (hasValue && equalityComparer.Equals(lastValue, value))
-                            {
-                                return;
-                            }
-
-                            hasValue = true;
-                            lastValue = value;
-                            observer(value);
-                        });
-                });
+            return new OnityDistinctUntilChangedObservable<T>(source, equalityComparer);
         }
 
         /// <summary>
@@ -131,23 +112,7 @@ namespace Onity.Reactive
                 return source;
             }
 
-            return new OnityObservable<T>(
-                observer =>
-                {
-                    int remaining = count;
-
-                    return source.Subscribe(
-                        value =>
-                        {
-                            if (remaining > 0)
-                            {
-                                remaining--;
-                                return;
-                            }
-
-                            observer(value);
-                        });
-                });
+            return new OnitySkipObservable<T>(source, count);
         }
 
         /// <summary>
@@ -169,27 +134,7 @@ namespace Onity.Reactive
                 throw new ArgumentNullException(nameof(predicate));
             }
 
-            return new OnityObservable<T>(
-                observer =>
-                {
-                    bool isSkipping = true;
-
-                    return source.Subscribe(
-                        value =>
-                        {
-                            if (isSkipping)
-                            {
-                                if (predicate(value))
-                                {
-                                    return;
-                                }
-
-                                isSkipping = false;
-                            }
-
-                            observer(value);
-                        });
-                });
+            return new OnitySkipWhileObservable<T>(source, predicate);
         }
 
         /// <summary>
@@ -216,45 +161,7 @@ namespace Onity.Reactive
                 return OnityObservable.Empty<T>();
             }
 
-            return new OnityObservable<T>(
-                observer =>
-                {
-                    int remaining = count;
-                    IDisposable subscription = null;
-                    bool shouldDisposeAfterSubscribe = false;
-
-                    subscription = source.Subscribe(
-                        value =>
-                        {
-                            if (remaining <= 0)
-                            {
-                                return;
-                            }
-
-                            remaining--;
-                            observer(value);
-
-                            if (remaining > 0)
-                            {
-                                return;
-                            }
-
-                            if (subscription == null)
-                            {
-                                shouldDisposeAfterSubscribe = true;
-                                return;
-                            }
-
-                            subscription.Dispose();
-                        });
-
-                    if (shouldDisposeAfterSubscribe)
-                    {
-                        subscription.Dispose();
-                    }
-
-                    return subscription;
-                });
+            return new OnityTakeObservable<T>(source, count);
         }
 
         /// <summary>
@@ -276,45 +183,7 @@ namespace Onity.Reactive
                 throw new ArgumentNullException(nameof(predicate));
             }
 
-            return new OnityObservable<T>(
-                observer =>
-                {
-                    IDisposable subscription = null;
-                    bool isComplete = false;
-                    bool shouldDisposeAfterSubscribe = false;
-
-                    subscription = source.Subscribe(
-                        value =>
-                        {
-                            if (isComplete)
-                            {
-                                return;
-                            }
-
-                            if (predicate(value) == false)
-                            {
-                                isComplete = true;
-
-                                if (subscription == null)
-                                {
-                                    shouldDisposeAfterSubscribe = true;
-                                    return;
-                                }
-
-                                subscription.Dispose();
-                                return;
-                            }
-
-                            observer(value);
-                        });
-
-                    if (shouldDisposeAfterSubscribe)
-                    {
-                        subscription.Dispose();
-                    }
-
-                    return subscription;
-                });
+            return new OnityTakeWhileObservable<T>(source, predicate);
         }
 
         /// <summary>
@@ -331,12 +200,7 @@ namespace Onity.Reactive
                 throw new ArgumentNullException(nameof(source));
             }
 
-            return new OnityObservable<T>(
-                observer =>
-                {
-                    observer(initialValue);
-                    return source.Subscribe(observer);
-                });
+            return new OnityStartWithObservable<T>(source, initialValue);
         }
 
         /// <summary>
@@ -358,7 +222,7 @@ namespace Onity.Reactive
                 throw new ArgumentNullException(nameof(onNext));
             }
 
-            return source.Subscribe(new Observer<T>(onNext));
+            return OnityNodeSources.SubscribeAction(source, onNext);
         }
 
         /// <summary>

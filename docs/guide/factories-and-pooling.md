@@ -1,28 +1,50 @@
 ---
-title: "Factories & Pooling"
+title: "Factories and Pooling"
 parent: "Guides"
 nav_order: 6
+description: "Create objects with runtime arguments through IFactory and BindFactory, pool prefabs with BindPooledFactory, and let the scope dispose the pool."
 ---
 
-# Factories & Pooling
+# Factories and Pooling
 
-Onity has two factory styles:
+Use a factory when an object needs a value that is only known at the call site, and a pool when the same
+objects are created and discarded many times. The factory contracts (`IFactory<...>`) live in the
+engine-free `Onity.Factory` assembly; the pools (`OnityObjectPool<T>`, `PrefabComponentPool<T>`,
+`IPool<T>`, `IPoolHooks`) in `Onity.Pooling`; and the one-line prefab binding
+(`BindPooledFactory`) in `Onity.Unity.Installers`. A pool the scope created is disposed with the scope,
+like every other object it owns.
 
-- `BindFactory<...>()` for explicit runtime-argument construction.
-- `BindPooledFactory(...)` for the common Unity prefab pool case.
+Contents:
 
-The factory contracts live in the engine-free `Onity.Factory` assembly. Pooling
-helpers live in `Onity.Pooling`; Unity prefab pooling is wired through
-`Onity.Unity.Installers`.
+- [Choose a factory or pool](#choose-a-factory-or-pool)
+- [Runtime-argument factory](#runtime-argument-factory)
+- [Prefab pooled factory](#prefab-pooled-factory)
+- [Pool lifetime](#pool-lifetime)
+- [Prewarm and fixed capacity](#prewarm-and-fixed-capacity)
+- [Parameterized pooled spawn](#parameterized-pooled-spawn)
+- [Plain C# object pool](#plain-c-object-pool)
+- [Compared with Zenject and VContainer](#compared-with-zenject-and-vcontainer)
+
+## Choose a factory or pool
+
+| You need | Use | Registers | Notes |
+| --- | --- | --- | --- |
+| A new plain object per call from 0, 1 or 2 runtime arguments | your `IFactory<...>` class and `BindFactory<...>()` | `IFactory<...>` and the factory type, one shared instance | no pooling; you write `Create` |
+| Reusable prefab instances, no arguments | `BindPooledFactory(prefab, parent, defaultCapacity, maxSize)` in a `MonoInstaller` | `IPool<TComponent>` and `IFactory<TComponent>` | defaults 16 and 512; no prewarm, fixed-size or name option; the scope disposes the pool |
+| A prefab pool with prewarm, fixed capacity or a diagnostics name | `new PrefabComponentPool<T>(...)`, then `BindPooledFactory(pool)` | the same two bindings | caller-owned: `pool.AddTo(container)` or dispose it yourself |
+| A pool you already built, any item type | `BindPooledFactory(IPool<T>)` | the same two bindings | caller-owned; the container disposes it only after `pool.AddTo(container)` |
+| Pooled spawn with 1 or 2 runtime arguments | `new PooledFactory<TParam, T>(pool, initialize)` or the two-parameter form, bound with `BindInstance<IFactory<TParam, T>>(...)` | what you bind | needs an `IParameterizedPool<T>`; `initialize` runs before the get hooks and activation |
+| Reusable plain C# objects, no `GameObject` | `new OnityObjectPool<T>(...)` (`T : class`), optionally `BindPooledFactory(pool)` | what you bind | reset in `actionOnGet` and `actionOnRelease`; `IPoolHooks` is not called |
 
 ## Runtime-argument factory
 
-Use an explicit `IFactory<...>` when a created object needs a runtime value, such
-as an enemy id, spawn config, or level seed.
+Author an `IFactory<TParam, TValue>` when the created object needs a value from the call site. The
+container constructs the factory, so it can inject services or `IResolver`; only the runtime values
+travel through `Create`. There is no `Instantiate(args)` and no fluent factory body:
 
 ```csharp
-using Onity.DI;
-using Onity.Factory;
+using Onity.DI;                 // IResolver
+using Onity.Factory;            // IFactory<TParam, TValue>
 
 public readonly struct EnemySpawnRequest
 {
@@ -52,328 +74,296 @@ public sealed class Enemy
 
 public sealed class EnemyFactory : IFactory<EnemySpawnRequest, Enemy>
 {
-    private readonly IResolver m_resolver;
+    private readonly IClock m_clock;
 
-    public EnemyFactory(IResolver resolver)
+    public EnemyFactory(IClock clock)
     {
-        m_resolver = resolver;
+        m_clock = clock;
     }
 
     public Enemy Create(EnemySpawnRequest request)
     {
-        return new Enemy(request.Id, request.Level, m_resolver.Resolve<IClock>());
+        return new Enemy(request.Id, request.Level, m_clock);
     }
 }
 ```
 
-Register and use it:
+Register and use it (fragment):
 
 ```csharp
 container.Bind<IClock>().To<GameClock>().AsSingle();
 container.BindFactory<EnemySpawnRequest, Enemy, EnemyFactory>();
 
-IFactory<EnemySpawnRequest, Enemy> factory = container.Resolve<IFactory<EnemySpawnRequest, Enemy>>();
-Enemy enemy = factory.Create(new EnemySpawnRequest("elite", 5));
+IFactory<EnemySpawnRequest, Enemy> enemies = container.Resolve<IFactory<EnemySpawnRequest, Enemy>>();
+Enemy elite = enemies.Create(new EnemySpawnRequest("elite", 5));
 ```
 
-`BindFactory` has zero-, one-, and two-parameter overloads:
+`BindFactory` binds the factory with `BindInterfacesAndSelfTo<TFactory>().AsSingle()`, so it resolves
+as `IFactory<...>` and as its own type, one instance per scope. The three forms match the three
+contracts, and each constrains `TFactory` to the contract it binds (`where TFactory : class,
+IFactory<...>`): `BindFactory<TValue, TFactory>()` for an `IFactory<TValue>`,
+`BindFactory<TParam, TValue, TFactory>()` for an `IFactory<TParam, TValue>` (the form above), and
+`BindFactory<TParam1, TParam2, TValue, TFactory>()` for an `IFactory<TParam1, TParam2, TValue>`. A
+factory type compiles only with the form of the contract it implements; `EnemyFactory` above fits the
+one-parameter form alone.
 
-```csharp
-container.BindFactory<Enemy, EnemyFactory>();                         // IFactory<Enemy>
-container.BindFactory<EnemySpawnRequest, Enemy, EnemyFactory>();      // IFactory<EnemySpawnRequest, Enemy>
-container.BindFactory<string, int, Enemy, EnemyFactory>();            // IFactory<string, int, Enemy>
-```
+Two parameters is the largest arity; wrap more values in a struct, as `EnemySpawnRequest` does. The
+object a factory creates is caller-owned: the container does not dispose it.
 
 ## Prefab pooled factory
 
-For normal projectile, VFX, enemy, pickup, or UI item pooling, bind the prefab
-once from a `MonoInstaller`. One call registers both:
-
-- `IPool<TComponent>`
-- `IFactory<TComponent>`
+For projectiles, hit markers, pickups and list items, bind the prefab once from a `MonoInstaller`. One
+call registers `IPool<TComponent>` to release and `IFactory<TComponent>` to spawn. This is the
+canonical `HitMarker` from [Getting Started](../Getting-Started.html). The installer line:
 
 ```csharp
-using Onity.DI;
-using Onity.Unity.Installers;
+using Onity.DI;                 // OnityContainer
+using Onity.Unity.Installers;   // MonoInstaller, BindPooledFactory
 using UnityEngine;
 
-public sealed class CombatInstaller : MonoInstaller
+public sealed class GameInstaller : MonoInstaller
 {
-    [SerializeField] private Projectile m_projectilePrefab;
-    [SerializeField] private Transform m_projectileRoot;
+    [SerializeField] private HitMarker m_hitMarkerPrefab;
+    [SerializeField] private Transform m_hitMarkerRoot;
 
     public override void InstallBindings(OnityContainer container)
     {
-        container.BindPooledFactory(
-            m_projectilePrefab,
-            m_projectileRoot,
-            defaultCapacity: 32,
-            maxSize: 256);
-
-        container.Bind<ProjectileSpawner>().AsSingle();
+        // IFactory<HitMarker> to spawn and IPool<HitMarker> to release; the scope disposes the pool.
+        container.BindPooledFactory(m_hitMarkerPrefab, m_hitMarkerRoot, defaultCapacity: 8, maxSize: 32);
     }
 }
 ```
 
-Inject the factory to spawn and the pool to release:
+The pooled component implements `IPoolHooks` for its reset logic. `PrefabComponentPool<T>` activates the
+GameObject and then calls `OnPoolGet()` on get; on release it calls `OnPoolRelease()` and then
+deactivates the GameObject:
 
 ```csharp
-using Onity.Factory;
-using Onity.Pooling;
+using Onity.Pooling;            // IPoolHooks
 using UnityEngine;
 
-public sealed class ProjectileSpawner
+public sealed class HitMarker : MonoBehaviour, IPoolHooks
 {
-    private readonly IFactory<Projectile> m_projectileFactory;
-    private readonly IPool<Projectile> m_projectilePool;
-
-    public ProjectileSpawner(
-        IFactory<Projectile> projectileFactory,
-        IPool<Projectile> projectilePool)
+    public void Show(int amount)
     {
-        m_projectileFactory = projectileFactory;
-        m_projectilePool = projectilePool;
-    }
-
-    public Projectile Spawn(Vector3 position, Vector3 velocity)
-    {
-        Projectile projectile = m_projectileFactory.Create();
-        projectile.transform.position = position;
-        projectile.Launch(velocity, Release);
-        return projectile;
-    }
-
-    private void Release(Projectile projectile)
-    {
-        m_projectilePool.Release(projectile);
-    }
-}
-```
-
-Use `IPoolHooks` on the pooled component for reset logic. `PrefabComponentPool<T>`
-activates the GameObject on get and deactivates it on release.
-
-```csharp
-using System;
-using Onity.Pooling;
-using UnityEngine;
-
-public sealed class Projectile : MonoBehaviour, IPoolHooks
-{
-    private Action<Projectile> m_release;
-    private Vector3 m_velocity;
-
-    public void Launch(Vector3 velocity, Action<Projectile> release)
-    {
-        m_velocity = velocity;
-        m_release = release;
-    }
-
-    public void Despawn()
-    {
-        m_release?.Invoke(this);
+        // Position the marker and display the amount.
     }
 
     public void OnPoolGet()
     {
-        m_velocity = Vector3.zero;
-        m_release = null;
+        // Reset per-use state when the pool hands this instance out.
     }
 
     public void OnPoolRelease()
     {
-        m_velocity = Vector3.zero;
-        m_release = null;
+        // Clear references when the instance returns to the pool.
     }
 }
 ```
 
-### Pool lifetime
-
-`BindPooledFactory(prefab, ...)` creates the pool, so the container's scope owns it: the
-pool is disposed when the container is disposed (a context disposes its container when it
-is destroyed). Disposing a prefab pool destroys its inactive instances only. Instances that
-are still checked out stay with their owners, so release them before the scope ends;
-`Release` throws `ObjectDisposedException` afterward. See
-[Disposal ownership](lifecycle-and-scopes.html#disposal-ownership).
-
-A pool you build yourself and pass to `BindPooledFactory(pool)` stays caller-owned: the
-container never disposes it. Tie it to the scope with `pool.AddTo(container)`, or dispose
-it yourself:
+The consumer injects the factory to spawn and the pool to release. Here the release happens after a
+delay, on the scope token, so a marker is never released into a pool the scope has already disposed:
 
 ```csharp
-using Onity.DI;
-using Onity.Pooling;
-using Onity.Unity.Installers;
+using System.Threading;
+using Onity.DI;                 // Inject
+using Onity.Factory;            // IFactory<T>
+using Onity.Pooling;            // IPool<T>
+using Onity.Unity.Async;        // OnityTask, OnityTaskVoid, GetScopeCancellationToken
+using UnityEngine;
 
-PrefabComponentPool<Projectile> pool = new PrefabComponentPool<Projectile>(
-    m_projectilePrefab, m_projectileRoot, maxSize: 64, initialSize: 16);
+public sealed class HealthHud : MonoBehaviour
+{
+    private const float k_hitMarkerSeconds = 0.5f;
 
-pool.AddTo(container);                  // disposed when the container is disposed
-container.BindPooledFactory(pool);
+    // The health subscription and the OnEnable that calls ShowHit are in Getting Started.
+    [Inject] private IFactory<HitMarker> m_hitMarkers;
+    [Inject] private IPool<HitMarker> m_hitMarkerPool;
+
+    private void ShowHit(PlayerDamaged message)
+    {
+        HitMarker marker = m_hitMarkers.Create();                     // taken from the pool
+        marker.Show(message.Amount);
+        ReleaseLaterAsync(marker, this.GetScopeCancellationToken()).Forget();
+    }
+
+    private async OnityTaskVoid ReleaseLaterAsync(HitMarker marker, CancellationToken token)
+    {
+        await OnityTask.Delay(k_hitMarkerSeconds, token);             // ends with the scope
+        m_hitMarkerPool.Release(marker);                              // back to the pool, exactly once
+    }
+}
 ```
 
-### Prewarm and fixed capacity
+Clones are instantiated under an inactive hidden root and moved to `parent` inactive, so a clone of an
+active prefab does not run `OnEnable` before the pool activates it on get. Do not depend on runtime
+state in `Awake`; set it in `OnPoolGet()` or through the parameterized spawn below. Release every
+instance exactly once; a second release of the same instance is an error.
 
-`OnityObjectPool<T>` and `PrefabComponentPool<T>` take `initialSize` (items created
-in the constructor) and `fixedSize` (when `true`, `maxSize` is the total number of
-items and `Get()` throws `InvalidOperationException` once all of them are checked
-out). `pool.Prewarm(count)` raises the created total to `count`; it is a target,
-not an increment. Prewarming runs no get or release hooks. `BindPooledFactory(prefab,
-parent, defaultCapacity, maxSize)` has no prewarm or fixed-size option: build the
-pool yourself, as above, when you need one.
+## Pool lifetime
+
+`BindPooledFactory(prefab, ...)` creates the pool, so the scope owns it: the pool is disposed when the
+container is disposed, after the scope token is canceled. A context disposes its container when it is
+destroyed. Disposing a prefab pool destroys its inactive instances only. Instances that are still
+checked out stay with their owners, so release them before the scope ends; `Get`, `Release`, `Prewarm`
+and `Clear` throw `ObjectDisposedException` afterwards. See
+[Disposal ownership](lifecycle-and-scopes.html#disposal-ownership).
+
+A pool you build yourself and pass to `BindPooledFactory(pool)` stays caller-owned: the container never
+disposes it. Tie it to the scope with `pool.AddTo(container)` (`Onity.DI`), or dispose it yourself
+(fragment):
+
+```csharp
+PrefabComponentPool<HitMarker> pool = new PrefabComponentPool<HitMarker>(
+    m_hitMarkerPrefab, m_hitMarkerRoot, maxSize: 64, initialSize: 16);
+
+pool.AddTo(container);                  // disposed when the container is disposed
+container.BindPooledFactory(pool);      // IPool<HitMarker> and IFactory<HitMarker>
+```
+
+## Prewarm and fixed capacity
+
+`OnityObjectPool<T>` and `PrefabComponentPool<T>` take `initialSize` (distinct items created in the
+constructor) and `fixedSize` (when true, `maxSize` is the total number of items, and `Get()` throws
+`InvalidOperationException` once all of them are checked out). `pool.Prewarm(count)` raises the created
+total to `count`; it is a target, not an increment, and it runs no get or release hooks. `maxSize`
+without `fixedSize` limits the retained inactive items: a release beyond it destroys the item.
+
+`BindPooledFactory(prefab, parent, defaultCapacity, maxSize)` has no prewarm, fixed-size or
+diagnostics-name option. Build the pool yourself, as in [Pool lifetime](#pool-lifetime), when you need
+one. A `diagnosticsName` labels the pool in `Onity/Tools/Pool Monitor`.
 
 ## Parameterized pooled spawn
 
-`BindPooledFactory(prefab)` binds a zero-parameter `IFactory<TComponent>`. For
-`Create(position)` or `Create(position, velocity)` there are two options; they
-differ in when the component sees the argument.
+`BindPooledFactory(prefab)` binds a zero-parameter `IFactory<TComponent>`. For `Create(position)` or
+`Create(position, velocity)` there are two options; they differ in when the component sees the
+argument.
 
-### Wrapper factory over `IPool<T>`
-
-Wrap the pool in your own factory. It works with `BindPooledFactory(prefab)`, but
-it applies the argument after `Get()` returns, so the clone's `OnEnable` and
-`IPoolHooks.OnPoolGet` have already run without it:
+A wrapper factory over `IPool<T>` works with `BindPooledFactory(prefab)` as it is. It applies the
+argument after `Get()` returns, so the clone's `OnEnable` and `OnPoolGet()` have already run without it:
 
 ```csharp
-using Onity.Factory;
-using Onity.Pooling;
+using Onity.Factory;            // IFactory<TParam, TValue>
+using Onity.Pooling;            // IPool<T>
 using UnityEngine;
 
-public sealed class ProjectileAtPositionFactory : IFactory<Vector3, Projectile>
+public sealed class HitMarkerAtPositionFactory : IFactory<Vector3, HitMarker>
 {
-    private readonly IPool<Projectile> m_pool;
+    private readonly IPool<HitMarker> m_pool;
 
-    public ProjectileAtPositionFactory(IPool<Projectile> pool)
+    public HitMarkerAtPositionFactory(IPool<HitMarker> pool)
     {
         m_pool = pool;
     }
 
-    public Projectile Create(Vector3 position)
+    public HitMarker Create(Vector3 position)
     {
-        Projectile projectile = m_pool.Get();
-        projectile.transform.position = position;
-        return projectile;
+        HitMarker marker = m_pool.Get();
+        marker.transform.position = position;
+        return marker;
     }
 }
 ```
 
-Register the prefab pool first, then the parameterized wrapper factory:
+Register the prefab pool first, then the wrapper, and gameplay code injects
+`IFactory<Vector3, HitMarker>` (fragment):
 
 ```csharp
-container.BindPooledFactory(m_projectilePrefab, m_projectileRoot);
-container.BindFactory<Vector3, Projectile, ProjectileAtPositionFactory>();
+container.BindPooledFactory(m_hitMarkerPrefab, m_hitMarkerRoot);
+container.BindFactory<Vector3, HitMarker, HitMarkerAtPositionFactory>();
 ```
 
-Now gameplay code can ask for the parameterized factory:
+The `PooledFactory` adapter applies the argument earlier. Both pools implement `IParameterizedPool<T>`,
+whose `Get(param, initialize)` and `Get(param1, param2, initialize)` run `initialize` before activation
+and before `OnPoolGet()`, on every use, including a clone's first `OnEnable`. `PooledFactory<TParam, TValue>`
+and `PooledFactory<TParam1, TParam2, TValue>` (`Onity.Pooling`) adapt such a pool to `IFactory<...>`.
+`BindPooledFactory` binds only the zero-parameter factory, so build the pool yourself and bind the
+adapter as an instance:
 
 ```csharp
-IFactory<Vector3, Projectile> factory = container.Resolve<IFactory<Vector3, Projectile>>();
-Projectile projectile = factory.Create(spawnPosition);
-```
-
-### `PooledFactory` adapter over `IParameterizedPool<T>`
-
-Both pools implement `IParameterizedPool<T>`, whose `Get(param, initialize)` and
-`Get(param1, param2, initialize)` run `initialize` before activation and before the
-get hooks, on every use, including a clone's first `OnEnable`. `PooledFactory<TParam,
-TValue>` and `PooledFactory<TParam1, TParam2, TValue>` adapt such a pool to
-`IFactory<...>`. `BindPooledFactory` binds only `IPool<T>`, so build the pool
-yourself and bind the factory as an instance:
-
-```csharp
-using Onity.DI;
-using Onity.Factory;
-using Onity.Pooling;
-using Onity.Unity.Installers;
+using Onity.DI;                 // OnityContainer, AddTo(scope)
+using Onity.Factory;            // IFactory<TParam, TValue>
+using Onity.Pooling;            // PrefabComponentPool<T>, PooledFactory<TParam, TValue>
+using Onity.Unity.Installers;   // MonoInstaller, BindPooledFactory
 using UnityEngine;
 
-public sealed class ProjectileInstaller : MonoInstaller
+public sealed class GameInstaller : MonoInstaller
 {
-    [SerializeField] private Projectile m_projectilePrefab;
-    [SerializeField] private Transform m_projectileRoot;
+    [SerializeField] private HitMarker m_hitMarkerPrefab;
+    [SerializeField] private Transform m_hitMarkerRoot;
 
     public override void InstallBindings(OnityContainer container)
     {
-        PrefabComponentPool<Projectile> pool = new PrefabComponentPool<Projectile>(
-            m_projectilePrefab, m_projectileRoot, defaultCapacity: 32, maxSize: 256, initialSize: 16);
+        PrefabComponentPool<HitMarker> pool = new PrefabComponentPool<HitMarker>(
+            m_hitMarkerPrefab, m_hitMarkerRoot, defaultCapacity: 8, maxSize: 32, initialSize: 8);
         pool.AddTo(container);                                  // caller-built: tie it to the scope
-        container.BindPooledFactory(pool);                      // IPool<Projectile> + IFactory<Projectile>
-        container.BindInstance<IFactory<Vector3, Projectile>>(
-            new PooledFactory<Vector3, Projectile>(
+        container.BindPooledFactory(pool);                      // IPool<HitMarker> and IFactory<HitMarker>
+        container.BindInstance<IFactory<Vector3, HitMarker>>(
+            new PooledFactory<Vector3, HitMarker>(
                 pool,
-                (projectile, position) => projectile.transform.position = position));
+                (marker, position) => marker.transform.position = position));
     }
 }
 ```
 
-With the adapter, `OnPoolGet` already sees the state that `initialize` set, so do
-not clear those fields in `OnPoolGet` (the `Projectile` example above does, which
-is only correct for the zero-parameter factory and the wrapper); reset them in
-`OnPoolRelease` instead.
+With the adapter, `OnPoolGet()` already sees the state that `initialize` set, so do not clear those
+fields in `OnPoolGet()`; clear them in `OnPoolRelease()` instead.
 
 ## Plain C# object pool
 
-For non-Unity objects, use `OnityObjectPool<T>` directly. It keeps inactive
-items in its own stack and exposes the common `IPool<T>` contract. With
-`collectionCheck: true` it rejects a duplicate return by reference in the
-Editor and in players.
+For objects without a `GameObject`, use `OnityObjectPool<T>` (`T : class`). It keeps inactive items in
+its own stack and exposes the same `IPool<T>` contract. Reset logic goes in the `actionOnGet` and
+`actionOnRelease` callbacks; `IPoolHooks` is not called by this pool. With `collectionCheck: true` it
+rejects a second return of the same item, by reference, in the Editor and in players:
 
 ```csharp
-using Onity.Factory;
-using Onity.Pooling;
-using Onity.Unity.Installers;
+using Onity.Pooling;            // OnityObjectPool<T>
 
 using OnityObjectPool<PathNode> pool = new OnityObjectPool<PathNode>(
     createFunc: () => new PathNode(),
     actionOnGet: node => node.Reset(),
     actionOnRelease: node => node.Clear(),
+    collectionCheck: true,
     defaultCapacity: 64,
     maxSize: 1024,
     diagnosticsName: "PathNodePool");
 
 PathNode node = pool.Get();
 pool.Release(node);
+pool.Clear();                           // destroys the inactive items; the pool stays usable
 ```
 
-You can also bind an existing pool as a factory:
+`Clear()` runs `actionOnDestroy` on every inactive item and keeps the pool usable; `Dispose()` does the
+same and then rejects further calls. To hand the pool to gameplay code as a factory, bind it; it stays
+caller-owned unless you add it to the scope (fragment):
 
 ```csharp
-using Onity.Factory;
-using Onity.Pooling;
-using Onity.Unity.Installers;
-
 IPool<PathNode> pool = new OnityObjectPool<PathNode>(() => new PathNode());
-container.BindPooledFactory(pool);
+container.BindPooledFactory(pool);      // IPool<PathNode> and IFactory<PathNode>
 
-IFactory<PathNode> factory = container.Resolve<IFactory<PathNode>>();
-PathNode node = factory.Create();
+IFactory<PathNode> nodes = container.Resolve<IFactory<PathNode>>();
+PathNode node = nodes.Create();
 ```
 
-The pool stays caller-owned; see [Pool lifetime](#pool-lifetime).
+## Compared with Zenject and VContainer
 
-## Is it easier than Zenject or VContainer?
-
-For common Unity pooled prefab spawning, yes: Onity is intentionally simpler.
-`container.BindPooledFactory(prefab)` binds the pool and factory in one line, and
-gameplay code receives plain `IFactory<T>` / `IPool<T>` contracts.
+Feature shape only; measured pooling results, with their conditions, are on
+[DI vs VContainer and Zenject](../Onity-vs-VContainer-Zenject.html).
 
 | Use case | Onity | Zenject | VContainer |
 | --- | --- | --- | --- |
-| Plain runtime-argument factory | Explicit `IFactory<...>` + `BindFactory` | Powerful `BindFactory` / `PlaceholderFactory` chains | Register a factory delegate or factory type |
-| Prefab pooled factory | `BindPooledFactory(prefab)` binds `IFactory<T>` and `IPool<T>` | Usually `MemoryPool` / `MonoMemoryPool` plus installer wiring | DI-only; usually combine registration with Unity/ObjectPool code |
-| Reset lifecycle | Optional `IPoolHooks` on the component | Pool callbacks / `OnSpawned` / `OnDespawned` patterns | Custom pool lifecycle |
-| Advanced fluent factory bodies | Explicit C# factory class | Broadest feature set (`FromMethod`, `FromIFactory`, prefab helpers) | Concise delegates, but less built-in pooling surface |
+| Runtime-argument factory | your `IFactory<...>` class and `BindFactory` | `BindFactory` and `PlaceholderFactory` chains | factory delegates registered on the builder |
+| Prefab pooled factory | `BindPooledFactory(prefab)` binds `IFactory<T>` and `IPool<T>` | `MemoryPool` and `MonoMemoryPool` with installer wiring | none built in; combine registration with your own pool |
+| Reset lifecycle | `IPoolHooks` on the component, or `actionOnGet` and `actionOnRelease` on `OnityObjectPool<T>` | pool callbacks such as `OnSpawned` and `OnDespawned` | your own |
+| Prewarm, fixed capacity, retention limit | constructor arguments and `Prewarm(count)` on both pools | pool size options on the memory pool binding | your own |
+| Fluent factory bodies | none; a C# factory class | `FromMethod`, `FromIFactory` and related | delegates |
 
-Onity's tradeoff is deliberate: fewer factory concepts, less fluent magic, and a
-clear C# factory class when construction needs custom logic. Zenject still has
-the broadest advanced factory feature set; VContainer stays very lean and
-DI-focused. Onity is easiest when you want one package to handle DI, factories,
-pooling, messaging, reactive state, diagnostics, and Unity context wiring
-together.
+Onity ships fewer factory concepts and no fluent factory bodies; custom construction logic is a C#
+class. Zenject has the broadest factory surface; VContainer stays DI-only.
 
 ## See also
 
-- [Dependency Injection](dependency-injection.html) — binding, resolving, and constructor injection.
-- [Lifecycle & Scopes](lifecycle-and-scopes.html) — where installers and contexts build the container.
-- [Performance & IL2CPP](performance-and-il2cpp.html) — generated activators and hot-path notes.
+- [Dependency Injection](dependency-injection.html): bindings, resolving and the factory entry points.
+- [Lifecycle and Scopes](lifecycle-and-scopes.html#disposal-ownership): who disposes which pool.
+- [Async with OnityTask](onitytask.html): releasing after a delay with a scope token, and the single-consumer rule for pooled tasks.
+- [DI vs VContainer and Zenject](../Onity-vs-VContainer-Zenject.html): the measured comparison.

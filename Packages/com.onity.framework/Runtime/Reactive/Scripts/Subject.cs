@@ -1,5 +1,7 @@
 using System;
+using System.Runtime.CompilerServices;
 using Onity.Core;
+using Unity.IL2CPP.CompilerServices;
 
 namespace Onity.Reactive
 {
@@ -7,15 +9,12 @@ namespace Onity.Reactive
     /// Lightweight subject primitive.
     /// </summary>
     /// <typeparam name="T">Value type.</typeparam>
-    public sealed class Subject<T> : IOnityObservable<T>, IDisposable
+    [Il2CppSetOption(Option.NullChecks, false)]
+    [Il2CppSetOption(Option.ArrayBoundsChecks, false)]
+    public sealed class Subject<T> : IOnityObservable<T>, IDisposable, IOnityNodeSource<T>, IOnityNodeOwner<T>
     {
-        private const int k_defaultCapacity = 8;
-
-        private SubscriptionEntry[] m_entries;
-        private int m_count;
-        private int m_nextId;
-        private int m_notificationDepth;
-        private bool m_hasPendingRemovals;
+        // Mutable struct: always used through this field, never copied, so it must not be readonly.
+        private OnityNodeList<T> m_nodes;
         private bool m_isDisposed;
 
         /// <summary>
@@ -23,11 +22,7 @@ namespace Onity.Reactive
         /// </summary>
         public Subject()
         {
-            m_entries = new SubscriptionEntry[k_defaultCapacity];
-            m_count = 0;
-            m_nextId = 1;
-            m_notificationDepth = 0;
-            m_hasPendingRemovals = false;
+            m_nodes = OnityNodeList<T>.Create();
             m_isDisposed = false;
         }
 
@@ -43,14 +38,7 @@ namespace Onity.Reactive
                 throw new ArgumentNullException(nameof(observer));
             }
 
-            ThrowIfDisposed();
-            EnsureCapacity(m_count + 1);
-
-            int id = m_nextId++;
-            m_entries[m_count] = new SubscriptionEntry(id, observer);
-            m_count++;
-
-            return new DisposableAction(() => Unsubscribe(id));
+            return SubscribeNode(new OnityCallbackNode<T>(observer));
         }
 
         /// <inheritdoc />
@@ -80,39 +68,86 @@ namespace Onity.Reactive
         /// <param name="value">Value payload.</param>
         public void OnNext(T value)
         {
-            ThrowIfDisposed();
+            // A non-null single node implies the subject is not disposed (Clear resets it).
+            OnityObserverNode<T> single = m_nodes.Single;
+            int depth;
+            int next;
 
-            m_notificationDepth++;
-
-            try
+            if (single != null)
             {
-                for (int i = 0; i < m_count; i++)
+                // One live subscriber and nothing pending: deliver without the loop, in its own exception
+                // region and inside the same depth save/restore as the general pass.
+                depth = m_nodes.BeginNotification();
+
+                try
                 {
-                    Observer<T> observer = m_entries[i].Observer;
+                    Action<T> action = single.ActionCallback;
 
-                    if (observer == null)
+                    if (action != null)
                     {
-                        continue;
+                        action(value);
                     }
+                    else
+                    {
+                        Observer<T> observer = single.ObserverCallback;
 
-                    try
-                    {
-                        observer(value);
+                        if (observer != null)
+                        {
+                            observer(value);
+                        }
+                        else
+                        {
+                            single.OnNext(value);
+                        }
                     }
-                    catch (Exception exception)
-                    {
-                        OnityObservableExceptionHandler.Publish(exception);
-                    }
+                }
+                catch (Exception exception)
+                {
+                    OnityObservableExceptionHandler.Publish(exception);
+                }
+
+                // During the callback Single can only become null (a subscribe, an unsubscribe or Dispose),
+                // never another node, because swap-back removal and compaction need depth 0. A non-null
+                // Single therefore means nothing changed and nothing is pending.
+                if (m_nodes.Single != null)
+                {
+                    m_nodes.EndUnchangedNotification(depth);
+                    return;
+                }
+
+                // The callback changed the list: the general pass continues after the single slot, where
+                // nodes added during the callback sit.
+                next = 1;
+            }
+            else
+            {
+                if (m_isDisposed)
+                {
+                    OnityReactiveThrow.SubjectDisposed();
+                }
+
+                depth = m_nodes.BeginNotification();
+                next = 0;
+            }
+
+            // One exception region for the whole pass: a throwing observer is reported, then delivery
+            // resumes with the next observer. Publish never throws, so the depth needs no finally.
+            while (true)
+            {
+                try
+                {
+                    DeliverFrom(ref next, value);
+                    break;
+                }
+                catch (Exception exception)
+                {
+                    OnityObservableExceptionHandler.Publish(exception);
                 }
             }
-            finally
-            {
-                m_notificationDepth--;
 
-                if (m_notificationDepth == 0 && m_hasPendingRemovals)
-                {
-                    Compact();
-                }
+            if (m_nodes.EndNotification(depth))
+            {
+                m_nodes.Compact();
             }
         }
 
@@ -125,120 +160,78 @@ namespace Onity.Reactive
             }
 
             m_isDisposed = true;
-            m_entries = Array.Empty<SubscriptionEntry>();
-            m_count = 0;
-            m_hasPendingRemovals = false;
+            m_nodes.Clear();
         }
 
-        private void EnsureCapacity(int requiredCapacity)
-        {
-            if (m_entries.Length >= requiredCapacity)
-            {
-                return;
-            }
-
-            int newCapacity = m_entries.Length * 2;
-
-            if (newCapacity < requiredCapacity)
-            {
-                newCapacity = requiredCapacity;
-            }
-
-            Array.Resize(ref m_entries, newCapacity);
-        }
-
-        private void Unsubscribe(int id)
+        /// <summary>
+        /// Registers <paramref name="node" /> and returns it as the subscription.
+        /// </summary>
+        /// <param name="node">New node that is not subscribed anywhere yet.</param>
+        /// <returns>The registered node.</returns>
+        internal IDisposable SubscribeNode(OnityObserverNode<T> node)
         {
             if (m_isDisposed)
             {
-                return;
+                OnityReactiveThrow.SubjectDisposed();
             }
 
-            int index = FindIndex(id);
-
-            if (index < 0)
-            {
-                return;
-            }
-
-            if (m_notificationDepth > 0)
-            {
-                m_entries[index].Observer = null;
-                m_hasPendingRemovals = true;
-                return;
-            }
-
-            RemoveAtSwapBack(index);
+            m_nodes.Add(node, this);
+            return node;
         }
 
-        private int FindIndex(int id)
+        /// <inheritdoc />
+        IDisposable IOnityNodeSource<T>.SubscribeNode(OnityObserverNode<T> node)
         {
-            for (int i = 0; i < m_count; i++)
-            {
-                if (m_entries[i].Id == id)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
+            return SubscribeNode(node);
         }
 
-        private void RemoveAtSwapBack(int index)
+        /// <inheritdoc />
+        void IOnityNodeOwner<T>.RemoveNode(OnityObserverNode<T> node)
         {
-            int lastIndex = m_count - 1;
-            m_entries[index] = m_entries[lastIndex];
-            m_entries[lastIndex] = default;
-            m_count--;
+            m_nodes.Remove(node);
         }
 
-        private void Compact()
+        // Delivers to every node from index next on, re-reading the list at each step. No exception
+        // handling here: next already points past the receiving node, so OnNext resumes after a throwing
+        // observer. IL2CPP inlines this loop into OnNext's exception region; Mono keeps the call, so the
+        // loop runs in a method without exception clauses and its locals stay in registers.
+        // The callback dispatch of OnityObserverNode<T>.Deliver is written out here: MSVC does not inline
+        // that call into this loop, and a call per node costs more than the dispatch itself.
+#if ENABLE_IL2CPP
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        private void DeliverFrom(ref int next, T value)
         {
-            int writeIndex = 0;
+            int index = next;
 
-            for (int readIndex = 0; readIndex < m_count; readIndex++)
+            while (index < m_nodes.Count)
             {
-                SubscriptionEntry entry = m_entries[readIndex];
+                OnityObserverNode<T> node = m_nodes.NodeAt(index);
+                index++;
 
-                if (entry.Observer == null)
+                if (node == null)
                 {
                     continue;
                 }
 
-                if (writeIndex != readIndex)
+                next = index;
+                Action<T> action = node.ActionCallback;
+
+                if (action != null)
                 {
-                    m_entries[writeIndex] = entry;
+                    action(value);
+                    continue;
                 }
 
-                writeIndex++;
-            }
+                Observer<T> observer = node.ObserverCallback;
 
-            for (int clearIndex = writeIndex; clearIndex < m_count; clearIndex++)
-            {
-                m_entries[clearIndex] = default;
-            }
+                if (observer != null)
+                {
+                    observer(value);
+                    continue;
+                }
 
-            m_count = writeIndex;
-            m_hasPendingRemovals = false;
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (m_isDisposed)
-            {
-                throw new ObjectDisposedException(nameof(Subject<T>));
-            }
-        }
-
-        private struct SubscriptionEntry
-        {
-            public int Id;
-            public Observer<T> Observer;
-
-            public SubscriptionEntry(int id, Observer<T> observer)
-            {
-                Id = id;
-                Observer = observer;
+                node.OnNext(value);
             }
         }
     }

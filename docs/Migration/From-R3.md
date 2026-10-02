@@ -1,183 +1,215 @@
 ---
-title: "From R3 / UniRx"
+title: "From R3 and UniRx"
 parent: "Migration"
 nav_order: 3
+description: "Map R3 and UniRx primitives, operators, Unity bridges, lifetime helpers and error handling to Onity.Reactive, with the behavior differences that matter."
 ---
 
-# Migrating from R3 / UniRx to Onity.Reactive
+# From R3 and UniRx
 
-`Onity.Reactive` is a push-based, hot-by-default reactive layer with an R3-shaped vocabulary: `Subject<T>`, `ReactiveProperty<T>`, and operators like `Where`/`Select`/`Merge`/`CombineLatest`/`Scan`. The public stream contract is `IOnityObservable<T>` (R3's `Observable<T>`), and `Subject<T>`, `ReactiveProperty<T>`, every operator, and `broker.Observe<T>()` all speak it, so events and state share one operator surface. Three behavioral differences matter most: trailing-edge throttle is explicit as **`ThrottleLast`** while leading-edge cool-down is **`Throttle`**; there is **no `Publish`/`Share`/`RefCount`** (multicast is served directly by `Subject<T>`); and lifetime is explicit — every `Subscribe` returns an `IDisposable` you must scope with `AddTo(this)` (Unity `Component`/`Behaviour`) or `AddTo(compositeDisposable)` (plain C#), with **no `AddTo(GameObject)` overload** and no implicit ref-counting. Time operators take an optional `OnityTimeProvider` (deterministic in tests). Every mapping below is verified against the shipped Onity public API (`Onity.Reactive`, `Onity.Unity.Reactive`).
+Use these tables to move R3 or UniRx code onto `Onity.Reactive` name by name.
+The vocabulary is familiar: `Subject<T>`, `ReactiveProperty<T>`, `Where`,
+`Select`, `Merge`, `CombineLatest`, `Scan`. The one public stream contract is
+`IOnityObservable<T>` (R3's `Observable<T>`), implemented by `Subject<T>`,
+`ReactiveProperty<T>`, every operator and the message bridge `Observe<T>()`,
+so messages and state share one operator surface. Every mapping below is
+verified against the shipped API (`Onity.Reactive`, `Onity.Unity.Reactive`,
+`Onity.Unity.Async`, `Onity.Composition`).
+
+The differences that change code:
+
+- Trailing-edge throttle is `ThrottleLast`; `Throttle` is the leading-edge
+  cool-down (R3 `ThrottleFirst`); UniRx's `Throttle` is `Debounce`.
+- No `Publish`, `Share` or `RefCount`: a `Subject<T>` is already multicast, so
+  share one instance through DI.
+- Lifetime is explicit: every `Subscribe` returns an `IDisposable` that you
+  scope with `AddTo(this)` (a `Component`), `TakeUntilDisable(this)`,
+  `AddTo(compositeDisposable)` or `AddTo(scope)`. There is no `AddTo(GameObject)`.
+- `IReadOnlyReactiveProperty<T>` is not an `IOnityObservable<T>`; operators run
+  over the `ReactiveProperty<T>` itself.
+- Errors do not travel down the chain; see [Errors](#errors).
+
+The measured comparison with R3 1.3.0 and UniRx 7.1.0 is in
+[Reactive vs R3 and UniRx](../comparisons/reactive-vs-r3-unirx.html); the
+[Comparisons](../comparisons/index.html) hub collects every measured
+comparison.
 
 ## Primitives
 
-| R3 / UniRx | Onity | Notes |
-| --- | --- | --- |
-| `new Subject<T>()` | `new Subject<T>()` (`Onity.Reactive`) | Multicast source. `OnNext` is 0-alloc steady-state; `OnNext`/`Subscribe` after `Dispose()` throw `ObjectDisposedException`. |
-| `subject.OnNext(v)` | `subject.OnNext(v)` | Same. |
-| `new ReactiveProperty<T>(initial)` | `new ReactiveProperty<T>(initial)` | `DistinctUntilChanged` is **built in** (default comparer). Subscribing emits the current value first. |
-| `rp.Value = x` | `rp.Value = x` | Notifies only if changed. |
-| *(R3 has no bool-returning set)* | `rp.SetValue(x)` → `bool` | Sets and returns whether the value actually changed. |
-| `rp.Subscribe(...)` (BehaviorSubject-style replay) | `rp.Subscribe(...)` | Emits current value, then each real change. Use `rp.Subscribe(onNext, emitCurrentValue: false)` to skip the initial emit. |
-| `IReadOnlyReactiveProperty<T>` | `IReadOnlyReactiveProperty<T>` | Read-only facade (`Value` + `Subscribe(..., emitCurrentValue = true)`). Note: it does **not** itself extend `IOnityObservable<T>`. |
-| `new CompositeDisposable()` | `new CompositeDisposable()` | Lifetime bag. `Add`/`Remove`/`Clear`/`Count`/`Dispose`. (Not an `ICollection<IDisposable>`.) |
-| `Observable.FromEvent<T>(add, remove)` | `OnityObservable.FromEvent<T>(add, remove)` | Factory. |
-| `Observable.Return(v)` | `OnityObservable.Return<T>(v)` | Factory. |
-| `Observable.Empty<T>()` | `OnityObservable.Empty<T>()` | Factory. |
-| `Observable<T>` (single observable type) | `IOnityObservable<T>` | The one public stream contract. (`Observer<T>` is `delegate void Observer<T>(T value)`; the `Subscribe(Action<T>)` you normally write is an extension wrapping it.) |
+| R3 / UniRx | Onity | Namespace | Notes |
+| --- | --- | --- | --- |
+| `new Subject<T>()` | `new Subject<T>()` | `Onity.Reactive` | Multicast source. `OnNext` allocates nothing in steady state; `OnNext` and `Subscribe` after `Dispose()` throw `ObjectDisposedException`. |
+| `subject.OnNext(v)` | `subject.OnNext(v)` | `Onity.Reactive` | Same. There is no `OnCompleted` / `OnError` on the subject; dispose it instead. |
+| `new ReactiveProperty<T>(initial)` | `new ReactiveProperty<T>(initial)` | `Onity.Reactive` | Equal values are skipped (`DistinctUntilChanged` built in, optional `IEqualityComparer<T>`). Subscribing emits the current value first. |
+| A property registered by hand in DI | `container.BindReactiveProperty(initialValue)` | `Onity.Composition` | Binds one instance as `ReactiveProperty<T>` and `IReadOnlyReactiveProperty<T>`; the scope disposes it. |
+| `rp.Value = x` | `rp.Value = x` | `Onity.Reactive` | Notifies only when the value changed. |
+| *(no bool-returning set)* | `rp.SetValue(x) -> bool` | `Onity.Reactive` | Sets and returns whether the value changed. |
+| `rp.Subscribe(...)` | `rp.Subscribe(...)` | `Onity.Reactive` | Current value first, then each change. `rp.Subscribe(onNext, emitCurrentValue: false)` skips the initial emission. |
+| `ReadOnlyReactiveProperty<T>` | `IReadOnlyReactiveProperty<T>` | `Onity.Reactive` | `Value` plus `Subscribe(observer, emitCurrentValue = true)`. Not an `IOnityObservable<T>`: expose the `ReactiveProperty<T>` when consumers need operators, or wrap with `new OnityObservable<T>(observer => readOnly.Subscribe(observer))`. |
+| `new CompositeDisposable()` | `new CompositeDisposable()` | `Onity.Reactive` | `Add`, `Remove`, `Clear`, `Count`, `Dispose`. Not an `ICollection<IDisposable>`. |
+| `Observable.FromEvent<T>(add, remove)` | `OnityObservable.FromEvent<T>(add, remove)` | `Onity.Reactive` | Factory. |
+| `Observable.Return(v)` | `OnityObservable.Return<T>(v)` | `Onity.Reactive` | Factory. |
+| `Observable.Empty<T>()` | `OnityObservable.Empty<T>()` | `Onity.Reactive` | Factory. |
+| `Observable.Create<T>(subscribe)` | `new OnityObservable<T>(subscribe)` | `Onity.Reactive` | The constructor takes `Func<Observer<T>, IDisposable>`. |
+| `Observable.Never<T>()`, `Observable.Defer(...)` | no factory | | A custom source through the constructor above. |
+| `Observable<T>` | `IOnityObservable<T>` | `Onity.Reactive` | `Observer<T>` is `delegate void Observer<T>(T value)`; the `Subscribe(Action<T>)` you write is an extension that wraps it. |
 
-## Synchronous operators (`OnityObservableExtensions`)
+## Synchronous operators
 
-All return `IOnityObservable<T>` and allocate only at subscribe time (0 alloc per emitted value).
+All return `IOnityObservable<T>` and allocate only when subscribed
+(`OnityObservableExtensions`, `Onity.Reactive`).
 
-| R3 / UniRx | Onity | Notes |
-| --- | --- | --- |
-| `Where(predicate)` | `Where(Predicate<T>)` | |
-| `Select(selector)` | `Select(Func<TSource, TResult>)` | |
-| `DistinctUntilChanged()` | `DistinctUntilChanged(IEqualityComparer<T> = null)` | |
-| `Skip(n)` / `SkipWhile(p)` | `Skip(int)` / `SkipWhile(Predicate<T>)` | Negative count throws `ArgumentOutOfRangeException`. |
-| `Take(n)` / `TakeWhile(p)` | `Take(int)` / `TakeWhile(Predicate<T>)` | |
-| `StartWith(v)` | `StartWith(T)` | |
-| `Scan(seed, accumulator)` | `Scan<TState>(TState seed, Func<TState, T, TState>)` | Stateful fold; state lives in the wrapping observer. |
-| `Pairwise()` | `Pairwise()` → `IOnityObservable<OnityPair<T>>` | Emits `OnityPair<T>` with `Previous`/`Current`; skips the first value. |
-| `Merge(a, b, …)` | `Merge(params IOnityObservable<T>[])` | |
-| `CombineLatest(other, selector)` | `CombineLatest<T1, T2, TResult>(IOnityObservable<T2>, Func<T1, T2, TResult>)` | **2-arity only** today; 3-4 arity is planned, not shipped. |
-| `Sample(sampler)` | `Sample<TSignal>(IOnityObservable<TSignal> signalSource)` | |
-| `Buffer(count)` | `Buffer(int count)` → `IOnityObservable<IReadOnlyList<T>>` | Emits each full count-sized batch. |
-| `Subscribe(onNext)` | `Subscribe(Action<T>)` | Returns `IDisposable`. |
-| `Subscribe(onNext, onError, onCompleted)` | `Subscribe(Action<T>, Action<Exception>, Action<OnityResult>)` | Completion carries an `OnityResult`. |
-| `TakeUntil(cancellationToken)` | `TakeUntilCancellation(CancellationToken)` | Stop on a token. |
-| `FirstAsync(ct)` | `FirstAsync(CancellationToken = default)` → `Task<T>` | First value or `OperationCanceledException`. |
-| `ForEachAsync` / `ToTask` (on Unit stream) | `ToTask(CancellationToken = default)` (on `IOnityObservable<Unit>`) | |
+| R3 / UniRx | Onity | Namespace | Notes |
+| --- | --- | --- | --- |
+| `Where(predicate)` | `Where(Predicate<T>)` | `Onity.Reactive` | |
+| `Select(selector)` | `Select(Func<TSource, TResult>)` | `Onity.Reactive` | |
+| `DistinctUntilChanged()` | `DistinctUntilChanged(IEqualityComparer<T> = null)` | `Onity.Reactive` | |
+| `Skip(n)` / `SkipWhile(p)` | `Skip(int)` / `SkipWhile(Predicate<T>)` | `Onity.Reactive` | A negative count throws `ArgumentOutOfRangeException`. |
+| `Take(n)` / `TakeWhile(p)` | `Take(int)` / `TakeWhile(Predicate<T>)` | `Onity.Reactive` | `Take` disposes the upstream subscription after `n` values. |
+| R3 `Prepend(v)`, UniRx `StartWith(v)` | `StartWith(T)` | `Onity.Reactive` | |
+| `Scan(seed, accumulator)` | `Scan<TState>(TState seed, Func<TState, T, TState>)` | `Onity.Reactive` | |
+| `Pairwise()` | `Pairwise() -> IOnityObservable<OnityPair<T>>` | `Onity.Reactive` | `Previous` / `Current`; the first value only primes the pair. |
+| `Merge(a, b, ...)` | `Merge(params IOnityObservable<T>[])` | `Onity.Reactive` | |
+| `CombineLatest(other, selector)` | `CombineLatest<T1, T2, TResult>(IOnityObservable<T2>, Func<T1, T2, TResult>)` | `Onity.Reactive` | Two sources only. |
+| UniRx `Sample(sampler)` | `Sample<TSignal>(IOnityObservable<TSignal> sampler)` | `Onity.Reactive` | Emits the latest value on each sampler signal. |
+| R3 `Chunk(count)`, UniRx `Buffer(count)` | `Buffer(int count) -> IOnityObservable<IReadOnlyList<T>>` | `Onity.Reactive` | A new list per batch. |
+| `Subscribe(onNext)` | `Subscribe(Action<T>)` | `Onity.Reactive` | Returns `IDisposable`. |
+| `Subscribe(onNext, onError, onCompleted)` | `Subscribe(Action<T>, Action<Exception>, Action<OnityResult>)` | `Onity.Reactive` | `onCompleted` runs when the subscription is disposed; see [Errors](#errors). |
+| `TakeUntil(cancellationToken)` | `TakeUntilCancellation(CancellationToken)` or `TakeUntil(CancellationToken)` | `Onity.Reactive` | The first is synchronous; the second is the async form. |
+| `FirstAsync(ct)` | `FirstAsync(CancellationToken = default) -> Task<T>` | `Onity.Reactive` | The first value, or `OperationCanceledException`. `FirstOnityTask(ct) -> OnityTask<T>` is the `OnityTask` form (`Onity.Unity.Async`). |
+| R3 `LastAsync(ct)` | `ToOnityTask(ct) -> OnityTask<T>` | `Onity.Unity.Async` | The last value when the source completes; a hot source needs the token. `ToTask(ct)` (`Onity.Reactive`) awaits one `Unit`. |
 
-```csharp
-using Onity.Reactive;
-
-hp.Where(v => v <= 0)
-  .Select(_ => "dead")
-  .Subscribe(msg => Debug.Log(msg))
-  .AddTo(this);
-```
-
-## Async / time operators (`OnityObservableAsyncExtensions`)
-
-Each takes an optional `OnityTimeProvider` (deterministic in tests; pass a Unity time provider in gameplay).
-
-| R3 / UniRx | Onity | Notes |
-| --- | --- | --- |
-| `Debounce(dueTime)` | `Debounce(TimeSpan dueTime, OnityTimeProvider = null)` | Emit the LAST value after a quiet window. |
-| `ThrottleLast(interval)` | `ThrottleLast(TimeSpan interval, OnityTimeProvider = null)` | Emit the latest value once per interval. |
-| `Throttle(dueTime)` (leading edge) | `Throttle(TimeSpan interval, OnityTimeProvider = null)` | Emits the first value immediately, then ignores values until the interval elapses. |
-| trailing throttle / sample latest | `ThrottleLast(TimeSpan interval, OnityTimeProvider = null)` | Emits the latest value once per interval. Use this when you want trailing/sampled behavior. |
-| `Buffer(timeSpan)` | `Buffer(TimeSpan timeSpan, OnityTimeProvider = null)` → `IOnityObservable<IReadOnlyList<T>>` | Emits accumulated values once per time window. |
-| `TakeUntil(otherObservable)` | `TakeUntil(CancellationToken)` / `TakeUntil(Task)` | Signal is a token or a task, not another observable. |
-| `SelectAwait(async selector)` | `SelectAwait(Func<T, CancellationToken, ValueTask<TResult>>)` | Sequential async projection. **Resumes on a threadpool thread** — follow it with `ObserveOnMainThread()` before any `Subscribe` that touches `UnityEngine`. |
-| `WhereAwait(async predicate)` | `WhereAwait(Func<T, CancellationToken, ValueTask<bool>>)` | Sequential async filter; same off-main-thread caveat — re-marshal with `ObserveOnMainThread()`. |
-| `ObserveOn(scheduler)` | `ObserveOn(OnityFrameProvider)` (`Onity.Reactive`) | Re-posts each value onto the provider's frame loop (buffered, replayed on the next tick). Pass `OnityFrameProviders.Update` / `FixedUpdate` / `LateUpdate`. |
-| `ObserveOn(ThreadPoolScheduler)` / thread-pool scheduler hop | `ObserveOnThreadPool()` (`Onity.Reactive`) | Re-posts values onto a .NET thread-pool worker while preserving source order. |
-| `Observable.Start` / CPU work on thread pool | `SelectOnThreadPool(selector, maxConcurrency)` (`Onity.Reactive`) | Runs pure managed CPU-bound projection on the .NET thread pool. Results emit as workers finish when concurrency is greater than one. |
-| `ObserveOnMainThreadDispatcher()` | `ObserveOnMainThread()` / `ObserveOnMainThread(OnityUnityFrameProvider)` (`Onity.Unity.Reactive`) | Convenience hop onto the Unity Update loop (or a chosen phase). This is the documented re-marshal after `SelectAwait`/`WhereAwait`. |
-
-`SelectAwait`/`WhereAwait` resume off the Unity main thread, so re-marshal before touching Unity API:
+Fragment, in a `MonoBehaviour` that holds `ReactiveProperty<int> m_health`:
 
 ```csharp
-using Onity.Reactive;            // SelectAwait, Subscribe
-using Onity.Unity.Reactive;      // ObserveOnMainThread, AddTo
-
-m_requests
-    .SelectAwait((id, ct) => LoadProfileAsync(id, ct))   // runs on a threadpool thread
-    .ObserveOnMainThread()                               // hop back to the Update loop
-    .Subscribe(profile => m_nameLabel.text = profile.Name)
-    .AddTo(this);
+m_health.Where(value => value <= 0)
+        .Select(_ => "dead")
+        .Subscribe(message => Debug.Log(message))
+        .AddTo(this);
 ```
 
-For CPU-bound pure managed work that should run concurrently, use
-`SelectOnThreadPool` and then re-marshal before Unity API access:
+## Time and async operators
+
+Each time operator takes an optional `OnityTimeProvider`; without one it waits
+on wall-clock `Task.Delay`. In gameplay pass an `OnityTimeProviders` member so
+the wait follows a Unity loop and time mode.
+
+| R3 / UniRx | Onity | Namespace | Notes |
+| --- | --- | --- | --- |
+| R3 `Debounce(dueTime)`, UniRx `Throttle(dueTime)` | `Debounce(TimeSpan dueTime, OnityTimeProvider = null)` | `Onity.Reactive` | The last value after a quiet window. |
+| R3 `ThrottleLast(interval)`, UniRx `Sample(interval)` | `ThrottleLast(TimeSpan interval, OnityTimeProvider = null)` | `Onity.Reactive` | The latest value once per interval. |
+| `ThrottleFirst(interval)` | `Throttle(TimeSpan interval, OnityTimeProvider = null)` | `Onity.Reactive` | The first value, then a cool-down. |
+| R3 `Chunk(timeSpan)`, UniRx `Buffer(timeSpan)` | `Buffer(TimeSpan timeSpan, OnityTimeProvider = null) -> IOnityObservable<IReadOnlyList<T>>` | `Onity.Reactive` | One list per window; empty windows emit nothing. |
+| `TakeUntil(otherObservable)` | `TakeUntil(CancellationToken)` / `TakeUntil(Task)` | `Onity.Reactive` | The signal is a token or a task, not another observable. |
+| `SelectAwait(async selector)` | `SelectAwait(Func<T, CancellationToken, ValueTask<TResult>>)` | `Onity.Reactive` | Sequential; resumes on a thread-pool thread, so follow it with `ObserveOnMainThread()` before any Unity call. |
+| `WhereAwait(async predicate)` | `WhereAwait(Func<T, CancellationToken, ValueTask<bool>>)` | `Onity.Reactive` | Same rule. |
+| `ObserveOn(frameProvider)` | `ObserveOn(OnityFrameProvider)` | `Onity.Reactive` | Queues values and delivers them on the provider's next tick: `OnityFrameProviders.Update` / `FixedUpdate` / `LateUpdate`. |
+| `ObserveOn(ThreadPoolScheduler)` | `ObserveOnThreadPool()` | `Onity.Reactive` | One worker, source order preserved. |
+| CPU work on the thread pool | `SelectOnThreadPool(selector, maxConcurrency)` | `Onity.Reactive` | Results emit as workers finish when `maxConcurrency` is greater than one. |
+| `ObserveOnMainThread()` | `ObserveOnMainThread()` / `ObserveOnMainThread(OnityUnityFrameProvider)` | `Onity.Unity.Reactive` | The hop back onto the Update loop (or a chosen loop). |
+| Awaiting the next value of a property | `property.WaitAsync(ct) -> OnityTask<T>` | `Onity.Unity.Async` | The next accepted change of an `IReadOnlyReactiveProperty<T>`; pooled, no subscription to manage. |
+| Awaiting a property condition | `property.WaitUntilAsync(predicate, ct) -> OnityTask<T>` | `Onity.Unity.Async` | Completes synchronously when the current value already matches. |
+
+Fragment, in a `MonoBehaviour`'s `OnEnable`:
 
 ```csharp
-m_damageEvents
-    .SelectOnThreadPool((damage, ct) => CalculateScoreDelta(damage), maxConcurrency: 4)
-    .ObserveOnMainThread()
-    .Subscribe(delta => m_scoreLabel.text = delta.ToString())
-    .AddTo(this);
+OnityEvent.Observe<PlayerDied>(this)
+          .SelectAwait((message, ct) => UploadRunAsync(ct))   // ValueTask<bool>, runs on the thread pool
+          .ObserveOnMainThread()                              // back onto the Update loop
+          .Subscribe(ShowUploadResult)
+          .TakeUntilDisable(this);
 ```
 
-## Unity bridges — frame loops, timers, lifetime (`Onity.Unity.Reactive`)
+## Unity bridges
 
-| R3.Unity / UniRx | Onity | Notes |
-| --- | --- | --- |
-| `Observable.EveryUpdate()` | `OnityUnityObservable.EveryUpdate()` → `IOnityObservable<Unit>` | Shared singleton, pumped by a hidden `DontDestroyOnLoad` object. |
-| `Observable.EveryFixedUpdate()` / `EveryLateUpdate()` | `OnityUnityObservable.EveryFixedUpdate()` / `EveryLateUpdate()` | |
-| `Observable.Timer(t)` | `OnityUnityObservable.Timer(float seconds, bool unscaled = false)` | One `Unit` after the delay. |
-| `Observable.Interval(t)` | `OnityUnityObservable.Interval(float seconds, bool unscaled = false)` → `IOnityObservable<int>` | Tick index every interval. |
-| `.Delay(t)` | `OnityUnityObservableExtensions.Delay<T>(seconds, useUnscaledTime = false)` | |
-| `.AddTo(this)` (MonoBehaviour) | `someDisposable.AddTo(this)` | `this` is a `Component`. Disposes on Destroy (alias for `TakeUntilDestroy`). |
-| `.AddTo(gameObject)` | **no `AddTo(GameObject)`** | Divergence: lifetime helpers take `Component`/`Behaviour` only. Pass `this` from a MonoBehaviour. |
-| `.TakeUntilDestroy(this)` | `someDisposable.TakeUntilDestroy(this)` (`Component`) | Disposes on Destroy. |
-| `.TakeUntilDisable(this)` | `someDisposable.TakeUntilDisable(this)` (`Behaviour`) | Disposes on disable. |
-| `.AddTo(compositeDisposable)` | `someDisposable.AddTo(compositeDisposable)` (`OnityDisposableExtensions`) | For plain-C# owners. |
+| R3.Unity / UniRx | Onity | Namespace | Notes |
+| --- | --- | --- | --- |
+| `Observable.EveryUpdate()` | `OnityUnityObservable.EveryUpdate() -> IOnityObservable<Unit>` | `Onity.Unity.Reactive` | One shared stream, pumped by a hidden component. |
+| `EveryFixedUpdate()` / `EveryLateUpdate()` | `OnityUnityObservable.EveryFixedUpdate()` / `EveryLateUpdate()` | `Onity.Unity.Reactive` | Also with a `CancellationToken`, and with an `OnityUnityThreadMode` job boundary. |
+| `Observable.Timer(t)` | `OnityUnityObservable.Timer(float seconds, bool useUnscaledTime = false)` | `Onity.Unity.Reactive` | One `Unit` after the delay. |
+| `Observable.Interval(t)` | `OnityUnityObservable.Interval(float seconds, bool useUnscaledTime = false) -> IOnityObservable<int>` | `Onity.Unity.Reactive` | The cumulative tick count, starting at 1. |
+| `.Delay(t)` | `.Delay(float seconds, bool useUnscaledTime = false)` | `Onity.Unity.Reactive` | Per value, on a Unity countdown timer. |
+| `.AddTo(this)` | `subscription.AddTo(this)` | `Onity.Unity.Reactive` | `this` is a `Component`; disposes on destroy (the same as `TakeUntilDestroy`). |
+| `.AddTo(gameObject)` | no equivalent | | Pass the component. |
+| `.TakeUntilDestroy(this)` | `subscription.TakeUntilDestroy(this)` | `Onity.Unity.Reactive` | `Component`. |
+| `.TakeUntilDisable(this)` | `subscription.TakeUntilDisable(this)` | `Onity.Unity.Reactive` | `Behaviour`; also disposes on destroy. |
+| `.AddTo(compositeDisposable)` | `subscription.AddTo(compositeDisposable)` | `Onity.Reactive` | Plain-C# owners. |
+| *(none)* | `subscription.AddTo(scope)` | `Onity.DI` | Disposes when the injected `IOnityScopeLifetime` ends. |
+| `ObserveEveryValueChanged(x => x.Value)` | `OnityAsyncEnumerable.EveryValueChanged(target, x => x.Value, timing)` | `Onity.Unity.Async` | A pull-based `IOnityAsyncEnumerable<TProperty>` polled at a PlayerLoop timing, not an `IOnityObservable<T>`; hold the value in a `ReactiveProperty<T>` when a push stream is needed. |
+| Input: `OnPointerClickAsObservable()` and friends | `action.PerformedAsObservable()`, `StartedAsObservable()`, `CanceledAsObservable()` | `Onity.Unity.Input` | Input System only; there are no uGUI trigger observables, `OnityTask` covers UI events. |
 
-> Lifetime helpers extend `IDisposable`, not `IOnityObservable<T>`, so they go **after** `Subscribe` (which returns the `IDisposable`), not on the observable:
-> `stream.Subscribe(...).AddTo(this);`
+The lifetime helpers extend `IDisposable`, so they go after `Subscribe`:
+`stream.Subscribe(...).AddTo(this);`.
 
-### Time providers (`OnityTimeProviders`)
+### Time providers
 
-Pass one into `Debounce`/`ThrottleLast` in gameplay so they honor `Time.timeScale`:
+Fragment, in a `MonoBehaviour`'s `OnEnable`:
 
 ```csharp
-using Onity.Reactive;
-using Onity.Unity.Reactive;     // OnityTimeProviders
-
-m_query
-    .Debounce(TimeSpan.FromMilliseconds(250), OnityTimeProviders.UpdateUnscaled)
-    .Subscribe(onSearch)
-    .AddTo(this);
+OnityEvent.Observe<PlayerDamaged>(this)
+          .Debounce(TimeSpan.FromSeconds(2), OnityTimeProviders.UpdateScaled)   // two quiet seconds after the last hit
+          .Subscribe(_ => HideHitMarkers())
+          .TakeUntilDisable(this);
 ```
 
-Available: `UpdateScaled`/`UpdateUnscaled`/`UpdateRealtime`, `FixedScaled`/`FixedUnscaled`/`FixedRealtime`, `LateScaled`/`LateUnscaled`/`LateRealtime`. In EditMode tests, subclass the abstract `OnityTimeProvider` to drive delays deterministically (no public `Manual`/`Fake` provider ships yet).
+`OnityTimeProviders` offers `UpdateScaled`, `UpdateUnscaled`, `UpdateRealtime`
+and the `Fixed*` and `Late*` variants. In EditMode tests, subclass the abstract
+`OnityTimeProvider` and override `DelayAsync` to drive time by hand; no manual
+or fake provider ships.
 
-## Events as a stream (`broker.Observe<T>()`)
+## Events as a stream
 
-R3 needs a manual adapter to turn a message bus into an observable; Onity's messaging and reactive pillars share `IOnityObservable<T>`:
+R3 and UniRx need an adapter to turn a message bus into an observable; Onity's
+messaging and reactive pillars share `IOnityObservable<T>`:
 
 ```csharp
-using Onity.Reactive;            // Where, Select, Subscribe
-using Onity.Unity.Messaging;     // Observe<T> on IMessageBroker / OnityEventHub
-using Onity.Unity.Reactive;      // AddTo
+using Onity.Reactive;           // Where, Select, Subscribe
+using Onity.Unity;              // OnityEvent
+using Onity.Unity.Reactive;     // TakeUntilDisable
+using UnityEngine;
 
-broker.Observe<DamageEvent>()
-      .Where(e => e.Amount > 0)
-      .Select(e => e.Amount)
-      .Subscribe(amount => Debug.Log($"Took {amount}"))
-      .AddTo(this);
+OnityEvent.Observe<PlayerDamaged>(this)
+          .Where(message => message.Amount >= 10)
+          .Select(message => message.Amount)
+          .Subscribe(amount => Debug.Log($"Took {amount}"))
+          .TakeUntilDisable(this);
 ```
 
-`broker.Observe<T>()`, `subscriber.Observe<T>()`, and `OnityEventHub.Observe<T>()` all return `IOnityObservable<T>` (the hub caches one stream per message type).
+`OnityEvent.Observe<T>()`, `OnityEventHub.Observe<T>()`, `broker.Observe<T>()`
+and `subscriber.Observe<T>()` all return `IOnityObservable<T>`; the hub caches
+one stream per message type. UniRx's `MessageBroker.Default` maps to
+`OnityEvent` on the active context; see
+[Events and Messaging](../guide/events-messaging.html).
 
 ## Errors
 
-`Onity.Reactive` defines `OnityReactiveException`, but the shipped guard paths
-below throw standard .NET exceptions. Do not catch only the Onity-specific type;
-map your R3 error handling to the actual operation instead:
+Onity has no error channel that flows through the operator chain, so R3's
+`OnErrorResume` and UniRx's `OnError` habits do not transfer:
 
-| Exception | Cause | Fix |
+| Situation | Onity behavior | Do this |
 | --- | --- | --- |
-| `ObjectDisposedException` | `OnNext`/`Subscribe` after `Subject.Dispose()` (also `MessageChannel`/`MessageBroker`). | Tie subscriptions to lifetime with `AddTo`; stop emitting to a disposed source. |
-| `ArgumentNullException` | A null source, handler, predicate, or selector passed to an operator / `FromEvent` / `Subscribe`. | Pass non-null delegates and sources. |
-| `ArgumentOutOfRangeException` | Negative count to `Skip`/`Take`/etc. | Pass a count `>= 0`. |
-| `OperationCanceledException` | The `CancellationToken` cancelled before the awaited value arrived in `FirstAsync`/`ToTask`/`TakeUntil`. **Normal cancellation, not a bug.** | Catch it where you start the async flow; do not treat as failure. |
+| A subscriber throws (source is a `Subject<T>` or `ReactiveProperty<T>`) | Caught; routed to `OnityObservableExceptionHandler.Handler`; the other subscribers still run. The default handler is a no-op. | Assign a handler at startup: `OnityObservableExceptionHandler.Handler = Debug.LogException;` |
+| A subscriber throws (source is a message stream from `Observe<T>()`) | Propagates to the `Publish` call; later handlers for that message are skipped. | Catch inside the handler. |
+| A `SelectAwait` / `WhereAwait` delegate throws | The subscription ends silently; `onError` is not called. | Catch inside the delegate and return a fallback. |
+| A thread-pool selector throws | Routed to `OnityObservableExceptionHandler`; the stream continues. | Same handler. |
+| `Subscribe(onNext, onError, onCompleted)` | `onCompleted` runs when the subscription is disposed. `onError` is raised only by sources that report faults (`OnityTask.ToObservable()`, `IOnityAsyncEnumerable<T>.AsObservable()`). | Do not rely on `onError` for core operators. |
+| `ObjectDisposedException` | `OnNext`, `Subscribe` or `SetValue` after `Dispose()` (also on `MessageChannel<T>` and `MessageBroker`). | Tie subscriptions to a lifetime with `AddTo`. |
+| `ArgumentNullException`, `ArgumentOutOfRangeException` | A null source or delegate; a negative count or a non-positive interval. | Validate inputs. |
+| `OperationCanceledException` | `FirstAsync`, `ToTask`, the `OnityTask` bridges and the property waits were canceled. Normal cancellation. | Catch it where the flow starts. |
 
-## Not supported — do this instead
+`OnityReactiveException` exists for reactive-core failures; the shipped
+operators throw the standard exceptions above.
 
-These R3 / UniRx features are deliberate Onity non-goals. Do not call the R3 or
-UniRx API; use the Onity replacement.
+## Not supported, and what to do instead
 
-| R3 / UniRx feature | Why it is a non-goal | Do this in Onity |
-| --- | --- | --- |
-| Hot/cold conversion `Publish` / `Share` / `RefCount` / `Multicast` | Implicit ref-counting contradicts the "one subscribe = one disposable" principle. | Multicast is already served by `Subject<T>` — subscribe a `Subject<T>` directly; share one instance via DI (`BindInstance` / `BindInterfacesAndSelfTo`). |
-| Cold factories `Create` / `Defer` / `Never` | Onity is hot-by-default; cold factories are deferred (some docs once claimed them — they are not implemented). | Drive a `Subject<T>` / `ReactiveProperty<T>` yourself, or use `OnityObservable.Return`/`Empty`/`FromEvent`. |
-| `ObserveEveryValueChanged(poll)` | Inherently a per-frame polling allocation/CPU pattern that conflicts with push-based + 0-alloc. | Hold the value in a `ReactiveProperty<T>` and subscribe, or expose it as a message and `Observe<T>()`. |
-| `Window` / `Zip` / `Switch` / `Concat` | Not shipped yet (planned). | Compose with shipped operators (`Buffer`/`Scan`/`Pairwise`/`Merge`/`CombineLatest`/`Sample`), or accumulate in a `ReactiveProperty<T>`. |
-| Error-flow `Catch` / `Retry` / `Timeout` | The model does not yet carry a rich `OnError` channel through operators. | Handle failures in the `Subscribe(onNext, onError, onCompleted)` overload, or guard inside the operator delegate. |
-| `IObservable<T>` (System.Reactive) compatibility adapters | Explicitly not shipped to avoid a third-party type leak. | Stay on `IOnityObservable<T>`; bridge events via `Observe<T>()`. |
-| Job/Burst/DOTS **parallel** managed operator execution | Unity Job/Burst frame modes are frame boundaries, not a way to run managed observers or DI inside Burst. | Use `SelectOnThreadPool` for pure managed CPU work, `ObserveOnThreadPool` for ordered thread-pool hops, and `ObserveOnMainThread` before Unity API access. Keep Burst/DOTS work in blittable bridge modules. |
-| `AddTo(gameObject)` | Lifetime helpers extend `IDisposable` and take `Component`/`Behaviour`. | `AddTo(this)` / `TakeUntilDestroy(this)` (Component), `TakeUntilDisable(this)` (Behaviour), or `AddTo(compositeDisposable)`. |
+| R3 / UniRx feature | Onity |
+| --- | --- |
+| `Publish` / `Share` / `RefCount` / `Multicast` | A `Subject<T>` is multicast; bind one instance (`BindSubject<T>()` in `Onity.Composition`, or `BindInstance`) and subscribe it directly. |
+| `Create` / `Defer` / `Never` factories | `new OnityObservable<T>(subscribe)` for a custom source; `Return`, `Empty`, `FromEvent` for the rest. |
+| `ObserveEveryValueChanged` as a push stream | `OnityAsyncEnumerable.EveryValueChanged` (async stream), or hold the value in a `ReactiveProperty<T>`, or publish a message and `Observe<T>()` it. |
+| `Window`, `Zip`, `Switch`, `Concat` | Compose with `Buffer`, `Scan`, `Pairwise`, `Merge`, `CombineLatest` and `Sample`, or move to a pull-based stream: `observable.AsOnityAsyncEnumerable(capacity)` has `Zip`, `Concat`, `Publish` and `Queue` ([Stream operators](../guide/onitytask.html#stream-operators)). |
+| `Catch` / `Retry` / `Timeout` | Guard inside the delegate; for a timeout, cancel a token with `CancelAfterSlim` or `OnityTimeoutController` (`Onity.Unity.Async`) and pass it to `TakeUntil` or `FirstAsync`. |
+| `IObservable<T>` adapters (System.Reactive) | Not shipped; stay on `IOnityObservable<T>`. |
+| Parallel managed observers on Jobs or Burst | `OnityUnityThreadMode` adds a job boundary to a frame stream only. Use `SelectOnThreadPool` for managed CPU work, `ObserveOnThreadPool` for an ordered hop, and `ObserveOnMainThread` before Unity API access. |
+| `AddTo(gameObject)` | `AddTo(this)` / `TakeUntilDestroy(this)` with the component, `TakeUntilDisable(this)`, `AddTo(compositeDisposable)` or `AddTo(scope)`. |
+| UniTask-style awaits on a property | `property.WaitAsync(ct)`, `WaitUntilAsync(predicate, ct)`, `AsLatestAsyncEnumerable()`; see [Reactive](../guide/reactive.html#await-a-reactiveproperty-with-onitytask). |

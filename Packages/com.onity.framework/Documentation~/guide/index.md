@@ -2,13 +2,17 @@
 
 # Guides
 
-Task-oriented walkthroughs of each Onity pillar and how the pieces fit together.
+Each guide covers one pillar of Onity and shows how it connects to the others. Read them in this
+order the first time; later, open the one you need.
 
-- [Dependency Injection](dependency-injection.md)
-- [Reactive](reactive.md)
-- [Events & Messaging](events-messaging.md)
-- [Async with OnityTask](onitytask.md)
-- [Lifecycle & Scopes](lifecycle-and-scopes.md)
-- [Factories & Pooling](factories-and-pooling.md)
-- [Performance & IL2CPP](performance-and-il2cpp.md)
-- [Refactoring from Existing Architecture](refactoring-from-existing-architecture.md)
+1. [Dependency Injection](dependency-injection.md): the container, bindings, lifetimes, injection sites and build.
+2. [Lifecycle and Scopes](lifecycle-and-scopes.md): the one lifetime model, scope tokens, lifecycle interfaces and Unity contexts.
+3. [Reactive](reactive.md): observables, reactive properties, operators and the Unity and async bridges.
+4. [Events and Messaging](events-messaging.md): typed messages through the broker, `OnityEvent` and `OnityEventHub`, keyed and async channels.
+5. [Async with OnityTask](onitytask.md): frame waits, timers, cancellation, streams and the DI, reactive and messaging integration.
+6. [Factories and Pooling](factories-and-pooling.md): runtime-argument factories, prefab pools and pool lifetime.
+7. [Performance and IL2CPP](performance-and-il2cpp.md): activation paths, hot-path design and the IL2CPP checklist.
+8. [Refactoring from Existing Architecture](refactoring-from-existing-architecture.md): before and after moves from managers, static events, VContainer and Zenject.
+
+Measured results against other libraries live in [Comparisons](https://furkantokkan.github.io/Onity/comparisons/), not in
+the guides.

@@ -116,14 +116,21 @@ Expected pattern:
   methods in `MessageBrokerExtensions` over `IMessageBroker.GetPublisher<T>()` /
   `GetSubscriber<T>()`; `OnityEventHub` is the ergonomic facade
   (`Publish<T>`, `Subscribe<T>`, `Observe<T>()`) for central manager-style access.
-- Channels are keyed by message **Type only**. There is **no** keyed (per-key)
-  messaging, no buffered/replay, no async handlers, no priority, and no
-  request-response. Model "current state new listeners need" as a
-  `ReactiveProperty<T>` in DI; model transient notifications as messages.
+- The broker keys its channels by message **Type only**. Per-key routing is a
+  separate `KeyedMessageChannel<TKey, TMessage>` (`IKeyedPublisher` /
+  `IKeyedSubscriber`) and awaited delivery a separate
+  `AsyncMessageChannel<TMessage>` (`IAsyncPublisher` / `IAsyncSubscriber`,
+  bound through `DeclareAsyncMessage<T>()`); the broker creates neither. There
+  is **no** buffered/replay, no priority, and no request-response. Model
+  "current state new listeners need" as a `ReactiveProperty<T>` in DI; model
+  transient notifications as messages.
 - `MessageChannel<T>` implements `IPublisher<T>` + `ISubscriber<T>` + `IDisposable`
-  and **also** `IOnityObservable<T>`, so the `Observe<T>()` reactive bridge
-  (`OnityMessageReactiveExtensions`, on `IMessageBroker` / `ISubscriber<T>` /
-  `OnityEventHub`) composes events into the full operator chain.
+  (not `IOnityObservable<T>`); the `Observe<T>()` reactive bridge
+  (`OnityMessageReactiveExtensions`, on `IMessageBroker` / `ISubscriber<T>`, and
+  `OnityEventHub.Observe<T>()`) wraps a channel subscription in an
+  `OnityObservable<T>`, so events compose into the full operator chain. A
+  handler that throws propagates out of `Publish`; `MessageChannel<T>` does not
+  catch handler exceptions.
 - Prefer explicit message types over shared object payloads.
 - Subscription lifetimes must be disposable and tied to scope/object lifetime
   (`AddTo(this)` in a MonoBehaviour, `AddTo(CompositeDisposable)` in plain C#).
@@ -148,11 +155,15 @@ sync and prefer the design doc when they disagree.
 - Shipped synchronous operators (`OnityObservableExtensions`): `Where`, `Select`,
   `DistinctUntilChanged`, `Skip`, `SkipWhile`, `Take`, `TakeWhile`, `StartWith`,
   `Merge`, `CombineLatest` (2-arity only), `Sample`, `Scan`, `Pairwise`,
-  `Subscribe`, `TakeUntilCancellation`, `FirstAsync`, `ToTask`.
-- Shipped async/time operators (`OnityObservableAsyncExtensions`): `Debounce`,
-  `ThrottleLast`, `TakeUntil(CancellationToken)`, `TakeUntil(Task)`,
-  `SelectAwait`, `WhereAwait`. The time operator is named **`ThrottleLast`, not
-  `Throttle`** - there is no leading-edge `Throttle`.
+  `Buffer(int count)`, `Subscribe`, `TakeUntilCancellation`, `FirstAsync`,
+  `ToTask`, plus the frame hop `ObserveOn(OnityFrameProvider)`.
+- Shipped async/time operators: `Debounce`, `ThrottleLast`,
+  `TakeUntil(CancellationToken)`, `TakeUntil(Task)`, `SelectAwait`, `WhereAwait`
+  (`OnityObservableAsyncExtensions`), and the leading-edge
+  `Throttle(TimeSpan, OnityTimeProvider)` and `Buffer(TimeSpan, OnityTimeProvider)`
+  (`OnityObservableExtensions`, `Operators/OnityObservableThrottleBuffer.cs`).
+  `ThrottleLast` is the trailing-edge sampler; `Throttle` emits the first value
+  of a window and drops the rest until the interval elapses.
 - `SelectAwait`/`WhereAwait` run the user callback on the thread pool (via
   `Task.Run`) and therefore **resume off the main thread**. Do not touch
   `UnityEngine` members directly in a `Subscribe` placed immediately after them.
@@ -237,7 +248,11 @@ Engineering intent:
 
 Baseline:
 
-- EditMode tests in `Assets/Onity/Tests/EditMode/Scripts`.
+- EditMode tests in `Packages/com.onity.framework/Tests/EditMode/Scripts`
+  (`Onity.Tests.EditMode`); PlayMode tests in
+  `Packages/com.onity.framework/Tests/PlayMode` (`Onity.Tests.PlayMode`, and
+  `Onity.Tests.UGUI.PlayMode` under `PlayMode/UGUI` when `com.unity.ugui` is
+  installed).
 - Each public API addition requires tests for success and failure paths.
 - New edge-case behavior requires a dedicated regression test.
 

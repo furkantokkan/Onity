@@ -1,37 +1,25 @@
 ---
-title: "Events & Messaging"
+title: "Events and Messaging"
 parent: "Guides"
-nav_order: 3
+nav_order: 4
+description: "Typed pub/sub in Onity: OnityEvent, OnityEventHub, the message broker, keyed and async channels, messages as reactive streams, and OnityTask receives with backpressure."
 ---
 
-# Events & Messaging
+# Events and Messaging
 
-Onity's messaging is typed pub/sub. `MessageChannel<T>` uses the same array-backed, re-entrancy-safe design as `Subject<T>`: allocation-free steady-state `Publish`, safe to unsubscribe from inside a handler, and it throws after `Dispose`. The core (`Onity.Messaging`) is engine-free; `OnityEventHub` and the reactive bridge live in `Onity.Unity.Messaging`.
-
-The broker (`IMessageBroker` / `MessageBroker`) and the `OnityEventHub` facade are **auto-bound in every context**, so code can publish or subscribe with no installer line. For Unity code, prefer the shorthand `OnityEvent.Publish(...)` / `OnityEvent.Subscribe(...)`; plain services can still inject `OnityEventHub` when explicit dependencies are better.
+Use messages to tell the rest of the game that something happened without the
+sender and the listeners knowing each other: a `DamageZone` publishes
+`PlayerDamaged`, a service lowers the health, a HUD flashes. Messaging is typed
+pub/sub over the scope's broker; Unity code publishes through `OnityEvent`
+(`Onity.Unity`), services inject `OnityEventHub` or `IMessageBroker`, and every
+message type can also be read as a reactive stream. Reach for a message when
+listeners only care about future occurrences; reach for a `ReactiveProperty<T>`
+when a new listener must know the current value.
 
 ```csharp
-using System;
-using Onity.Unity;
+using Onity.Unity;              // OnityEvent
 using UnityEngine;
 
-public sealed class DamageButton : MonoBehaviour
-{
-    public void Click()
-    {
-        OnityEvent.Publish(new PlayerDamaged(10));
-    }
-}
-```
-
-> Threading: publish and subscribe on the Unity **main thread**. Channels are not internally locked for publish (only broker channel *creation* is locked). Initial delivery follows subscription order, but unsubscribe uses swap-back removal; do not rely on a stable order or priority contract.
-
-## Quick event trigger recipes
-
-Use messages for past-tense gameplay notifications with zero, one, or many
-listeners. Define the message as a small struct or class:
-
-```csharp
 public readonly struct PlayerDamaged
 {
     public readonly int Amount;
@@ -41,728 +29,347 @@ public readonly struct PlayerDamaged
         Amount = amount;
     }
 }
-```
 
-### Publish from Unity code
-
-Use the static shortcut for scene/project events. It resolves the current active
-Onity context and uses the auto-bound `OnityEventHub`.
-
-```csharp
-using System;
-using Onity.Unity;
-using UnityEngine;
-
-public sealed class PlayerHealth : MonoBehaviour
+public sealed class DamageZone : MonoBehaviour
 {
-    public void ApplyDamage(int amount)
-    {
-        if (amount <= 0)
-        {
-            return;
-        }
+    [SerializeField] private int m_damage = 25;
 
-        OnityEvent.Publish(new PlayerDamaged(amount));
+    private void OnTriggerEnter(Collider other)
+    {
+        OnityEvent.Publish(this, new PlayerDamaged(m_damage));   // the nearest context's channel
     }
 }
 ```
 
-For an isolated `GameObjectContext`, pass the owner component so Onity chooses
-the nearest context instead of the default scene/project context:
+Contents: [Messages in Onity](#messages-in-onity),
+[Publish and subscribe from Unity code](#publish-and-subscribe-from-unity-code),
+[Publish and subscribe from services](#publish-and-subscribe-from-services),
+[Inject only a publisher or subscriber](#inject-only-a-publisher-or-subscriber),
+[Filter an event like a stream](#filter-an-event-like-a-stream), [Keyed channels](#keyed-channels),
+[Async channels](#async-channels),
+[Native async consumption (OnityTask)](#native-async-consumption-onitytask),
+[Migrating from MessagePipe](#migrating-from-messagepipe), [Threading and ordering](#threading-and-ordering),
+[Error handling](#error-handling).
 
-```csharp
-OnityEvent.Publish(this, new PlayerDamaged(amount));
-```
+## Messages in Onity
 
-### Publish from a plain service
+A `MessageChannel<T>` (`Onity.Messaging`) delivers one message type to its
+subscribers: `Publish` allocates nothing in steady state, a handler may
+unsubscribe from inside a publish pass, and the channel throws after
+`Dispose()`. The broker (`IMessageBroker`, implemented by `MessageBroker`) owns
+one channel per message type, and `OnityEventHub` (`Onity.Unity.Messaging`)
+wraps the broker with `Publish`, `Subscribe` and `Observe`. Every
+`ProjectContext`, `SceneContext` and `GameObjectContext` binds the broker and
+the hub, so publishing needs no installer line. The core is engine-free; the
+hub, the reactive and DI bridges live in `Onity.Unity.Messaging`, and the
+`OnityTask` receives in `Onity.Unity.Async`.
 
-`OnityEventHub` is auto-bound by `ProjectContext`, `SceneContext`, and
-`GameObjectContext`. No installer line is needed.
+A message is a small `readonly struct` or a class. Prefer one type per meaning
+(`PlayerDamaged`, `PlayerDied`, `WaveStarted`) over a shared payload with a
+kind field; the message type is the first level of filtering.
 
-```csharp
-using Onity.Unity.Messaging;
+Three ways for one part of the game to tell another something. Pick by the
+shape of the information:
 
-public sealed class DamageService
-{
-    private readonly OnityEventHub m_events;
-
-    public DamageService(OnityEventHub events)
-    {
-        m_events = events;
-    }
-
-    public void ApplyDamage(int amount)
-    {
-        if (amount <= 0)
-        {
-            return;
-        }
-
-        m_events.Publish(new PlayerDamaged(amount));
-    }
-}
-```
-
-### Subscribe from a plain service
-
-Plain services own their subscription token and dispose it when the service is
-disposed by the container.
-
-```csharp
-using System;
-using Onity.Unity.Messaging;
-
-public sealed class DamageLogService : IDisposable
-{
-    private readonly IDisposable m_subscription;
-
-    public DamageLogService(OnityEventHub events)
-    {
-        m_subscription = events.Subscribe<PlayerDamaged>(OnPlayerDamaged);
-    }
-
-    public void Dispose()
-    {
-        m_subscription.Dispose();
-    }
-
-    private void OnPlayerDamaged(PlayerDamaged message)
-    {
-        // Write analytics, update counters, trigger audio, etc.
-    }
-}
-```
-
-Or tie the subscription to the owning scope instead of implementing `IDisposable`:
-inject `IOnityScopeLifetime` (every context binds it) and call
-`events.Subscribe<PlayerDamaged>(OnPlayerDamaged).AddTo(scope)`; the subscription is
-disposed when the context's scope ends (see
-[Scope lifetime token](lifecycle-and-scopes.html#scope-lifetime-token)).
-
-### Subscribe from a MonoBehaviour
-
-Use `OnityEvent.Subscribe(this, ...)` when the subscription should be disposed with
-the component. The owner component also selects the nearest context.
-
-```csharp
-using System;
-using Onity.Unity;
-using UnityEngine;
-
-public sealed class DamageHud : MonoBehaviour
-{
-    private IDisposable m_subscription;
-
-    private void OnEnable()
-    {
-        m_subscription = OnityEvent.Subscribe<PlayerDamaged>(this, OnPlayerDamaged);
-    }
-
-    private void OnDisable()
-    {
-        m_subscription?.Dispose();
-        m_subscription = null;
-    }
-
-    private void OnPlayerDamaged(PlayerDamaged message)
-    {
-        // Update the HUD.
-    }
-}
-```
-
-### Filter an event like a reactive stream
-
-This replaces the common "MessageBroker -> R3/UniRx" adapter pattern. Events
-already expose `IOnityObservable<T>`.
-
-```csharp
-using Onity.Reactive;
-using Onity.Unity;
-using Onity.Unity.Reactive;
-
-OnityEvent.Observe<PlayerDamaged>(this)
-     .Where(message => message.Amount > 0)
-     .Select(message => message.Amount)
-     .Subscribe(amount => ShowDamage(amount))
-     .AddTo(this);
-```
-
-Filtering has three levels:
-
-| Filter level | Use | Example |
+| Use | When | Why |
 | --- | --- | --- |
-| Message type | Separate event meanings. | `Subscribe<PlayerDamaged>` never receives `PlayerHealed`. |
-| Reactive operator | Per-listener payload rules. | `Observe<PlayerDamaged>().Where(m => m.Amount > 0)`. |
-| Keyed channel | Same message type routed by key. | `KeyedMessageChannel<int, UnitSpawned>` for `teamId`. |
+| **Message** (`OnityEvent`, `OnityEventHub`, `IPublisher<T>` + `ISubscriber<T>`) | A past-tense notification with zero or more decoupled listeners that only care about future occurrences: `PlayerDamaged`, `PlayerDied`, `WaveStarted`. | Sender and receivers never reference each other. A late subscriber misses earlier messages by design; there is no replay or buffer. |
+| **`ReactiveProperty<T>`** (shared through DI) | Current state a new listener must know at once: health, score, current wave, connection status. | Subscribing emits the current value first, then every real change. It is the only "replay the current value" primitive. |
+| **Direct service call** (a constructor-injected interface) | A command or query with exactly one owner, a return value, or a synchronous result. | A message cannot return a value or guarantee a single handler. |
+
+1. Need a return value, or must exactly one thing handle it? Call the service.
+2. Is it the current value of some state a fresh subscriber must see now? Use a `ReactiveProperty<T>`.
+3. Otherwise publish a message.
+
+Buffered or replayed messages, handler priority and request-response are not
+shipped. "The last message for a late subscriber" is a `ReactiveProperty<T>`.
+
+## Publish and subscribe from Unity code
+
+`OnityEvent` (`Onity.Unity`) is the static shorthand for `MonoBehaviour` code:
+
+| Member | Context it uses |
+| --- | --- |
+| `OnityEvent.Publish(message)`, `Subscribe<T>(handler)`, `Observe<T>()` | The default context: the most recently activated `SceneContext`, then `ProjectContext.Instance`, then any other active context. |
+| `OnityEvent.Publish(this, message)`, `Subscribe<T>(this, handler)`, `Observe<T>(this)` | The context on the owner component or its nearest parent, with the default context as fallback. Use these inside a `GameObjectContext`. |
+
+Without any active context the members throw `InvalidOperationException`. A
+`ScriptableObject` or any plain object can call `OnityEvent.Publish(message)`
+too; it has no transform, so it always uses the default context. `DamageZone`
+above publishes through its nearest context.
+
+`OnityEvent.Subscribe(this, handler)` also disposes the subscription when the
+component is destroyed. Subscribe in `OnEnable` and dispose in `OnDisable` so a
+re-enabled component does not subscribe twice. Fragment, in a `MonoBehaviour`:
 
 ```csharp
-using Onity.Reactive;
-using Onity.Unity;
-using Onity.Unity.Reactive;
-using UnityEngine;
+private IDisposable m_subscription;
 
-public sealed class HeavyDamageHud : MonoBehaviour
+private void OnEnable()
 {
-    private void OnEnable()
-    {
-        OnityEvent.Observe<PlayerDamaged>(this)
-             .Where(message => message.Amount >= 25)
-             .Subscribe(ShowHeavyHit)
-             .TakeUntilDisable(this);
-    }
+    m_subscription = OnityEvent.Subscribe<PlayerDamaged>(this, OnDamaged);   // also disposed on destroy
+}
 
-    private void ShowHeavyHit(PlayerDamaged message)
-    {
-        // Update heavy-damage UI.
-    }
+private void OnDisable()
+{
+    m_subscription?.Dispose();
+    m_subscription = null;
 }
 ```
 
-The channel does not run a MessagePipe-style filter pipeline on publish. That
-keeps the publish path lean; each listener owns its own `Where(...)` chain.
+With several subscriptions, collect them in a `CompositeDisposable`
+(`Onity.Reactive`) and `Clear()` it in `OnDisable`, or observe the message as a
+stream and end each subscription with `TakeUntilDisable(this)`, as `HealthHud`
+does in [Filter an event like a stream](#filter-an-event-like-a-stream).
 
-### Publish from a ScriptableObject or plain class
+## Publish and subscribe from services
 
-`OnityEvent.Publish(message)` can be called from a `ScriptableObject` or any plain C#
-object as long as an active `ProjectContext`, `SceneContext`, or
-`GameObjectContext` exists.
-
-```csharp
-using Onity.Unity;
-using UnityEngine;
-
-public readonly struct SkillTriggered
-{
-    public readonly SkillDefinition Skill;
-
-    public SkillTriggered(SkillDefinition skill)
-    {
-        Skill = skill;
-    }
-}
-
-[CreateAssetMenu]
-public sealed class SkillDefinition : ScriptableObject
-{
-    public void Trigger()
-    {
-        OnityEvent.Publish(new SkillTriggered(this));
-    }
-}
-```
-
-Use the owner overload (`OnityEvent.Publish(this, message)`) when the publisher is a
-`Component` and should route through the nearest `GameObjectContext`. A
-`ScriptableObject` has no transform hierarchy, so it uses the default active
-context shortcut or an injected `OnityEventHub`.
-
-### Event flow into reactive state
-
-Use messages for things that happened; use `ReactiveProperty<T>` for state that
-new listeners must read immediately. The same operator chain can connect them.
+A service injects `OnityEventHub` (or `IMessageBroker`) and ties each
+subscription to the scope that owns the service with `AddTo(scope)`
+(`Onity.DI`), where `scope` is an injected `IOnityScopeLifetime`:
 
 ```csharp
-using System;
-using Onity.Reactive;
-using Onity.Unity.Messaging;
-
-public readonly struct PlayerDamaged
-{
-    public readonly int Amount;
-
-    public PlayerDamaged(int amount)
-    {
-        Amount = amount;
-    }
-}
+using Onity.DI;                 // IOnityScopeLifetime, AddTo(scope)
+using Onity.Unity.Messaging;    // OnityEventHub
 
 public readonly struct PlayerDied { }
 
-public sealed class HealthModel : IDisposable
+public readonly struct WaveStarted
 {
-    private readonly ReactiveProperty<int> m_hp;
-    private readonly OnityEventHub m_events;
-    private readonly IDisposable m_damageSubscription;
+    public readonly int Index;
 
-    public HealthModel(OnityEventHub events)
+    public WaveStarted(int index)
+    {
+        Index = index;
+    }
+}
+
+public sealed class WaveDirector
+{
+    private readonly OnityEventHub m_events;
+    private int m_wave;
+    private bool m_isStopped;
+
+    public WaveDirector(OnityEventHub events, IOnityScopeLifetime scope)
     {
         m_events = events;
-        m_hp = new ReactiveProperty<int>(100);
-        m_damageSubscription = events.Observe<PlayerDamaged>()
-            .Where(message => message.Amount > 0)
-            .Subscribe(ApplyDamage);
+        events.Subscribe<PlayerDied>(OnPlayerDied).AddTo(scope);   // unsubscribed when the scope ends
     }
 
-    public IReadOnlyReactiveProperty<int> Hp => m_hp;
-
-    public void Dispose()
+    public void StartNextWave()
     {
-        m_damageSubscription.Dispose();
-        m_hp.Dispose();
-    }
-
-    private void ApplyDamage(PlayerDamaged message)
-    {
-        int nextHp = Math.Max(0, m_hp.Value - message.Amount);
-
-        if (m_hp.SetValue(nextHp) && nextHp == 0)
+        if (m_isStopped)
         {
-            m_events.Publish(new PlayerDied());
+            return;
         }
+
+        m_events.Publish(new WaveStarted(++m_wave));
+    }
+
+    private void OnPlayerDied(PlayerDied message)
+    {
+        m_isStopped = true;
     }
 }
 ```
 
-This is the standard flow for UI and gameplay state:
+`IMessageBroker` offers the same `Publish<T>` and `Subscribe<T>` as extension
+methods (`MessageBrokerExtensions`, `Onity.Messaging`) over `GetPublisher<T>()`
+and `GetSubscriber<T>()`; inject it when one service handles several message
+types and does not want a parameter per type. The concrete `MessageBroker`
+also reports `ChannelCount` and fills a caller-supplied list in
+`GetDiagnostics(List<MessageChannelDiagnostics>)` without allocating beyond
+that list.
 
-1. gameplay publishes `PlayerDamaged`;
-2. a model filters the event stream and updates `ReactiveProperty<int>`;
-3. UI subscribes to the read-only property and receives the current value first;
-4. the model can publish follow-up events such as `PlayerDied`.
+The `ONITY003` analyzer flags a `Subscribe` whose `IDisposable` is dropped.
 
-### Event stream with thread-pool work
+## Inject only a publisher or subscriber
 
-Event handlers run synchronously by default. For expensive pure managed work,
-turn the event into a stream, process on the .NET thread pool, then hop back to
-Unity before touching scene or UI APIs.
+The broker is bound automatically, but the typed `IPublisher<T>` and
+`ISubscriber<T>` are not resolvable per message type until you register them.
+`BindMessageChannel<T>()` (`Onity.Unity.Messaging`) binds the scope broker's
+channel for `T` under both interfaces, so a constructor can take one direction
+only and `OnityEvent.Publish` still reaches it. Fragment of the canonical
+`GameInstaller`:
 
 ```csharp
-using Onity.Reactive;
-using Onity.Unity;
-using Onity.Unity.Reactive;
+// IPublisher<PlayerDamaged> and ISubscriber<PlayerDamaged> on the scope's message broker,
+// the same channel OnityEvent and OnityEventHub use.
+container.BindMessageChannel<PlayerDamaged>();
+
+// The container constructs it, runs Initialize() at Build() and disposes it with the scope.
+container.BindInterfacesAndSelfTo<HealthService>().AsSingle();
+```
+
+`HealthService` takes the subscriber side. This is the canonical service with
+the regeneration loop left out:
+
+```csharp
+using System;
+using Onity.DI;                 // IOnityScopeLifetime, AddTo(scope)
+using Onity.Messaging;          // ISubscriber<T>
+using Onity.Reactive;           // ReactiveProperty<T>
+
+public sealed class HealthService
+{
+    private readonly ReactiveProperty<int> m_health;
+
+    public HealthService(ReactiveProperty<int> health, ISubscriber<PlayerDamaged> damage, IOnityScopeLifetime scope)
+    {
+        m_health = health;
+        damage.Subscribe(OnDamaged).AddTo(scope);     // unsubscribed when the scope ends
+    }
+
+    private void OnDamaged(PlayerDamaged message)
+    {
+        m_health.SetValue(Math.Max(0, m_health.Value - message.Amount));
+    }
+}
+```
+
+A service that only publishes takes `IPublisher<PlayerDamaged> publisher` and
+calls `publisher.Publish(new PlayerDamaged(amount))`.
+
+`container.DeclareMessage<T>()` (`Onity.Composition`) also binds
+`IPublisher<T>`, `ISubscriber<T>` and `MessageChannel<T>`, but it creates its
+own channel that the broker does not know about: `OnityEvent` and
+`OnityEventHub` do not reach its subscribers. Use it for a channel that stays
+private to the services that inject it, or as the engine-free stand-in for the
+broker in a test, and `BindMessageChannel<T>()` for a channel shared with the
+rest of the scope.
+
+## Filter an event like a stream
+
+`OnityEvent.Observe<T>()`, `OnityEventHub.Observe<T>()`, `broker.Observe<T>()`
+and `subscriber.Observe<T>()` return `IOnityObservable<T>`, the same contract a
+`ReactiveProperty<T>` implements, so a message flows straight into the operator
+chain without an adapter. The hub caches one stream per message type. This is
+the canonical `HealthHud`'s subscription part:
+
+```csharp
+using Onity.DI;                 // Inject
+using Onity.Reactive;           // IReadOnlyReactiveProperty<T>, Where
+using Onity.Unity;              // OnityEvent
+using Onity.Unity.Reactive;     // TakeUntilDisable
 using UnityEngine;
 
-public readonly struct DamageAnalyticsPayload
+public sealed class HealthHud : MonoBehaviour
 {
-    public readonly int Amount;
+    // Unity constructs MonoBehaviours, so the context injects members instead of a constructor.
+    [Inject] private IReadOnlyReactiveProperty<int> m_health;
 
-    public DamageAnalyticsPayload(int amount)
-    {
-        Amount = amount;
-    }
-}
-
-public sealed class DamageAnalyticsView : MonoBehaviour
-{
     private void OnEnable()
     {
-        OnityEvent.Observe<PlayerDamaged>(this)
-             .SelectOnThreadPool(
-                 (message, ct) => BuildAnalyticsPayload(message),
-                 maxConcurrency: 2)
-             .ObserveOnMainThread()
-             .Subscribe(payload => Show(payload))
-             .TakeUntilDisable(this);
+        m_health.Subscribe(value => Debug.Log($"Health: {value}"))   // emits the current value first
+                .TakeUntilDisable(this);
+
+        OnityEvent.Observe<PlayerDamaged>(this)                       // the channel HealthService subscribes to
+                  .Where(message => message.Amount >= 10)
+                  .Subscribe(ShowHit)
+                  .TakeUntilDisable(this);                            // disposed on disable
     }
 
-    private static DamageAnalyticsPayload BuildAnalyticsPayload(PlayerDamaged message)
+    private void ShowHit(PlayerDamaged message)
     {
-        // Pure managed work only. No UnityEngine API here.
-        return new DamageAnalyticsPayload(message.Amount);
-    }
-
-    private void Show(DamageAnalyticsPayload payload)
-    {
-        // Safe to update Unity UI here.
+        // Spawn a pooled HitMarker; Getting Started step 6 shows that part.
     }
 }
 ```
 
-For order-sensitive work, pass `maxConcurrency: 1`. Higher concurrency emits
-results as workers complete.
-
-### Inject only a publisher or subscriber
-
-Use this when a class should only publish or only listen. This is the closest
-shape to MessagePipe's `IPublisher<T>` / `ISubscriber<T>` usage.
-
-```csharp
-using System;
-using Onity.DI;
-using Onity.Messaging;
-using Onity.Unity.Installers;
-using Onity.Unity.Messaging;
-
-public sealed class GameInstaller : MonoInstaller
-{
-    public override void InstallBindings(OnityContainer container)
-    {
-        container.BindMessageChannel<PlayerDamaged>();
-        container.Bind<DamageService>().AsSingle();
-        container.Bind<DamageHudModel>().AsSingle();
-    }
-}
-
-public sealed class DamageService
-{
-    private readonly IPublisher<PlayerDamaged> m_publisher;
-
-    public DamageService(IPublisher<PlayerDamaged> publisher)
-    {
-        m_publisher = publisher;
-    }
-
-    public void ApplyDamage(int amount)
-    {
-        m_publisher.Publish(new PlayerDamaged(amount));
-    }
-}
-
-public sealed class DamageHudModel
-{
-    private readonly ISubscriber<PlayerDamaged> m_subscriber;
-
-    public DamageHudModel(ISubscriber<PlayerDamaged> subscriber)
-    {
-        m_subscriber = subscriber;
-    }
-
-    public IDisposable Listen()
-    {
-        return m_subscriber.Subscribe(OnPlayerDamaged);
-    }
-
-    private void OnPlayerDamaged(PlayerDamaged message)
-    {
-        // Update view model state.
-    }
-}
-```
-
-## Surface
-
-```csharp
-using Onity.Messaging;
-
-// IMessageBroker is the source of typed channels.
-IPublisher<DamageEvent> pub = broker.GetPublisher<DamageEvent>();
-ISubscriber<DamageEvent> sub = broker.GetSubscriber<DamageEvent>();
-
-pub.Publish(new DamageEvent(10));
-IDisposable token = sub.Subscribe(e => Debug.Log(e.Amount));
-
-// Broker-level convenience (no manual GetPublisher / GetSubscriber):
-broker.Publish(new DamageEvent(10));
-IDisposable token2 = broker.Subscribe<DamageEvent>(e => Debug.Log(e.Amount));
-
-// Diagnostics into a caller-supplied list (no allocation):
-List<MessageChannelDiagnostics> diag = new List<MessageChannelDiagnostics>(8);
-broker.GetDiagnostics(diag);    // each entry: MessageType + SubscriberCount
-int channels = broker.ChannelCount;
-```
-
-`MessageHandler<TMessage>` is `delegate void MessageHandler<TMessage>(TMessage message)`. Define messages as small structs or classes:
-
-```csharp
-public readonly struct PlayerDamaged
-{
-    public readonly int Amount;
-    public PlayerDamaged(int amount) { Amount = amount; }
-}
-```
-
-## Recipe - inject the message broker
-
-Use `IMessageBroker` when one service owns several message types and you do not
-want separate typed publisher/subscriber constructor parameters. Every
-`OnityContext` binds the broker automatically.
-
-```csharp
-using System;
-using Onity.Messaging;
-
-public readonly struct PlayerDamaged
-{
-    public readonly int Amount;
-    public PlayerDamaged(int amount) { Amount = amount; }
-}
-
-public readonly struct PlayerHealed
-{
-    public readonly int Amount;
-    public PlayerHealed(int amount) { Amount = amount; }
-}
-
-public sealed class CombatEvents : IDisposable
-{
-    private readonly IMessageBroker m_broker;
-    private readonly IDisposable m_damaged;
-    private readonly IDisposable m_healed;
-
-    public CombatEvents(IMessageBroker broker)
-    {
-        m_broker = broker;                         // auto-bound by the context
-        m_damaged = broker.Subscribe<PlayerDamaged>(OnDamaged);
-        m_healed = broker.Subscribe<PlayerHealed>(OnHealed);
-    }
-
-    public void ReportDamage(int amount)
-    {
-        m_broker.Publish(new PlayerDamaged(amount));
-    }
-
-    public void Dispose()
-    {
-        m_damaged.Dispose();
-        m_healed.Dispose();
-    }
-
-    private void OnDamaged(PlayerDamaged message) { /* update combat state */ }
-    private void OnHealed(PlayerHealed message) { /* update combat state */ }
-}
-```
-
-## The `OnityEventHub` facade
-
-`OnityEventHub` wraps the scoped broker with a single publish/subscribe/observe surface and caches one reactive stream per message type.
-
-```csharp
-public sealed class OnityEventHub
-{
-    public void Publish<TMessage>(TMessage message);
-    public IDisposable Subscribe<TMessage>(MessageHandler<TMessage> handler);
-    public IOnityObservable<TMessage> Observe<TMessage>();   // cached per message type
-}
-```
-
-Most MonoBehaviour code can use the shorter static facade instead:
-
-```csharp
-using System;
-using Onity.Reactive;
-using Onity.Unity;
-
-OnityEvent.Publish(new PlayerDamaged(10));
-IDisposable token = OnityEvent.Subscribe<PlayerDamaged>(OnPlayerDamaged);
-IOnityObservable<PlayerDamaged> stream = OnityEvent.Observe<PlayerDamaged>();
-```
-
-`OnityEvent.Publish(message)` uses the active scene context first, then the project
-context. `OnityEvent.Publish(owner, message)` uses the nearest context to `owner`,
-which is the right choice inside a `GameObjectContext`.
-
-## Reactive bridge — `Observe<T>()`
-
-`broker.Observe<T>()`, `subscriber.Observe<T>()`, and `OnityEventHub.Observe<T>()` all return `IOnityObservable<T>`, so events flow into the full operator chain — the same chain you use over a `ReactiveProperty<T>` (see [Reactive](reactive.html)).
-
-```csharp
-using Onity.Reactive;            // Where, Select, Subscribe
-using Onity.Unity.Messaging;     // Observe<T> on IMessageBroker
-using Onity.Unity.Reactive;      // AddTo
-
-broker.Observe<DamageEvent>()
-      .Where(e => e.Amount > 0)
-      .Select(e => e.Amount)
-      .Subscribe(amount => Debug.Log($"Took {amount}"))
-      .AddTo(this);
-```
-
-## Injecting only a publisher or subscriber
-
-The broker is auto-bound, but the typed `IPublisher<T>` / `ISubscriber<T>` are **not** auto-resolvable per message type. Register them with `BindMessageChannel<T>()` when a type should inject one direction only.
-
-```csharp
-using Onity.DI;
-using Onity.Unity.Messaging;     // BindMessageChannel<T>
-
-// In an installer:
-container.BindMessageChannel<PlayerDamaged>();   // binds IPublisher<PlayerDamaged> + ISubscriber<PlayerDamaged>
-
-// In a consumer:
-public sealed class DamageNumbers
-{
-    private readonly ISubscriber<PlayerDamaged> m_damage;
-    public DamageNumbers(ISubscriber<PlayerDamaged> damage) { m_damage = damage; }
-    public IDisposable Listen() => m_damage.Subscribe(d => { /* spawn number */ });
-}
-```
-
-## MessagePipe migration examples
-
-MessagePipe users usually wire a broker, register message types, inject
-`IPublisher<T>` / `ISubscriber<T>`, and optionally bridge into filters or async
-handlers. Onity keeps the typed vocabulary but moves most setup into the scoped
-context.
-
-### Setup
-
-```csharp
-// MessagePipe + VContainer / Microsoft DI style setup:
-builder.AddMessagePipe();
-builder.RegisterMessageBroker<PlayerDamaged>(options);
-```
-
-```csharp
-// Onity setup:
-// IMessageBroker and OnityEventHub are auto-bound by ProjectContext,
-// SceneContext, and GameObjectContext.
-
-// Only add this when a service constructor injects IPublisher<T> or ISubscriber<T>
-// directly. Broker and EventHub injection do not need it.
-container.BindMessageChannel<PlayerDamaged>();
-```
-
-### Publisher and subscriber
-
-```csharp
-// MessagePipe shape:
-public sealed class DamageSystem
-{
-    private readonly IPublisher<PlayerDamaged> m_publisher;
-    public DamageSystem(IPublisher<PlayerDamaged> publisher) { m_publisher = publisher; }
-    public void Hit(int amount) => m_publisher.Publish(new PlayerDamaged(amount));
-}
-
-public sealed class DamageHud
-{
-    private readonly ISubscriber<PlayerDamaged> m_subscriber;
-    public DamageHud(ISubscriber<PlayerDamaged> subscriber) { m_subscriber = subscriber; }
-    public IDisposable Start() => m_subscriber.Subscribe(OnDamaged);
-    private void OnDamaged(PlayerDamaged message) { /* update UI */ }
-}
-```
-
-```csharp
-// Onity equivalent:
-using Onity.DI;
-using Onity.Messaging;
-using Onity.Unity.Installers;
-using Onity.Unity.Messaging;
-
-public sealed class GameInstaller : MonoInstaller
-{
-    public override void InstallBindings(OnityContainer container)
-    {
-        container.BindMessageChannel<PlayerDamaged>();
-        container.Bind<DamageSystem>().AsSingle();
-        container.Bind<DamageHud>().AsSingle();
-    }
-}
-
-public sealed class DamageSystem
-{
-    private readonly IPublisher<PlayerDamaged> m_publisher;
-    public DamageSystem(IPublisher<PlayerDamaged> publisher) { m_publisher = publisher; }
-    public void Hit(int amount) => m_publisher.Publish(new PlayerDamaged(amount));
-}
-
-public sealed class DamageHud
-{
-    private readonly ISubscriber<PlayerDamaged> m_subscriber;
-    public DamageHud(ISubscriber<PlayerDamaged> subscriber) { m_subscriber = subscriber; }
-    public IDisposable Start() => m_subscriber.Subscribe(OnDamaged);
-    private void OnDamaged(PlayerDamaged message) { /* update UI */ }
-}
-```
-
-When you do not need direction-only injection, use the auto-bound broker or hub:
-
-```csharp
-public sealed class DamageSystem
-{
-    private readonly OnityEventHub m_events;
-    public DamageSystem(OnityEventHub events) { m_events = events; }
-    public void Hit(int amount) => m_events.Publish(new PlayerDamaged(amount));
-}
-```
-
-### Filters
-
-MessagePipe filters map to the reactive bridge. The event channel stays lean;
-the per-consumer rule lives in the observable chain.
-
-```csharp
-using Onity.Reactive;
-using Onity.Unity.Messaging;
-using Onity.Unity.Reactive;
-
-m_events.Observe<PlayerDamaged>()
-        .Where(message => message.Amount > 0)
-        .Subscribe(OnRealDamage)
-        .AddTo(m_subscriptions);
-```
-
-### Async and keyed channels
-
-MessagePipe's async publisher/subscriber pattern maps to
-`AsyncMessageChannel<T>`. Keyed MessagePipe channels map to
-`KeyedMessageChannel<TKey,TMessage>`.
-
-```csharp
-using System.Threading;
-using System.Threading.Tasks;
-using Onity.Messaging;
-
-AsyncMessageChannel<LevelLoaded> levelLoaded = new AsyncMessageChannel<LevelLoaded>();
-
-levelLoaded.Subscribe(async (message, ct) =>
-{
-    await WarmupLevelAsync(message, ct);
-});
-
-await levelLoaded.PublishAsync(new LevelLoaded(/* ... */), CancellationToken.None);
-```
-
-Onity does not provide a global static `GlobalMessagePipe` equivalent. Scope the
-broker through `ProjectContext`, `SceneContext`, or `GameObjectContext`, then
-inject `OnityEventHub` where manager-style ergonomics are useful.
+Filtering has three levels, and the channel itself runs no filter pipeline on
+publish:
+
+| Level | Mechanism | Example |
+| --- | --- | --- |
+| Message type | Separate types for separate meanings. | `Subscribe<PlayerDamaged>` never receives `PlayerDied`. |
+| Operator | A per-listener rule in the stream. | `Observe<PlayerDamaged>().Where(m => m.Amount >= 10)`. |
+| Key | The same type routed by key. | `KeyedMessageChannel<int, WaveStarted>` keyed by arena. |
+
+The standard flow for UI state is: gameplay publishes `PlayerDamaged`,
+`HealthService` folds the stream into a `ReactiveProperty<int>`, and views
+subscribe to the read-only property and get the current value first; the
+service is written out in
+[Reactive](reactive.html#event-stream-updates-reactive-state). For CPU-heavy
+handlers, `SelectOnThreadPool` and `ObserveOnMainThread` apply to a message
+stream exactly as described in [Reactive](reactive.html#thread-pool-work).
 
 ## Keyed channels
 
-`KeyedMessageChannel<TKey,TMessage>` (`IKeyedPublisher` / `IKeyedSubscriber`) routes a published message to only the subscribers registered for its key. Each key owns an inner `MessageChannel<TMessage>`, reusing the allocation-free steady-state publish.
+`KeyedMessageChannel<TKey, TMessage>` (`Onity.Messaging`; `IKeyedPublisher<TKey, TMessage>`,
+`IKeyedSubscriber<TKey, TMessage>`) delivers a message only to the subscribers
+of its key. Each key owns an inner `MessageChannel<TMessage>`, created on the
+first subscription for that key. The broker does not create keyed channels;
+construct one and bind it with `BindInstance`.
 
 ```csharp
-using Onity.Messaging;
+using System;
+using Onity.Messaging;          // KeyedMessageChannel<TKey, TMessage>
+using UnityEngine;
 
-using KeyedMessageChannel<int, UnitSpawned> spawns = new KeyedMessageChannel<int, UnitSpawned>();
+using KeyedMessageChannel<int, WaveStarted> waves = new KeyedMessageChannel<int, WaveStarted>();
 
-IDisposable token = spawns.Subscribe(teamId: 1, msg => Debug.Log(msg));   // only team 1
-spawns.Publish(teamId: 1, new UnitSpawned(/* ... */));                    // delivered
-spawns.Publish(teamId: 2, new UnitSpawned(/* ... */));                    // ignored by the team-1 subscriber
+IDisposable token = waves.Subscribe(1, message => Debug.Log(message.Index));   // arena 1 only
+waves.Publish(1, new WaveStarted(1));                                          // delivered
+waves.Publish(2, new WaveStarted(1));                                          // no subscriber: nothing happens
 
-int keys = spawns.KeyCount;
-int teamOneSubs = spawns.GetSubscriberCount(1);
+int keys = waves.KeyCount;
+int arenaOneSubscribers = waves.GetSubscriberCount(1);
 ```
 
 ## Async channels
 
-`AsyncMessageChannel<TMessage>` (`IAsyncPublisher` / `IAsyncSubscriber`) awaits each handler before invoking the next. Delivery iterates over a pooled snapshot, so a subscribe or unsubscribe from inside a handler cannot corrupt the in-flight pass.
+`AsyncMessageChannel<TMessage>` (`Onity.Messaging`; `IAsyncPublisher<TMessage>`,
+`IAsyncSubscriber<TMessage>`) awaits each handler before calling the next.
+Delivery walks a pooled snapshot, so a subscribe or unsubscribe from inside a
+handler cannot corrupt the pass. The token passed to `PublishAsync` is checked
+before every handler; cancellation surfaces as `OperationCanceledException`.
 
 ```csharp
+using System;
 using System.Threading;
-using System.Threading.Tasks;
-using Onity.Messaging;
+using Onity.Messaging;          // AsyncMessageChannel<T>
 
-using AsyncMessageChannel<LevelLoaded> levelLoaded = new AsyncMessageChannel<LevelLoaded>();
+using AsyncMessageChannel<PlayerDied> died = new AsyncMessageChannel<PlayerDied>();
 
-IDisposable token = levelLoaded.Subscribe(async (msg, ct) =>
+IDisposable token = died.Subscribe(async (message, ct) =>
 {
-    await PreloadAsync(msg, ct);
+    await SaveRunAsync(ct);                                   // ValueTask; the publisher waits for it
 });
 
-await levelLoaded.PublishAsync(new LevelLoaded(/* ... */), CancellationToken.None);   // awaits every handler in turn
+await died.PublishAsync(new PlayerDied(), CancellationToken.None);   // returns after every handler
 ```
 
-A cancellation surfaces as `OperationCanceledException` and is checked before each handler. Use `container.DeclareAsyncMessage<T>()` (`Onity.Composition`) to bind one channel as `AsyncMessageChannel<T>`, `IAsyncPublisher<T>`, and `IAsyncSubscriber<T>`; the container disposes it with the scope.
+`container.DeclareAsyncMessage<T>()` (`Onity.Composition`) binds one channel
+as `AsyncMessageChannel<T>`, `IAsyncPublisher<T>` and `IAsyncSubscriber<T>`
+and disposes it with the scope. `PublishOnityTask(message, ct)` and
+`SubscribeOnityTask(handler)` (`Onity.Unity.Async`) are the `OnityTask`-shaped
+forms of `PublishAsync` and `Subscribe`.
 
 ## Native async consumption (OnityTask)
 
-`Onity.Unity.Async` adds `OnityTask`-based consumers on top of the channels. Delivery is sequential and awaited, so one slow `SubscribeOnityTask` handler stalls every publisher; these give you a one-shot receive, a buffered stream, and a queue with real backpressure:
+`Onity.Unity.Async` adds `OnityTask` consumers on top of the channels. A plain
+async subscription is sequential and awaited, so one slow handler stalls every
+publisher; these give you a one-shot receive, a buffered stream, and a queue
+with real backpressure:
 
 | Member | Use |
 | --- | --- |
 | `subscriber.ReceiveAsync(ct)` / `ReceiveAsync(predicate, ct)` | `OnityTask<T>`: the next (matching) message. Pooled, one shared subscription per subscriber; replaces `Observe().Where().FirstOnityTask()`. A canceled receive gets no later message. |
-| `subscriber.ReceiveAllAsync(capacity, overflow)` | `IOnityAsyncEnumerable<T>` over a **synchronous** `ISubscriber<T>`. A synchronous publisher cannot wait, so `OnityBufferOverflow` decides what happens when the buffer is full: `Fault` (default: drain the accepted messages, then fault), `DropOldest`, or `DropNewest`. |
-| `asyncSubscriber.SubscribeQueued(handler, capacity, lifetimeToken)` | A bounded queue between an `IAsyncSubscriber<T>` and your `OnityTask` handler. `PublishAsync` only waits while the queue is full; one consumer runs the handler for each message in order under `lifetimeToken`. |
+| `subscriber.ReceiveAllAsync(capacity, overflow)` | `IOnityAsyncEnumerable<T>` over a synchronous `ISubscriber<T>`. A synchronous publisher cannot wait, so `OnityBufferOverflow` decides what happens when the buffer is full: `Fault` (default: yield the accepted messages, then fault), `DropOldest`, or `DropNewest`. |
+| `asyncSubscriber.SubscribeQueued(handler, capacity, lifetimeToken)` | A bounded queue between an `IAsyncSubscriber<T>` and your `OnityTask` handler. `PublishAsync` only waits while the queue is full; one consumer runs the handler for each message in order until `lifetimeToken` is canceled or the returned subscription is disposed. |
 
-An assembly definition that uses these extensions needs references to `Onity.Messaging` and `Onity.Reactive` as well as `Onity.Unity`; Unity assembly references are not transitive, and without them the compiler reports CS0012 for the `Onity.Unity.Async` overloads.
+An assembly definition that uses these extensions needs references to
+`Onity.Messaging` and `Onity.Reactive` as well as `Onity.Unity` (and `Onity.Core`
+when it touches `Unit`); Unity assembly references are not transitive, and
+without them the compiler reports CS0012 for the `Onity.Unity.Async` overloads.
 
 ```csharp
 using System.Threading;
-using Onity.DI;
-using Onity.Messaging;
-using Onity.Unity.Async;
+using Onity.DI;                 // IOnityInitializable, IOnityScopeLifetime
+using Onity.Messaging;          // IAsyncSubscriber<T>
+using Onity.Unity.Async;        // SubscribeQueued, OnityTask
+
+public readonly struct SaveRequested { }
 
 public sealed class SaveQueue : IOnityInitializable
 {
@@ -777,68 +384,111 @@ public sealed class SaveQueue : IOnityInitializable
 
     public void Initialize()
     {
-        // Publishers return as soon as the request is queued; they wait only when 8 are pending.
-        // The scope token stops the subscription; keep the returned IDisposable to stop it earlier.
+        // Publishers return as soon as the request is queued and wait only while 8 are pending.
+        // The scope token ends the subscription; keep the returned IDisposable to end it earlier.
         m_requests.SubscribeQueued(WriteAsync, 8, m_scope.Token);
     }
 
     private async OnityTask WriteAsync(SaveRequested request, CancellationToken ct)
     {
         await OnityTask.SwitchToThreadPool(ct);
-        // ... write the save file ...
+        // Write the save file.
     }
 }
 ```
 
-- **Receive loops:** a receive that starts while the channel is publishing (for example in a continuation that the publication resumed) waits for the following message, so `while (...) await subscriber.ReceiveAsync(ct)` sees each message once.
-- **Stopping a queued subscription:** disposing it, or canceling `lifetimeToken`, unsubscribes, cancels the running handler, discards queued messages, and releases publishers waiting for space without an exception (their messages are dropped). A publisher whose own token is canceled while it waits gets `OperationCanceledException`, and its message is not queued.
-- **Handler faults:** a queued handler's exception is logged with `Debug.LogException`, and the next message is still handled.
-- **Threading:** subscribe, publish, and stop on the channel's thread (the main thread); tokens may be canceled from any thread. A handler that publishes to its own channel while the queue is full waits for itself.
+- **Receive loops:** a receive that starts while the channel is publishing (for
+  example in a continuation that the publication resumed) waits for the
+  following message, so `while (...) await subscriber.ReceiveAsync(ct)` sees
+  each message once.
+- **Stopping a queued subscription:** disposing it, or canceling
+  `lifetimeToken`, unsubscribes, cancels the running handler, discards queued
+  messages, and releases publishers waiting for space without an exception
+  (their messages are dropped). A publisher whose own token is canceled while it
+  waits gets `OperationCanceledException`, and its message is not queued.
+- **Handler faults:** a queued handler's exception is logged with
+  `Debug.LogException`, and the next message is still handled.
+- **Threading:** subscribe, publish and stop on the channel's thread (the main
+  thread); tokens may be canceled from any thread. A handler that publishes to
+  its own channel while the queue is full waits for itself.
 
-Three ways for one part of the game to tell another that something happened. Pick by the **shape of the information**, not by habit.
+## Migrating from MessagePipe
 
-| Use | When | Why |
-| --- | --- | --- |
-| **Message** (`OnityEventHub` / `IPublisher<T>` + `ISubscriber<T>`) | A transient, fire-and-forget notification with 0..N decoupled listeners that only care about future occurrences (`PlayerDamaged`, `EnemyKilled`, `LevelLoaded`). | Sender and receivers never reference each other. A late subscriber misses past messages **by design** — there is no replay or buffer. |
-| **`ReactiveProperty<T>`** (shared via DI) | Current state a new listener must immediately know (health, score, current wave, connection status). | Subscribing emits the **current value first**, then every real change. Built-in `DistinctUntilChanged`. This is the only "replay current value" primitive. |
-| **Direct service call** (constructor-injected interface) | A command or query with exactly one owner where you need a return value, ordering, or a synchronous result (`damage.Calculate(...)`, `save.Write(...)`). | A message cannot return a value or guarantee a single handler. One caller, one callee, one result — call the method. |
+MessagePipe users register a broker and message types, inject `IPublisher<T>`
+and `ISubscriber<T>`, and add filters or async handlers. Onity keeps the typed
+vocabulary and moves the setup into the context.
 
-Decision flow:
-
-1. Need a return value, or must exactly one thing handle this? -> **Direct service call**. Stop.
-2. Is this the current value of some state a fresh subscriber must see right now? -> **`ReactiveProperty<T>`**. Stop.
-3. Otherwise (a past-tense notification, fan-out to unknown listeners, late subscribers may miss it) -> **Message**.
-
-> Intentionally not shipped: buffered/replay events, handler priority, and request-response. If you want "the last message for a late subscriber", that is a `ReactiveProperty<T>`, not a buffered channel.
-
-## Recipe — own a subscription's lifetime
-
-Subscribe in `OnEnable`, clear the bag in `OnDisable`:
+### Setup
 
 ```csharp
-using Onity.DI;                          // Inject
-using Onity.Reactive;                    // CompositeDisposable
-using Onity.Unity.Messaging;             // OnityEventHub
-using Onity.Unity.Reactive;              // AddTo(CompositeDisposable)
-using UnityEngine;
-
-public sealed class HealthBar : MonoBehaviour
-{
-    [Inject] private OnityEventHub m_events;
-    private readonly CompositeDisposable m_subscriptions = new CompositeDisposable();
-
-    private void OnEnable()  => m_events.Subscribe<PlayerDamaged>(OnDamaged).AddTo(m_subscriptions);
-    private void OnDisable() => m_subscriptions.Clear();
-    private void OnDamaged(PlayerDamaged message) { /* update bar */ }
-}
+// MessagePipe with a DI container:
+builder.AddMessagePipe();
+builder.RegisterMessageBroker<PlayerDamaged>(options);
 ```
+
+```csharp
+// Onity: IMessageBroker and OnityEventHub are bound by every context. Add this line only
+// when a constructor injects IPublisher<T> or ISubscriber<T> directly.
+container.BindMessageChannel<PlayerDamaged>();
+```
+
+### Publisher and subscriber
+
+The interfaces have the same names and shapes (`Onity.Messaging`), so a
+constructor that takes `IPublisher<PlayerDamaged>` or `ISubscriber<PlayerDamaged>`
+compiles unchanged once `BindMessageChannel<PlayerDamaged>()` is in the
+installer; `HealthService` above is that shape. When a class does not need
+one direction only, inject the auto-bound `OnityEventHub` or `IMessageBroker`
+instead and drop the registration line.
+
+### Filters
+
+MessagePipe filters map to the reactive bridge: the channel stays lean and the
+per-consumer rule lives in the stream, as in `HealthHud` above
+(`Observe<PlayerDamaged>(this).Where(message => message.Amount >= 10)`).
+There is no filter pipeline on the publish path.
+
+### Async and keyed channels
+
+| MessagePipe | Onity |
+| --- | --- |
+| `IAsyncPublisher<T>` / `IAsyncSubscriber<T>` | `AsyncMessageChannel<T>` through `container.DeclareAsyncMessage<T>()`; `SubscribeQueued` when a slow handler must not stall publishers. |
+| Keyed `IPublisher<TKey, T>` / `ISubscriber<TKey, T>` | `KeyedMessageChannel<TKey, T>`, bound with `BindInstance`. |
+| `GlobalMessagePipe` | `OnityEvent.Publish` / `Subscribe` / `Observe` on the active context. |
+| Buffered or request-response brokers | Not shipped; current state is a `ReactiveProperty<T>`, a query is a service call. |
+
+## Threading and ordering
+
+Publish and subscribe on the Unity main thread. The broker locks channel
+creation only; a channel's `Publish` is not locked. Handlers run in
+subscription order until a subscriber leaves outside a publish pass, when the
+last subscriber moves into the freed slot, so do not treat the order as a
+priority contract. Unsubscribing from inside a handler is safe: the handler is
+skipped for the rest of the pass and removed afterwards.
 
 ## Error handling
 
-`OnityMessagingException` is the dedicated messaging exception type. `ObjectDisposedException` indicates publish/subscribe after `Dispose()` (tie subscriptions to lifetime with `AddTo`); `ArgumentNullException` indicates a null handler or key.
+- A handler that throws propagates the exception to the `Publish` call (or
+  faults the `PublishAsync` task), and the remaining handlers for that message
+  do not run. This also applies to a stream from `Observe<T>()`, whose
+  observers run inside the channel's handler. Catch inside the handler when one
+  listener must not break the others.
+- `ObjectDisposedException`: `Publish`, `Subscribe` or `PublishAsync` after
+  `Dispose()`, or a broker member after the broker was disposed. Tie
+  subscriptions to a lifetime with `AddTo` or `TakeUntilDisable`.
+- `ArgumentNullException`: a null handler, key, broker or owner component.
+- `InvalidOperationException` from `OnityEvent`: no active context could be
+  resolved.
+- `OperationCanceledException` from `PublishAsync`: the token was canceled
+  between handlers; normal cancellation, not a failure.
+- `OnityMessagingException` is declared for messaging-core failures; the
+  shipped channels throw the standard exceptions above.
 
 ## See also
 
-- [Reactive](reactive.html) — the operator chain `Observe<T>()` feeds, and `ReactiveProperty<T>` for current state.
-- [Dependency Injection](dependency-injection.html) — `BindMessageChannel<T>` and constructor-injected services.
-- [Lifecycle & Scopes](lifecycle-and-scopes.html) — what each context auto-binds.
+- [Messaging API](../reference/messaging-api.html): every signature.
+- [Reactive](reactive.html): the operator chain `Observe<T>()` feeds, and `ReactiveProperty<T>` for current state.
+- [Dependency Injection](dependency-injection.html#shared-reactive-and-messaging-primitives): `DeclareMessage` and `DeclareAsyncMessage`.
+- [Lifecycle and Scopes](lifecycle-and-scopes.html): what each context binds, and the scope token.
+- [Async with OnityTask](onitytask.html#reactive-and-messaging-bridges): the task-side bridges.
+- [Reactive vs R3 and UniRx](../comparisons/reactive-vs-r3-unirx.html): the measured comparison, and the [Comparisons](../comparisons/index.html) hub.

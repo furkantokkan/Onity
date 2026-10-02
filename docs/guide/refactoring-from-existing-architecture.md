@@ -2,40 +2,47 @@
 title: "Refactoring from Existing Architecture"
 parent: "Guides"
 nav_order: 8
+description: "Before and after examples that move singleton managers, serialized reference webs, VContainer and Zenject setups, static events and coroutine loops onto Onity."
 ---
 
 # Refactoring from Existing Architecture
 
-This guide shows the refactoring shape Onity is meant to encourage: move game
-rules into constructor-injected plain C# services, keep `MonoBehaviour` classes
-as thin Unity adapters, and keep all wiring in one installer. The result is less
-global state, fewer scene-order assumptions, and services that can be tested
-without loading a scene.
+Use this page when you convert an existing Unity codebase one piece at a time. The target shape is the
+same in every example: game rules move into constructor-injected plain C# services, `MonoBehaviour`
+classes stay thin adapters for input, views, triggers and prefabs, every subscription and loop is tied to
+its owner, and all wiring sits in one installer. The result has less global state, fewer scene-order
+assumptions, and services you can test without a scene.
 
-Use this page as the reference when converting a manager-heavy Unity script,
-serialized Unity reference graph, ScriptableObject-driven setup,
-VContainer/Zenject lifetime scope, or static event bus into Onity.
+Contents:
+
+- [Refactoring rules](#refactoring-rules)
+- [Example 1: from a GameManager singleton](#example-1-from-a-gamemanager-singleton)
+- [Example 2: from a VContainer manager](#example-2-from-a-vcontainer-manager)
+- [Example 3: from Unity references and ScriptableObject config](#example-3-from-unity-references-and-scriptableobject-config)
+- [Example 4: from a Zenject manager and SignalBus](#example-4-from-a-zenject-manager-and-signalbus)
+- [Example 5: from static events or UnityEvent](#example-5-from-static-events-or-unityevent)
+- [Example 6: from a coroutine loop](#example-6-from-a-coroutine-loop)
+- [Migration checklist](#migration-checklist)
 
 ## Refactoring rules
 
 | Smell | Onity target |
 | --- | --- |
-| `GameManager.Instance` from unrelated scripts | Inject a small role interface such as `IScoreService` |
-| One manager owns score, UI, scene loading, and spawn rules | Split state/rules into services; keep views in MonoBehaviours |
-| `Update` does manual resolve or scene search | Resolve once through the context, then call plain methods |
-| Event sender references every receiver | Publish a typed message through `OnityEventHub` or `OnityEvent` |
-| ScriptableObject stores runtime state | Bind ScriptableObjects as read-only config; keep runtime state in services |
-| Serialized references connect gameplay systems directly | Inject role interfaces; keep serialized refs for view/prefab assets |
-| VContainer entry point registration for each manager loop | Bind an `IOnityTickable` / `IOnityInitializable` singleton; Onity collects it automatically |
-| Zenject `SignalBus` used only for simple gameplay notifications | Use `OnityEventHub` or `OnityEvent` typed messages |
+| `GameManager.Instance` called from unrelated scripts | Inject a small role interface such as `IScoreService` |
+| One manager owns score, UI, scene loading and spawn rules | Split state and rules into services; keep views in MonoBehaviours |
+| `Update` resolves services or searches the scene | Inject once through the context, then call plain methods |
+| The publisher references every subscriber | Publish a typed message through `OnityEventHub` or `OnityEvent` |
+| A ScriptableObject stores runtime state | Bind ScriptableObjects as read-only config; keep runtime state in services |
+| Serialized references connect gameplay systems | Inject role interfaces; keep serialized references for views and prefab assets |
+| A VContainer entry point per manager loop | Bind a singleton that implements `IOnityTickable` or `IOnityInitializable`; the container collects it |
+| Zenject `SignalBus` for simple notifications | Typed messages through `OnityEventHub` or `OnityEvent` |
+| A coroutine loop with `WaitForSeconds` | An `async OnityTaskVoid` loop on the scope token |
+| An `IDisposable` field disposed by hand in `OnDisable` | `TakeUntilDisable(this)` on the subscription made in `OnEnable` |
 
-## Example 1: From `GameManager.Instance`
+## Example 1: from a GameManager singleton
 
-### Before
-
-The usual singleton manager is convenient at first, but the dependencies are
-hidden and the class changes for too many reasons: score rules, UI, enemy flow,
-and scene transitions are all coupled.
+Before. The singleton is convenient at first, but its dependencies are hidden and it changes for too many
+reasons: score rules, UI, enemy flow and scene transitions are coupled in one class:
 
 ```csharp
 using UnityEngine;
@@ -84,29 +91,16 @@ public sealed class EnemyHealth : MonoBehaviour
 }
 ```
 
-### After
-
-The score rule becomes a plain service. UI listens to a reactive property. The
-enemy script only calls the small interface it was given by the context; it does
-not know where score is stored or which UI will update.
+After. The score rule becomes a plain service that exposes its state as a read-only reactive property.
+The enemy script calls the small interface it was given; it does not know where the score is stored or
+which HUD shows it:
 
 ```csharp
-using Onity.Reactive;
-using Onity.Unity.Messaging;
-
-public readonly struct ScoreChanged
-{
-    public readonly int Value;
-
-    public ScoreChanged(int value)
-    {
-        Value = value;
-    }
-}
+using Onity.Reactive;           // ReactiveProperty<T>, IReadOnlyReactiveProperty<T>
 
 public interface IScoreService
 {
-    ReactiveProperty<int> Score { get; }
+    IReadOnlyReactiveProperty<int> Score { get; }
     void AddEnemyKill();
 }
 
@@ -114,26 +108,20 @@ public sealed class ScoreService : IScoreService
 {
     private const int k_pointsPerEnemy = 10;
 
-    private readonly OnityEventHub m_events;
+    private readonly ReactiveProperty<int> m_score = new ReactiveProperty<int>(0);
 
-    public ReactiveProperty<int> Score { get; } = new ReactiveProperty<int>(0);
-
-    public ScoreService(OnityEventHub events)
-    {
-        m_events = events;
-    }
+    public IReadOnlyReactiveProperty<int> Score => m_score;
 
     public void AddEnemyKill()
     {
-        Score.Value += k_pointsPerEnemy;
-        m_events.Publish(new ScoreChanged(Score.Value));
+        m_score.SetValue(m_score.Value + k_pointsPerEnemy);
     }
 }
 ```
 
 ```csharp
-using System;
-using Onity.DI;
+using Onity.DI;                 // Inject
+using Onity.Unity.Reactive;     // TakeUntilDisable
 using UnityEngine;
 
 public sealed class EnemyHealth : MonoBehaviour
@@ -151,29 +139,22 @@ public sealed class ScoreHud : MonoBehaviour
 {
     [Inject] private IScoreService m_score;
 
-    private IDisposable m_subscription;
-
     private void OnEnable()
     {
-        m_subscription = m_score.Score.Subscribe(SetScore);
-    }
-
-    private void OnDisable()
-    {
-        m_subscription?.Dispose();
-        m_subscription = null;
+        m_score.Score.Subscribe(SetScore)      // emits the current score first
+               .TakeUntilDisable(this);        // disposed in OnDisable
     }
 
     private void SetScore(int value)
     {
-        // Update UI Toolkit, TMP, or UGUI here.
+        // Update UI Toolkit, TMP or UGUI here.
     }
 }
 ```
 
 ```csharp
-using Onity.DI;
-using Onity.Unity.Installers;
+using Onity.DI;                 // OnityContainer
+using Onity.Unity.Installers;   // MonoInstaller
 
 public sealed class GameInstaller : MonoInstaller
 {
@@ -184,26 +165,19 @@ public sealed class GameInstaller : MonoInstaller
 }
 ```
 
-The important part is not the number of files. The important part is the new
-direction of dependency flow:
+The number of files is not the point; the direction of the dependencies is:
 
 ```text
 EnemyHealth -> IScoreService <- ScoreHud
-                  |
-                  v
-             OnityEventHub
 ```
 
-`EnemyHealth` and `ScoreHud` no longer reference each other, no object calls a
-global singleton, and `ScoreService` can be tested as a plain class.
+`EnemyHealth` and `ScoreHud` no longer reference each other, nothing calls a global singleton, and
+`ScoreService` is tested as a plain class. Scene transitions, which the manager also owned, belong in
+their own service.
 
-## Example 2: From a VContainer manager
+## Example 2: from a VContainer manager
 
-### Before
-
-A typical VContainer setup registers a service and an entry point separately.
-That is a good DI model, but in a project moving to Onity the same role can use
-the Onity lifecycle interfaces directly.
+Before. VContainer registers the service and the entry point separately:
 
 ```csharp
 using VContainer;
@@ -229,7 +203,7 @@ public sealed class GameSessionManager : IInitializable, ITickable
 
     public void Initialize()
     {
-        m_score.Score.Value = 0;
+        // Session setup.
     }
 
     public void Tick()
@@ -239,25 +213,19 @@ public sealed class GameSessionManager : IInitializable, ITickable
 }
 ```
 
-### After
-
-In Onity, the manager becomes a service with explicit lifecycle contracts. A
-singleton that implements `IOnityInitializable` or `IOnityTickable` is collected
-automatically when the container builds, so there is no separate entry-point
-registration line.
+After. The manager becomes a service with Onity's lifecycle interfaces. A singleton that implements
+`IOnityInitializable` or `IOnityTickable` is collected when the container builds, so there is no entry
+point registration:
 
 ```csharp
-using Onity.DI;
+using Onity.DI;                 // IOnityInitializable, IOnityTickable
 
 public interface IGameSessionService
 {
     bool IsRunning { get; }
 }
 
-public sealed class GameSessionService :
-    IGameSessionService,
-    IOnityInitializable,
-    IOnityTickable
+public sealed class GameSessionService : IGameSessionService, IOnityInitializable, IOnityTickable
 {
     private readonly IScoreService m_score;
 
@@ -270,7 +238,6 @@ public sealed class GameSessionService :
 
     public void Initialize()
     {
-        m_score.Score.Value = 0;
         IsRunning = true;
     }
 
@@ -287,32 +254,29 @@ public sealed class GameSessionService :
 ```
 
 ```csharp
-using Onity.DI;
-using Onity.Unity.Installers;
+using Onity.DI;                 // OnityContainer
+using Onity.Unity.Installers;   // MonoInstaller
 
 public sealed class GameInstaller : MonoInstaller
 {
     public override void InstallBindings(OnityContainer container)
     {
         container.Bind<IScoreService>().To<ScoreService>().AsSingle();
-        container.BindInterfacesAndSelfTo<GameSessionService>().AsSingle().NonLazy();
+        container.BindInterfacesAndSelfTo<GameSessionService>().AsSingle();
     }
 }
 ```
 
-`BindInterfacesAndSelfTo<GameSessionService>()` makes one instance visible as
-`IGameSessionService`, `IOnityInitializable`, `IOnityTickable`, and
-`GameSessionService`. `NonLazy()` constructs it during `Build()`, then Onity
-runs `Initialize()` and pumps `Tick()` from the owning context.
+`BindInterfacesAndSelfTo<GameSessionService>()` makes one instance visible as `IGameSessionService`,
+`IOnityInitializable`, `IOnityTickable` and `GameSessionService`. Lifecycle singletons are created at
+`Build()`, which runs `Initialize()`; the owning context pumps `Tick()` every frame. See
+[From VContainer](../Migration/From-VContainer.html) for the full mapping.
 
-## Example 3: From Unity references and ScriptableObject config
+## Example 3: from Unity references and ScriptableObject config
 
-### Before
-
-Serialized references are useful for assets and views, but they become brittle
-when they wire gameplay systems together. In this example, the reward rule, UI,
-audio, and runtime score live in one scene object. Moving the HUD object or audio
-object can break the rule code.
+Before. Serialized references are right for assets and views, but brittle when they wire gameplay
+systems together. The reward rule, the HUD, the audio and the runtime score live in one scene object, so
+moving the HUD or the audio object breaks the rule code:
 
 ```csharp
 using UnityEngine;
@@ -341,11 +305,9 @@ public sealed class EnemyRewardManager : MonoBehaviour
 }
 ```
 
-### After
-
-Keep the ScriptableObject as config, not as the runtime owner. Bind it through
-the installer as a small read-only interface. The score rule becomes a service;
-the HUD and audio stay as Unity views that observe state/events.
+After. The ScriptableObject stays as configuration and is bound through the installer as a small
+read-only interface. The rule becomes a service; the HUD and the audio stay Unity views that observe
+state and messages:
 
 ```csharp
 using UnityEngine;
@@ -365,8 +327,8 @@ public sealed class EnemyRewardConfig : ScriptableObject, IEnemyRewardConfig
 ```
 
 ```csharp
-using Onity.Reactive;
-using Onity.Unity.Messaging;
+using Onity.Reactive;           // ReactiveProperty<T>, IReadOnlyReactiveProperty<T>
+using Onity.Unity.Messaging;    // OnityEventHub
 
 public readonly struct EnemyRewarded
 {
@@ -380,7 +342,7 @@ public readonly struct EnemyRewarded
 
 public interface IEnemyRewardService
 {
-    ReactiveProperty<int> Score { get; }
+    IReadOnlyReactiveProperty<int> Score { get; }
     void AddEnemyKill();
 }
 
@@ -388,8 +350,9 @@ public sealed class EnemyRewardService : IEnemyRewardService
 {
     private readonly IEnemyRewardConfig m_config;
     private readonly OnityEventHub m_events;
+    private readonly ReactiveProperty<int> m_score = new ReactiveProperty<int>(0);
 
-    public ReactiveProperty<int> Score { get; } = new ReactiveProperty<int>(0);
+    public IReadOnlyReactiveProperty<int> Score => m_score;
 
     public EnemyRewardService(IEnemyRewardConfig config, OnityEventHub events)
     {
@@ -399,16 +362,16 @@ public sealed class EnemyRewardService : IEnemyRewardService
 
     public void AddEnemyKill()
     {
-        Score.Value += m_config.PointsPerEnemy;
-        m_events.Publish(new EnemyRewarded(Score.Value));
+        m_score.SetValue(m_score.Value + m_config.PointsPerEnemy);
+        m_events.Publish(new EnemyRewarded(m_score.Value));
     }
 }
 ```
 
 ```csharp
-using System;
-using Onity.DI;
-using Onity.Unity;
+using Onity.DI;                 // Inject
+using Onity.Unity;              // OnityEvent
+using Onity.Unity.Reactive;     // TakeUntilDisable
 using UnityEngine;
 
 public sealed class EnemyDeathReporter : MonoBehaviour
@@ -425,17 +388,10 @@ public sealed class EnemyRewardHud : MonoBehaviour
 {
     [Inject] private IEnemyRewardService m_rewards;
 
-    private IDisposable m_subscription;
-
     private void OnEnable()
     {
-        m_subscription = m_rewards.Score.Subscribe(SetScore);
-    }
-
-    private void OnDisable()
-    {
-        m_subscription?.Dispose();
-        m_subscription = null;
+        m_rewards.Score.Subscribe(SetScore)
+                 .TakeUntilDisable(this);      // disposed in OnDisable
     }
 
     private void SetScore(int value)
@@ -449,17 +405,11 @@ public sealed class EnemyRewardAudio : MonoBehaviour
     [SerializeField] private AudioSource m_audio;
     [SerializeField] private AudioClip m_killClip;
 
-    private IDisposable m_subscription;
-
     private void OnEnable()
     {
-        m_subscription = OnityEvent.Observe<EnemyRewarded>(this).Subscribe(OnEnemyRewarded);
-    }
-
-    private void OnDisable()
-    {
-        m_subscription?.Dispose();
-        m_subscription = null;
+        OnityEvent.Observe<EnemyRewarded>(this)
+                  .Subscribe(OnEnemyRewarded)
+                  .TakeUntilDisable(this);      // disposed in OnDisable
     }
 
     private void OnEnemyRewarded(EnemyRewarded message)
@@ -470,8 +420,8 @@ public sealed class EnemyRewardAudio : MonoBehaviour
 ```
 
 ```csharp
-using Onity.DI;
-using Onity.Unity.Installers;
+using Onity.DI;                 // OnityContainer
+using Onity.Unity.Installers;   // MonoInstaller, BindScriptableObject
 using UnityEngine;
 
 public sealed class GameInstaller : MonoInstaller
@@ -486,15 +436,13 @@ public sealed class GameInstaller : MonoInstaller
 }
 ```
 
-The ScriptableObject still gives designers a familiar asset workflow, but the
-runtime state no longer lives inside the asset or a scene reference web.
+`OnityEventHub` needs no installer line; every context binds it. Designers keep the asset workflow, and
+the runtime state no longer lives in the asset or in a web of scene references.
 
-## Example 4: From Zenject manager + SignalBus
+## Example 4: from a Zenject manager and SignalBus
 
-### Before
-
-Zenject can solve the singleton problem, but a project may still accumulate
-manager classes and `SignalBus` wiring for simple notifications.
+Before. Zenject removes the singleton, but a project still accumulates manager classes and `SignalBus`
+wiring for simple notifications:
 
 ```csharp
 using Zenject;
@@ -542,15 +490,12 @@ public sealed class WaveManager : IInitializable, ITickable
 }
 ```
 
-### After
-
-In Onity, the manager becomes a role service and the signal becomes a typed
-message. The lifecycle is collected automatically, and the event path is the
-same messaging system used by reactive streams.
+After. The manager becomes a role service and the signal becomes a typed message. The lifecycle is
+collected automatically, and the message travels through the same broker the reactive bridges use:
 
 ```csharp
-using Onity.DI;
-using Onity.Unity.Messaging;
+using Onity.DI;                 // IOnityInitializable, IOnityTickable
+using Onity.Unity.Messaging;    // OnityEventHub
 
 public readonly struct WaveStarted
 {
@@ -567,16 +512,13 @@ public interface IWaveService
     int CurrentWave { get; }
 }
 
-public sealed class WaveService :
-    IWaveService,
-    IOnityInitializable,
-    IOnityTickable
+public sealed class WaveDirector : IWaveService, IOnityInitializable, IOnityTickable
 {
     private readonly OnityEventHub m_events;
 
     public int CurrentWave { get; private set; }
 
-    public WaveService(OnityEventHub events)
+    public WaveDirector(OnityEventHub events)
     {
         m_events = events;
     }
@@ -594,68 +536,55 @@ public sealed class WaveService :
 }
 ```
 
-```csharp
-using Onity.DI;
-using Onity.Unity.Installers;
-
-public sealed class CombatInstaller : MonoInstaller
-{
-    public override void InstallBindings(OnityContainer container)
-    {
-        container.BindInterfacesAndSelfTo<WaveService>().AsSingle().NonLazy();
-    }
-}
-```
-
-If a plain service needs only one direction of a message channel, use typed
-subscriber injection:
+A service that needs only one direction of the channel injects `ISubscriber<WaveStarted>` or
+`IPublisher<WaveStarted>` after `BindMessageChannel<WaveStarted>()`, and ties its subscription to the
+scope that owns it:
 
 ```csharp
-using System;
-using Onity.DI;
-using Onity.Messaging;
-using Onity.Unity.Installers;
-using Onity.Unity.Messaging;
+using Onity.DI;                 // IOnityScopeLifetime, AddTo(scope)
+using Onity.Messaging;          // ISubscriber<T>
 
-public sealed class CombatInstaller : MonoInstaller
+public sealed class WaveHudModel
 {
-    public override void InstallBindings(OnityContainer container)
-    {
-        container.BindMessageChannel<WaveStarted>();
-        container.BindInterfacesAndSelfTo<WaveService>().AsSingle().NonLazy();
-        container.Bind<WaveHudModel>().AsSingle();
-    }
-}
+    public int DisplayedWave { get; private set; }
 
-public sealed class WaveHudModel : IDisposable
-{
-    private readonly IDisposable m_subscription;
-
-    public WaveHudModel(ISubscriber<WaveStarted> waves)
+    public WaveHudModel(ISubscriber<WaveStarted> waves, IOnityScopeLifetime scope)
     {
-        m_subscription = waves.Subscribe(OnWaveStarted);
-    }
-
-    public void Dispose()
-    {
-        m_subscription.Dispose();
+        waves.Subscribe(OnWaveStarted).AddTo(scope);   // unsubscribed when the scope ends
     }
 
     private void OnWaveStarted(WaveStarted message)
     {
-        // Update HUD model state.
+        DisplayedWave = message.Wave;
     }
 }
 ```
 
-## Example 5: From static events or `UnityEvent`
+```csharp
+using Onity.DI;                 // OnityContainer
+using Onity.Unity.Installers;   // MonoInstaller
+using Onity.Unity.Messaging;    // BindMessageChannel
 
-### Before
+public sealed class GameInstaller : MonoInstaller
+{
+    public override void InstallBindings(OnityContainer container)
+    {
+        container.BindMessageChannel<WaveStarted>();                       // IPublisher<WaveStarted>, ISubscriber<WaveStarted>
+        container.BindInterfacesAndSelfTo<WaveDirector>().AsSingle();      // IWaveService, lifecycle, WaveDirector
+        container.Bind<WaveHudModel>().AsSingle();
+    }
+}
+```
 
-Static C# events and inspector-wired `UnityEvent` callbacks both decouple the
-sender from the receiver syntactically, but they often hide lifetime and scope.
-A missed unsubscribe can leak, and a static event ignores `ProjectContext`,
-`SceneContext`, and `GameObjectContext` ownership.
+`BindMessageChannel<WaveStarted>()` binds the broker's own channel, so `WaveDirector` publishing
+through `OnityEventHub` reaches `WaveHudModel`. There is no `DeclareSignal` step and no signal
+installer. See [From Zenject](../Migration/From-Zenject.html) for the full mapping.
+
+## Example 5: from static events or UnityEvent
+
+Before. Static C# events and inspector-wired `UnityEvent` callbacks decouple the publisher from the
+subscriber in syntax, but they hide lifetime and scope. A missed unsubscribe leaks, and a static event ignores
+`ProjectContext`, `SceneContext` and `GameObjectContext` ownership:
 
 ```csharp
 using System;
@@ -698,17 +627,14 @@ public sealed class DamageHud : MonoBehaviour
 }
 ```
 
-### After
-
-Use a typed message. The owner overload routes through the nearest
-`GameObjectContext` when one exists, then falls back to the active scene/project
-context. Dispose subscriptions in `OnDisable` for enable/disable lifetime, or
-use `AddTo(this)` when a subscription should live until destroy.
+After. Use a typed message. The owner overloads of `OnityEvent` route through the nearest context above
+the component, so a prefab under a `GameObjectContext` talks to its own scope and a scene object talks
+to the scene scope. The subscription made in `OnEnable` is retained with `TakeUntilDisable(this)`:
 
 ```csharp
-using System;
-using Onity.Reactive;
-using Onity.Unity;
+using Onity.Reactive;           // Where
+using Onity.Unity;              // OnityEvent
+using Onity.Unity.Reactive;     // TakeUntilDisable
 using UnityEngine;
 
 public readonly struct PlayerDamaged
@@ -725,25 +651,18 @@ public sealed class DamageButton : MonoBehaviour
 {
     public void Click()
     {
-        OnityEvent.Publish(this, new PlayerDamaged(10));
+        OnityEvent.Publish(this, new PlayerDamaged(10));   // the nearest context's channel
     }
 }
 
 public sealed class DamageHud : MonoBehaviour
 {
-    private IDisposable m_subscription;
-
     private void OnEnable()
     {
-        m_subscription = OnityEvent.Observe<PlayerDamaged>(this)
-            .Where(message => message.Amount > 0)
-            .Subscribe(OnPlayerDamaged);
-    }
-
-    private void OnDisable()
-    {
-        m_subscription?.Dispose();
-        m_subscription = null;
+        OnityEvent.Observe<PlayerDamaged>(this)
+                  .Where(message => message.Amount > 0)
+                  .Subscribe(OnPlayerDamaged)
+                  .TakeUntilDisable(this);      // disposed in OnDisable
     }
 
     private void OnPlayerDamaged(PlayerDamaged message)
@@ -753,39 +672,132 @@ public sealed class DamageHud : MonoBehaviour
 }
 ```
 
-Use direct interface injection when the receiver is a required collaborator. Use
-a typed event when there can be zero, one, or many receivers and the sender
-should not know them.
+Use direct interface injection when the subscriber is a required collaborator. Use a typed message when
+there can be zero, one or many subscribers and the publisher should not know them. Messages are not
+replayed: a subscriber that arrives late misses earlier messages, which is what a `ReactiveProperty<T>`
+is for.
+
+## Example 6: from a coroutine loop
+
+Before. A coroutine loop on a `MonoBehaviour` couples a rule (regeneration) to a scene object, and its
+lifetime to that object's enable state:
+
+```csharp
+using System.Collections;
+using UnityEngine;
+
+public sealed class HealthRegeneration : MonoBehaviour
+{
+    [SerializeField] private Health m_health;
+
+    private Coroutine m_loop;
+
+    private void OnEnable()
+    {
+        m_loop = StartCoroutine(RegenerateLoop());
+    }
+
+    private void OnDisable()
+    {
+        if (m_loop != null)
+        {
+            StopCoroutine(m_loop);
+            m_loop = null;
+        }
+    }
+
+    private IEnumerator RegenerateLoop()
+    {
+        WaitForSeconds wait = new WaitForSeconds(1f);
+
+        while (true)
+        {
+            yield return wait;
+            m_health.Heal(1);
+        }
+    }
+}
+```
+
+After. The loop moves into the service that owns the rule, as an `async OnityTaskVoid` on the scope
+token. `Initialize()` starts it after `Build()`, and the token is canceled before the scope disposes the
+property the loop writes to. This is the canonical `HealthService` from
+[Getting Started](../Getting-Started.html):
+
+```csharp
+using System;
+using System.Threading;
+using Onity.DI;                 // IOnityInitializable, IOnityScopeLifetime, AddTo(scope)
+using Onity.Messaging;          // ISubscriber<T>
+using Onity.Reactive;           // ReactiveProperty<T>
+using Onity.Unity.Async;        // OnityTask, OnityTaskVoid
+
+public sealed class HealthService : IOnityInitializable
+{
+    private const int k_maxHealth = 100;
+    private const float k_regenerationInterval = 1f;
+
+    private readonly ReactiveProperty<int> m_health;
+    private readonly IOnityScopeLifetime m_scope;
+
+    public HealthService(ReactiveProperty<int> health, ISubscriber<PlayerDamaged> damage, IOnityScopeLifetime scope)
+    {
+        m_health = health;
+        m_scope = scope;
+        damage.Subscribe(OnDamaged).AddTo(scope);     // unsubscribed when the scope ends
+    }
+
+    public void Initialize()
+    {
+        RegenerateAsync(m_scope.Token).Forget();      // the token is canceled before the scope disposes its services
+    }
+
+    private void OnDamaged(PlayerDamaged message)
+    {
+        m_health.SetValue(Math.Max(0, m_health.Value - message.Amount));
+    }
+
+    private async OnityTaskVoid RegenerateAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            await OnityTask.Delay(k_regenerationInterval, token);
+            m_health.SetValue(Math.Min(k_maxHealth, m_health.Value + 1));
+        }
+    }
+}
+```
+
+When a loop belongs to a `MonoBehaviour` after all (a view animation, for example), keep it there as an
+`async OnityTaskVoid` with `this.GetScopeCancellationToken()` or `this.GetCancellationTokenOnDestroy()`
+(`Onity.Unity.Async`) as its token. Never use `async void`; see
+[Async with OnityTask](onitytask.html).
 
 ## Migration checklist
 
-1. Name the responsibility before naming the class. Prefer `ScoreService`,
-   `WaveService`, or `GameSessionService` over a broad `GameManager`.
-2. Create small interfaces for roles other code consumes.
-3. Move rules and state into constructor-injected plain C# services.
-4. Keep `MonoBehaviour` scripts as input, view, collision, trigger, or prefab
-   adapters.
-5. Bind ScriptableObjects as config contracts, not as mutable runtime state.
-6. Bind all services in one `MonoInstaller` assigned to a `ProjectContext`,
-   `SceneContext`, or `GameObjectContext`.
-7. Use `OnityEventHub` in services and `OnityEvent.Publish/Subscribe/Observe`
-   from Unity-facing scripts when a typed event is cleaner than a direct
-   dependency.
-8. Replace static events gradually; convert one message at a time and dispose
-   subscriptions in `OnDisable`, with `AddTo(this)` for destroy lifetime or a
-   `CompositeDisposable` for plain services.
-9. Delete the singleton last, after every caller receives an injected interface.
+1. Name the responsibility before naming the class. Prefer `ScoreService`, `WaveDirector` or
+   `GameSessionService` over a broad `GameManager`.
+2. Create small interfaces for the roles other code consumes.
+3. Move rules and state into constructor-injected plain C# services; expose state as
+   `IReadOnlyReactiveProperty<T>`.
+4. Keep `MonoBehaviour` scripts as input, view, collision, trigger or prefab adapters with `[Inject]`
+   members.
+5. Bind ScriptableObjects as config contracts with `BindScriptableObject`, not as mutable runtime state.
+6. Bind the services in one `MonoInstaller` assigned to the `ProjectContext`, `SceneContext` or
+   `GameObjectContext` whose lifetime matches them.
+7. Use `OnityEventHub` or `ISubscriber<T>` in services and `OnityEvent.Publish`, `Subscribe` and
+   `Observe` with the owner overload in Unity-facing scripts when a typed message is cleaner than a
+   direct dependency.
+8. Replace static events one message at a time. Retain every subscription: `TakeUntilDisable(this)` in
+   `OnEnable`, `AddTo(this)` for destroy lifetime, `AddTo(scope)` in services.
+9. Replace coroutine loops with `async OnityTaskVoid` methods that take the scope token.
+10. Delete the singleton last, after every caller receives an injected interface.
 
 ## See also
 
-- [Dependency Injection](dependency-injection.html) — binding, injection sites,
-  and documented resolve behavior.
-- [Lifecycle & Scopes](lifecycle-and-scopes.html) — automatic lifecycle
-  collection and context ownership.
-- [Events & Messaging](events-messaging.html) — event hub and `OnityEvent`
-  examples.
-- [Migration: From Zenject](../Migration/From-Zenject.html) — syntax-level
-  differences for existing Zenject projects.
-- [Migration: From VContainer](../Migration/From-VContainer.html) — API-level
-  migration details.
-- [ADR 0004: Refactoring from Existing Architecture](../ADR/0004-refactoring-from-existing-architecture.html).
+- [Dependency Injection](dependency-injection.html): bindings, injection sites and documented resolve behavior.
+- [Lifecycle and Scopes](lifecycle-and-scopes.html): lifecycle collection, the scope token and context ownership.
+- [Events and Messaging](events-messaging.html): `OnityEventHub`, `OnityEvent` and channel bindings.
+- [Async with OnityTask](onitytask.html): loops, delays and cancellation on scope and destroy tokens.
+- [From Zenject](../Migration/From-Zenject.html) and [From VContainer](../Migration/From-VContainer.html): API-level mappings.
+- [ADR 0004: Refactoring from Existing Architecture](../ADR/0004-refactoring-from-existing-architecture.html): the decision record behind this guide.

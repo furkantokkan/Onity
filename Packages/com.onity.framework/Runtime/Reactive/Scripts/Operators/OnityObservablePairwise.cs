@@ -1,4 +1,5 @@
 using System;
+using Unity.IL2CPP.CompilerServices;
 
 namespace Onity.Reactive
 {
@@ -48,27 +49,59 @@ namespace Onity.Reactive
                 throw new ArgumentNullException(nameof(source));
             }
 
-            return new OnityObservable<OnityPair<T>>(
-                observer =>
+            return new OnityPairwiseObservable<T>(source);
+        }
+    }
+
+    /// <summary>
+    /// Observable returned by <see cref="OnityObservableExtensions.Pairwise{T}" />. Each subscription keeps
+    /// its own previous value.
+    /// </summary>
+    /// <typeparam name="T">Value type.</typeparam>
+    [Il2CppSetOption(Option.NullChecks, false)]
+    [Il2CppSetOption(Option.ArrayBoundsChecks, false)]
+    internal sealed class OnityPairwiseObservable<T> : OnityOperatorObservable<OnityPair<T>>
+    {
+        private readonly IOnityObservable<T> m_source;
+
+        /// <summary>Creates the operator; the argument is validated by the caller.</summary>
+        /// <param name="source">Upstream source.</param>
+        internal OnityPairwiseObservable(IOnityObservable<T> source)
+        {
+            m_source = source;
+        }
+
+        /// <inheritdoc />
+        public override IDisposable SubscribeNode(OnityObserverNode<OnityPair<T>> downstream)
+        {
+            return OnityNodeSources.Subscribe(m_source, new Sink(downstream));
+        }
+
+        [Il2CppSetOption(Option.NullChecks, false)]
+        [Il2CppSetOption(Option.ArrayBoundsChecks, false)]
+        private sealed class Sink : OnityOperatorSink<T, OnityPair<T>>
+        {
+            private bool m_hasPrevious;
+            private T m_previousValue;
+
+            internal Sink(OnityObserverNode<OnityPair<T>> downstream)
+                : base(downstream)
+            {
+            }
+
+            internal override void OnNext(T value)
+            {
+                if (m_hasPrevious == false)
                 {
-                    bool hasPrevious = false;
-                    T previousValue = default;
+                    m_hasPrevious = true;
+                    m_previousValue = value;
+                    return;
+                }
 
-                    return source.Subscribe(
-                        value =>
-                        {
-                            if (hasPrevious == false)
-                            {
-                                hasPrevious = true;
-                                previousValue = value;
-                                return;
-                            }
-
-                            T capturedPrevious = previousValue;
-                            previousValue = value;
-                            observer(new OnityPair<T>(capturedPrevious, value));
-                        });
-                });
+                T previousValue = m_previousValue;
+                m_previousValue = value;
+                m_downstream.Deliver(new OnityPair<T>(previousValue, value));
+            }
         }
     }
 }

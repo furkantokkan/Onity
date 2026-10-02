@@ -1,164 +1,208 @@
 ---
-title: "Performance & IL2CPP"
+title: "Performance and IL2CPP"
 parent: "Guides"
 nav_order: 7
-description: "How Onity selects DI activation paths on Mono and IL2CPP, with current benchmark evidence and allocation caveats."
+description: "How Onity's DI, reactive, messaging and async hot paths are built, what the measured comparisons show with their conditions, the known slower cases, and the IL2CPP checklist."
 ---
 
-# Performance & IL2CPP
+# Performance and IL2CPP
 
-Onity is built so that one package runs on both JIT runtimes (the Unity Editor and Mono players) and ahead-of-time runtimes (IL2CPP, console AOT) without a code change. This page explains how the DI fast paths work, how the fallback works, and what the allocation and timing claims do and do not establish.
+Use this page to understand what Onity does on the paths that run every frame, what the measured
+comparisons show and what they do not, and what to check before shipping on IL2CPP. One package runs on
+JIT runtimes (the Unity Editor and Mono players) and ahead-of-time runtimes (IL2CPP, console AOT) without
+a code change; the paths differ, the results do not. The numbers below each name their record, their
+conditions and their limits; the records are the authority.
+
+Contents: [Three activation strategies, one container](#three-activation-strategies-one-container),
+[Hot-path design](#hot-path-design), [What the numbers show](#what-the-numbers-show),
+[Known slower cases](#known-slower-cases), [Onity.Reactive on IL2CPP](#onityreactive-on-il2cpp),
+[OnityTask on IL2CPP](#onitytask-on-il2cpp), [IL2CPP checklist](#il2cpp-checklist),
+[What remains](#what-remains).
 
 ## Three activation strategies, one container
 
-The DI layer constructs instances and injects members through the fastest safe strategy available for the selected constructor:
+The DI layer constructs instances and injects members through the fastest safe strategy for the selected
+constructor:
 
-- **Generated** (AOT/JIT): source-generated activators register direct `new T(...)` delegates in `Onity.DI.Internal.GeneratedActivators`. When a generated activator matches the selected constructor signature, it is used first on every runtime, including IL2CPP.
-- **Compiled** (JIT runtimes): if no generated activator exists, constructor activators and member setters are built with `System.Linq.Expressions.Expression.Compile`, so the resolve path avoids per-call reflection. Each constructor is compiled once and cached for the lifetime of the process, across every container `Build()`.
-- **Fallback** (AOT/IL2CPP or restricted runtimes): runtime expression compilation can be unavailable, interpreter-backed, or target-dependent. The probe detects whether the compiled delegate can actually run; when it cannot and no generated activator is available, the layer falls back to reflection-based activation: slower per call, allocation-comparable, and guaranteed to run instead of crashing the container.
+- Generated (AOT and JIT): `Onity.SourceGen` emits a direct `new T(...)` delegate for every type marked
+  `[OnityGenerateActivator]` and registers it in `Onity.DI.Internal.GeneratedActivators`. A registered
+  activator is used first on every runtime, including IL2CPP.
+- Compiled (JIT runtimes): without a generated activator, constructor activators and member setters are
+  built with `Expression.Compile`, once per constructor for the life of the process, across every
+  container `Build()`.
+- Reflection (AOT, IL2CPP or restricted runtimes): runtime expression compilation can be unavailable,
+  interpreter-backed or target-dependent, so a one-time probe compiles and invokes a representative
+  lambda, because some AOT runtimes let `Compile()` succeed and throw only when the delegate first runs.
+  When the probe fails, or one constructor fails to compile (for example a type the linker stripped), that
+  constructor uses cached reflection: slower per call, allocation-comparable, and it runs instead of
+  crashing the container.
 
-The probe both compiles **and invokes** a representative lambda, because some AOT runtimes let `Compile()` succeed yet throw only when the compiled delegate is first called. All strategies produce identical results — only the per-constructor delegate differs. Compilation is also resilient per-constructor: if the runtime reports compile support but one specific constructor fails to compile (for example a type the AOT linker stripped), that constructor alone falls back to reflection.
-
-You can read which strategy is live:
+All three produce identical graphs; only the per-constructor delegate differs. You can read which path the
+probe selected:
 
 ```csharp
-using Onity.DI;
+using Onity.DI;                 // OnityContainer
 
-// True when the current runtime probe accepts runtime Expression.Compile.
-// Generated activators can still be used when this is false; this is for
-// confirmation/diagnostics on device, not a full "fast path active" flag.
+// True when the runtime probe accepted Expression.Compile. Generated activators are used
+// whether this is true or false; it is a diagnostic, not a "fast path active" flag.
 bool compiled = OnityContainer.IsCompiledActivationSupported;
 ```
 
 ## Hot-path design
 
-The resolve machinery is **designed to avoid per-call managed allocation**:
-generated or compiled activators, pooled constructor-argument arrays, and cached
-per-type construction plans keep the steady-state resolve path off the
-allocator. Standard generic `Resolve<T>()` uses a container-local dense type-id
-provider slot, avoiding a `Dictionary<Type, ...>` lookup for explicit local
-bindings. Dynamic `Resolve(Type)` and misses retain the general map/fallback
-path. The baked graph is enabled by default and adds flat lifetime and
-singleton slots for explicit local bindings; the parity suite checks that both
-lanes produce identical results, including registrations made after `Build()`.
+- Resolve: construction plans are cached per type, constructor arguments travel through `[ThreadStatic]`
+  pooled arrays, a generic `Resolve<T>()` of an explicit local binding reads a dense type-id provider slot
+  instead of a dictionary, and `Build()` bakes flat lifetime and singleton slots for the explicit bindings
+  (the parity suite checks that the baked and standard lanes produce identical results, including for
+  registrations made after `Build()`). Dynamic `Resolve(Type)`, misses and parent fallback use the general
+  provider map. A transient resolve still allocates the instance it returns, and a deep graph allocates
+  one object per constructed node.
+- Reactive: a subscription is one object, an internal node that is both the entry the source keeps and the
+  `IDisposable` the subscriber receives. `Subject<T>` and `ReactiveProperty<T>` keep their nodes in an
+  array-backed list, remove a node in constant time outside a notification and compact after the
+  outermost notification when nodes were removed during it, deliver each value by invoking the node's
+  callback directly, and run one exception region per notification pass. The synchronous operators are
+  sink nodes, with `Where` followed by `Select` fused into one sink. Steady-state `OnNext` and `SetValue`
+  allocate nothing.
+- Messaging: `MessageChannel<T>.Publish` is array-backed and allocates nothing in steady state; the only
+  lock in the broker is on channel creation.
+- Frame streams: `EveryUpdate()` and the other frame sources share one pump and deliver without
+  allocating.
+- Async: a suspended `async OnityTask` method binds a pooled runner that holds the state machine by value;
+  cancelable waits, timed waits and Unity operations are pooled single-consumer sources; in Play,
+  token-less frame waits are stateless. `OnityTask` has no static constructor, and context flow is off by
+  default.
 
-The reactive and messaging emit paths follow the same principle: `Subject<T>.OnNext`, `MessageChannel<T>.Publish`, `EveryUpdate()`, and steady-state subscription delivery are array-backed and designed to be allocation-free in steady state, allocating only at subscribe time.
+What is not claimed: a verified zero-allocation resolve for every scenario. The accurate statement is that
+the machinery avoids per-call managed allocation beyond the objects a call must create, and the raw
+Profiler passes below measured where that holds.
 
-> **Allocation note.** A transient resolve still allocates the instance it returns (and a deep graph allocates one object per constructed node). The DI benchmark allocation numbers that were published earlier were **unreliable** — they reported 0 B for paths that must allocate, including for the other containers measured — so they did not capture gross allocations and are being re-measured in-editor. Do not treat any "zero-allocation resolve" or "0 B/op" statement as verified. What is accurate: the resolve *machinery* and the emit paths are built to avoid *per-call* managed allocation; the instance a transient hands back is a genuine allocation.
+## What the numbers show
 
-## Timing claims
+Every ratio is Onity's time divided by the other library's time for the same workload in the same
+process; below 1 means Onity took less time. The [Comparisons](../comparisons/index.html) pages hold the
+full tables.
 
-The committed DI benchmark reports resolve **timing** (speed) numbers. Treat them as **indicative only**: they were measured on a Windows PC and are not a guaranteed result for every Unity version, scripting backend, or graph shape. They are useful for relative comparison of resolve paths within the same run, not as an absolute performance guarantee.
+- Dependency injection. In the Windows IL2CPP release Player run of 2026-10-02 (Unity 2022.3.62f2, the
+  published 0.6.0 package whose DI code is unchanged in 0.7.0, 19 generated activators, three processes,
+  512 warmups and 8 samples of 10,000 operations), Onity Baked was fastest in all seven scenarios in every
+  process, with Onity / VContainer per-process ratios of 0.21 to 0.59
+  ([record](../benchmarks/di-remeasure-2026-10-02.md)). The 2026-10-01 re-measurement found 0.23 to 0.57
+  on IL2CPP, Onity Baked faster than both VContainer and Zenject in all seven Editor/Mono scenarios, and
+  the same `GC.Alloc` event counts as the September raw Profiler pass: 0 for singleton, keyed and scoped
+  resolves in every container, 1 event for Onity and VContainer and 4 for Zenject on transient and
+  combined resolves, 24 and 96 on the complex graph ([record](../benchmarks/remeasure-2026-10-01.md)). The
+  September 2026 raw Profiler passes measured 0, 16, 16 and 384 B per operation for Onity Baked and
+  VContainer on singleton, transient, combined and complex resolves, on Editor/Mono and in a Windows
+  IL2CPP Development Player ([summary](../benchmarks/advanced-di-summary-2026-09-23.md)). A release
+  Player reports no allocation; the comparison there is timing only.
+- Pooling. Against Zenject's `MemoryPool`, paired within one process: one reused item in the checked
+  Editor/Mono test, Onity checked / Zenject 0.590x and 0.579x in two runs after `OnityObjectPool<T>` moved
+  to its own array stack (1.483x before it, the same day); the 32-item two-parameter burst in a Windows
+  IL2CPP Release Player, factory / Zenject 0.738x and 0.729x in an old/new/new/old sequence
+  ([record](../benchmarks/pool-own-stack-2026-10-01.md)), and 0.809 and 0.801 in the 2026-10-01
+  re-measurement of the earlier source, with zero warmed `GC.Alloc` events in Development runs
+  ([record](../benchmarks/remeasure-2026-10-01.md)). Prefab pools, VContainer pool adapters and other
+  workloads were not ranked.
+- Async. In the 2026-10-02 Release Player gate (Unity 2022.3.62f2, Windows x64, UniTask 2.5.11, three
+  processes per backend and suite, context flow off, pool retention matched for the 1,024- and
+  4,096-operation bursts), OnityTask took less time than UniTask in all 29 gated IL2CPP rows, median ratios
+  0.085 to 0.808, worst process 0.906 ([record](../assets/benchmarks/onitytask-surpass-2026-10-02.md)).
+  Mono is reported, not gated: faster in 25 of 29 rows.
+- Reactive. In the 2026-10-02 Release Player comparison (Unity 2022.3.62f2, Windows x64, R3 1.3.0 and
+  UniRx 7.1.0, three processes per backend, source `36c68c5`), Onity.Reactive took less time than R3 in all
+  nine IL2CPP rows, median ratios 0.145 to 0.805 and worst process 0.811, and less time than UniRx in all
+  nine rows, 0.129 to 0.872 and worst process 0.874
+  ([record](../assets/benchmarks/reactive-surpass-r3-2026-10-02.md)). Mono is reported, not gated: faster
+  than R3 in seven rows, on par in one, slower in `CombineLatest`; faster than UniRx in five rows, on par
+  in two, slower in single-subscriber publish and `CombineLatest`.
 
-The current Editor/Mono and Windows IL2CPP reports include keyed and scoped
-singleton resolution along with the five original scenarios. The Editor's
-cumulative allocation byte counters failed a 1 MiB positive control, so the
-timing report marks inline bytes unavailable. Separate raw Profiler passes
-validated empty, 1 MiB, and 2 MiB controls before measuring `GC.Alloc` inside
-each marker. [Full run summary and raw reports](../benchmarks/advanced-di-summary-2026-09-23.md).
+## Known slower cases
 
-| Environment | Result |
-| --- | --- |
-| Unity Editor / Mono (`2026-09-23`) | Onity baked was faster than VContainer and Zenject in all seven measured scenarios. [Raw timing report](../benchmarks/advanced-di-editor-mono-direct-keyed/di-benchmark-latest.json). |
-| Windows IL2CPP release Player (`2026-09-23`) | Onity baked was faster than VContainer and Zenject in all seven measured scenarios with `19` generated activators registered. [Raw timing report](../benchmarks/advanced-di-il2cpp-release.json). |
-| Windows IL2CPP release Player re-run (`2026-10-01`, three processes) | Onity baked was fastest in every scenario in every process; Onity/VContainer per-run ratios ranged from 0.23x to 0.57x. [Re-measurement](../benchmarks/remeasure-2026-10-01.md). |
-| Windows IL2CPP singleton gate (`2026-07-12T13:30:25Z`) | 1000 samples measured Onity standard at 18.80 ns/op versus VContainer at 94.39 ns/op. |
+- OnityTask on Mono: the four synchronous completed-result rows are 1.09x to 1.92x slower than UniTask;
+  the other 25 rows are faster.
+- OnityTask with opt-in `AsyncLocal` flow (`FlowExecutionContext = true`): a complete method lifecycle with
+  four suspensions is 1.5x to 1.6x slower than UniTask on IL2CPP and 2.6x to 2.7x on Mono. UniTask has no
+  flow; the row prices a feature it does not offer.
+- OnityTask at default pool retention: 4,096-call bursts of one async method are up to 2.6x slower than
+  UniTask, because every call above the 128-runner cap allocates. Raise `OnityTask.RunnerPoolCapacity` and
+  `SourcePoolCapacity` before such bursts; the gate rows were measured that way.
+- Onity.Reactive on Mono: `CombineLatest` publish is 1.378x slower than R3 and 1.527x slower than UniRx
+  (it was not redesigned), single-subscriber publish is 1.098x slower than UniRx, and the same-value
+  property set is on par with both (1.040 and 1.001). On IL2CPP every row is faster than both libraries.
+- DI: the standard (non-baked) lane's scoped-singleton resolve on IL2CPP (233.4 ns) is slower than
+  VContainer's (112.9 ns); the baked graph, the default after `Build()`, measured 53.5 ns. The
+  prepare-and-register scenario is the closest ratio, 0.52 to 0.59.
+- Pooling before the own-stack change: the single reused item was 1.48x slower than Zenject in the
+  checked Editor/Mono test. That is the superseded state, kept in the records.
 
-In the Editor/Mono allocation pass, Onity baked and VContainer both used
-0, 16, 16, and 384 B per operation for singleton, transient, combined, and
-complex resolves. Keyed and scoped singleton resolves used 0 B in all three
-frameworks. Onity baked used 10,364 B for complex prepare/register versus
-VContainer's 15,296 B and Zenject's 23,166 B.
+## Onity.Reactive on IL2CPP
 
-A separate Windows IL2CPP Development player raw Profiler pass validated an
-empty marker at 0 B and 1 MiB / 2 MiB controls at 1,053,728 B / 2,102,304 B.
-Each case used three identical samples of 64 operations after warming the same
-container. Onity baked and VContainer both used 0, 16, 16, and 384 B per
-resolve operation; Zenject used 0, 200, 200, and 4,800 B. Keyed and scoped
-singleton resolves used 0 B in all three frameworks. Complex prepare/register
-used 10,424 B for Onity baked, 16,136 B for VContainer, and 23,405 B for
-Zenject. [Raw IL2CPP byte report](../benchmarks/advanced-di-il2cpp-allocation.json).
-Development profiling supplies allocation bytes; the release player supplies
-the timing comparison. The release report's allocation fields are unavailable.
-
-## Managed pooling and factory timing
-
-A separate Windows IL2CPP benchmark compared Onity's checked two-parameter
-pooled factory with Zenject `MemoryPool<int,int,int[]>` using 32 prewarmed
-items, fixed capacity, matching initialization/reset callbacks, and rotated
-bursts. In an interleaved Release confirmation, Onity/Zenject paired median
-ratios were **0.803x** and **0.776x**, or **19.7%** and **22.4%** less elapsed
-time in that workload. Development player runs recorded zero warmed
-`GC.Alloc` events with a positive control; Release allocation was unavailable.
-Both pools rejected duplicate returns and passed the final-state checks.
-
-`OnityObjectPool<T>` keeps its own array stack instead of wrapping Unity's
-`ObjectPool<T>`; the top of the stack is the checked-mode duplicate-return fast
-slot. In the checked single-item Editor/Mono test, which previously favored
-Zenject (**1.429x/1.566x**), two fresh runs measured Onity checked/Zenject
-paired medians of **0.590x/0.579x** and Onity default/Zenject **0.674x/0.559x**,
-with zero warmed allocation. In an old/new/new/old sequence of the 32-item
-IL2CPP Release burst, factory/Zenject moved from **0.796x/0.856x** to
-**0.738x/0.729x**. The Unity player control does not check duplicate returns and
-is not an equivalent checked comparison. These results do not rank prefab
-pools, VContainer pool adapters, or other workloads.
-[Method, raw reports, and binary hashes](../benchmarks/factory-pooling-2026-09-23.md);
-[own-stack pool measurements](../benchmarks/pool-own-stack-2026-10-01.md).
+The reactive core carries internal copies of the `Unity.IL2CPP.CompilerServices` attributes
+(`OnityIl2CppCompilerServices.cs`), which IL2CPP recognizes by their full names, so the engine-free
+assembly steers code generation without a dependency on `UnityEngine`. `[Il2CppSetOption(Option.NullChecks, false)]`
+and `[Il2CppSetOption(Option.ArrayBoundsChecks, false)]` are applied to the node list, the nodes, the
+operator observables and their sinks, where every receiver is non-null by construction and the public
+entry points validate their arguments. Node delivery is an instance method on purpose: under IL2CPP a
+generic call made from a static or struct method re-checks class initialization on every call, and this
+runs once per delivered value. While exactly one live subscriber is registered, `Subject<T>.OnNext` and
+`ReactiveProperty<T>.SetValue` deliver to it through a direct reference the node list keeps, in their own
+exception region and without the general loop; a subscribe, unsubscribe or dispose inside that callback
+falls back to the general pass. The gate results above were measured on this build.
 
 ## OnityTask on IL2CPP
 
-The [2026-10-02 Release Player gate](../assets/benchmarks/onitytask-surpass-2026-10-02.md)
-measured OnityTask against UniTask 2.5.11 in non-development Windows x64 Players
-(Unity 2022.3.62f2), three processes per backend and suite. On IL2CPP all 29 gated
-rows were faster, with median Onity/UniTask time ratios from 0.085 to 0.808; Mono
-was reported without a gate. The [comparison](onitytask-comparison.html) has the
-full picture, including where Onity is slower.
+What the measured Player build relies on:
 
-What the IL2CPP build relies on:
-
-- **Code generation options.** Onity carries internal copies of the
-  `Unity.IL2CPP.CompilerServices` attributes, which IL2CPP recognizes by name.
-  `[Il2CppSetOption(Option.NullChecks, false)]` removes null checks from the task
-  awaiters, method builders, pooled source bases, async-method runners and their
-  pool, the PlayerLoop owner and the yield awaiter, where every receiver is non-null
-  by construction and public entry points validate their arguments.
-  `[Il2CppEagerStaticClassConstruction]` on the settings holder and the PlayerLoop
-  owner runs their static constructors at startup, so reads of their static fields
-  carry no class-initialization check. `OnityTask` itself has no static
-  constructor, so its inlined members have none either; the generated C++ of the
-  measured Player confirms both.
-- **Immediate runner return.** A suspended async method's runner goes back to its
-  pool as soon as its task is consumed. This is safe because the runner calls the
-  state machine's `MoveNext` by address, with no copy back, which the generated C++
-  of the measured Player also confirms.
-- **Context flow.** Performance claims for `async OnityTask` are measured at the
-  default `FlowExecutionContext = false`, which is UniTask-equivalent; enabling flow
-  adds one execution-context capture and restore per suspension, and the complete
-  lifecycle with four suspensions then measured 1.5x to 1.6x slower than UniTask.
-- **Pool retention.** Onity keeps at most 128 runners per async method
-  (`OnityTask.RunnerPoolCapacity`) and 256 sources per source type
-  (`OnityTask.SourcePoolCapacity`); UniTask keeps everything. Above the cap each
-  extra operation allocates, which made 4,096-call bursts of one async method up to
-  2.6x slower than UniTask at the defaults. Raise both caps at startup for methods
-  that run in large bursts when the retained memory is acceptable; the gate's
-  4,096-operation rows were measured that way.
+- Code generation options. Onity carries internal copies of the `Unity.IL2CPP.CompilerServices` attributes
+  for the async layer as well. `[Il2CppSetOption(Option.NullChecks, false)]` removes null checks from the
+  task awaiters, method builders, pooled source bases, async-method runners and their pool, the PlayerLoop
+  owner and the yield awaiter. `[Il2CppEagerStaticClassConstruction]` on the settings holder and the
+  PlayerLoop owner runs their static constructors at startup, so reads of their static fields carry no
+  class-initialization check. `OnityTask` itself has no static constructor, so its inlined members have
+  none either; the generated C++ of the measured Player confirms both.
+- Immediate runner return. A suspended async method's runner goes back to its pool as soon as its task is
+  consumed. This is safe because the runner calls the state machine's `MoveNext` by address, with no copy
+  back, which the generated C++ also confirms.
+- Context flow. The results are measured at the default `FlowExecutionContext = false`, which is
+  UniTask-equivalent; enabling flow adds one execution-context capture and restore per suspension.
+- Pool retention. Onity keeps at most 128 runners per async method (`OnityTask.RunnerPoolCapacity`) and
+  256 sources per source type (`OnityTask.SourcePoolCapacity`); UniTask keeps everything. Above the cap each
+  extra operation allocates. Raise both caps at startup for methods that run in large bursts when the
+  retained memory is acceptable.
 
 ## IL2CPP checklist
 
-- **Use generated activators for hot IL2CPP graphs.** Mark hot DI-managed implementation types with `[OnityGenerateActivator]` and ship the `Onity.SourceGen` Roslyn analyzer DLL so IL2CPP can use direct `new T(...)` delegates instead of `ConstructorInfo.Invoke`.
-- **No setup required for correctness.** If no generated activator exists, the runtime probe selects the compiled path only when it can compile and invoke safely; otherwise the reflection path engages automatically. The same bindings run in Editor, Mono player, and IL2CPP player builds.
-- **Keep the core engine-free.** `Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`, and `Onity.Factory` have no `UnityEngine` dependency, which keeps them simple to strip and test. Onity has no non-Unity third-party runtime dependencies.
-- **Closed generics only.** Open generic *definitions* are bound (`Bind(typeof(IRepo<>))`), but each **closed** form (`IRepo<Foo>`) is what actually resolves and is built on first use. Make sure the closed types you resolve are reachable so the AOT linker preserves them.
-- **No reflection-only members the linker can drop silently.** Constructors and injected members the container needs must survive stripping; reference them so they are not removed.
-- **Pre-flight the fallback in the Editor.** The activation strategy is auto-detected, and the internal force-reflection switch the parity tests use lets the suite exercise the reflection path IL2CPP takes when no generated activator is available — so AOT fallback behavior is covered by tests rather than discovered on device.
+- Mark hot DI-managed implementation types with `[OnityGenerateActivator]`. `Onity.SourceGen.dll` ships in
+  the package's `Analyzers/` folder, so IL2CPP uses direct `new T(...)` delegates for those types instead
+  of `ConstructorInfo.Invoke`.
+- No setup is required for correctness. Without a generated activator the runtime probe selects the
+  compiled path only when it can compile and invoke safely; otherwise the reflection path engages. The
+  same bindings run in the Editor, in Mono players and in IL2CPP players.
+- Keep the core engine-free. `Onity.Core`, `Onity.DI`, `Onity.Reactive`, `Onity.Messaging`,
+  `Onity.Factory` and `Onity.Composition` have no `UnityEngine` dependency, which keeps them simple to
+  strip and test. Onity has no non-Unity third-party runtime dependency.
+- Closed generics only. Open generic definitions are bound (`Bind(typeof(IRepository<>))`), but each
+  closed form is what resolves and is built on first use; make sure the closed types you resolve are
+  reachable so the linker preserves them.
+- No reflection-only members the linker can drop silently. Constructors and injected members the container
+  needs must survive stripping; reference them so they are not removed.
+- Pre-flight the fallback in the Editor. The parity tests exercise the reflection path through an internal
+  switch, so the AOT fallback behavior is covered by tests rather than discovered on device.
+- Re-run the Player benchmarks for your target platform before treating the published Windows numbers as
+  target-platform results; the records cover one Windows PC.
 
 ## What remains
 
-The current generator is explicit: it emits activators for types marked with `[OnityGenerateActivator]`. Future work can improve discovery, generate member setters, and add more platform/device benchmark coverage. For now, use the generated path for hot implementation types, keep the reflection fallback for correctness, and re-run the player benchmark for your target platform before treating the published Windows numbers as target-platform results.
+The generator is explicit: it emits activators for types marked `[OnityGenerateActivator]`. Future work can
+improve discovery, generate member setters and add device coverage. The reactive comparison measured no
+allocation on either backend and did not redesign `CombineLatest`; the DI allocation figures come from a
+Development Player and the Editor, not from the release Players that supply the timing.
 
 ## See also
 
-- [Dependency Injection](dependency-injection.html) — the binding and resolve surface the fast path serves.
-- [Reactive](reactive.html) and [Events & Messaging](events-messaging.html) — the emit paths designed to avoid per-call allocation.
-- [Comparison: Onity vs VContainer / Zenject](../Onity-vs-VContainer-Zenject.html) — where Onity sits against the libraries it replaces.
-- [Architecture Review](../Architecture-Review.html) — the engine-free layering in depth.
+- [Dependency Injection](dependency-injection.html): the binding and resolve surface the fast path serves.
+- [Reactive](reactive.html) and [Events and Messaging](events-messaging.html): the emit paths.
+- [Async with OnityTask](onitytask.html#bursts-and-pool-retention): pool retention and context flow.
+- [Comparisons](../comparisons/index.html): the three measured comparisons and how to read them.
+- [Architecture](../Architecture-Review.html): the assembly boundaries and the node design.

@@ -2,57 +2,161 @@
 title: "Dependency Injection"
 parent: "Guides"
 nav_order: 1
+description: "Bind contracts to implementations with a lifetime, inject them through constructors or [Inject] members, and build the container in a Unity context or a plain test."
 ---
 
 # Dependency Injection
 
-Onity's DI is built around `OnityContainer` — a sealed, engine-free, parent-scoped container that implements `IResolver` and `IDisposable`. The binding vocabulary is deliberately Zenject-familiar (`Bind<T>().To<C>().AsSingle()`), so existing Unity muscle memory transfers, while the container itself has no `UnityEngine` dependency and runs in plain EditMode tests with no scene.
+Use `OnityContainer` (`Onity.DI`) to bind contracts to implementations, choose how long each instance
+lives, and let the container construct your classes with their dependencies. The container is sealed,
+engine-free and parent-scoped: a Unity context owns one per scene, prefab or project, and a test creates
+one in a `using` declaration. The binding vocabulary follows Zenject, so
+`Bind<T>().To<C>().AsSingle()` reads as expected, and the lifetime model is the same one the
+reactive, messaging and async pillars use.
+
+Contents:
+
+- [Create a container](#create-a-container)
+- [Binding](#binding)
+- [Identified and conditional bindings](#identified-and-conditional-bindings)
+- [Sub-container exports](#sub-container-exports)
+- [Sharing one instance across contracts](#sharing-one-instance-across-contracts)
+- [Pre-built instances](#pre-built-instances)
+- [Shared reactive and messaging primitives](#shared-reactive-and-messaging-primitives)
+- [Open generics](#open-generics)
+- [Collection injection](#collection-injection)
+- [Resolving](#resolving)
+- [Injection sites](#injection-sites)
+- [Factories](#factories)
+- [Build and async startup](#build-and-async-startup)
+- [Documented behaviors](#documented-behaviors)
+- [Unity wiring](#unity-wiring)
+
+## Create a container
+
+The smallest working container binds one contract, builds, and resolves. This runs in an EditMode test
+with no scene:
 
 ```csharp
-using Onity.DI;
+using Onity.DI;                 // OnityContainer
 
 using OnityContainer container = new OnityContainer();
-container.Bind<IInputService>().To<KeyboardInputService>().AsSingle();
+container.Bind<IScoreService>().To<ScoreService>().AsSingle();
 container.Build();
 
-IInputService input = container.Resolve<IInputService>();
+IScoreService score = container.Resolve<IScoreService>();
 ```
 
-This page covers the binding surface, keyed and conditional injection, the four injection sites, scoping via child containers and scoped bindings, factories for runtime arguments, and the documented edge behaviors. For prefab pools and pooled factories see [Factories & Pooling](factories-and-pooling.html); for the automatic per-frame/startup lifecycle see [Lifecycle & Scopes](lifecycle-and-scopes.html); for the compiled/reflection activation story see [Performance & IL2CPP](performance-and-il2cpp.html).
+`new OnityContainer(parent)` creates a child scope that inherits the parent's bindings. `Dispose()`
+cancels the scope token, then disposes everything the scope owns; see
+[Lifecycle and Scopes](lifecycle-and-scopes.html#scope-lifetime-token).
+
+In a scene you do not create the container yourself. A context creates it and runs your installers;
+the canonical installer below is the one the [Getting Started](../Getting-Started.html) scene uses, and
+the fragments in the rest of this page use `container.` as their receiver:
+
+```csharp
+using Onity.Composition;        // BindReactiveProperty
+using Onity.DI;                 // OnityContainer
+using Onity.Unity.Installers;   // MonoInstaller, BindPooledFactory
+using Onity.Unity.Messaging;    // BindMessageChannel
+using UnityEngine;
+
+public sealed class GameInstaller : MonoInstaller
+{
+    [SerializeField] private HitMarker m_hitMarkerPrefab;
+    [SerializeField] private Transform m_hitMarkerRoot;
+
+    public override void InstallBindings(OnityContainer container)
+    {
+        // ReactiveProperty<int> and IReadOnlyReactiveProperty<int>; the scope disposes it.
+        container.BindReactiveProperty(initialValue: 100);
+
+        // IPublisher<PlayerDamaged> and ISubscriber<PlayerDamaged> on the scope's message broker,
+        // the same channel OnityEvent and OnityEventHub use.
+        container.BindMessageChannel<PlayerDamaged>();
+
+        // IFactory<HitMarker> to spawn and IPool<HitMarker> to release; the scope disposes the pool.
+        container.BindPooledFactory(m_hitMarkerPrefab, m_hitMarkerRoot, defaultCapacity: 8, maxSize: 32);
+
+        // The container constructs it, runs Initialize() at Build() and disposes it with the scope.
+        container.BindInterfacesAndSelfTo<HealthService>().AsSingle();
+    }
+}
+```
 
 ## Binding
 
-A binding registers when you call `.AsSingle()`, `.AsScoped()`, `.AsTransient()`, or the terminal `.FromSubContainerResolve(...)`. `.AsScoped()` caches one instance in each resolving container; a child resolving its parent's scoped binding gets its own instance and uses its own dependencies.
+A binding names a contract, an implementation and a lifetime. The lifetime call registers the binding;
+`Bind<T>()` and `To<C>()` alone register nothing. Fragment:
 
 ```csharp
-// Contract -> implementation, choose a lifetime (the lifetime call is required):
-container.Bind<IInputService>().To<KeyboardInputService>().AsSingle();   // one shared instance
-container.Bind<IPathfinder>().To<AStarPathfinder>().AsTransient();       // new instance per resolve
-container.Bind<IRequestState>().To<RequestState>().AsScoped();           // one per resolving scope
-container.Bind<IClock>().To<SystemClock>().AsSingle().NonLazy();         // built eagerly at Build()
+container.Bind<IScoreService>().To<ScoreService>().AsSingle();        // one instance in this scope
+container.Bind<IPathfinder>().To<AStarPathfinder>().AsTransient();   // a new instance per resolve
+container.Bind<IMatchState>().To<MatchState>().AsScoped();           // one instance per resolving scope
+container.Bind<IClock>().To<GameClock>().AsSingle().NonLazy();       // created during Build() instead of on first use
 
-// Self-bind shorthand (To defaults to the contract type):
-container.Bind<GameState>().AsSingle();                                  // == Bind<GameState>().To<GameState>().AsSingle()
+container.Bind<ScoreService>().AsSingle();                           // self-bind: To defaults to the contract type
 ```
 
-`NonLazy()` resolves its binding during `Build()` instead of on first use. It throws `OnityBindingException` if called before a lifetime or sub-container source is registered.
+- `AsSingle()` creates the instance on first resolve (or at `Build()` with `NonLazy()`) and reuses it
+  for every resolve in the declaring scope and its children.
+- `AsScoped()` creates one instance per resolving scope. A child that resolves a scoped binding declared
+  on its parent gets its own instance, built with the child's dependencies and disposed with the child.
+- `AsTransient()` creates a new instance per resolve. Transient instances are not collected by the
+  lifecycle and are not disposed by the container.
+- `NonLazy()` must follow the lifetime call; calling it first throws `OnityBindingException`. It is not
+  available on a conditional binding or on an open generic binding.
 
-### Identified, conditional, and replaceable bindings
+Every binding entry point and what it returns:
+
+| Call | Namespace | Returns | Then |
+| --- | --- | --- | --- |
+| `Bind<TContract>()` | `Onity.DI` | `TypeBindingBuilder<TContract>` | optional `To<TConcrete>()`, `WithId(id)`, `WhenInjectedInto<TConsumer>()`; then `AsSingle()`, `AsScoped()`, `AsTransient()` or `FromSubContainerResolve(install)`; optional `NonLazy()` |
+| `Bind(Type contractType)` | `Onity.DI` | `RuntimeTypeBindingBuilder` | same, with `To(Type)`; accepts open generic definitions |
+| `BindInterfacesAndSelfTo<TConcrete>()` | `Onity.DI` | `MultiTypeBindingBuilder` | optional `WithId`, `WhenInjectedInto`; then `AsSingle()`, `AsScoped()` or `AsTransient()`; optional `NonLazy()` |
+| `BindInterfacesTo<TConcrete>()` | `Onity.DI` | `MultiTypeBindingBuilder` | same; the concrete type itself is not bound |
+| `BindInstance<TContract>(instance)` | `Onity.DI` | `void` | registers at once; the instance stays caller-owned |
+| `BindInstance<TContract>(instance, id)` | `Onity.DI` | `void` | the identified form |
+| `BindFactory<TValue, TFactory>()` and the one- and two-parameter forms | `Onity.DI` | `void` | binds the factory with `BindInterfacesAndSelfTo<TFactory>().AsSingle()` |
+| `Rebind<TContract>(id = null)`, `Rebind(Type, id = null)` | `Onity.DI` | a builder | replaces the local binding when the new lifetime is selected |
+| `Unbind<TContract>(id = null)`, `Unbind(Type, id = null)` | `Onity.DI` | `bool` | removes the local binding |
+
+## Identified and conditional bindings
+
+`WithId(object id)` registers a second binding of the same contract under an identifier; ids compare by
+value. `WhenInjectedInto<TConsumer>()` restricts a binding to one consumer type and its derived types.
+Both are configured before the lifetime call. Fragment:
 
 ```csharp
 container.Bind<IClock>().To<GameClock>().AsSingle();
 container.Bind<IClock>().To<ReplayClock>().WithId("replay").AsSingle();
-container.Bind<IClock>().To<EditorClock>()
-    .WhenInjectedInto<PreviewController>().AsSingle();
+container.Bind<IClock>().To<EditorClock>().WhenInjectedInto<PreviewController>().AsSingle();
 
 IClock replay = container.Resolve<IClock>("replay");
-container.Rebind<IClock>("replay").To<ReplayClock>().AsScoped();
-container.Unbind<IClock>("replay"); // removes this scope's matching ID only
+container.Rebind<IClock>("replay").To<RecordedClock>().AsScoped();   // replaces only the "replay" binding
+container.Unbind<IClock>("replay");                                 // removes only this scope's "replay" binding
 ```
 
-Use `[Inject(Id = "replay")]` on a field or property, or on an individual constructor or method parameter. IDs compare by value. A matching consumer-specific binding wins over an unconditional binding in the same scope; two matching conditions throw an ambiguity error. `Unbind` and `Rebind` affect the local container; ancestor registrations remain available. Previously created singleton or scoped instances are disposed with their owning scope.
+Consume an identified binding with `[Inject(Id = "replay")]` on a field, a property, or an individual
+constructor or method parameter, or with `Resolve<T>(id)` and `TryResolve<T>(id, out T)`. A missing
+identifier does not fall back to an implicit construction.
 
-### Sub-container exports
+Rules the container applies:
+
+- A conditional binding that matches the consumer wins over the unconditional binding of the same
+  contract and id in the same scope. Two conditional bindings that both match throw
+  `OnityResolveException`.
+- An unconditional binding declared in a child scope shadows conditional bindings declared in an
+  ancestor.
+- `Unbind` and `Rebind` change the local scope only; ancestor registrations stay in effect. Both work
+  after `Build()`. A singleton removed by `Unbind` stops ticking but stays owned, and is disposed with
+  the scope. A rebound tickable stops the old instance and starts the replacement.
+
+## Sub-container exports
+
+`FromSubContainerResolve` exports one contract from a child container that the installer builds on
+demand, once per requesting scope. It replaces `To<C>()`; the two cannot be combined. Fragment:
 
 ```csharp
 container.Bind<IEnemyAI>().FromSubContainerResolve(scope =>
@@ -62,221 +166,228 @@ container.Bind<IEnemyAI>().FromSubContainerResolve(scope =>
 });
 ```
 
-The installer runs once per requesting scope. The exported contract must be bound inside that child container; it never falls back to the parent's export. The child binding chooses the service lifetime. The requesting scope forwards lifecycle ticks and disposes its installed child scopes.
+The exported contract must be bound inside the child; an installer that does not bind it throws
+`OnityBindingException` at the first resolve. The child binding chooses the service lifetime. The
+requesting scope owns the child, forwards `Tick`, `FixedTick` and `LateTick` to it, and disposes it with
+itself.
 
-### Sharing one instance across a concrete and its interfaces
+## Sharing one instance across contracts
 
-Two separate `Bind<IFoo>().To<C>()` and `Bind<IBar>().To<C>()` calls produce **two distinct** singletons. To share **one** instance across a concrete type and all of its interfaces, use `BindInterfacesAndSelfTo`:
-
-```csharp
-// One PlayerStateService instance, resolvable as IPlayerState, IFoo, ... AND PlayerStateService:
-container.BindInterfacesAndSelfTo<PlayerStateService>().AsSingle();
-
-// Interfaces only (throws OnityBindingException if the type implements none):
-container.BindInterfacesTo<PlayerStateService>().AsSingle();
-```
-
-### Pre-built instances
+Two separate `Bind<IFoo>().To<C>()` and `Bind<IBar>().To<C>()` calls create two `C` instances, one per
+binding. To share one instance across a class and its interfaces, bind them together. Fragment:
 
 ```csharp
-container.BindInstance<IConfig>(loadedConfig);   // rejects null with OnityBindingException
+container.BindInterfacesAndSelfTo<HealthService>().AsSingle();   // HealthService, IOnityInitializable, ...
+container.BindInterfacesTo<ScoreService>().AsSingle();           // IScoreService and the other interfaces; not ScoreService itself
 ```
 
-### Shared reactive and messaging primitives
+`BindInterfacesTo<T>()` throws `OnityBindingException` when `T` implements no interfaces. Both forms
+accept `WithId` and `WhenInjectedInto` before the lifetime, and `NonLazy()` after it.
 
-One-liners that create one shared primitive and bind it to every contract it satisfies:
+## Pre-built instances
 
-| Call | Namespace | Resolves as |
-| --- | --- | --- |
-| `container.BindReactiveProperty(initialValue)` | `Onity.Composition` | `ReactiveProperty<T>`, `IReadOnlyReactiveProperty<T>` |
-| `container.BindSubject<T>()` | `Onity.Composition` | `Subject<T>` |
-| `container.DeclareMessage<T>()` | `Onity.Composition` | `MessageChannel<T>`, `IPublisher<T>`, `ISubscriber<T>` |
-| `container.DeclareAsyncMessage<T>()` | `Onity.Composition` | `AsyncMessageChannel<T>`, `IAsyncPublisher<T>`, `IAsyncSubscriber<T>` |
-| `container.BindAsyncReactiveProperty(initialValue)` | `Onity.Unity.Async` | `OnityAsyncReactiveProperty<T>`, `IOnityAsyncReactiveProperty<T>`, `IOnityReadOnlyAsyncReactiveProperty<T>` |
+`BindInstance<TContract>(instance)` registers an object you already have. The container never disposes
+it; the caller that created it owns it. A null instance throws `OnityBindingException`. Fragment:
 
-The helper creates the primitive, so the container owns it and disposes it when the container is disposed, after the scope's `LifetimeToken` is canceled (an `OnityAsyncReactiveProperty<T>` then cancels its pending `WaitAsync` calls). An instance you create yourself and pass to `BindInstance` stays caller-owned and is not disposed.
+```csharp
+container.BindInstance<IGameConfig>(m_config);
+container.BindInstance<IOnityScopeLifetime>(container);   // what a context binds for you; needed in a bare container
+```
 
-### Open generics
+To tie a caller-owned disposable to the scope anyway, call `disposable.AddTo(container)`
+(`Onity.DI`); the scope disposes it when the token is canceled.
 
-Bind an **open** generic definition once and resolve any **closed** form of it. On the first resolve of a closed contract the closed implementation is built and cached as a normal binding, so later resolves of the same closed type hit the fast path.
+## Shared reactive and messaging primitives
+
+These helpers create one primitive, bind it under every contract it satisfies, and hand ownership to
+the scope: the container disposes the primitive when it is disposed, after it cancels the scope token.
+Each returns the primitive so an installer or test can seed or use it inline.
+
+| Call | Namespace | Resolves as | Returns |
+| --- | --- | --- | --- |
+| `container.BindReactiveProperty(initialValue)` | `Onity.Composition` | `ReactiveProperty<T>`, `IReadOnlyReactiveProperty<T>` | `ReactiveProperty<T>` |
+| `container.BindSubject<T>()` | `Onity.Composition` | `Subject<T>` | `Subject<T>` |
+| `container.DeclareMessage<T>()` | `Onity.Composition` | `MessageChannel<T>`, `IPublisher<T>`, `ISubscriber<T>` | `MessageChannel<T>` |
+| `container.DeclareAsyncMessage<T>()` | `Onity.Composition` | `AsyncMessageChannel<T>`, `IAsyncPublisher<T>`, `IAsyncSubscriber<T>` | `AsyncMessageChannel<T>` |
+| `container.BindAsyncReactiveProperty(initialValue)` | `Onity.Unity.Async` | `OnityAsyncReactiveProperty<T>`, `IOnityAsyncReactiveProperty<T>`, `IOnityReadOnlyAsyncReactiveProperty<T>` | `OnityAsyncReactiveProperty<T>` |
+| `container.BindMessageChannel<T>()` | `Onity.Unity.Messaging` | `IPublisher<T>`, `ISubscriber<T>` | `void` |
+
+`DeclareMessage<T>` and `DeclareAsyncMessage<T>` create standalone channels; `BindMessageChannel<T>`
+binds the publisher and subscriber of the scope's `IMessageBroker`, so only the latter is reached by
+`OnityEvent` and `OnityEventHub`. In a scene bind the broker's channel; in an engine-free test, where no
+broker exists unless you bind `MessageBroker` yourself, `DeclareMessage<T>` is the stand-in. See
+[Events and Messaging](events-messaging.html).
+
+## Open generics
+
+Bind an open generic definition once and resolve any closed form. The first resolve of a closed contract
+builds and caches the closed implementation as a normal binding, so later resolves take the fast path.
+Fragment:
 
 ```csharp
 container.Bind(typeof(IRepository<>)).To(typeof(InMemoryRepository<>)).AsTransient();
 
-IRepository<Player> players = container.Resolve<IRepository<Player>>();   // closed form resolves
+IRepository<PlayerProfile> profiles = container.Resolve<IRepository<PlayerProfile>>();
 ```
 
-### Collection injection
+`AsSingle()` on an open generic gives each distinct closed contract its own singleton. `NonLazy()` is
+not supported here, because the closed type is unknown until resolve. On IL2CPP the closed type must
+survive stripping: reference it statically or preserve it.
 
-Register the same contract more than once and resolve all implementations as a collection. Supported shapes are `IEnumerable<T>`, `IReadOnlyList<T>`, `T[]`, and `List<T>`:
+## Collection injection
+
+Bind the same contract more than once and request a collection to receive every explicit binding of it,
+from this scope and its ancestors, ancestors first. The container synthesizes seven shapes:
+`IEnumerable<T>`, `IReadOnlyList<T>`, `IReadOnlyCollection<T>`, `IList<T>`, `ICollection<T>`,
+`List<T>` and `T[]`. Fragment:
 
 ```csharp
-container.Bind<IHandler>().To<SaveHandler>().AsSingle();
-container.Bind<IHandler>().To<LoadHandler>().AsSingle();
+container.Bind<IDamageRule>().To<CritRule>().AsSingle();
+container.Bind<IDamageRule>().To<ArmorRule>().AsSingle();
 
-IReadOnlyList<IHandler> handlers = container.Resolve<IReadOnlyList<IHandler>>();
+IReadOnlyList<IDamageRule> rules = container.Resolve<IReadOnlyList<IDamageRule>>();
 ```
 
-A single-type `Resolve<IHandler>()` still returns the **last** registered binding (last-binding-wins), so collection resolution is opt-in by the collection type you ask for.
-
-### Binding-surface summary
-
-| Call | Returns | Then |
-| --- | --- | --- |
-| `Bind<TContract>()` | `TypeBindingBuilder<TContract>` | `.To<TConcrete>()`, then `.AsSingle()` / `.AsScoped()` / `.AsTransient()`, or `.FromSubContainerResolve(...)`; optional `.NonLazy()` |
-| `BindInterfacesAndSelfTo<TConcrete>()` | `MultiTypeBindingBuilder` | `.AsSingle()` / `.AsScoped()` / `.AsTransient()`, then optional `.NonLazy()` |
-| `BindInterfacesTo<TConcrete>()` | `MultiTypeBindingBuilder` | same as above |
-| `BindInstance<TContract>(instance)` | `void` | optional ID overload; the instance stays caller-owned |
-| `BindFactory<TValue,TFactory>()` (+1-param, +2-param) | `void` | binds the factory `AsSingle` via `BindInterfacesAndSelfTo` |
+A constructor or `[Inject]` member typed as one of these shapes receives the same collection. A plain
+`Resolve<IDamageRule>()` still returns the last binding, so collection resolution is opt-in by the type
+you request. An explicit binding of the collection type itself wins over synthesis, and implicitly
+auto-resolved concrete classes are not members.
 
 ## Resolving
 
+Inject dependencies where you can; resolve by hand only in factories and glue code. Fragment:
+
 ```csharp
-IInputService input = container.Resolve<IInputService>();         // throws OnityResolveException if unresolvable
-object svc = container.Resolve(typeof(IInputService));            // runtime-type overload
+IScoreService score = container.Resolve<IScoreService>();                 // throws OnityResolveException when unresolvable
+object service = container.Resolve(typeof(IScoreService));               // runtime-type form
+IClock replay = container.Resolve<IClock>("replay");                      // identified form
 
-if (container.TryResolve<IPathfinder>(out IPathfinder pathfinder)) { }   // false instead of throwing
-if (container.TryResolve(typeof(IPathfinder), out object p)) { }
+if (container.TryResolve<IPathfinder>(out IPathfinder pathfinder)) { }    // false instead of throwing
+if (container.TryResolve(typeof(IPathfinder), out object found)) { }
+if (container.TryResolve<IClock>("replay", out IClock clock)) { }
 
-bool can = container.CanResolve(typeof(IFoo));                    // check without instantiating
-container.Inject(existingObject);                                // member-inject an already-created object
+bool resolvable = container.CanResolve(typeof(IScoreService));           // no construction
+container.Inject(existingObject);                                         // member-inject an object you created
 ```
 
-`OnityContainer` and `IResolver` always self-resolve to the active container. Inject `IResolver` when a type needs to perform manual resolves (for example inside a factory).
+`OnityContainer` and `IResolver` always resolve to the active scope, so a factory injects `IResolver`
+to resolve collaborators. Do not resolve inside `Update`; inject once and keep the reference.
 
 ## Injection sites
 
-Onity injects through four sites. **Constructor injection is preferred**; use the `[Inject]` attribute on fields, properties, or methods only when a constructor cannot do the work.
+The container injects through four sites. Prefer the constructor; use `[Inject]` (`Onity.DI`) on
+fields, properties and methods where the engine constructs the object or a constructor cannot do the
+work:
 
 ```csharp
-using Onity.DI;
+using Onity.DI;                 // Inject
 
 public sealed class CombatService
 {
     private readonly IDamageCalculator m_damage;
 
-    // Constructor injection. Selection rule: a single [Inject] ctor wins; otherwise the
-    // greediest public constructor (most parameters) is chosen. This is "greediest",
-    // not Zenject's "fewest".
+    // Constructor injection. A single [Inject] constructor wins; otherwise the public constructor
+    // with the most parameters is chosen. A non-public constructor is used only when no public one exists.
     public CombatService(IDamageCalculator damage)
     {
         m_damage = damage;
     }
 
-    [Inject] private IClock m_clock;                 // field injection (private is fine)
-    [Inject] public ILogger Logger { get; set; }     // property injection (a setter is required)
+    [Inject] private IClock m_clock;                       // field injection; private is fine
+    [Inject] public IScoreService Score { get; set; }      // property injection; a setter is required
 
-    [Inject]                                          // method injection (runs last)
-    private void Initialize(IConfig config)           // cannot be generic
+    [Inject]                                                // method injection; runs after fields and properties
+    private void Configure(IGameConfig config)              // cannot be generic
     {
-        // post-construction wiring
     }
 }
 ```
 
-Member injection order is base class -> derived class, and within a type **fields -> properties -> methods**. Static members are never injected. The following each throw `OnityBindingException` at resolve time: more than one `[Inject]` constructor, an `[Inject]` property without a setter, an `[Inject]` indexer, and a generic `[Inject]` method.
+Member injection runs base class first, then derived class, and within a type fields, then properties,
+then methods. Static members are never injected. These throw `OnityBindingException`: more than one
+`[Inject]` constructor, an `[Inject]` property without a setter, an `[Inject]` indexer, and a generic
+`[Inject]` method. A `MonoBehaviour` is injected by its context during the context's `Awake`, or by
+`context.InjectGameObject(root)` and `container.Inject(target)` for objects created later.
 
-## Factories (runtime arguments)
+## Factories
 
-There is no `container.Instantiate<T>(args)` and no fluent factory body. To pass a runtime value into a constructed object, author an `IFactory<...>` (from `Onity.Factory`) and register it with `BindFactory`. Factories are always bound `AsSingle`.
-
-```csharp
-using Onity.DI;
-using Onity.Factory;
-
-public sealed class EnemyFactory : IFactory<string, Enemy>
-{
-    private readonly IResolver m_resolver;            // IResolver self-injects
-    public EnemyFactory(IResolver resolver) { m_resolver = resolver; }
-
-    public Enemy Create(string id) => new Enemy(id, m_resolver.Resolve<IClock>());
-}
-
-// Registration + use:
-container.BindFactory<string, Enemy, EnemyFactory>();
-Enemy goblin = container.Resolve<IFactory<string, Enemy>>().Create("goblin");
-```
-
-`BindFactory` has zero-, one-, and two-parameter overloads matching `IFactory<TValue>`, `IFactory<TParam,TValue>`, and `IFactory<TParam1,TParam2,TValue>`. See [Factories & Pooling](factories-and-pooling.html) for prefab pooled factories, `IPool<T>`, and `IPoolHooks` examples.
-
-### Pooled factories and capacity
-
-`OnityObjectPool<T>` and `PrefabComponentPool<TComponent>` accept `initialSize` to create distinct items up front. `maxSize` limits retained inactive items by default; add `fixedSize: true` to cap total created items and throw when all are checked out. `Prewarm(count)` can raise the target total later without calling pool get/release hooks. Prefab clones are created under an inactive parent, so an active prefab's clone does not receive `OnEnable` before runtime parameters are applied. Do not depend on runtime parameters in `Awake`. Return checked-out items before disposing the pool; `Get`, `Release`, `Prewarm`, and `Clear` throw `ObjectDisposedException` afterward.
+To pass a runtime value into a constructed object, author an `IFactory<...>` (`Onity.Factory`) and
+register it with `BindFactory`; the container constructs the factory and injects its collaborators.
+There is no `Instantiate(args)` and no fluent factory body. Fragment:
 
 ```csharp
-using Onity.Factory;
-using Onity.Pooling;
-
-var pool = new OnityObjectPool<Enemy>(
-    () => new Enemy(), initialSize: 32, maxSize: 32, fixedSize: true);
-IFactory<int, Enemy> factory = new PooledFactory<int, Enemy>(
-    pool, (enemy, level) => enemy.SetLevel(level));
-
-Enemy enemy = factory.Create(5);
-pool.Release(enemy);
+container.BindFactory<EnemySpawnRequest, Enemy, EnemyFactory>();   // EnemyFactory : IFactory<EnemySpawnRequest, Enemy>
 ```
 
-One- and two-parameter `PooledFactory` adapters apply the new values before pool get hooks (and before the prefab pool's activation step) on every reuse. Register the pool and factory with `BindInstance` when injecting them; bound instances remain caller-owned and should be disposed by their owner.
-
-For the no-parameter prefab case, `container.BindPooledFactory(enemyPrefab)` registers both `IFactory<EnemyView>` and `IPool<EnemyView>` in one call (`enemyPrefab` is an `EnemyView` component). Use the explicit pool and adapter construction above when you need prewarming, fixed capacity, or runtime parameters.
+`BindFactory` has zero-, one- and two-parameter forms matching `IFactory<TValue>`,
+`IFactory<TParam, TValue>` and `IFactory<TParam1, TParam2, TValue>`. Prefab pools, `IPool<T>`,
+`IPoolHooks` and the pooled factory adapters are in [Factories and Pooling](factories-and-pooling.html).
 
 ## Build and async startup
 
-```csharp
-container.RegisterBuildCallback(r => r.Resolve<IGameLoopRunner>().Start());
-container.RegisterBuildCallbackAsync(async (r, ct) => await r.Resolve<ISaveLoader>().PrimeAsync(ct));
+`Build()` runs the synchronous build callbacks, finalizes the bindings, collects the lifecycle
+instances and runs every `IOnityInitializable.Initialize()`. It is idempotent. `BuildAsync` runs `Build()`,
+then the async build callbacks, then every `IOnityAsyncInitializable` one at a time. Fragment:
 
-container.Build();                              // runs sync callbacks once; idempotent
-await container.BuildAsync(cancellationToken); // runs Build(), async callbacks, then IOnityAsyncInitializable; result cached
+```csharp
+container.RegisterBuildCallback(resolver => resolver.Resolve<IGameLoopRunner>().Start());
+container.RegisterBuildCallbackAsync(async (resolver, token) => await resolver.Resolve<ISaveLoader>().PrimeAsync(token));
+
+container.Build();                                // sync callbacks, Initialize(); idempotent
+await container.BuildAsync(cancellationToken);   // Build(), async callbacks, InitializeAsync(); result cached
 ```
 
-Callbacks cannot be registered after build is finalized (throws `OnityBindingException`). `Dispose()` cancels the container's `LifetimeToken` first, then disposes owned singletons in reverse registration order.
+Callbacks cannot be registered after the build is finalized; both `RegisterBuildCallback` overloads
+throw `OnityBindingException` then. Each async step starts on the context the build started on, so a
+callback that completes on a worker thread does not move the next step off the Unity main thread. The
+token the callbacks and initializers receive is the scope's `LifetimeToken`, linked with the caller's
+token when the caller passes one; disposing the container mid-run ends `BuildAsync` as canceled. A
+canceled or faulted run is not cached: the next `BuildAsync` call runs the async callbacks again unless
+all of them completed, and resumes at the first async initializer that has not completed. See
+[Async initialization](lifecycle-and-scopes.html#async-initialization) and
+[Scope lifetime token](lifecycle-and-scopes.html#scope-lifetime-token).
 
-`BuildAsync` runs the async build callbacks, then every collected `IOnityAsyncInitializable` one at a time (see [Async initialization](lifecycle-and-scopes.html#async-initialization)). Each step starts on the context the build started on, so a callback that completes on a worker thread does not move the next callback or initializer off the Unity main thread. The token they receive is canceled when the container is disposed: it is the container's `LifetimeToken`, linked with the `BuildAsync` caller's token when the caller passes its own. Disposing the container mid-run ends `BuildAsync` as canceled. A canceled or faulted run is not cached: the next `BuildAsync` call runs the async callbacks again unless all of them already completed, and resumes at the first async initializer that has not completed. See [Scope lifetime token](lifecycle-and-scopes.html#scope-lifetime-token).
+## Documented behaviors
 
-## Documented behaviors (test-locked)
+Tests lock these behaviors; rely on them and avoid the traps.
 
-These behaviors are locked by tests; rely on them, and avoid the listed traps.
-
-| Behavior | Notes |
+| Behavior | Rule |
 | --- | --- |
-| Implicit transients | Unbound **concrete** classes auto-resolve as transients. Do not rely on this for shared state — it is not a singleton. |
-| Unbound abstractions | Unbound interfaces, abstract classes, and open generics throw `OnityResolveException`. Bind them. |
-| Last-binding-wins | Re-binding the same contract replaces the previous binding (no duplicate-binding error). Use it to override; do not expect a conflict exception. |
-| Distinct singletons | Two separate `Bind<I>().To<C>()` calls do **not** share an instance. Use `BindInterfacesAndSelfTo<C>().AsSingle()` to share one. |
-| Circular dependency | Constructor and member cycles throw `OnityResolveException` at **resolve time** (not build time). Break the cycle by injecting a factory or `IResolver`. |
-| Constructor selection | The greediest **public** constructor wins (or the single `[Inject]` constructor). Do not add a second `[Inject]` constructor. |
-| Conditional / keyed binds | `WhenInjectedInto` and `WithId` are configured before the lifetime. Missing non-null IDs do not implicitly construct services. |
+| Implicit transients | An unbound concrete class resolves as a new instance per resolve. It is not shared state; bind it `AsSingle()` when it must be. |
+| Unbound abstractions | An unbound interface, abstract class or open generic definition throws `OnityResolveException`. |
+| Last binding wins | Binding the same contract twice replaces the first binding; there is no duplicate-binding error. |
+| Distinct singletons | Two separate `Bind<I>().To<C>()` calls create two `C` instances. Use `BindInterfacesAndSelfTo<C>().AsSingle()` to share one. |
+| Constructor selection | A single `[Inject]` constructor wins; otherwise the public constructor with the most parameters. A second `[Inject]` constructor throws `OnityBindingException`. |
+| Circular dependency | Constructor and member cycles throw `OnityResolveException` at resolve time, with the full chain in the message. Break the cycle with a factory or `IResolver`. |
+| Conditional and identified bindings | `WhenInjectedInto` and `WithId` are configured before the lifetime. A missing non-null id does not construct a service implicitly. |
+| Post-build bindings | `Unbind` and `Rebind` work after `Build()`; build callbacks do not. |
 
 ## Unity wiring
 
-In a scene, bindings live in a `MonoInstaller`. A context component (`ProjectContext` / `SceneContext` / `GameObjectContext`) creates the container, registers the default bindings (the container, `IResolver`, `IOnityScopeLifetime`, itself, `MessageBroker`, `OnityEventHub`), runs your installers, builds, and injects the hierarchy. See [Lifecycle & Scopes](lifecycle-and-scopes.html) for the full context model.
+In a scene, bindings live in a `MonoInstaller` (`Onity.Unity.Installers`). A context
+(`ProjectContext`, `SceneContext` or `GameObjectContext` in `Onity.Unity.Contexts`) creates the
+container, binds the defaults (the container, `IResolver`, `IOnityScopeLifetime`, the context itself,
+`MessageBroker` and `OnityEventHub`), runs the installers in its Installers list, calls `Build()`, and
+injects the MonoBehaviours under its own GameObject. The full context model, execution orders and
+serialized fields are in [Lifecycle and Scopes](lifecycle-and-scopes.html).
+
+Two Unity-only helpers belong in installers. `BindScriptableObject(asset)` and
+`BindScriptableObject<TContract, TAsset>(asset)` (`Onity.Unity.Installers`) member-inject a
+`ScriptableObject` and bind it as an instance, so designer-authored configuration reaches services as a
+read-only contract. `BindMessageChannel<T>()` (`Onity.Unity.Messaging`) binds the broker's publisher and
+subscriber for one message type. Fragment:
 
 ```csharp
-using Onity.DI;
-using Onity.Unity.Installers;          // MonoInstaller, BindScriptableObject
-using Onity.Unity.Messaging;           // BindMessageChannel<T>
-using UnityEngine;
-
-public sealed class GameInstaller : MonoInstaller
-{
-    [SerializeField] private GameConfig m_config;
-
-    public override void InstallBindings(OnityContainer container)
-    {
-        container.BindScriptableObject(m_config);                              // inject + bind a ScriptableObject
-        container.Bind<IScoreService>().To<ScoreService>().AsSingle();
-        container.BindInterfacesAndSelfTo<EnemySpawner>().AsSingle().NonLazy(); // eager, multi-contract
-        container.BindMessageChannel<ScoreChanged>();                          // see Events & Messaging
-    }
-}
+container.BindScriptableObject<IGameConfig, GameConfig>(m_config);   // inject the asset, bind it as IGameConfig
+container.BindMessageChannel<PlayerDied>();                           // IPublisher<PlayerDied>, ISubscriber<PlayerDied>
 ```
 
 ## See also
 
-- [Events & Messaging](events-messaging.html) — the auto-bound broker and `OnityEventHub`.
-- [Reactive](reactive.html) — `ReactiveProperty<T>` as shared, DI-bound state.
-- [Lifecycle & Scopes](lifecycle-and-scopes.html) — child scopes, contexts, and the automatic lifecycle.
-- [Factories & Pooling](factories-and-pooling.html) — runtime-argument factories and prefab pool wiring.
-- [Performance & IL2CPP](performance-and-il2cpp.html) — compiled activators and the AOT fallback.
-- [Migration: From Zenject](../Migration/From-Zenject.html) and [From VContainer](../Migration/From-VContainer.html).
+- [Lifecycle and Scopes](lifecycle-and-scopes.html): the scope token, disposal order, lifecycle interfaces and contexts.
+- [Events and Messaging](events-messaging.html): the broker, `OnityEvent` and `OnityEventHub` every context binds.
+- [Reactive](reactive.html): `ReactiveProperty<T>` as shared state bound through DI.
+- [Factories and Pooling](factories-and-pooling.html): runtime-argument factories, prefab pools and pool lifetime.
+- [Performance and IL2CPP](performance-and-il2cpp.html): activation paths and the IL2CPP checklist.
+- [DI API](../reference/di-api.html): the complete catalog with signatures.
+- [From Zenject](../Migration/From-Zenject.html) and [From VContainer](../Migration/From-VContainer.html): mapping tables.

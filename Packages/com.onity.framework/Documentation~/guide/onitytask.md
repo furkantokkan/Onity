@@ -2,30 +2,88 @@
 
 # Async with OnityTask
 
-`OnityTask` and `OnityTask<T>` are Onity's Unity-facing awaitables. They cover
-frame waits and every PlayerLoop timing, timed waits and timers, composition,
+`OnityTask` and `OnityTask<T>` (`Onity.Unity.Async`) are Onity's awaitables for
+work that Unity drives: frame and PlayerLoop waits, timers, composition,
 cancellation, thread switches, Jobs, coroutines, Unity operations, lifecycle
-triggers and UI events, async streams with LINQ-style operators, channels,
-scene loading and web requests, without adding a third-party runtime package.
-They also connect to Onity's container, reactive properties and message
-channels, so async work can end with the scope that owns it.
-
-```csharp
-using Onity.Unity.Async;
-```
-
-Use `OnityTask` for gameplay flows driven by Unity. Keep `Task` when a plain .NET
-service already exposes it as part of its contract; bridge at the boundary with
-`task.AsOnityTask()`, `OnityTask.FromTask(...)` or `AsTask()`.
-
-Coming from UniTask? [Migrating from UniTask](../Migration/From-UniTask.md)
+triggers and UI events, async streams, channels, scene loading and web requests,
+with no third-party runtime package. Use them for gameplay flows, and give each
+flow an owner whose token ends it: a DI scope, a component or a destroy token.
+Keep `Task` where a plain .NET service already exposes it, and bridge at the
+boundary with `task.AsOnityTask()`, `OnityTask.FromTask(task)` or
+`onityTask.AsTask()`. Coming from UniTask? [From UniTask](../Migration/From-UniTask.md)
 maps every UniTask API to its Onity name and lists the behavior differences.
+
+On this page:
+
+- Basics: [Start and cancel a Unity flow](#start-and-cancel-a-unity-flow), [Common operations](#common-operations), [Frame waits, Yield and sharing](#frame-waits-yield-and-sharing), [PlayerLoop timings](#playerloop-timings), [Timed waits and timers](#timed-waits-and-timers), [Rendering end of frame](#rendering-end-of-frame)
+- Cancellation and deadlines: [External cancellation and cancellation results](#external-cancellation-and-cancellation-results), [Timeouts](#timeouts)
+- Composition and threads: [Composition](#composition), [Background work](#background-work), [Unity Jobs and Burst](#unity-jobs-and-burst)
+- Unity objects: [Unity lifetime, triggers and UI events](#unity-lifetime-triggers-and-ui-events)
+- Streams: [Finite async streams](#finite-async-streams), [Update and timing streams, BCL async iterators](#update-and-timing-streams-bcl-async-iterators), [Stream operators](#stream-operators), [Sequential awaitable operators](#sequential-awaitable-operators), [Channels](#channels), [Async reactive properties](#async-reactive-properties)
+- Onity integration: [DI, reactive and messaging integration](#di-reactive-and-messaging-integration)
+- Pooled tasks and async methods: [Single-consumer rule for pooled tasks](#single-consumer-rule-for-pooled-tasks), [Async methods](#async-methods), [Bursts and pool retention](#bursts-and-pool-retention), [Switch to the main thread](#switch-to-the-main-thread), [Complete a task from a callback](#complete-a-task-from-a-callback)
+- Unity operations: [Scene loading](#scene-loading), [Unity operations](#unity-operations), [Web requests](#web-requests), [Reactive and messaging bridges](#reactive-and-messaging-bridges), [Coroutines](#coroutines)
+- Reference: [Interop and utilities](#interop-and-utilities), [Fire and forget](#fire-and-forget), [Assembly references](#assembly-references), [Performance](#performance)
 
 ## Start and cancel a Unity flow
 
-Own a `CancellationTokenSource` for the same lifetime as the component that
-started the work. Cancel it in `OnDisable` when the flow must stop while the
-component is inactive.
+Give every flow an owner and a token that the owner cancels. A service inside an
+Onity scope receives `IOnityScopeLifetime` (`Onity.DI`) and uses its `Token`,
+which is canceled before the scope disposes its services. The `HealthService` of
+the [canonical example](../Getting-Started.md) regenerates health on a loop
+that ends with the scene scope:
+
+```csharp
+using System;
+using System.Threading;
+using Onity.DI;                 // IOnityInitializable, IOnityScopeLifetime, AddTo(scope)
+using Onity.Messaging;          // ISubscriber<T>
+using Onity.Reactive;           // ReactiveProperty<T>
+using Onity.Unity.Async;        // OnityTask, OnityTaskVoid
+
+public sealed class HealthService : IOnityInitializable
+{
+    private const int k_maxHealth = 100;
+    private const float k_regenerationInterval = 1f;
+
+    private readonly ReactiveProperty<int> m_health;
+    private readonly IOnityScopeLifetime m_scope;
+
+    public HealthService(ReactiveProperty<int> health, ISubscriber<PlayerDamaged> damage, IOnityScopeLifetime scope)
+    {
+        m_health = health;
+        m_scope = scope;
+        damage.Subscribe(OnDamaged).AddTo(scope);     // unsubscribed when the scope ends
+    }
+
+    public void Initialize()
+    {
+        RegenerateAsync(m_scope.Token).Forget();      // the token is canceled before the scope disposes its services
+    }
+
+    private void OnDamaged(PlayerDamaged message)
+    {
+        m_health.SetValue(Math.Max(0, m_health.Value - message.Amount));
+    }
+
+    private async OnityTaskVoid RegenerateAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            await OnityTask.Delay(k_regenerationInterval, token);
+            m_health.SetValue(Math.Min(k_maxHealth, m_health.Value + 1));
+        }
+    }
+}
+```
+
+`PlayerDamaged` is the message struct of the same example. When the scope ends
+during `Delay`, the method ends with an `OperationCanceledException`, which
+`OnityTaskScheduler` drops by default (see [Fire and forget](#fire-and-forget)).
+
+A `MonoBehaviour` that starts work in `OnEnable` owns a `CancellationTokenSource`
+for the same lifetime and cancels it in `OnDisable`, so the flow stops while the
+component is inactive:
 
 ```csharp
 using System;
@@ -530,6 +588,7 @@ adapter calls `Complete()` before publishing the result, so the caller can
 safely read and dispose its native containers after the await:
 
 ```csharp
+using Onity.Unity.Async;        // OnityTask<T>, the JobHandle awaiter
 using Unity.Collections;
 using Unity.Jobs;
 
@@ -543,22 +602,25 @@ struct DoubleJob : IJob
     }
 }
 
-static async OnityTask<int> DoubleAsync(int value)
+static class DoubleJobRunner
 {
-    var values = new NativeArray<int>(1, Allocator.Persistent);
-    JobHandle handle = default;
-    try
+    public static async OnityTask<int> DoubleAsync(int value)
     {
-        values[0] = value;
-        handle = new DoubleJob { Values = values }.Schedule();
-        await handle;                                     // same as await handle.AsOnityTask()
-        return values[0];
-    }
-    finally
-    {
-        // Also covers rejection before the adapter accepts the handle.
-        handle.Complete();
-        values.Dispose();
+        var values = new NativeArray<int>(1, Allocator.Persistent);
+        JobHandle handle = default;
+        try
+        {
+            values[0] = value;
+            handle = new DoubleJob { Values = values }.Schedule();
+            await handle;                                 // same as await handle.AsOnityTask()
+            return values[0];
+        }
+        finally
+        {
+            // Also covers rejection before the adapter accepts the handle.
+            handle.Complete();
+            values.Dispose();
+        }
     }
 }
 ```
@@ -937,11 +999,11 @@ Onity connects its async layer to all three:
 
 | Need | API | Guide |
 | --- | --- | --- |
-| Stop async work when the scope ends | inject `IOnityScopeLifetime` (`Token`), `container.LifetimeToken`, `OnityContext.LifetimeToken`, `component.GetScopeCancellationToken()` | [Lifecycle & Scopes](lifecycle-and-scopes.md#scope-lifetime-token) |
-| Dispose with the scope | `disposable.AddTo(scope)` | [Lifecycle & Scopes](lifecycle-and-scopes.md#scope-lifetime-token) |
+| Stop async work when the scope ends | inject `IOnityScopeLifetime` (`Token`), `container.LifetimeToken`, `OnityContext.LifetimeToken`, `component.GetScopeCancellationToken()` | [Lifecycle and Scopes](lifecycle-and-scopes.md#scope-lifetime-token) |
+| Dispose with the scope | `disposable.AddTo(scope)` | [Lifecycle and Scopes](lifecycle-and-scopes.md#scope-lifetime-token) |
 | Awaited startup | `IOnityAsyncInitializable.InitializeAsync(ct)`; `await context.WaitReadyAsync(ct)` | [Async initialization](lifecycle-and-scopes.md#async-initialization) |
 | Await a `ReactiveProperty<T>` | `property.WaitAsync(ct)`, `WaitUntilAsync(predicate, ct)`, `AsLatestAsyncEnumerable()`, `ToAsyncReactiveProperty(ct)` | [Reactive](reactive.md#await-a-reactiveproperty-with-onitytask) |
-| Receive messages | `subscriber.ReceiveAsync(ct)`, `ReceiveAllAsync(capacity, overflow)`, `asyncSubscriber.SubscribeQueued(handler, capacity, token)` | [Events & Messaging](events-messaging.md#native-async-consumption-onitytask) |
+| Receive messages | `subscriber.ReceiveAsync(ct)`, `ReceiveAllAsync(capacity, overflow)`, `asyncSubscriber.SubscribeQueued(handler, capacity, token)` | [Events and Messaging](events-messaging.md#native-async-consumption-onitytask) |
 | Declare shared primitives | `container.DeclareAsyncMessage<T>()`, `container.BindAsyncReactiveProperty(initial)` | [Dependency Injection](dependency-injection.md#shared-reactive-and-messaging-primitives) |
 
 ```csharp
@@ -1089,7 +1151,7 @@ use; managed code stripping keeps both members because the binding class
 references the class library's own async builder. On that path a suspension
 on a thread that has never stored an `AsyncLocal<T>` value captures the shared
 default context without allocating; once a thread has stored a value, each
-suspension captures a context of about 72 bytes, as the .NET builder does. When
+suspension captures a small context object, as the .NET builder does. When
 the pair is unavailable (a development player logs one warning), the builders
 fall back to the public `ExecutionContext.Capture()` and `Run`, which allocate
 on every suspension.
@@ -1101,10 +1163,8 @@ await persists on the thread. Suppressing flow with
 `ExecutionContext.SuppressFlow()` around a call skips the capture for the awaits
 reached while flow is suppressed.
 
-Flow costs time: in the 2026-10-02 Release Player gate, the complete lifecycle
-of a method with four suspensions was 1.5x to 1.6x slower than UniTask on IL2CPP
-with flow on, and about 1.7x faster with flow off. See the
-[comparison](onitytask-comparison.md).
+Flow costs time at every suspension. [OnityTask vs UniTask](onitytask-comparison.md#latest-player-verification-2026-10-02)
+reports the measured cost of the opt-in next to the default.
 
 ## Bursts and pool retention
 
@@ -1112,10 +1172,10 @@ Onity keeps at most `OnityTask.RunnerPoolCapacity` (default 128) released
 runners per async method and `OnityTask.SourcePoolCapacity` (default 256)
 released sources per source type. UniTask keeps every released object. A burst
 of more concurrent operations than the cap allocates an object for each extra
-operation and lets it be collected afterwards, which costs time. At 4,096
-concurrent calls of one method in the 2026-10-02 gate, the default caps made
-three of the four IL2CPP lifecycle rows 1.5x to 2.6x slower than UniTask, while
-caps raised to the burst size made all four 1.7x to 2.0x faster.
+operation and lets it be collected afterwards, which costs time.
+[OnityTask vs UniTask](onitytask-comparison.md#latest-player-verification-2026-10-02)
+reports the measured cost of the default caps in 4,096-call bursts next to the
+result with caps raised to the burst size.
 
 When a method or wait regularly runs in large bursts and the retained memory is
 acceptable, raise the caps once at startup, before the burst:
@@ -1281,6 +1341,8 @@ that call back inline.
 The caller owns a request passed to `Send` and must dispose it:
 
 ```csharp
+using Onity.Unity.Async;        // OnityTask.Send
+using UnityEngine;              // Debug
 using UnityEngine.Networking;
 
 using UnityWebRequest request = UnityWebRequest.Get(url);
@@ -1322,7 +1384,7 @@ await asyncPublisher.PublishOnityTask(
 - `observable.AsOnityAsyncEnumerable(capacity)` and `stream.AsObservable()`
   convert between reactive streams and async streams.
 - `PublishOnityTask` / `SubscribeOnityTask` bridge Onity's async message
-  channels; see [Events & Messaging](events-messaging.md#native-async-consumption-onitytask)
+  channels; see [Events and Messaging](events-messaging.md#native-async-consumption-onitytask)
   for `ReceiveAsync`, `ReceiveAllAsync` and `SubscribeQueued`.
 
 ## Coroutines
@@ -1387,7 +1449,7 @@ A handler passed to `Forget` receives every exception, including cancellation.
 
 `Forget()` observes a single-consumer native task directly, without a .NET task
 bridge. Task tracking (`OnityTaskTracker.IsEnabled`) is on by default; while it
-is on, forgotten tasks appear in **Onity → Tools → Task Tracker**. Stack-trace
+is on, forgotten tasks appear in `Onity/Tools/Task Tracker`. Stack-trace
 capture is useful for leak diagnosis but adds Editor allocation overhead, so
 leave it disabled during performance runs.
 
@@ -1399,24 +1461,30 @@ Unity assembly references are not transitive. An assembly definition that calls
 extension names (`AsOnityAsyncEnumerable`, `BindTo`, `ToOnityTask`, `WaitAsync`)
 have overloads whose receiver or parameters are `Onity.Reactive` types, and the
 compiler reports CS0012 when it must examine one of them without that reference.
+Code that touches `Unit` (`OnityAsyncEnumerable.EveryUpdate()`, `AsUnitTask()`,
+`IOnityObservable<Unit>`) also references `Onity.Core`, where `Unit` lives.
 Assemblies that use the uGUI extensions also reference `Onity.Unity.UGUI` and
 `UnityEngine.UI`.
 
 ## Performance
 
-The [2026-10-02 Release Player gate](https://furkantokkan.github.io/Onity/assets/benchmarks/onitytask-surpass-2026-10-02.md)
-measured OnityTask faster than UniTask 2.5.11 in all 29 gated IL2CPP rows
-(median ratios 0.085 to 0.808) at Onity's default context flow, with pool
-retention matched for the 1,024- and 4,096-operation bursts. Mono, opt-in flow
-and default-retention results are in the
-[comparison](onitytask-comparison.md). These are timing results for the
-measured workloads; no allocation or other-platform claim follows from them.
+In the 2026-10-02 Release Player gate (Unity 2022.3.62f2, Windows x64, IL2CPP,
+three Player processes per suite), OnityTask took less time than UniTask 2.5.11
+in every gated row, at Onity's default context flow and with pool retention
+matched to the large bursts; [OnityTask vs UniTask](onitytask-comparison.md)
+lists each row's ratio and the
+[evidence page](https://furkantokkan.github.io/Onity/assets/benchmarks/onitytask-surpass-2026-10-02.md) the raw
+data. Mono is reported, not gated, and three cases are slower there or in the
+report-only runs: the Mono rows that consume an already completed task, the
+opt-in `AsyncLocal<T>` flow, and the default pool retention in 4,096-call
+bursts. These are timing results for the measured workloads on one Windows PC;
+no allocation or other-platform claim follows from them.
 
 ## See also
 
-- [Migrating from UniTask](../Migration/From-UniTask.md)
-- [OnityTask and UniTask comparison](onitytask-comparison.md)
-- [Lifecycle & Scopes](lifecycle-and-scopes.md)
+- [From UniTask](../Migration/From-UniTask.md)
+- [OnityTask vs UniTask](onitytask-comparison.md)
+- [Lifecycle and Scopes](lifecycle-and-scopes.md)
 - [Reactive](reactive.md)
-- [Events & Messaging](events-messaging.md)
-- [Performance & IL2CPP](performance-and-il2cpp.md)
+- [Events and Messaging](events-messaging.md)
+- [Performance and IL2CPP](performance-and-il2cpp.md)

@@ -7,14 +7,16 @@ description: "Map every UniTask 2.5.11 API to OnityTask, including PlayerLoop ti
 
 # Migrating from UniTask to OnityTask
 
-`Onity.Unity.Async` provides `OnityTask` and `OnityTask<T>` with the runtime
-surface of UniTask 2.5.11 under Onity names: PlayerLoop timings and timers,
-composition, cancellation helpers, completion sources, thread switches, Unity
-operations, coroutines, lifecycle and message triggers, UnityEvent and uGUI
-events, async LINQ streams, channels and async reactive properties. The
-[remaining gaps](../guide/onitytask-comparison.html#feature-coverage) are listed
-in the comparison; UniTask's `External` integrations (Addressables, DOTween,
-TextMeshPro) are out of scope.
+Use this page to replace UniTask 2.5.11 with `OnityTask` (`Onity.Unity.Async`)
+by renaming. PlayerLoop timings and timers, composition, cancellation helpers,
+completion sources, thread switches, Unity operations, coroutines, lifecycle
+and message triggers, UnityEvent and uGUI events, async LINQ streams, channels
+and async reactive properties keep UniTask's shapes under Onity names. The
+[remaining gaps](../guide/onitytask-comparison.html#remaining-gaps) are listed
+on the comparison page; UniTask's `External` integrations (Addressables,
+DOTween, TextMeshPro) are out of scope. After the renames, read the
+[behavior differences](#behavior-differences) and, when you come from Onity
+0.5, the [upgrade notes](#upgrading-from-onity-05).
 
 Like UniTask, async `OnityTask` methods do not flow `AsyncLocal<T>` values
 across awaits by default. Set `OnityTask.FlowExecutionContext = true` before any
@@ -24,7 +26,7 @@ an execution-context allocation per suspension only once a thread has stored an
 
 For a task-oriented introduction, read [Async with OnityTask](../guide/onitytask.html).
 For the measured Release Player results and the feature coverage, read
-[OnityTask and UniTask comparison](../guide/onitytask-comparison.html).
+[OnityTask vs UniTask](../guide/onitytask-comparison.html).
 
 > **Pooled-task safety:** cancelable frame waits, timed waits, delays,
 > predicates, `AsyncOperation.AsOnityTask()` and suspended async methods return
@@ -33,6 +35,13 @@ For the measured Release Player results and the feature coverage, read
 > returned `OnityTask`, or call `AsTask()` once and share the returned `Task`.
 > In Play, a frame wait without a cancelable token and `Yield()` are stateless
 > and may be awaited by any number of consumers.
+
+On this page: [Namespaces and assembly references](#namespaces-and-assembly-references),
+[API mapping](#api-mapping), [Behavior differences](#behavior-differences),
+[Upgrading from Onity 0.5](#upgrading-from-onity-05), [Scene loading](#scene-loading),
+[Unity operations and web requests](#unity-operations-and-web-requests),
+[Reactive and messaging bridges](#reactive-and-messaging-bridges),
+[Fire and forget](#fire-and-forget), [Guidance](#guidance).
 
 ## Namespaces and assembly references
 
@@ -46,7 +55,9 @@ Unity assembly references are not transitive. An assembly definition that calls
 `Onity.Unity`, and `Onity.Messaging` when it uses the messaging bridges: several
 extension names (`AsOnityAsyncEnumerable`, `BindTo`, `ToOnityTask`, `WaitAsync`)
 have overloads whose receiver or parameters are `Onity.Reactive` types, and the
-compiler reports CS0012 when it has to examine one without the reference. Add
+compiler reports CS0012 when it has to examine one without the reference. Code
+that touches `Unit` (`OnityAsyncEnumerable.EveryUpdate()`, `AsUnitTask()`,
+`IOnityObservable<Unit>`) also needs `Onity.Core`, where `Unit` lives. Add
 `Onity.Unity.UGUI` and `UnityEngine.UI` for the uGUI extensions.
 
 ## API mapping
@@ -224,7 +235,7 @@ stream forms and `BindTo(TextElement)`.
 | `UniTaskScheduler.UnobservedTaskException`, `PropagateOperationCanceledException`, `UnobservedExceptionWriteLogType`, `DispatchUnityMainThread` | `OnityTaskScheduler.X` |
 | `task.Forget()`, `Forget(handler, handleExceptionOnMainThread)` | same |
 | `TaskPool.SetMaxPoolSize(n)` | `OnityTask.SourcePoolCapacity = n`, plus `RunnerPoolCapacity` for async-method runners |
-| `TaskTracker` and the UniTask Tracker window | `OnityTaskTracker` and **Onity → Tools → Task Tracker** |
+| `TaskTracker` and the UniTask Tracker window | `OnityTaskTracker` and `Onity/Tools/Task Tracker` |
 | `task.ContinueWith(...)`, `Unwrap()` | same |
 | `task.AsTask()`, `task.AsUniTask(useCurrentSynchronizationContext)` on a `Task` | `AsTask()`, `task.AsOnityTask(useCurrentSynchronizationContext)` |
 | `task.AsValueTask()`, `valueTask.AsUniTask()` | `AsValueTask()`, `valueTask.AsOnityTask()` |
@@ -344,238 +355,78 @@ These 0.6.0 changes can break code written against Onity 0.5:
 - Assemblies that call `Onity.Unity.Async` extensions need an `Onity.Reactive`
   reference (see [Namespaces and assembly references](#namespaces-and-assembly-references)).
 
-## Scene Loading
+## Scene loading
+
+`OnityTask.LoadScene`, `LoadSceneAdditive`, `UnloadScene` and `ActivateScene`
+replace `SceneManager.LoadSceneAsync(...).ToUniTask(...)` (fragment):
 
 ```csharp
-using System.Threading;
-using Onity.Unity.Async;
-
-public sealed class SceneLoader
-{
-    public async OnityTask LoadGameplay(CancellationToken ct)
-    {
-        await OnityTask.LoadScene("Gameplay", ReportProgress, ct);
-    }
-
-    private void ReportProgress(float progress)
-    {
-        // Update a loading bar from 0..1.
-    }
-}
-```
-
-For additive loading:
-
-```csharp
+await OnityTask.LoadScene("Gameplay", progress => ShowProgress(progress), ct);
 await OnityTask.LoadSceneAdditive("GameplayUI", ct);
 ```
 
-For delayed activation:
+For delayed activation, `LoadSceneAsync("Gameplay", activateOnLoad: false,
+cancellationToken: ct)` returns the `AsyncOperation`. After Unity starts the
+load, the token cannot cancel it, so always activate the returned operation
+with `OnityTask.ActivateScene(operation, CancellationToken.None)`, including
+when a later wait for input or a fade is canceled. See
+[Scene loading](../guide/onitytask.html#scene-loading) in the guide.
+
+## Unity operations and web requests
+
+`Resources.LoadAsync<TextAsset>(path).AsAssetOnityTask<TextAsset>(cancellationToken: ct)`
+returns the asset; the [Unity operations](../guide/onitytask.html#unity-operations)
+table lists every adapter. `OnityTask.Send` awaits a `UnityWebRequest` that you
+own and dispose, and `GetJson<TResponse>` / `PostJson<TRequest, TResponse>` wrap
+`JsonUtility` DTOs (fragment):
 
 ```csharp
-OnityTask<AsyncOperation> load = OnityTask.LoadSceneAsync(
-    "Gameplay",
-    activateOnLoad: false,
-    cancellationToken: ct);
-
-AsyncOperation operation = await load;
-
-try
-{
-    // Wait for input or complete a fade here.
-    await WaitForFadeAsync(ct);
-}
-finally
-{
-    await OnityTask.ActivateScene(operation, CancellationToken.None);
-}
-```
-
-After Unity starts a deferred load, the token cannot cancel the underlying
-scene operation. Always activate the returned operation, including when the
-wait for input or a fade is canceled.
-
-## AsyncOperation Bridge
-
-```csharp
-using System.Threading;
-using Onity.Unity.Async;
-using UnityEngine;
-
-public sealed class AssetWarmup
-{
-    public OnityTask<TextAsset> LoadText(string resourcePath, CancellationToken ct)
-    {
-        return Resources.LoadAsync<TextAsset>(resourcePath).AsAssetOnityTask<TextAsset>(cancellationToken: ct);
-    }
-}
-```
-
-## Web Requests
-
-`OnityTask.Send` awaits an existing `UnityWebRequest` and returns the completed
-request. The caller owns disposal of that request.
-
-```csharp
-using Onity.Unity.Async;
-using UnityEngine.Networking;
-
 using UnityWebRequest request = UnityWebRequest.Get(url);
 UnityWebRequest completed = await OnityTask.Send(request, ct);
 string json = completed.downloadHandler.text;
+
+SaveResponse response = await OnityTask.PostJson<SaveRequest, SaveResponse>(url, saveRequest, ct);
 ```
 
-For simple `JsonUtility` DTOs, use the built-in JSON helpers:
+A failed request throws `OnityUnityWebRequestException` (UniTask's
+`UnityWebRequestException`). Use your own serializer around `OnityTask.Send`
+when a payload needs features `JsonUtility` does not support. See
+[Web requests](../guide/onitytask.html#web-requests).
+
+## Reactive and messaging bridges
+
+UniTask has no reactive property or message bus to await. Onity's
+`ReactiveProperty<T>` (`Onity.Reactive`) has native waits, any
+`IOnityObservable<T>` converts to a task, and the async message channels
+(`Onity.Messaging`) publish and subscribe with `OnityTask` (fragment; the
+subscription field is disposed with its owner):
 
 ```csharp
-using System;
-using System.Threading;
-using Onity.Unity.Async;
+int wave = await m_wave.WaitUntilAsync(value => value >= 3, ct);          // ReactiveProperty<int>; completes at once when already true
+int report = await m_remainingEnemies.FirstOnityTask(ct);                 // Subject<int>, or any IOnityObservable<T>
 
-[Serializable]
-public sealed class SaveRequest
-{
-    public int Slot;
-    public string Payload;
-}
-
-[Serializable]
-public sealed class SaveResponse
-{
-    public bool Ok;
-}
-
-public sealed class SaveClient
-{
-    public OnityTask<SaveResponse> Save(string url, int slot, string payload, CancellationToken ct)
-    {
-        SaveRequest request = new SaveRequest
-        {
-            Slot = slot,
-            Payload = payload
-        };
-
-        return OnityTask.PostJson<SaveRequest, SaveResponse>(url, request, ct);
-    }
-}
-```
-
-Use your own serializer around `OnityTask.Send` when payloads need features
-`JsonUtility` does not support.
-
-## Reactive Bridge
-
-```csharp
-using System.Threading;
-using Onity.Reactive;
-using Onity.Unity.Async;
-
-public sealed class WaveGate
-{
-    private readonly Subject<int> m_remainingEnemies = new Subject<int>();
-    private readonly ReactiveProperty<int> m_wave = new ReactiveProperty<int>(1);
-
-    public OnityTask<int> WaitForFirstReport(CancellationToken ct)
-    {
-        return m_remainingEnemies.FirstOnityTask(ct);
-    }
-
-    public OnityTask<int> WaitForWave(int wave, CancellationToken ct)
-    {
-        // Completes at once when the current value already matches; no subscription to manage.
-        return m_wave.WaitUntilAsync(value => value >= wave, ct);
-    }
-}
-```
-
-`ReactiveProperty<T>` has native waits (`WaitAsync`, `WaitUntilAsync`) and
-`AsLatestAsyncEnumerable()`; see [Reactive](../guide/reactive.html#await-a-reactiveproperty-with-onitytask).
-
-## Async Messaging Bridge
-
-Use `ValueTask` in engine-free messaging internals. Use `OnityTask` at the
-Unity-facing orchestration layer.
-
-```csharp
-using System;
-using System.Threading;
-using Onity.Messaging;
-using Onity.Unity.Async;
-
-public readonly struct InventorySaved
-{
-    public readonly int Slot;
-
-    public InventorySaved(int slot)
-    {
-        Slot = slot;
-    }
-}
-
-public sealed class SaveFlow
-{
-    private readonly IAsyncPublisher<InventorySaved> m_savedPublisher;
-
-    public SaveFlow(IAsyncPublisher<InventorySaved> savedPublisher)
-    {
-        m_savedPublisher = savedPublisher;
-    }
-
-    public async OnityTask Save(CancellationToken ct)
-    {
-        // Save file, cloud state, or profile data here.
-        await m_savedPublisher.PublishOnityTask(new InventorySaved(1), ct);
-    }
-}
-
-public sealed class SaveHud
-{
-    private readonly IAsyncSubscriber<InventorySaved> m_savedSubscriber;
-    private IDisposable m_subscription;
-
-    public SaveHud(IAsyncSubscriber<InventorySaved> savedSubscriber)
-    {
-        m_savedSubscriber = savedSubscriber;
-    }
-
-    public void Start()
-    {
-        m_subscription =
-            m_savedSubscriber.SubscribeOnityTask(
-                async (message, ct) =>
-                {
-                    await OnityTask.Delay(0.25f, ct);
-                    ShowSaved(message.Slot);
-                });
-    }
-
-    public void Stop()
-    {
-        m_subscription?.Dispose();
-        m_subscription = null;
-    }
-
-    private void ShowSaved(int slot)
-    {
-        // Update HUD state here.
-    }
-}
+await m_savedPublisher.PublishOnityTask(new InventorySaved(1), ct);       // IAsyncPublisher<InventorySaved>
+m_subscription = m_savedSubscriber.SubscribeOnityTask(                    // IAsyncSubscriber<InventorySaved>
+    async (message, token) => await ShowSavedAsync(message.Slot, token));
 ```
 
 `subscriber.ReceiveAsync(ct)`, `ReceiveAllAsync(capacity, overflow)` and
 `SubscribeQueued(handler, capacity, lifetimeToken)` add one-shot receives,
-buffered streams and queues with backpressure; see
-[Events & Messaging](../guide/events-messaging.html#native-async-consumption-onitytask).
+buffered streams and queues with backpressure. See
+[Reactive and messaging bridges](../guide/onitytask.html#reactive-and-messaging-bridges),
+[Reactive](../guide/reactive.html#await-a-reactiveproperty-with-onitytask) and
+[Events and Messaging](../guide/events-messaging.html#native-async-consumption-onitytask).
 
-## Fire and Forget
+## Fire and forget
 
 ```csharp
 OnityTask.LoadScene("Gameplay").Forget(Debug.LogException);
 ```
 
 Without a handler, faults go to `OnityTaskScheduler`, which logs them and drops
-`OperationCanceledException` by default. Long-running tasks are visible in
-**Onity → Tools → Task Tracker** when tracking is enabled.
+`OperationCanceledException` by default. While `OnityTaskTracker.IsEnabled` is
+true (the default), forgotten tasks are visible in `Onity/Tools/Task Tracker`.
+See [Fire and forget](../guide/onitytask.html#fire-and-forget).
 
 ## Guidance
 
@@ -589,3 +440,10 @@ Without a handler, faults go to `OnityTaskScheduler`, which logs them and drops
   service.
 - Do not add UniTask as a runtime dependency just for frame waits, scene loads,
   web requests, or reactive awaits.
+
+## See also
+
+- [Async with OnityTask](../guide/onitytask.html)
+- [OnityTask vs UniTask](../guide/onitytask-comparison.html)
+- [Lifecycle and Scopes](../guide/lifecycle-and-scopes.html)
+- [Migration](index.html)

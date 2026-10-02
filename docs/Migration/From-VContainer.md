@@ -2,167 +2,249 @@
 title: "From VContainer"
 parent: "Migration"
 nav_order: 2
+description: "Mapping tables from VContainer to Onity: registration, lifetimes, injection, resolution, factories, entry points, scopes, async startup, and what Onity does not ship."
 ---
 
-# Migrating from VContainer to Onity
+# From VContainer
 
-VContainer registers with `builder.Register<TImpl>(Lifetime.Singleton).As<TInterface>()` inside a `LifetimeScope`; Onity binds with the Zenject-style fluent vocabulary `container.Bind<TInterface>().To<TImpl>().AsSingle()` directly on an `OnityContainer`. The translation is mechanical, but a few things differ in shape: Onity's lifetime enum is exactly `{ Singleton, Transient }` — there is **no `Lifetime.Scoped`**, so a per-scope instance becomes a **child-container `AsSingle`**; Onity binds an instance with `BindInstance` (which **rejects null**, unlike VContainer's `RegisterInstance`); and Onity selects the **greediest resolvable public constructor** (or a single `[Inject]` ctor). Circular dependencies are caught at **resolve time** (VContainer catches them at `Build()`), but either way an exception is thrown. Two capabilities older drafts of this guide listed as missing now ship and map cleanly from VContainer: **collection injection** (`IEnumerable<T>` / `IReadOnlyList<T>` / `T[]` / `List<T>`) and an **entry-point-style lifecycle** (`IOnityInitializable` / `IOnityTickable` / `IOnityFixedTickable` / `IOnityLateTickable`, the analogue of `IStartable`/`ITickable`, pumped by the Unity context). **Open-generic registration** (`Bind(typeof(IRepo<>)).To(typeof(Repo<>))`) also ships. The `Func<>`-factory surface and `RegisterInstance(null)` remain deliberate divergences — see the last section. Every mapping below is verified against the shipped Onity public API (`Onity.DI`, `Onity.Factory`, `Onity.Unity.Reactive`).
+Use these tables to translate a VContainer project. VContainer registers with
+`builder.Register<TImpl>(Lifetime.Singleton).As<TInterface>()` inside a `LifetimeScope`; Onity binds with
+`container.Bind<TInterface>().To<TImpl>().AsSingle()` inside a `MonoInstaller` that a context runs. The
+three lifetimes map one to one (`Lifetime.Scoped` is `AsScoped()`), entry points become lifecycle
+interfaces that the container collects without a registration call, and `IAsyncStartable` becomes
+`IOnityAsyncInitializable`. The behaviors that differ: `BindInstance` rejects null, circular dependencies
+surface at resolve time rather than at build, and there is no `Func<>` factory registration. Everything
+here is verified against the Onity 0.7.0 source; an API that is not listed does not exist.
+
+Contents:
+
+- [Registration](#registration)
+- [Injection](#injection)
+- [Resolution](#resolution)
+- [Factories](#factories)
+- [Collection injection](#collection-injection)
+- [Entry point lifecycle](#entry-point-lifecycle)
+- [Open generic registration](#open-generic-registration)
+- [Scopes and lifecycle](#scopes-and-lifecycle)
+- [Errors](#errors)
+- [Not supported](#not-supported)
+- [Lifetime and async](#lifetime-and-async)
 
 ## Registration
 
 | VContainer | Onity | Notes |
 | --- | --- | --- |
-| `builder.Register<Impl>(Lifetime.Singleton).As<IService>()` | `container.Bind<IService>().To<Impl>().AsSingle()` | One shared instance. |
-| `builder.Register<Impl>(Lifetime.Transient).As<IService>()` | `container.Bind<IService>().To<Impl>().AsTransient()` | New instance per resolve. |
-| `builder.Register<Impl>(Lifetime.Singleton)` (self, no `As`) | `container.Bind<Impl>().AsSingle()` | `To` defaults to the contract (self-bind). |
-| `builder.Register<Impl>(Lifetime.Scoped)` | `child.Bind<Impl>().AsSingle()` on `new OnityContainer(parent)` | **Divergence:** there is no Scoped lifetime keyword. Per-scope == child-container `AsSingle`. |
-| `builder.Register<Impl>(Lifetime.Singleton).As<IA>().As<IB>().AsSelf()` | `container.BindInterfacesAndSelfTo<Impl>().AsSingle()` | Share one instance across the concrete + all its interfaces. |
-| `builder.Register<Impl>(Lifetime.Singleton).AsImplementedInterfaces()` | `container.BindInterfacesTo<Impl>().AsSingle()` | Interfaces only (no concrete). Throws `OnityBindingException` if `Impl` has no interfaces. |
-| `builder.RegisterInstance(instance).As<IService>()` | `container.BindInstance<IService>(instance)` | **Divergence:** `BindInstance(null)` throws `OnityBindingException` (VContainer allows null instances). |
-| `builder.RegisterInstance(instance).AsImplementedInterfaces().AsSelf()` | `container.BindInstance<IA>(instance); container.BindInstance<Impl>(instance);` | Bind the same object under each contract you need. |
-| Re-register the same type twice → last wins (no error) | `container.Bind<Foo>()…; container.Bind<Foo>()…;` → last wins (no error) | Onity is last-binding-wins, matching the "no duplicate-binding exception" behavior. |
-| `builder.RegisterComponentInHierarchy<T>()` / `RegisterComponentInNewPrefab<T>()` | *(no direct equivalent)* | Component/prefab registration is not part of the engine-free core. Bind the instance after you obtain it, or use the Unity-layer `BindScriptableObject`/`BindPooledFactory` helpers. |
-| `builder.RegisterEntryPoint<T>()` / `IStartable`, `ITickable`, `IInitializable` | `container.Bind<T>().AsSingle()` where `T : IOnityInitializable` / `IOnityTickable` / … | Binding a singleton that implements an `IOnity*` lifecycle interface is enough — no `RegisterEntryPoint`. The Unity context pumps `Tick`/`FixedTick`/`LateTick`. See Lifecycle below. |
+| `builder.Register<Impl>(Lifetime.Singleton).As<IService>()` | `container.Bind<IService>().To<Impl>().AsSingle()` | One instance in the declaring scope, shared with children. |
+| `builder.Register<Impl>(Lifetime.Scoped).As<IService>()` | `container.Bind<IService>().To<Impl>().AsScoped()` | One instance per resolving scope, built with that scope's dependencies and disposed with it. |
+| `builder.Register<Impl>(Lifetime.Transient).As<IService>()` | `container.Bind<IService>().To<Impl>().AsTransient()` | A new instance per resolve. |
+| `builder.Register<Impl>(Lifetime.Singleton)` (self) | `container.Bind<Impl>().AsSingle()` | `To` defaults to the contract. |
+| `builder.Register<Impl>(Lifetime.Singleton).As<IA>().As<IB>().AsSelf()` | `container.BindInterfacesAndSelfTo<Impl>().AsSingle()` | One instance under the concrete type and every interface. |
+| `builder.Register<Impl>(Lifetime.Singleton).AsImplementedInterfaces()` | `container.BindInterfacesTo<Impl>().AsSingle()` | Interfaces only. Throws `OnityBindingException` when `Impl` has no interfaces. |
+| `builder.RegisterInstance(instance).As<IService>()` | `container.BindInstance<IService>(instance)` | Caller-owned. A null instance throws `OnityBindingException`. |
+| `builder.RegisterInstance(instance).AsImplementedInterfaces().AsSelf()` | `container.BindInstance<IA>(instance); container.BindInstance<Impl>(instance);` | One `BindInstance` per contract; the object is the same. |
+| `builder.Register<Impl>(Lifetime.Singleton).As<IService>().Keyed("x")` | `container.Bind<IService>().To<Impl>().WithId("x").AsSingle()` | Consume with `[Inject(Id = "x")]` or `Resolve<IService>("x")`. |
+| `builder.Register<IService, Impl>(Lifetime.Singleton)` | `container.Bind<IService>().To<Impl>().AsSingle()` | Same contract-first shape. |
+| `builder.RegisterBuildCallback(resolver => ...)` | `container.RegisterBuildCallback(resolver => ...)` | Also `RegisterBuildCallbackAsync(Func<IResolver, Task>)` and the token form. |
+| `builder.RegisterComponentInHierarchy<T>()`, `RegisterComponentInNewPrefab<T>()`, `RegisterComponentOnNewGameObject<T>()` | none | Bind the component instance after you obtain it, or use `BindScriptableObject` and `BindPooledFactory` (`Onity.Unity.Installers`). |
+| `builder.RegisterEntryPoint<T>()` | `container.BindInterfacesAndSelfTo<T>().AsSingle()` where `T` implements a lifecycle interface | Binding is the registration; see [Entry point lifecycle](#entry-point-lifecycle). |
+| Registering the same contract twice | the last binding wins | No error in either library. |
 
-> **Shared-instance trap (verified):** two separate `Bind<IFoo>().To<C>()` and `Bind<IBar>().To<C>()` calls create **distinct** singletons. To get VContainer's `As<IA>().As<IB>()` "one instance, many contracts" behavior, use `BindInterfacesAndSelfTo<C>().AsSingle()` (or `BindInterfacesTo<C>()`).
+Two separate `Bind<IA>().To<C>()` and `Bind<IB>().To<C>()` calls create two `C` instances. VContainer's
+`As<IA>().As<IB>()` sharing is `BindInterfacesAndSelfTo<C>()` or `BindInterfacesTo<C>()`.
 
-## Injection (`[Inject]`)
+## Injection
 
-VContainer uses `[Inject]` on constructors, fields, properties, and methods; Onity's `Onity.DI.InjectAttribute` targets the same member kinds with the same intent.
+`Onity.DI.InjectAttribute` targets constructors, fields, properties, methods and parameters.
 
 | VContainer | Onity | Notes |
 | --- | --- | --- |
-| Constructor injection (single ctor) | Constructor injection (single ctor) | Identical and preferred. |
-| Greediest resolvable ctor chosen automatically | Greediest **public** ctor chosen (most params) | Same "greediest" spirit. A single `[Inject]` ctor overrides selection. |
-| `[Inject] public Foo(IBar b)` | `[Inject] public Foo(IBar b)` | The `[Inject]`-marked ctor wins over other ctors. |
-| `[Inject] IBar m_bar;` (field, non-public OK) | `[Inject] private IBar m_bar;` | Field injection, private allowed. Static members are never injected. |
-| `[Inject] public IBar Bar { get; set; }` | `[Inject] public IBar Bar { get; set; }` | Property injection — **setter required** (setterless `[Inject]` property throws `OnityBindingException`). |
-| `[Inject] public void Construct(IBar b)` (method) | `[Inject] private void Initialize(IBar b)` | Method injection, runs after ctor + fields + properties. Must be non-generic (else `OnityBindingException`). |
-| `objectResolver.Inject(instance)` | `container.Inject(instance)` | Member-injects an existing object. |
-| `[Inject] IEnumerable<IFoo> all` (collection inject) | `[Inject] private IReadOnlyList<IFoo> m_all;` (or ctor param) | Collection injection is supported: `IEnumerable<T>` / `IReadOnlyList<T>` / `IReadOnlyCollection<T>` / `IList<T>` / `ICollection<T>` / `List<T>` / `T[]`, gathered from every explicit `T` binding in this scope and its ancestors. |
+| Constructor injection | Constructor injection | Identical and preferred. |
+| The greediest resolvable constructor | The public constructor with the most parameters | A non-public constructor is used only when no public one exists. |
+| `[Inject] public Foo(IBar bar)` | `[Inject] public Foo(IBar bar)` | The marked constructor wins. Two marked constructors throw `OnityBindingException`. |
+| `[Inject] IBar m_bar;` | `[Inject] private IBar m_bar;` | Field injection, private allowed. Static members are never injected. |
+| `[Inject] public IBar Bar { get; set; }` | `[Inject] public IBar Bar { get; set; }` | A setter is required. |
+| `[Inject] public void Construct(IBar bar)` | `[Inject] private void Construct(IBar bar)` | Runs after the constructor, fields and properties. Cannot be generic. |
+| `[Key("x")]` on a parameter | `[Inject(Id = "x")]` on the parameter, field or property | Selects a `WithId` binding. |
+| `resolver.Inject(instance)` | `container.Inject(instance)` | Member-injects an existing object. |
+| `resolver.InjectGameObject(gameObject)` | `context.InjectGameObject(root)` | On the owning `OnityContext`. |
 
-Member-injection order is base → derived, and within a type **fields → properties → methods**.
+Member injection order is base class, then derived class; within a type fields, then properties, then
+methods.
 
 ## Resolution
 
 | VContainer | Onity | Notes |
 | --- | --- | --- |
-| `resolver.Resolve<IFoo>()` | `container.Resolve<IFoo>()` | Throws `OnityResolveException` if unresolvable. |
-| `resolver.Resolve(typeof(IFoo))` | `container.Resolve(typeof(IFoo))` | Runtime-type overload. |
-| `resolver.TryResolve<IFoo>(out var foo)` | `container.TryResolve<IFoo>(out IFoo foo)` | Returns `bool`; `out` null on miss. |
-| *(via `IObjectResolver`)* | `container.TryResolve(typeof(IFoo), out object foo)` | Runtime-type `TryResolve`. |
-| `builder.Register<IObjectResolver>` is implicit; inject `IObjectResolver` | inject `IResolver` (or `OnityContainer`) | The active container self-resolves to `IResolver` and `OnityContainer`. Use `IResolver` for manual resolves inside a factory. |
-| Resolve unregistered → `VContainerException` | Resolve unbound interface/abstract → `OnityResolveException` | Unbound **concrete** classes auto-resolve as implicit transients; unbound interfaces/abstracts/open-generics throw. |
+| `resolver.Resolve<IFoo>()` | `container.Resolve<IFoo>()` | Throws `OnityResolveException` when unresolvable. |
+| `resolver.Resolve(typeof(IFoo))` | `container.Resolve(typeof(IFoo))` | Runtime-type form. |
+| `resolver.Resolve<IFoo>("x")` (keyed) | `container.Resolve<IFoo>("x")` | Identified resolve; `TryResolve<IFoo>("x", out foo)` for the safe form. |
+| `resolver.TryResolve<IFoo>(out var foo)` | `container.TryResolve<IFoo>(out IFoo foo)` | Returns `bool`; `out` is null on a miss. |
+| inject `IObjectResolver` | inject `IResolver` or `OnityContainer` | Both resolve to the active scope. |
+| `resolver.Resolve<IEnumerable<IFoo>>()` | `container.Resolve<IEnumerable<IFoo>>()` | Or any of the other six collection shapes; see below. |
+| Unregistered type throws `VContainerException` | Unbound interface or abstract type throws `OnityResolveException` | An unbound concrete class resolves as an implicit transient. |
 
-## Factories / runtime arguments
+## Factories
 
-VContainer offers `Func<TParam, TValue>` factory registration and `RegisterFactory`. Onity has neither a `Func<>` factory nor `Instantiate(args)`; you author an `IFactory<...>` (`Onity.Factory`) and bind it with `BindFactory` (always `AsSingle`).
+VContainer registers `Func<...>` factories with `RegisterFactory`. Onity has no `Func<>` factory and
+no `Instantiate(args)`: author an `IFactory<...>` (`Onity.Factory`) and bind it with `BindFactory`,
+which binds it with `BindInterfacesAndSelfTo<TFactory>().AsSingle()`.
 
 | VContainer | Onity | Notes |
 | --- | --- | --- |
-| `builder.RegisterFactory<TValue>(...)` | `container.BindFactory<TValue, TFactory>()` where `TFactory : IFactory<TValue>` | Resolve `IFactory<TValue>`, call `Create()`. |
-| `builder.RegisterFactory<TParam, TValue>(...)` | `container.BindFactory<TParam, TValue, TFactory>()` where `TFactory : IFactory<TParam, TValue>` | Resolve `IFactory<TParam, TValue>`, call `Create(param)`. |
-| `Func<T1, T2, TValue>` factory | `container.BindFactory<T1, T2, TValue, TFactory>()` where `TFactory : IFactory<T1, T2, TValue>` | `IFactory<TParam1, TParam2, TValue>` is the largest arity shipped. |
+| `builder.RegisterFactory<TValue>(() => ...)` | `container.BindFactory<TValue, TFactory>()` where `TFactory : IFactory<TValue>` | Resolve `IFactory<TValue>` and call `Create()`. |
+| `builder.RegisterFactory<TParam, TValue>(param => ...)` | `container.BindFactory<TParam, TValue, TFactory>()` where `TFactory : IFactory<TParam, TValue>` | Resolve `IFactory<TParam, TValue>` and call `Create(param)`. |
+| `builder.RegisterFactory<T1, T2, TValue>(...)` | `container.BindFactory<T1, T2, TValue, TFactory>()` where `TFactory : IFactory<T1, T2, TValue>` | Two parameters is the largest arity. |
+| `RegisterFactory` with a resolver-bound delegate | the factory's constructor takes the services | The container constructs the factory. |
+| `WithParameter(...)` on a registration | an `IFactory<TParam, TValue>` | Per-call values do not go through constructor injection. |
 
 ```csharp
-using Onity.DI;
-using Onity.Factory;
+using Onity.Factory;            // IFactory<TParam, TValue>
 
-public sealed class EnemyFactory : IFactory<string, Enemy>
+public sealed class EnemyFactory : IFactory<EnemySpawnRequest, Enemy>
 {
-    private readonly IResolver m_resolver;
-    public EnemyFactory(IResolver resolver) { m_resolver = resolver; }
-    public Enemy Create(string id) => new Enemy(id, m_resolver.Resolve<IClock>());
-}
+    private readonly IClock m_clock;
 
-// container.BindFactory<string, Enemy, EnemyFactory>();
-// container.Resolve<IFactory<string, Enemy>>().Create("goblin");
+    public EnemyFactory(IClock clock)   // services come through the constructor
+    {
+        m_clock = clock;
+    }
+
+    public Enemy Create(EnemySpawnRequest request)
+    {
+        return new Enemy(request.Id, request.Level, m_clock);
+    }
+}
 ```
 
-## Collection injection (matches VContainer's `IEnumerable<T>` resolve)
+Bind and use (fragment): `container.BindFactory<EnemySpawnRequest, Enemy, EnemyFactory>();`
+then `container.Resolve<IFactory<EnemySpawnRequest, Enemy>>().Create(request)`. Prefab pools are
+`BindPooledFactory(prefab, parent, defaultCapacity, maxSize)`; see
+[Factories and Pooling](../guide/factories-and-pooling.html).
 
-VContainer collects every registration of an interface when you inject `IEnumerable<T>`. Onity does the same — request `IReadOnlyList<T>` (or `IEnumerable<T>` / `T[]` / `List<T>`), gathered from this scope and its ancestors in registration order.
+## Collection injection
+
+VContainer collects every registration of a contract when you inject `IEnumerable<T>` or
+`IReadOnlyList<T>`. Onity does the same for `IEnumerable<T>`, `IReadOnlyList<T>`,
+`IReadOnlyCollection<T>`, `IList<T>`, `ICollection<T>`, `List<T>` and `T[]`, gathered from this scope
+and its ancestors, ancestors first. Fragment:
 
 ```csharp
-// VContainer
-// builder.Register<CritRule>(Lifetime.Singleton).As<IDamageRule>();
-// builder.Register<ArmorRule>(Lifetime.Singleton).As<IDamageRule>();
-public DamagePipeline(IEnumerable<IDamageRule> rules) { /* all registrations */ }
-
-// Onity
 container.Bind<IDamageRule>().To<CritRule>().AsSingle();
 container.Bind<IDamageRule>().To<ArmorRule>().AsSingle();
+```
+
+```csharp
+using System.Collections.Generic;
 
 public sealed class DamagePipeline
 {
     private readonly IReadOnlyList<IDamageRule> m_rules;
-    public DamagePipeline(IReadOnlyList<IDamageRule> rules) { m_rules = rules; }
+
+    public DamagePipeline(IReadOnlyList<IDamageRule> rules)   // VContainer: IEnumerable<IDamageRule>
+    {
+        m_rules = rules;
+    }
 }
 ```
 
-> A plain `Resolve<IDamageRule>()` returns the **last** registration (last-binding-wins); only a collection-typed request gathers all of them.
+A plain `Resolve<IDamageRule>()` returns the last binding; only a collection-typed request gathers all
+of them.
 
-## Entry-point lifecycle (matches `IStartable` / `ITickable`)
+## Entry point lifecycle
 
-```csharp
-// VContainer
-public sealed class WaveSpawner : IStartable, ITickable
-{
-    public void Start() { /* ... */ }
-    public void Tick() { /* ... */ }
-}
-// builder.RegisterEntryPoint<WaveSpawner>();
-
-// Onity
-using Onity.DI;
-
-public sealed class WaveSpawner : IOnityInitializable, IOnityTickable
-{
-    public void Initialize() { /* runs once at Build() */ }
-    public void Tick() { /* runs every Update from the owning context */ }
-}
-// container.Bind<WaveSpawner>().AsSingle();   // binding is the whole wiring
-```
-
-## Open-generic registration (matches `Register(typeof(IRepo<>), ...)`)
-
-```csharp
-// container.Bind(typeof(IRepository<>)).To(typeof(Repository<>)).AsSingle();
-// container.Resolve<IRepository<Player>>();   // builds Repository<Player> on first resolve
-```
-
-The first resolve of a closed contract builds and caches it as a normal binding. On IL2CPP the closed type must survive AOT stripping. `NonLazy()` is not supported on an open-generic binding.
-
-## Scopes & lifecycle
+VContainer runs entry points through `RegisterEntryPoint`. Onity collects a singleton, a scoped binding
+or a bound instance that implements a lifecycle interface (`Onity.DI`) at `Build()`; the owning context
+pumps the ticks. Transients are not collected.
 
 | VContainer | Onity | Notes |
 | --- | --- | --- |
-| `LifetimeScope` (root) | `ProjectContext` / `SceneContext` / `GameObjectContext` (`Onity.Unity.Contexts`) | The context builds the container, registers defaults, runs installers, builds, auto-injects. |
-| `Configure(IContainerBuilder builder)` | `MonoInstaller.InstallBindings(OnityContainer container)` (`Onity.Unity.Installers`) | Where you bind. You receive the `OnityContainer` directly. |
-| Child `LifetimeScope` / `CreateChild()` | `new OnityContainer(parent)` | Child inherits parent bindings; a child bind shadows the parent only inside the child. |
-| `Lifetime.Scoped` | child-container `AsSingle` | Shared within a child scope, distinct across sibling child scopes. |
-| `builder.RegisterBuildCallback(resolver => …)` | `container.RegisterBuildCallback(r => …)` | Runs in `Build()`. Also `RegisterBuildCallbackAsync(Func<IResolver, CancellationToken, Task>)`. |
-| `IInitializable.Initialize()` / `IStartable.Start()` | `IOnityInitializable.Initialize()` (`Onity.DI`) | Automatic: a bound singleton/instance implementing it is initialized once at `Build()`, in registration order. No entry-point call. (`RegisterBuildCallback`, an `[Inject]` method, or `NonLazy()` remain available for ad-hoc startup work.) |
-| `ITickable.Tick()` | `IOnityTickable.Tick()` (`Onity.DI`) | Automatic: a bound singleton/instance is pumped every `Update` by the owning context. **Transients are not ticked.** |
-| `IFixedTickable.FixedTick()` / `ILateTickable.LateTick()` | `IOnityFixedTickable.FixedTick()` / `IOnityLateTickable.LateTick()` | Pumped from the context's `FixedUpdate` / `LateUpdate`. |
-| Tick a non-registered object per frame | `OnityUnityObservable.EveryUpdate().Subscribe(...).AddTo(this)` (`Onity.Unity.Reactive`) | For per-frame work that is not a bound singleton, subscribe the frame loop directly. |
-| `IDisposable` registered services disposed on scope dispose | `container.Dispose()` | Disposes owned singletons (including lifecycle singletons) in reverse registration order. |
-| Build-time validation of the whole graph | resolve-time validation | `Build()` runs `NonLazy`/callbacks; missing/circular bindings surface at resolve time as `OnityResolveException`. |
+| `IInitializable.Initialize()`, `IStartable.Start()` | `IOnityInitializable.Initialize()` | Once, at the end of `Build()`, in binding-registration order. |
+| `IAsyncStartable.StartAsync(CancellationToken)` | `IOnityAsyncInitializable.InitializeAsync(CancellationToken)` | A `ValueTask`. Awaited in `BuildAsync`, one initializer at a time; the token is the scope's `LifetimeToken`. |
+| `ITickable.Tick()` | `IOnityTickable.Tick()` | From the context's `Update`. |
+| `IFixedTickable.FixedTick()` | `IOnityFixedTickable.FixedTick()` | From `FixedUpdate`. |
+| `ILateTickable.LateTick()` | `IOnityLateTickable.LateTick()` | From `LateUpdate`. |
+| `IPostInitializable`, `IPostStartable`, `IPostTickable`, `IPostLateTickable` | none | Order within a phase follows binding-registration order; bind the later service later. |
+| `builder.RegisterEntryPointExceptionHandler(...)` | none | A faulted `InitializeAsync` ends `BuildAsync`; the context logs it and `ReadyTask` faults. |
+
+```csharp
+using Onity.DI;                 // IOnityInitializable, IOnityTickable
+
+public sealed class WaveDirector : IOnityInitializable, IOnityTickable
+{
+    public void Initialize()
+    {
+        // Runs once at Build().
+    }
+
+    public void Tick()
+    {
+        // Runs every Update from the owning context.
+    }
+}
+```
+
+Binding it is the whole wiring (fragment): `container.BindInterfacesAndSelfTo<WaveDirector>().AsSingle();`.
+
+## Open generic registration
+
+Fragment:
+
+```csharp
+container.Bind(typeof(IRepository<>)).To(typeof(Repository<>)).AsSingle();
+IRepository<PlayerProfile> profiles = container.Resolve<IRepository<PlayerProfile>>();
+```
+
+The first resolve of a closed contract builds and caches it as a normal binding. `NonLazy()` is not
+supported on an open generic binding. On IL2CPP the closed type must survive stripping.
+
+## Scopes and lifecycle
+
+| VContainer | Onity | Notes |
+| --- | --- | --- |
+| `LifetimeScope` (root, `DontDestroyOnLoad`) | `ProjectContext` (`Onity.Unity.Contexts`) | Prefab at `Assets/Resources/Onity/ProjectContext.prefab`, created with `Onity/Contexts/Create ProjectContext Prefab`, loaded before the first scene. |
+| `LifetimeScope` in a scene | `SceneContext` | Child of the `ProjectContext` when one exists. |
+| `LifetimeScope` on a prefab, `EnqueueParent`, `CreateChild` | `GameObjectContext`, or `new OnityContainer(parent)` in code | The child inherits the parent's bindings; a child binding shadows the parent only inside the child. |
+| `Configure(IContainerBuilder builder)` | `MonoInstaller.InstallBindings(OnityContainer container)` (`Onity.Unity.Installers`) | Assigned to the context's Installers list. |
+| `autoRun`, `autoInjectGameObjects` | Auto Inject Hierarchy and Run Async Build Callbacks on the context | Both default on. |
+| `Lifetime.Scoped` | `AsScoped()` | Shared within a resolving scope, distinct across sibling scopes. |
+| `IDisposable` services disposed on scope dispose | `container.Dispose()`; a context disposes in `OnDestroy` | Cancels the scope token, then disposes child scopes, scoped instances and singletons in reverse registration order. |
+| Build-time validation of the whole graph | resolve-time validation | `Build()` runs `NonLazy` bindings and the callbacks; missing or circular bindings throw `OnityResolveException` at resolve time. |
+
+Every context binds the container, `IResolver`, `IOnityScopeLifetime`, the context, `MessageBroker`
+and `OnityEventHub`, so these need no installer line. VContainer's `IObjectResolver` injected into a
+class becomes `IResolver`.
 
 ## Errors
 
-VContainer throws `VContainerException` for both registration and resolution problems. Onity splits these: `OnityBindingException` (binding/config: null instance, non-assignable `To<>`, multiple `[Inject]` ctors, setterless/indexer/generic `[Inject]`, or build callbacks registered after finalization) and `OnityResolveException` (unresolvable type, circular dependency, ctor throw, inject into null). Both live in `Onity.DI`.
+VContainer throws `VContainerException` for registration and resolution problems. Onity splits them:
+`OnityBindingException` for configuration (null instance, non-assignable implementation, multiple
+`[Inject]` constructors, setterless, indexer or generic `[Inject]` members, callbacks registered after
+build, `NonLazy` before a lifetime) and `OnityResolveException` for resolution (unbound contract,
+circular dependency, failed construction, ambiguous conditional bindings, null target, use after
+dispose). Both live in `Onity.DI`.
 
-## Not supported — do this instead
+## Not supported
 
-These VContainer features are deliberate Onity non-goals. Do not call the
-VContainer API; use the Onity replacement.
+| VContainer feature | Do this in Onity |
+| --- | --- |
+| `Func<...>` factory registration and `RegisterFactory` | Author an `IFactory<...>` and `BindFactory`. |
+| `RegisterInstance(null)` | Pass a non-null instance. |
+| `RegisterComponentInHierarchy`, `RegisterComponentInNewPrefab`, `RegisterComponentOnNewGameObject` | Bind the obtained component with `BindInstance`, or use `BindScriptableObject` and `BindPooledFactory`. |
+| `WithParameter` on a registration | An `IFactory<TParam, TValue>`. |
+| `IPostInitializable` and the other post-phase entry points | Binding-registration order within the phase. |
+| `RegisterEntryPointExceptionHandler` | Handle inside the service; a faulted `InitializeAsync` faults `ReadyTask`. |
+| Build-time graph validation | Resolve-time exceptions; `NonLazy()` surfaces construction errors at `Build()`. |
 
-| VContainer feature | Why it is a non-goal | Do this in Onity |
-| --- | --- | --- |
-| `Lifetime.Scoped` keyword | A true Scoped lifetime forces the resolver to key singletons by requesting scope, complicating the hot path for marginal benefit. Parent/child containers already cover it. | Use a child container: `new OnityContainer(parent)` and `Bind…AsSingle()` in the child. Parent `AsSingle` stays shared; the child instance is per-scope. |
-| `RegisterEntryPoint<T>()` **in-container tick loop driven by `Onity.DI` alone** | Per-frame dispatch from the engine-free DI core in isolation would couple it to the Unity update loop. | The lifecycle interfaces themselves **are supported** (`IOnityInitializable`/`IOnityTickable`/…); they live in `Onity.DI` but are pumped by the Unity **context**. See the lifecycle section above. |
-| `Func<TParam, TValue>` factory registration | No `Func<>`/`Instantiate(args)` factory surface. | Author an `IFactory<TParam, TValue>` and `BindFactory`. |
-| `RegisterInstance(null)` | Onity treats a null instance binding as a configuration error. | Pass a non-null instance to `BindInstance`. |
+Features that ship and need no workaround: `AsScoped()` for `Lifetime.Scoped`, keyed bindings
+(`WithId`, `[Inject(Id = ...)]`), conditional bindings (`WhenInjectedInto`), collection injection,
+open generic registration, the lifecycle interfaces including `IOnityAsyncInitializable`, `Unbind` and
+`Rebind`, and pools (`OnityObjectPool<T>`, `PrefabComponentPool<T>`, `BindPooledFactory`).
 
-> **Now supported (no longer non-goals):** **collection injection** (`IEnumerable<T>` / `IReadOnlyList<T>` / `T[]` / `List<T>`) and **open-generic registration** (`Bind(typeof(IRepo<>)).To(typeof(Repo<>))`) ship today — see the dedicated sections above.
+## Lifetime and async
+
+VContainer's `LifetimeScope` disposes its container; Onity adds a scope token that is canceled before the
+services are disposed. Services inject `IOnityScopeLifetime` for it, MonoBehaviours call
+`GetScopeCancellationToken()`, and async startup moves from `IAsyncStartable` or a UniTask entry point
+to `IOnityAsyncInitializable`; code that must wait for the scope awaits `OnityContext.WaitReadyAsync()`.
+Read [Lifecycle and Scopes](../guide/lifecycle-and-scopes.html) before you move startup code, and
+[From UniTask](From-UniTask.html) if the project also uses UniTask.

@@ -360,17 +360,28 @@ namespace Onity.Unity.Async
 
                 if (IsDue(token) || Retired)
                 {
-                    continuation();
-                    return;
+                    if (s_isMainThread)
+                    {
+                        continuation();
+                        return;
+                    }
                 }
-
-                if (s_isMainThread)
+                else if (s_isMainThread)
                 {
                     m_phase.Pending.Add(continuation, token, m_kind);
                     return;
                 }
 
-                EnqueueFromWorker(m_phase, continuation, token, m_kind);
+                // A worker hands even a due wait to the main thread: a worker-created wait targets the
+                // frame after the last drained one, so a drain between its creation and this registration
+                // makes it due here. The next drain of the phase merges the inbox and runs the entry, as a
+                // later drain never stamps below a target that is already due. A retired marker is never
+                // stamped again and its session may not drain again, so its continuation runs here, as on
+                // the main thread, and observes the cancellation or the repair failure.
+                if (!EnqueueFromWorker(m_phase, continuation, token, m_kind, this))
+                {
+                    continuation();
+                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -878,7 +889,7 @@ namespace Onity.Unity.Async
             }
 
             EnsureInstalled(phase);
-            EnqueueFromWorker(phase, item, token, kind);
+            EnqueueFromWorker(phase, item, token, kind, null);
         }
 
         /// <summary>Validates that a Yield awaitable may be created now.</summary>
@@ -1078,12 +1089,26 @@ namespace Onity.Unity.Async
             return new OnityTask(OnityFrameTaskSource.Rent(phase, token, frames));
         }
 
-        private static void EnqueueFromWorker(Phase phase, object item, int token, int kind)
+        /// <summary>
+        /// Appends an entry to the worker inbox of <paramref name="phase"/>, which the next drain of the
+        /// phase merges. A stateless wait passes its <paramref name="marker"/>, checked under the inbox
+        /// lock: a closing session retires its markers before it detaches the inboxes under the same lock,
+        /// so an entry appended for a live marker is drained or retired on the main thread, never stranded
+        /// in the inbox of a closed session.
+        /// </summary>
+        /// <returns>False, with nothing appended, when <paramref name="marker"/> has retired.</returns>
+        private static bool EnqueueFromWorker(Phase phase, object item, int token, int kind, WaitMarker marker)
         {
             lock (phase.InboxGate)
             {
+                if (marker != null && marker.Retired)
+                {
+                    return false;
+                }
+
                 phase.Inbox.Add(new Entry { Item = item, Token = token, Kind = kind });
                 Volatile.Write(ref phase.InboxCount, phase.Inbox.Count);
+                return true;
             }
         }
 
@@ -1866,9 +1891,11 @@ namespace Onity.Unity.Async
             s_retirementFailure = failure;
             UpdateDefaultWaitsOpen();
             // Retire the stateless markers first: from here on a registration runs inline and observes
-            // the cancellation or failure, and no queued task of this session can complete later. A drain
-            // in progress returns its markers to the stamps they had before it, so the waits it has not
-            // resumed yet report the retirement rather than its success.
+            // the cancellation or failure, and no queued task of this session can complete later. A
+            // worker registration tests its marker under the inbox lock that the detach below takes, so
+            // it is either detached here or runs inline. A drain in progress returns its markers to the
+            // stamps they had before it, so the waits it has not resumed yet report the retirement rather
+            // than its success.
             for (int i = 0; i < s_phases.Length; i++)
             {
                 Phase phase = s_phases[i];

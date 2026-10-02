@@ -5,16 +5,151 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.0] - 2026-10-02
+
+Onity.Reactive is faster than R3 1.3.0 and than UniRx 7.1.0 in all nine rows of
+the published IL2CPP Release Player comparison after a redesign of its
+subscription and delivery core, with no public API change and no change to
+reactive behavior. The documentation is rewritten around one canonical scene
+and the measured comparisons, and the package ships the updated guides. The DI
+and OnityTask results of 0.6.0 stand for 0.7.0: DI was re-measured on the
+published 0.6.0 package, and the only async change is a fix on the worker-thread
+registration path of stateless waits, which the async gate does not run.
+
+### Added
+
+- A define-gated reactive comparison benchmark (`Benchmarks/Reactive`,
+  assemblies `Onity.ReactiveBenchmarks` and `Onity.ReactiveBenchmarks.Editor`
+  under `ONITY_REACTIVE_BENCHMARKS`): nine synchronous workloads run through
+  Onity.Reactive, R3 1.3.0 and UniRx 7.1.0 with a library-independent golden
+  model and rotated library order, a Release Player build runner
+  (`OnityReactiveBenchmarkPlayerBuildRunner`), a Player entry point
+  (`OnityReactiveBenchmarkPlayerRunner`), and the host tools
+  `tools/benchmark-host/run-reactive-comparison.ps1` and `reactive-summary.py`.
+  The harness README holds the pre-registered classification rule. A normal
+  project never compiles the benchmark.
+- EditMode tests for the new core: `OnityReactiveSubscriptionListTests` (24
+  cases for the node list and the subscription lifecycle),
+  `OnityReactiveOperatorSinkTests` (23 cases for the sink-based operators) and
+  `OnityReactiveSingleSubscriberTests` (25 cases for the lone-subscriber
+  delivery path: subscriber-count transitions, and subscribe, unsubscribe,
+  throw, nested publish and dispose inside the callback, each compared with the
+  general pass).
+- Documentation: a comparisons hub (`docs/comparisons/`) with the reactive
+  comparison page, a measurement-history archive (`docs/archive/`), and the
+  evidence records `docs/assets/benchmarks/reactive-surpass-r3-2026-10-02.md`
+  (with the five run summaries beside it) and
+  `docs/benchmarks/di-remeasure-2026-10-02.md`.
 
 ### Changed
 
-- The `onity-use` agent skill (also shipped as
-  `Documentation~/AI/skills/onity-use/SKILL.md`) documents project and scene
-  scopes (ProjectContext prefab, installer lists, SceneContext/GameObjectContext
-  parent lookup), re-awaitable frame waits and pool retention for bursts; the
-  repository `onity-develop` skill records the 0.6.0 development and release
-  rules.
+- Reactive core, no public API change: a subscription is one internal node
+  (`OnityObserverNode<T>`) that is both the entry the source keeps and the
+  `IDisposable` returned to the subscriber. `Subject<T>` and `ReactiveProperty<T>`
+  keep their nodes in an array-backed `OnityNodeList<T>`: removal outside a
+  notification is an O(1) slot swap, removal during a notification clears the
+  slot and the list compacts after the outermost notification ends, and nodes
+  added during a notification are reached by the pass in progress.
+  `ReactiveProperty<T>` owns its node list.
+- While exactly one live subscriber is registered, `Subject<T>.OnNext` and
+  `ReactiveProperty<T>.SetValue` deliver to it through a direct reference the
+  node list keeps, without the general loop, in their own exception region
+  under the same depth bookkeeping. A subscribe, unsubscribe or dispose inside
+  that callback falls back to the general pass from the next slot, so a
+  subscriber added during the callback still receives the value and no
+  observable behavior changes.
+- One exception region per notification pass in `Subject<T>.OnNext` and
+  `ReactiveProperty<T>.SetValue`. A throwing observer is still reported to
+  `OnityObservableExceptionHandler`, and delivery continues with the next
+  observer.
+- An internal node fast path (`IOnityNodeSource<T>`) on `Subject<T>`,
+  `ReactiveProperty<T>` and the operator observables: operator sinks and
+  `Subscribe(this IOnityObservable<T>, Action<T>)` subscribe without creating a
+  delegate, and the action is stored in the node and invoked directly. Other
+  `IOnityObservable<T>` implementations keep the public `Subscribe(Observer<T>)`
+  path.
+- `Where`, `Select`, `DistinctUntilChanged`, `Skip`, `SkipWhile`, `Take`,
+  `TakeWhile`, `StartWith`, `Scan` and `Pairwise` are sink-based operators
+  (`OnityOperatorObservable<T>`, `OnityOperatorSink<TSource, TResult>`), with
+  `Where` followed by `Select` fused into one sink. Their semantics are
+  unchanged: `Take` and `TakeWhile` dispose upstream on completion, `Skip(0)`
+  returns the source, `Take(0)` returns `Empty<T>()`, and argument validation
+  and exception types are the same.
+- IL2CPP null checks and array-bounds checks are off on the hot reactive classes
+  through `Onity.Reactive`'s own internal copies of the
+  `Unity.IL2CPP.CompilerServices` attributes (`OnityIl2CppCompilerServices.cs`),
+  which IL2CPP recognizes by name; node delivery is an instance method so that
+  generic calls carry no per-call class-initialization check.
+- The documentation is rewritten: `README.md`, the package `README.md`, the
+  site home, Getting Started (one canonical scene: `PlayerDamaged`,
+  `GameInstaller`, `HealthService`, `HealthHud`, `HitMarker`, `DamageZone` and
+  a scene-free test), every guide, reference and migration page, the AI usage
+  guide, `AGENTS.md`, the `onity-use` skill, the Architecture page, the DI
+  comparison and the performance guide. The dated measurements those pages
+  carried moved verbatim to `docs/archive/`. The `onity-use` agent skill (also
+  shipped as `Documentation~/AI/skills/onity-use/SKILL.md`) documents project
+  and scene scopes (ProjectContext prefab, installer lists,
+  SceneContext/GameObjectContext parent lookup), re-awaitable frame waits and
+  pool retention for bursts; the repository `onity-develop` skill records the
+  development and release rules.
+
+### Fixed
+
+- OnityTask: a stateless frame or yield wait (`NextFrame()`, token-less
+  `DelayFrames(n)`, `NextFixedFrame()`, `NextLateFrame()`, or a `Yield()` used as
+  a task) that was already due when a worker thread registered its continuation
+  ran that continuation inline on the worker. It now resumes on the main thread
+  at the next drain of its timing, as a worker registration on a pending wait
+  always did; a wait timed to `FixedUpdate` therefore resumes at the next fixed
+  step. A worker registration that arrives just after a Play session closed now
+  runs at once instead of waiting in a queue that might never drain. Main-thread
+  registrations are unchanged. Regression tests:
+  `WorkerRegistration_OnADueFrameWait_ResumesOnTheMainThread` and
+  `WorkerRegistration_OnADueYieldWait_ResumesOnTheMainThread`.
+
+### Performance
+
+- Reactive, 2026-10-02 Release Player comparison (Unity 2022.3.62f2, Windows
+  x64, R3 1.3.0 and UniRx 7.1.0, three processes per backend, source `36c68c5`;
+  pre-registered rule: faster when the median Onity/other time ratio is at most
+  0.95 and the worst process at most 1.00): on IL2CPP Onity.Reactive is faster
+  than R3 in all nine rows, median ratios 0.145 to 0.805, worst process 0.811,
+  and faster than UniRx in all nine rows, 0.129 to 0.872, worst process 0.874.
+  Mono, reported and not gated: faster than R3 in seven rows, on par in
+  `PropertySetSame` (1.040), slower in `CombineLatestOnNext` (1.378, not
+  redesigned); against UniRx faster in five rows, on par in `PropertySetSame`
+  (1.001) and `WhereSelectOnNext` (1.015), slower in `SubjectOnNext1` (1.098)
+  and `CombineLatestOnNext` (1.527). Allocation was not measured on either
+  backend. The published 0.6.0 runtime, measured first as the baseline, was
+  slower than R3 in four IL2CPP rows and in every Mono row. The R3 gate (every
+  IL2CPP row faster than R3) failed at the first attempt at the new core
+  (`b73c20e`, `SubjectOnNext1` 1.061) and passed at the second (`9563453`, with
+  single-subscriber publish on par with UniRx at 1.044); the UniRx follow-up
+  gate (every IL2CPP row faster than both libraries, at most two attempts)
+  passed at its first attempt, `36c68c5`. Evidence:
+  `docs/assets/benchmarks/reactive-surpass-r3-2026-10-02.md`.
+- DI, 2026-10-02 Windows IL2CPP release Player re-measurement of the published
+  0.6.0 package (Unity 2022.3.62f2, 19 generated activators, three processes):
+  Onity Baked fastest in all seven scenarios in every process, Onity/VContainer
+  0.21 to 0.59 per process. 0.7.0 does not change DI. Evidence:
+  `docs/benchmarks/di-remeasure-2026-10-02.md`.
+- OnityTask: the measured paths are unchanged from 0.6.0 (the fix above touches
+  only worker-thread registration), so the 2026-10-02 gate (29 of 29 IL2CPP
+  rows, median ratios 0.085 to 0.808) stands.
+
+### Tested
+
+- Unity 2022.3.62f2 EditMode, batch mode, with default and with Release code
+  optimization: 2,362 tests, 2,359 passed, 0 failed, 3 explicit benchmarks
+  skipped.
+- Unity 2022.3.62f2 PlayMode, batch mode: 255 tests. Default code optimization:
+  252 passed, 0 failed, 2 skipped, 1 inconclusive. Release code optimization:
+  251 passed, 0 failed, 3 skipped, 1 inconclusive. The skipped and inconclusive
+  cases are the same explicit benchmark, graphics-device and `AsyncGPUReadback`
+  tests as in 0.6.0.
+- The suites ran on the runtime this release ships (source `b49ea69`).
+- Checksums matched across Onity, R3 and UniRx in every process of the reactive
+  comparison.
 
 ## [0.6.0] - 2026-10-02
 

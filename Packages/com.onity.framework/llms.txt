@@ -1,45 +1,45 @@
 # Onity
 
-> Onity (`com.onity.framework`) is one Unity package for dependency injection, reactive state, typed messaging, factories and pooling, and `OnityTask` async. It gives them one idiom, one disposal model and an engine-free, unit-testable core, and it replaces Zenject or VContainer, R3 or UniRx, MessagePipe and UniTask in a Unity 2022.3 project. Read the AI usage guide first, then only the feature guide the task needs. The package source and its tests are the authority when a document disagrees with the code.
+> Onity (`com.onity.framework`) is one Unity package for dependency injection, reactive state, typed messaging, factories and pooling, and `OnityTask` async, with one lifetime model: a scope owns its services, subscriptions, tasks and pools and disposes them together. The core is engine-free and unit-testable, and the package replaces Zenject or VContainer, R3 or UniRx, MessagePipe and UniTask in a Unity 2022.3 project. Read the AI usage guide first, then only the feature guide the task needs. The package source and its tests are the authority when a document disagrees with the code.
 
 All paths are relative to this file, the package root. `Documentation~/` is generated from the repository's `docs/` folder and is ignored by Unity, so it is plain Markdown on disk.
 
 ## Start here
 
 - [AGENTS.md](AGENTS.md): rules for AI coding agents, and how to install the `onity-use` skill into a project.
-- [AI usage guide](Documentation~/AI/Onity-AI-Usage-Guide.md): the index and rules; source-verified API surface, recipes, a per-module API index and an error-to-fix table.
-- [Getting started](Documentation~/Getting-Started.md): install Onity and build a first scene with dependency injection, reactive state and typed events.
+- [AI usage guide](Documentation~/AI/Onity-AI-Usage-Guide.md): the rules, the canonical scene, a per-module API index and the error-to-fix tables, verified against the source.
+- [Getting started](Documentation~/Getting-Started.md): install Onity and build one scene step by step with dependency injection, reactive state, a typed message, an async loop on the scope token, a pooled prefab and a scene-free test.
 - [onity-use skill](Documentation~/AI/skills/onity-use/SKILL.md): agent skill for code that consumes Onity; copied into a project by `Onity/AI/Install Assistant Guidance...`.
 
 ## Guides
 
-- [Guides index](Documentation~/guide/index.md): task-oriented walkthroughs of each Onity pillar.
-- [Dependency injection](Documentation~/guide/dependency-injection.md): `OnityContainer`, binding and injection, resolve behavior.
-- [Reactive](Documentation~/guide/reactive.md): `IOnityObservable<T>`, `Subject<T>`, `ReactiveProperty<T>`, operators and subscription lifetime.
-- [Events and messaging](Documentation~/guide/events-messaging.md): typed pub/sub with `MessageChannel<T>`, the broker, `OnityEventHub` and `OnityEvent`.
+- [Guides index](Documentation~/guide/index.md): the guides in reading order.
+- [Dependency injection](Documentation~/guide/dependency-injection.md): `OnityContainer`, bindings and lifetimes, identified and conditional bindings, collection injection, injection sites, build and async startup, the composition helpers.
+- [Lifecycle and scopes](Documentation~/guide/lifecycle-and-scopes.md): the one lifetime model, lifetimes, the scope token, disposal order, the lifecycle interfaces and the Unity contexts.
+- [Reactive](Documentation~/guide/reactive.md): `IOnityObservable<T>`, `Subject<T>`, `ReactiveProperty<T>`, operators, Unity frame loops, subscription lifetime and the `OnityTask` bridges.
+- [Events and messaging](Documentation~/guide/events-messaging.md): typed pub/sub with the broker, `OnityEventHub`, `OnityEvent`, keyed and async channels, messages as streams and `OnityTask` receives with backpressure.
 - [Async with OnityTask](Documentation~/guide/onitytask.md): frame waits and PlayerLoop timings, timed waits and timers, composition, triggers and UI events, async streams and channels, scope lifetimes, Unity operations, and the reactive and messaging bridges.
-- [Lifecycle and scopes](Documentation~/guide/lifecycle-and-scopes.md): lifetimes, child containers, startup and per-frame lifecycle interfaces, context ownership.
-- [Factories and pooling](Documentation~/guide/factories-and-pooling.md): `BindFactory`, `BindPooledFactory` and prefab pools.
-- [Performance and IL2CPP](Documentation~/guide/performance-and-il2cpp.md): DI activation paths on Mono and IL2CPP, benchmark evidence and allocation caveats.
-- [Refactoring from existing architecture](Documentation~/guide/refactoring-from-existing-architecture.md): moving singleton managers and scene-order assumptions to injected services and thin MonoBehaviours.
-- [OnityTask and UniTask comparison](Documentation~/guide/onitytask-comparison.md): measured workloads, API coverage and current limits (long, measurement-heavy).
+- [Factories and pooling](Documentation~/guide/factories-and-pooling.md): `IFactory` and `BindFactory`, `BindPooledFactory`, prefab and plain pools, pool lifetime and the parameterized spawn forms.
+- [Performance and IL2CPP](Documentation~/guide/performance-and-il2cpp.md): activation paths, the hot-path design, what the measured comparisons show with their conditions, the known slower cases and the IL2CPP checklist.
+- [Refactoring from existing architecture](Documentation~/guide/refactoring-from-existing-architecture.md): moving singleton managers, static events, coroutine loops and VContainer or Zenject setups to injected services and thin MonoBehaviours.
+- [OnityTask vs UniTask](Documentation~/guide/onitytask-comparison.md): the 2026-10-02 Release Player gate, API coverage and the remaining gaps.
 
 ## Reference
 
-- [Reference index](Documentation~/reference/index.md): API catalogs for each pillar.
-- [DI API](Documentation~/reference/di-api.md): the `OnityContainer` binding and resolve surface.
-- [Reactive operators](Documentation~/reference/reactive-operators.md): every shipped reactive operator.
-- [Messaging API](Documentation~/reference/messaging-api.md): the typed pub/sub surface.
+- [Reference index](Documentation~/reference/index.md): the catalogs for each pillar.
+- [DI API](Documentation~/reference/di-api.md): the `OnityContainer` surface, scope lifetime members, injection sites, composition helpers, factories and exceptions.
+- [Reactive operators](Documentation~/reference/reactive-operators.md): every operator, factory, subscribe overload, lifetime helper, Unity frame source, provider and `OnityTask` bridge.
+- [Messaging API](Documentation~/reference/messaging-api.md): broker and channels, keyed and async channels, `OnityEvent`, `OnityEventHub`, the bridges and the `OnityTask` consumers.
 
 ## Migration
 
-- [Migration index](Documentation~/Migration/index.md): mappings for moving an existing project onto Onity.
-- [From Zenject](Documentation~/Migration/From-Zenject.md): Zenject and Extenject binding, injection and lifecycle mappings.
-- [From VContainer](Documentation~/Migration/From-VContainer.md): VContainer registration, lifetimes and entry points.
-- [From R3 and UniRx](Documentation~/Migration/From-R3.md): reactive primitives, operators and subscription lifetime.
+- [Migration index](Documentation~/Migration/index.md): the method for moving an existing project onto Onity.
+- [From Zenject](Documentation~/Migration/From-Zenject.md): Zenject and Extenject binding, injection, lifecycle and signal mappings, and what ships.
+- [From VContainer](Documentation~/Migration/From-VContainer.md): VContainer registration, lifetimes, entry points and factories.
+- [From R3 and UniRx](Documentation~/Migration/From-R3.md): reactive primitives, operators, subscription lifetime and what is not shipped.
 - [From UniTask](Documentation~/Migration/From-UniTask.md): UniTask 2.5.11 names mapped to `OnityTask`, behavior differences, assembly references and the upgrade notes from Onity 0.5.
 
 ## Optional
 
-- [README](README.md): package overview, feature list, quick start and benchmark snapshot.
+- [README](README.md): what is in the package, the assemblies, the quick start, scene flow, diagnostics and the evidence summary.
 - [CHANGELOG](CHANGELOG.md): release history.

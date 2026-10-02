@@ -1,202 +1,150 @@
 # Onity
 
-Core runtime, editor integration, and tests for the `Onity` package stack:
-dependency injection, reactive state, typed messaging and `OnityTask` async in
-one package, with one lifetime model across them.
+Onity (`com.onity.framework`) is a Unity package that puts dependency injection, reactive state, typed
+messaging, async (`OnityTask`) and factories with pooling in one package with one lifetime model: a scope
+owns its services, subscriptions, tasks and pools, and disposes them together. The core is engine-free and
+has no non-Unity third-party runtime dependency. Unity 2022.3 LTS or newer; this is version 0.7.0.
 
-Current Unity target in this repository: `2022.3.62f2`.
-
-**0.6.0:** OnityTask is faster than UniTask 2.5.11 in all 29 gated rows of the
-published IL2CPP Release Player suite (median speedups 1.2x to 12x), measured at
-Onity's default context-flow setting with pool retention matched to UniTask for
-the 1,024- and 4,096-operation bursts. Mono, opt-in `AsyncLocal` flow and
-default-retention results, including the rows where Onity is slower, are in the
-[comparison guide](https://furkantokkan.github.io/Onity/guide/onitytask-comparison.html).
-The release also covers UniTask's runtime API under Onity names, apart from the
-gaps listed in that guide (PlayerLoop timings, timers, composition, triggers, UI
-events, async LINQ, channels), and adds what a standalone async library cannot:
-DI scope tokens, awaited `IOnityAsyncInitializable` startup, `ReactiveProperty`
-waits and message-bus receives with backpressure. See `CHANGELOG.md` for the
-breaking changes.
+This file describes what is in the installed package. The documentation site is
+[furkantokkan.github.io/Onity](https://furkantokkan.github.io/Onity/), and the same pages ship inside this
+package under `Documentation~/`.
 
 ## For AI coding assistants
 
 - Start with [`AGENTS.md`](AGENTS.md) (Claude Code reaches it through `CLAUDE.md`), then
-  `Documentation~/AI/Onity-AI-Usage-Guide.md` for the API rules and the feature guides under
-  `Documentation~/guide/`. [`llms.txt`](llms.txt) indexes every shipped page.
-- `Documentation~/` is a generated copy of the repository's `docs/` folder. It ships inside the package, so it
-  is available after a Git or registry install, and Unity ignores it.
+  `Documentation~/AI/Onity-AI-Usage-Guide.md` for the rules, the canonical scene, the API index and the
+  error table, and the feature guides under `Documentation~/guide/`. [`llms.txt`](llms.txt) lists every
+  shipped page.
+- `Documentation~/` is a generated copy of the repository's `docs/` folder. It ships inside the package,
+  so it is available after a Git or registry install, and Unity ignores it.
 - To give your project's assistants the `onity-use` skill and the usage guide, run
-  `Onity/AI/Install Assistant Guidance...` in the Unity Editor. Nothing is written until you confirm.
+  `Onity/AI/Install Assistant Guidance...` in the Unity Editor. Nothing is written until you confirm;
+  `Onity/AI/Check Assistant Guidance` reports whether the installed copy matches this package version.
 
-## Scope
+## Assemblies
 
-- Runtime root: `Runtime`
-- Editor root: `Editor`
-- Tests root: `Tests`
-- Benchmarks root: `Benchmarks`
+| Assembly | Engine-free | Contents |
+| --- | --- | --- |
+| `Onity.Core` | yes | `Unit`, `Lifetime`, `DisposableAction` |
+| `Onity.Factory` | yes | `IFactory<...>` |
+| `Onity.DI` | yes | `OnityContainer`, bindings, `[Inject]`, lifecycle interfaces, `IOnityScopeLifetime` |
+| `Onity.Messaging` | yes | `IMessageBroker`, `MessageChannel<T>`, keyed and async channels |
+| `Onity.Reactive` | yes | `IOnityObservable<T>`, `Subject<T>`, `ReactiveProperty<T>`, operators, providers |
+| `Onity.Composition` | yes | `BindReactiveProperty`, `BindSubject`, `DeclareMessage`, `DeclareAsyncMessage` |
+| `Onity.Pooling` | no | `OnityObjectPool<T>`, `PrefabComponentPool<T>`, `IPool<T>`, `IPoolHooks`, `PooledFactory<...>` |
+| `Onity.DOTS` | no | Burst system groups, the integer event bridge, entity pooling helpers (`com.unity.entities` 1.0+) |
+| `Onity.Unity` | no | contexts, installers, `OnityEvent`, `OnityEventHub`, Unity reactive bridges, Input System bridge, `OnityTask` and the async layer, UI Toolkit bridges, physics helpers, scene flow |
+| `Onity.Unity.UGUI` | no | uGUI async events; compiled only when `com.unity.ugui` is installed |
 
-In this development repository the package lives at `Packages/com.onity.framework`.
-On the published `upm` branch these paths are at the package root.
+Every runtime assembly is auto-referenced. Unity assembly references are not transitive: an assembly
+definition that calls `Onity.Unity.Async` extension methods also references `Onity.Reactive`, and
+`Onity.Messaging` for the messaging bridges. `Editor/` holds the Editor tooling (`Onity.Editor`), `Tests/`
+the EditMode and PlayMode suites, `Benchmarks/` the define-gated comparison runners, and `Analyzers/` the
+`Onity.Analyzers.dll` (`ONITY001` to `ONITY006`) and `Onity.SourceGen.dll` that ship with the package.
 
-Core assemblies in this package:
+## Quick start
 
-- `Onity.Core`
-- `Onity.DI`
-- `Onity.Messaging`
-- `Onity.Reactive`
-- `Onity.Factory`
-- `Onity.Composition`
-- `Onity.Pooling`
-- `Onity.Unity`
-- `Onity.Unity.UGUI` (optional; compiled only when `com.unity.ugui` is installed)
-- `Onity.DOTS`
-- `Onity.Editor`
-- `Onity.Tests.EditMode`
-- `Onity.Tests.PlayMode`
-
-## Core Features
-
-- DI container with Zenject-familiar API:
-  - `Bind<TContract>().To<TConcrete>().AsSingle()/AsTransient()`
-  - `BindInterfacesAndSelfTo<T>()`, `BindInterfacesTo<T>()`
-  - `BindInstance(instance)`, `TryResolve<T>(out T instance)`
-  - Constructor, field, property, and method injection
-  - `RegisterBuildCallback(...)`, `RegisterBuildCallbackAsync(...)`
-- Context hierarchy:
-  - `ProjectContext`, `SceneContext`, `GameObjectContext`
-- Messaging:
-  - `IMessageBroker`, `IPublisher<TMessage>`, `ISubscriber<TMessage>`
-  - `IMessageBroker.Publish(...)`, `Subscribe(...)`
-  - `OnityEvent.Publish(...)`, `OnityEvent.Subscribe(...)`, `OnityEvent.Observe<TMessage>()`
-  - `OnityEventHub` with `Publish`, `Subscribe`, `Observe<TMessage>()`
-- Reactive:
-  - `Subject<T>`, `ReactiveProperty<T>`, `CompositeDisposable`
-  - `Where`, `Select`, `FromEvent`
-  - `Debounce`, `Throttle`, `ThrottleLast`, `Buffer`, `TakeUntil(Task/Token)`
-  - `SelectAwait`, `WhereAwait`
-  - `ObserveOnThreadPool`, `SelectOnThreadPool`, `ObserveOnMainThread`
-  - `EveryUpdate`, `EveryFixedUpdate`, `EveryLateUpdate`
-  - Optional thread mode for frame streams:
-    - `OnityUnityThreadMode.SingleThread`
-    - `OnityUnityThreadMode.JobMultiThread`
-    - `OnityUnityThreadMode.BurstJobMultiThread`
-    - `OnityUnityThreadMode.DotsEventDriven`
-  - Task bridge (`FirstAsync`, `ToTask`)
-- Async (`Onity.Unity.Async`, replaces UniTask):
-  - `OnityTask` / `OnityTask<T>` / `OnityTaskVoid` with Onity's own pooled method builders
-  - Frame waits, 19 PlayerLoop timings (`OnityPlayerLoopTiming`), `Yield`, `Delay`,
-    `WaitForSeconds`, `WaitUntil` / `WaitWhile`, `WaitUntilValueChanged`,
-    `OnityPlayerLoopTimer`, `CancelAfterSlim`, `OnityTimeoutController`, `Timeout`
-  - `WhenAll` / `WhenAny` over arrays, sequences and typed tuples, `WhenEach`
-  - `SwitchToMainThread`, `ReturnToMainThread`, `SwitchToThreadPool`, `RunOnThreadPool`
-  - `OnityTaskCompletionSource(<T>)`, `OnityAutoResetTaskCompletionSource(<T>)`
-  - Destroy tokens, lifecycle and MonoBehaviour message triggers, `UnityEvent`
-    and UI Toolkit events, optional uGUI events (`Onity.Unity.UGUI`)
-  - `IOnityAsyncEnumerable<T>` streams with UniTask's async LINQ operators,
-    `Subscribe`, `Publish`, `BindTo`, channels and `OnityAsyncReactiveProperty<T>`
-  - Scene, web request, `AsyncOperation`, asset, `JobHandle` and coroutine bridges
-  - DI and reactive integration: scope lifetime tokens, `IOnityAsyncInitializable`,
-    `ReactiveProperty.WaitAsync`, message-bus `ReceiveAsync` / `SubscribeQueued`
-
-Pooled `OnityTask` values (cancelable and timed waits, Unity operations and
-suspended async methods) are single-consumer. Await each value once. If several
-consumers must share an operation, call `Preserve()` once and share its returned
-`OnityTask`, or call `AsTask()` once and share the returned `Task`. In Play, frame
-waits without a cancelable token and `Yield()` are stateless and may be awaited
-by any number of consumers. For an operation completed by a callback, use
-`OnityTaskCompletionSource<T>` or its untyped variant.
-
-Suspended `async OnityTask` methods bind a pooled native runner that returns to
-its pool when the task is consumed. By default they do not flow the execution
-context across awaits, matching UniTask; set `OnityTask.FlowExecutionContext =
-true` before any async Onity method starts to flow `AsyncLocal<T>` values, which
-allocates a context per suspension only once a thread has stored an
-`AsyncLocal<T>` value. Assemblies that call `Onity.Unity.Async` extension methods
-must reference `Onity.Reactive` (and `Onity.Messaging` for the messaging bridges).
-
-See the [Async with OnityTask guide](https://furkantokkan.github.io/Onity/guide/onitytask.html)
-for cancellation, timings, composition, streams, interop, and diagnostics.
-- Pool and factory convenience:
-  - `IFactory<T>`, `IFactory<TParam,T>`, `IFactory<TParam1,TParam2,T>`
-  - `IPool<T>`, `OnityObjectPool<T>`, `PrefabComponentPool<T>`
-  - `IPoolHooks` for pooled component reset callbacks
-  - `BindPooledFactory(...)`
-  - `BindScriptableObject(...)`
-- Scene flow helpers:
-  - `OnitySceneFlow`
-  - `OnitySceneLoader`
-  - `OnitySceneTransitionStore`
-  - `OnitySceneFlowProfile`
-  - `OnitySceneFlowStateMachine`
-  - Bootstrap readiness and default UI Toolkit loading initiators
-
-## Quick Start
-
-1. Create a runtime-loadable `ProjectContext` prefab:
-   - `Onity/Contexts/Create ProjectContext Prefab`
-2. Add `SceneContext` to gameplay scenes and assign installers.
-3. Add `GameObjectContext` for local per-prefab scope when needed.
-4. Use `OnitySceneFlow` + `OnitySceneInitiator` for SEP-style scene entry.
-5. Optional: create and assign an `OnitySceneFlowProfile` to drive
-   grouped scene routing with optional singleton `Bootstrap` / `Loading`
-   scenes plus as many `Menu`, `Hub`, and `Gameplay` scenes as your game needs.
-   The Scene Flow Manager includes 2-, 3-, and 4-stage ready presets plus a
-   Blank Template that creates only an empty profile asset.
-
-## Minimal Installer Example
+An installer binds the scene's services; a plain C# service receives them through its constructor. This is
+the installer and the service of the canonical scene from `Documentation~/Getting-Started.md`, which also
+shows the `HealthHud`, the pooled `HitMarker`, the `DamageZone` and a test that runs the service without a
+scene:
 
 ```csharp
-using Onity.DI;
-using Onity.Unity.Installers;
-using Onity.Unity.Messaging;
+using Onity.Composition;        // BindReactiveProperty
+using Onity.DI;                 // OnityContainer
+using Onity.Unity.Installers;   // MonoInstaller, BindPooledFactory
+using Onity.Unity.Messaging;    // BindMessageChannel
 using UnityEngine;
 
 public sealed class GameInstaller : MonoInstaller
 {
-    [SerializeField] private GameConfig m_config;
+    [SerializeField] private HitMarker m_hitMarkerPrefab;
+    [SerializeField] private Transform m_hitMarkerRoot;
 
     public override void InstallBindings(OnityContainer container)
     {
-        container.BindScriptableObject(m_config);
-        container.BindInterfacesAndSelfTo<PlayerService>().AsSingle().NonLazy();
-        container.BindFactory<Projectile, ProjectileFactory>();
-        container.BindMessageChannel<PlayerDamagedMessage>();
+        // ReactiveProperty<int> and IReadOnlyReactiveProperty<int>; the scope disposes it.
+        container.BindReactiveProperty(initialValue: 100);
+
+        // IPublisher<PlayerDamaged> and ISubscriber<PlayerDamaged> on the scope's message broker,
+        // the same channel OnityEvent and OnityEventHub use.
+        container.BindMessageChannel<PlayerDamaged>();
+
+        // IFactory<HitMarker> to spawn and IPool<HitMarker> to release; the scope disposes the pool.
+        container.BindPooledFactory(m_hitMarkerPrefab, m_hitMarkerRoot, defaultCapacity: 8, maxSize: 32);
+
+        // The container constructs it, runs Initialize() at Build() and disposes it with the scope.
+        container.BindInterfacesAndSelfTo<HealthService>().AsSingle();
     }
 }
 ```
 
-## Minimal Consumer Example
-
 ```csharp
-using Onity.DI;
-using Onity.Messaging;
+using System;
+using System.Threading;
+using Onity.DI;                 // IOnityInitializable, IOnityScopeLifetime, AddTo(scope)
+using Onity.Messaging;          // ISubscriber<T>
+using Onity.Reactive;           // ReactiveProperty<T>
+using Onity.Unity.Async;        // OnityTask, OnityTaskVoid
 
-public sealed class PlayerService
+public sealed class HealthService : IOnityInitializable
 {
-    private readonly ISubscriber<PlayerDamagedMessage> m_damageStream;
+    private const int k_maxHealth = 100;
+    private const float k_regenerationInterval = 1f;
 
-    public PlayerService(ISubscriber<PlayerDamagedMessage> damageStream)
+    private readonly ReactiveProperty<int> m_health;
+    private readonly IOnityScopeLifetime m_scope;
+
+    public HealthService(ReactiveProperty<int> health, ISubscriber<PlayerDamaged> damage, IOnityScopeLifetime scope)
     {
-        m_damageStream = damageStream;
+        m_health = health;
+        m_scope = scope;
+        damage.Subscribe(OnDamaged).AddTo(scope);     // unsubscribed when the scope ends
+    }
+
+    public void Initialize()
+    {
+        RegenerateAsync(m_scope.Token).Forget();      // the token is canceled before the scope disposes its services
+    }
+
+    private void OnDamaged(PlayerDamaged message)
+    {
+        m_health.SetValue(Math.Max(0, m_health.Value - message.Amount));
+    }
+
+    private async OnityTaskVoid RegenerateAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            await OnityTask.Delay(k_regenerationInterval, token);
+            m_health.SetValue(Math.Min(k_maxHealth, m_health.Value + 1));
+        }
     }
 }
 ```
 
-## SEP Scene Flow Example
+Add a `SceneContext` to the scene (search for it in Add Component), add the installer to the same object
+and to the context's Installers list, and place the MonoBehaviours under the context so it injects them in
+`Awake`. Services that must outlive scene loads go on the `ProjectContext` prefab, created once with
+`Onity/Contexts/Create ProjectContext Prefab`.
+
+## Scene flow
+
+`Onity.Unity.SceneFlow` provides `OnitySceneFlow`, `OnitySceneLoader`, `OnitySceneTransitionStore`,
+`OnitySceneFlowProfile` and `OnitySceneFlowStateMachine`, with bootstrap readiness and the default UI
+Toolkit loading initiators. A profile routes grouped scenes with optional singleton Bootstrap and Loading
+scenes plus as many Menu, Hub and Gameplay scenes as the game needs; `Onity/Tools/Scene Flow Manager`
+creates profiles from 2-, 3- and 4-stage presets or a blank template.
 
 ```csharp
-using Onity.Unity.SceneFlow;
 using System.Threading.Tasks;
-using UnityEngine;
+using Onity.Unity.SceneFlow;
 
 public static class BootFlow
 {
     public static Task GoToGameplayAsync(OnitySceneFlowProfile profile)
     {
-        return OnitySceneFlow.TransitionAsync(
-            profile,
-            OnitySceneFlowStateId.Gameplay);
+        return OnitySceneFlow.TransitionAsync(profile, OnitySceneFlowStateId.Gameplay);
     }
 
     public static Task GoToBossLevelAsync(OnitySceneFlowProfile profile)
@@ -206,102 +154,46 @@ public static class BootFlow
 }
 ```
 
-## Diagnostics and Validation
+## Diagnostics and validation
 
-- `Onity/Tools/Monitor`
-- `Onity/Tools/Container Diagnostics`
-- `Onity/Tools/Task Tracker`
-- `Onity/Tools/Observable Tracker`
-- `Onity/Tools/Pool Monitor`
-- `Onity/Tools/Scene Flow Manager`
-- `Onity/Validation/Validate Scene`
-- `Onity/Validation/Validate All Scenes`
+Editor windows: `Onity/Tools/Monitor`, `Onity/Tools/Container Diagnostics`, `Onity/Tools/Task Tracker`,
+`Onity/Tools/Observable Tracker`, `Onity/Tools/Pool Monitor`, `Onity/Tools/Scene Flow Manager`. Commands:
+`Onity/Validation/Validate Scene`, `Onity/Validation/Validate All Scenes`,
+`Onity/Contexts/Create ProjectContext Prefab`. The Task Tracker's stack-trace capture is for leak
+debugging only; it adds allocation in the Editor.
 
-Task tracker notes:
+## Evidence
 
-- Stack trace capture toggle is available in `Onity/Tools/Task Tracker`.
-- Use stack trace capture only for leak debugging. It has extra allocation cost in editor.
+Measured with the runners in this repository on one Windows PC with Unity 2022.3.62f2; a ratio is Onity's
+time divided by the other library's time in the same process, so below 1 means Onity took less time. These
+are timing results, not allocation or cross-platform claims; the full tables, conditions and known slower
+cases are on the documentation site's [Comparisons](https://furkantokkan.github.io/Onity/comparisons/)
+pages.
 
-## UniTask Comparison Snapshot
+- Dependency injection (Windows IL2CPP release Player, 2026-10-02, three processes): Onity Baked fastest in
+  all seven scenarios in every process, Onity / VContainer 0.21 to 0.59 per process.
+- Reactive (Release Players, 2026-10-02, R3 1.3.0 and UniRx 7.1.0, three processes per backend): faster
+  than R3 and than UniRx in all nine IL2CPP rows (medians 0.145 to 0.805 and 0.129 to 0.872); on Mono
+  faster than R3 in seven rows and than UniRx in five, with `CombineLatest` slower than both.
+- Async (Release Player gate, 2026-10-02, UniTask 2.5.11, three processes per backend and suite): faster in
+  all 29 gated IL2CPP rows (medians 0.085 to 0.808); on Mono faster in 25 of 29, with the four synchronous
+  completed-result rows 1.09x to 1.92x slower.
 
-The 2026-10-02 Release Player gate (Unity 2022.3.62f2, Windows x64, UniTask 2.5.11,
-three processes per backend and suite) measured OnityTask faster in all 29 gated
-IL2CPP rows, with median Onity/UniTask time ratios from 0.085 to 0.808, at the
-default `FlowExecutionContext = false` and with pool retention matched for the
-1,024- and 4,096-operation bursts. It is a timing result for those workloads on
-one machine, not an allocation or cross-platform claim. Reported limits:
+## Build and test
 
-- Mono: the four synchronous completed-result rows are 1.09x to 1.92x slower.
-- Opt-in `AsyncLocal` flow: a complete method lifecycle with four suspensions is
-  1.5x to 1.6x slower on IL2CPP and 2.6x to 2.7x on Mono.
-- Default pool retention: 4,096-call bursts of one async method are up to 2.6x
-  slower; raise `OnityTask.RunnerPoolCapacity` / `SourcePoolCapacity` for them.
-
-Remaining API gaps against UniTask: timing and `cancelImmediately` overloads of the
-Unity operation adapters, a native shareable `WhenAll` output,
-`UniTaskSynchronizationContext`, index-only `SelectAwait` / `WhereAwait`, and an
-integer-milliseconds `Delay`. The
-[measured OnityTask comparison](https://furkantokkan.github.io/Onity/guide/onitytask-comparison.html)
-records every row, the feature coverage and the evidence.
-
-## Benchmark Snapshot
-
-Latest published DI runs: Unity 2022.3.62f3, Windows, 512 warmup iterations,
-8 measured samples, mean ns/op. See `Benchmarks/Results/di-benchmark-summary.md`
-and `Benchmarks/Results/di-benchmark-player-latest.md` for full reports.
-
-Editor / Mono (`2026-07-12T13:31:37Z`):
-
-| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Lower ns/op vs VContainer |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~69 ns | ~78 ns | ~217 ns | ~2,778 ns | ~68% |
-| Resolve Transient | ~1,030 ns | ~1,366 ns | ~2,352 ns | ~12,561 ns | ~56% |
-| Resolve Combined | ~980 ns | ~875 ns | ~1,905 ns | ~14,382 ns | ~49% |
-| Resolve Complex (6-level) | ~20,874 ns | ~20,828 ns | ~40,270 ns | ~281,814 ns | ~48% |
-| Prepare & Register Complex | ~40,613 ns | ~54,996 ns | ~139,246 ns | ~188,865 ns | ~71% |
-
-Windows IL2CPP Player (`2026-07-12T13:34:55Z`, source-generated activators, 10,000 iterations):
-
-| Scenario | Onity Standard | Onity Baked | VContainer | Zenject | Lower ns/op vs VContainer |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Resolve Singleton | ~18 ns | ~18 ns | ~95 ns | ~449 ns | ~82% |
-| Resolve Transient | ~159 ns | ~191 ns | ~541 ns | ~2,448 ns | ~71% |
-| Resolve Combined | ~176 ns | ~196 ns | ~612 ns | ~3,080 ns | ~71% |
-| Resolve Complex (6-level) | ~5,107 ns | ~5,071 ns | ~12,475 ns | ~59,327 ns | ~59% |
-| Prepare & Register Complex | ~21,128 ns | ~24,490 ns | ~34,888 ns | ~59,567 ns | ~39% |
-
-Timing numbers are from a Windows PC and are indicative, not a guarantee. The
-committed allocation columns are withdrawn until the allocation harness is
-corrected, because the earlier Editor harness reported 0 B for every container.
-Onity is ahead on every measured Editor/Mono and Windows IL2CPP player timing
-path in the current benchmark reports. The raw `Onity (Reflection)` label is the
-standard dense-provider lane; reflection is only its activation fallback. A
-focused 1000-sample IL2CPP singleton gate measured standard Onity at `18.80 ns/op`
-versus VContainer at `94.39 ns/op`. Source-generated activators keep hot
-IL2CPP construction away from `ConstructorInfo.Invoke` on AOT builds.
-
-## Build and Test
-
-From a clone of the full development repository, run this at the repository
-root to compile the engine-free assemblies:
+From a clone of the development repository, compile the engine-free assemblies at the repository root:
 
 ```powershell
 dotnet build onity-core-ci.csproj -c Release -nologo
 ```
 
-Unity generates `Onity.Core.csproj`, `Onity.DI.csproj`, `Onity.Unity.csproj`,
-and the test projects after opening the development repository in Unity. Those
-generated files can then be built from the command line for local compile
-checks. A project consuming only the UPM package should validate it through its
-own Unity compilation and tests.
-
-EditMode tests are under:
-
-- `Tests/EditMode/Scripts`
+Open the repository as a Unity project and run the Test Runner for the EditMode and PlayMode suites under
+`Tests/`. A project that consumes only the UPM package validates it through its own Unity compilation and
+tests.
 
 ## Notes
 
-- Runtime implementation is self-owned under `Runtime`.
-- Third-party frameworks in the development repository are reference and
-  comparison inputs only.
-- Performance claims should be validated with `Benchmarks`.
+- The runtime implementation is self-owned under `Runtime`; the development repository's third-party
+  frameworks are reference and comparison inputs only.
+- Performance claims are measurements; validate them with `Benchmarks/` before relying on them for your
+  target platform.
