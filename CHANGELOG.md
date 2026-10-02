@@ -5,6 +5,17 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- The `onity-use` agent skill (also shipped as
+  `Documentation~/AI/skills/onity-use/SKILL.md`) documents project and scene
+  scopes (ProjectContext prefab, installer lists, SceneContext/GameObjectContext
+  parent lookup), re-awaitable frame waits and pool retention for bursts; the
+  repository `onity-develop` skill records the 0.6.0 development and release
+  rules.
+
 ## [0.6.0] - 2026-10-02
 
 OnityTask is faster than UniTask 2.5.11 in all 29 gated rows of the published
