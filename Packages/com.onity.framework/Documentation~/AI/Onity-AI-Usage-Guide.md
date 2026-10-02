@@ -578,8 +578,8 @@ exist only on this type.
 
 Typed pub/sub over the scope's broker. `MessageChannel<T>` delivers one message type: `Publish`
 allocates nothing in steady state, a handler may unsubscribe from inside a publish pass, and the channel
-throws after `Dispose()`. Publish and subscribe on the Unity main thread; the broker locks channel
-creation only. Handlers run in subscription order until an unsubscribe outside a publish pass moves the
+throws after `Dispose()`. Publish and subscribe on the Unity main thread; the broker locks its channel
+table, never the publish path. Handlers run in subscription order until an unsubscribe outside a publish pass moves the
 last handler into the freed slot, so the order is not a priority contract.
 
 ### 4.1 Surface

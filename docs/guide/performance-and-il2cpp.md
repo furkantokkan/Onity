@@ -16,7 +16,8 @@ conditions and their limits; the records are the authority.
 Contents: [Three activation strategies, one container](#three-activation-strategies-one-container),
 [Hot-path design](#hot-path-design), [What the numbers show](#what-the-numbers-show),
 [Known slower cases](#known-slower-cases), [Onity.Reactive on IL2CPP](#onityreactive-on-il2cpp),
-[OnityTask on IL2CPP](#onitytask-on-il2cpp), [IL2CPP checklist](#il2cpp-checklist),
+[Onity.Messaging on IL2CPP](#onitymessaging-on-il2cpp), [OnityTask on IL2CPP](#onitytask-on-il2cpp),
+[IL2CPP checklist](#il2cpp-checklist),
 [What remains](#what-remains).
 
 ## Three activation strategies, one container
@@ -64,8 +65,14 @@ bool compiled = OnityContainer.IsCompiledActivationSupported;
   callback directly, and run one exception region per notification pass. The synchronous operators are
   sink nodes, with `Where` followed by `Select` fused into one sink. Steady-state `OnNext` and `SetValue`
   allocate nothing.
-- Messaging: `MessageChannel<T>.Publish` is array-backed and allocates nothing in steady state; the only
-  lock in the broker is on channel creation.
+- Messaging: a subscription is one object that is both the slot entry the channel keeps and the
+  `IDisposable` the subscriber receives, and it knows its slot, so a dispose is a constant-time slot
+  removal.
+  `MessageChannel<T>.Publish` walks an array of slots, allocates nothing in steady state and returns at
+  once without subscribers. `AsyncMessageChannel<T>.PublishAsync` runs synchronously completing handlers
+  inline without a state machine, moves to an awaiting continuation only at the first pending handler,
+  and copies its handler array only when a subscription is disposed during a pass. The broker locks its
+  channel table, never the publish path.
 - Frame streams: `EveryUpdate()` and the other frame sources share one pump and deliver without
   allocating.
 - Async: a suspended `async OnityTask` method binds a pooled runner that holds the state machine by value;
@@ -84,7 +91,7 @@ process; below 1 means Onity took less time. The [Comparisons](../comparisons/in
 full tables.
 
 - Dependency injection. In the Windows IL2CPP release Player run of 2026-10-02 (Unity 2022.3.62f2, the
-  published 0.6.0 package whose DI code is unchanged in 0.7.0, 19 generated activators, three processes,
+  published 0.6.0 package whose DI code is unchanged in 0.7.0 and 0.8.0, 19 generated activators, three processes,
   512 warmups and 8 samples of 10,000 operations), Onity Baked was fastest in all seven scenarios in every
   process, with Onity / VContainer per-process ratios of 0.21 to 0.59
   ([record](../benchmarks/di-remeasure-2026-10-02.md)). The 2026-10-01 re-measurement found 0.23 to 0.57
@@ -116,6 +123,16 @@ full tables.
   ([record](../assets/benchmarks/reactive-surpass-r3-2026-10-02.md)). Mono is reported, not gated: faster
   than R3 in seven rows, on par in one, slower in `CombineLatest`; faster than UniRx in five rows, on par
   in two, slower in single-subscriber publish and `CombineLatest`.
+- Messaging. In the 2026-10-02 Release Player comparison (Unity 2022.3.62f2, Windows x64, MessagePipe
+  1.8.1 as the Unity package compiled against UniTask 2.5.10, three processes per backend, source
+  `52e209a`, which is the shipped runtime `4cc5763` plus the harness), Onity.Messaging took less time
+  than MessagePipe in all nine IL2CPP rows, median ratios 0.150 to 0.846 and worst process 0.895, and in
+  all nine Mono rows, 0.280 to 0.756 and worst process 0.862
+  ([record](../assets/benchmarks/messaging-surpass-messagepipe-2026-10-02.md)). Against MessagePipe's
+  .NET build (the NuGet netstandard2.0 dll) the same runtime took less time in all nine rows on both
+  backends (IL2CPP medians 0.197 to 0.807, worst process 0.974). Allocation was not measured; the
+  subscribe-and-dispose rows ran 90 to 93 gen-0 collections per row in the Unity-package run (92 to 93
+  in the NuGet run) against 426 to 430 for the 0.7.0 runtime (IL2CPP, sum over three processes).
 
 ## Known slower cases
 
@@ -149,6 +166,16 @@ runs once per delivered value. While exactly one live subscriber is registered, 
 `ReactiveProperty<T>.SetValue` deliver to it through a direct reference the node list keeps, in their own
 exception region and without the general loop; a subscribe, unsubscribe or dispose inside that callback
 falls back to the general pass. The gate results above were measured on this build.
+
+## Onity.Messaging on IL2CPP
+
+`Onity.Messaging` carries the same internal copies of the attributes
+(`OnityMessagingIl2CppCompilerServices.cs`; the engine-free CI build compiles the reactive copy for both
+assemblies). `[Il2CppSetOption(Option.NullChecks, false)]` and
+`[Il2CppSetOption(Option.ArrayBoundsChecks, false)]` are applied to `MessageChannel<T>` and
+`AsyncMessageChannel<T>`, and null-check removal alone to their subscription objects, where every
+index stays inside the tracked count and the public entry points validate their arguments. The
+messaging comparison above was measured on this build.
 
 ## OnityTask on IL2CPP
 
@@ -195,14 +222,15 @@ What the measured Player build relies on:
 ## What remains
 
 The generator is explicit: it emits activators for types marked `[OnityGenerateActivator]`. Future work can
-improve discovery, generate member setters and add device coverage. The reactive comparison measured no
-allocation on either backend and did not redesign `CombineLatest`; the DI allocation figures come from a
-Development Player and the Editor, not from the release Players that supply the timing.
+improve discovery, generate member setters and add device coverage. The reactive and messaging
+comparisons measured no allocation on either backend, and `CombineLatest` was not redesigned; the DI
+allocation figures come from a Development Player and the Editor, not from the release Players that
+supply the timing.
 
 ## See also
 
 - [Dependency Injection](dependency-injection.html): the binding and resolve surface the fast path serves.
 - [Reactive](reactive.html) and [Events and Messaging](events-messaging.html): the emit paths.
 - [Async with OnityTask](onitytask.html#bursts-and-pool-retention): pool retention and context flow.
-- [Comparisons](../comparisons/index.html): the three measured comparisons and how to read them.
+- [Comparisons](../comparisons/index.html): the four measured comparisons and how to read them.
 - [Architecture](../Architecture-Review.html): the assembly boundaries and the node design.

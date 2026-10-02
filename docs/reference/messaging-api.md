@@ -31,7 +31,8 @@ token.Dispose();
 `MessageChannel<T>.Publish` allocates nothing in steady state, a handler may
 unsubscribe from inside a publish pass, and `Publish` or `Subscribe` after
 `Dispose()` throw `ObjectDisposedException`. Publish and subscribe on the Unity
-main thread: the broker locks channel creation only. Handlers run in
+main thread: the broker locks its channel table, never the publish path.
+Handlers run in
 subscription order until an unsubscribe outside a publish pass moves the last
 handler into the freed slot, so the order is not a priority contract.
 
@@ -112,16 +113,25 @@ one and bind it with `BindInstance`.
 ## Async channels
 
 `sealed class AsyncMessageChannel<TMessage> : IAsyncPublisher<TMessage>, IAsyncSubscriber<TMessage>, IDisposable`.
-`PublishAsync` awaits each handler before calling the next, over a pooled
-snapshot, so a subscribe or unsubscribe inside a handler cannot corrupt the
-pass.
+`PublishAsync` awaits each handler before calling the next and checks the
+token before each one. A pass delivers to the handlers registered when it
+started: a handler disposed during the pass still receives that message, and
+one added during the pass first receives the next. It never throws
+synchronously; a disposed channel, a canceled token or a throwing handler
+completes the returned `ValueTask` as an `async` method would. Handlers run
+inline until the first pending one; the rest of the pass runs in an awaiting
+continuation. A handler that is not itself an `async` method runs its
+synchronous work in the caller's context, so an `AsyncLocal<T>` value or a
+`SynchronizationContext` it sets stays visible to the caller after
+`PublishAsync` returns; an `async` handler keeps its own scope, and the
+handlers inside the continuation leave the caller's context unchanged.
 
 | API | Signature | Namespace | Notes |
 | --- | --- | --- | --- |
-| `IAsyncPublisher<TMessage>.PublishAsync` | `PublishAsync(TMessage message, CancellationToken ct) -> ValueTask` | `Onity.Messaging` | Sequential, awaited delivery. `ct` is checked before each handler; cancellation surfaces as `OperationCanceledException`. A throwing handler faults the task. |
+| `IAsyncPublisher<TMessage>.PublishAsync` | `PublishAsync(TMessage message, CancellationToken ct) -> ValueTask` | `Onity.Messaging` | Sequential, awaited delivery to the handlers registered when the call starts. `ct` is checked before each handler; a canceled token, or a handler that throws `OperationCanceledException`, completes the task as canceled (`OperationCanceledException` on await); any other handler exception or a disposed channel completes it as faulted; nothing is thrown synchronously. Handlers run inline until the first pending one. |
 | `IAsyncSubscriber<TMessage>.Subscribe` | `Subscribe(Func<TMessage, CancellationToken, ValueTask> handler) -> IDisposable` | `Onity.Messaging` | Registers an awaitable handler. A null handler throws. |
 | `SubscriberCount` | `int { get; }` | `Onity.Messaging` | Active subscriber count. |
-| `Dispose` | `Dispose() -> void` | `Onity.Messaging` | Afterwards `PublishAsync` and `Subscribe` throw `ObjectDisposedException`. |
+| `Dispose` | `Dispose() -> void` | `Onity.Messaging` | Afterwards `Subscribe` throws `ObjectDisposedException` and `PublishAsync` returns a task faulted with it; a pass in flight finishes its own start set. |
 | `PublishOnityTask` | `PublishOnityTask<TMessage>(this IAsyncPublisher<TMessage> publisher, TMessage message, CancellationToken cancellationToken) -> OnityTask` | `Onity.Unity.Async` | `PublishAsync` as an `OnityTask`. |
 | `SubscribeOnityTask` | `SubscribeOnityTask<TMessage>(this IAsyncSubscriber<TMessage> subscriber, Func<TMessage, OnityTask> handler) -> IDisposable` | `Onity.Unity.Async` | Subscribes a handler that returns `OnityTask`; also with a `Func<TMessage, CancellationToken, OnityTask>` handler. |
 
@@ -223,7 +233,7 @@ overloads on any `Component`: `owner.Publish(message)`,
 | Type | Raised when |
 | --- | --- |
 | A handler's own exception | Propagates out of `Publish` (or faults `PublishAsync`); the remaining handlers for that message are skipped. Catch inside the handler when one listener must not break the others. |
-| `ObjectDisposedException` | `Publish`, `Subscribe` or `PublishAsync` after `Dispose()`; any `MessageBroker` member after the broker was disposed. |
+| `ObjectDisposedException` | `Publish` or `Subscribe` after `Dispose()`; `PublishAsync` after `Dispose()` returns a task faulted with it; any `MessageBroker` member after the broker was disposed. |
 | `ArgumentNullException` | A null handler, key, broker, list or owner component. |
 | `InvalidOperationException` | `OnityEvent` found no active context; a `ReceiveAllAsync` buffer overflowed with `OnityBufferOverflow.Fault`. |
 | `OperationCanceledException` | The token passed to `PublishAsync`, `ReceiveAsync` or `ReceiveAllAsync` was canceled. Normal cancellation. |

@@ -1,12 +1,12 @@
 ---
 title: "Architecture"
 nav_order: 7
-description: "How the Onity 0.7 package is put together: assembly boundaries, composition roots and scopes, DI activation paths, the reactive node design and the messaging model, the async boundary, factories and pools, Unity adapters and build-time tooling."
+description: "How the Onity 0.8 package is put together: assembly boundaries, composition roots and scopes, DI activation paths, the reactive node design and the messaging model, the async boundary, factories and pools, Unity adapters and build-time tooling."
 ---
 
 # Architecture
 
-This page describes how the Onity package (`com.onity.framework`, 0.7.x) is put together: which
+This page describes how the Onity package (`com.onity.framework`, 0.8.x) is put together: which
 assembly owns what, where the composition roots are, how dependency injection activates types on JIT
 and AOT runtimes, how the reactive, messaging and async layers share one lifetime model, and which
 pieces are Unity adapters. Read it when you decide where new code belongs, when you review a dependency
@@ -68,8 +68,10 @@ transitive: an assembly that calls `Onity.Unity.Async` extension methods also re
 Outside the runtime: `Onity.Editor` (the Editor windows, validation and assistant-guidance commands),
 `Onity.Tests.EditMode`, `Onity.Tests.PlayMode` and `Onity.Tests.UGUI.PlayMode`, the benchmark assemblies
 (`Onity.Benchmarks` and its Editor assembly under `ONITY_BENCHMARKS`, `Onity.TaskBenchmarks` and its
-Editor assembly under `ONITY_TASK_BENCHMARKS`; they reference the comparison libraries and compile only
-in the development repository or a benchmark host), the `Analyzers/` folder with `Onity.Analyzers.dll`
+Editor assembly under `ONITY_TASK_BENCHMARKS`, `Onity.ReactiveBenchmarks` and its Editor assembly under
+`ONITY_REACTIVE_BENCHMARKS`, `Onity.MessagingBenchmarks` and its Editor assembly under
+`ONITY_MESSAGING_BENCHMARKS`; they reference the comparison libraries and compile only in the
+development repository or a benchmark host), the `Analyzers/` folder with `Onity.Analyzers.dll`
 and `Onity.SourceGen.dll`, and the generated `Documentation~/` folder.
 
 ## Composition roots and scopes
@@ -192,8 +194,13 @@ any other active context, and the owner members use the context on the component
 with that default as fallback. `BindMessageChannel<T>` binds the broker's own publisher and subscriber,
 so direction-only injection and `OnityEvent` share one channel; `DeclareMessage<T>` and
 `DeclareAsyncMessage<T>` create standalone channels the broker never sees. Keyed and async channels are
-explicit types. A handler that throws propagates out of `Publish` and the remaining handlers for that
-message are skipped, which is the opposite of the subject's behavior and is documented as such.
+explicit types. Since 0.8.0 a channel subscription is one object, like a reactive node: the slot entry
+the channel keeps is the `IDisposable` the subscriber receives, it knows its index, and removal is a
+constant-time slot swap outside a pass or a cleared slot compacted after the outermost pass;
+`AsyncMessageChannel<T>` runs synchronously completing handlers inline and copies its handler array only
+when a subscription is disposed while a pass holds it. A handler that throws propagates out of `Publish`
+and the remaining handlers for that message are skipped, which is the opposite of the subject's behavior
+and is documented as such.
 
 ## Async boundary
 
@@ -269,7 +276,8 @@ disposes; a pool passed to `BindPooledFactory(pool)` stays caller-owned until `p
   `Onity/AI/Check Assistant Guidance`.
 - The benchmark runners under `Benchmarks/`, gated behind their defines (`ONITY_BENCHMARKS` for DI,
   `ONITY_TASK_BENCHMARKS` for OnityTask, `ONITY_REACTIVE_BENCHMARKS` for the reactive comparison with R3
-  and UniRx), and the host tools under `tools/benchmark-host`.
+  and UniRx, `ONITY_MESSAGING_BENCHMARKS` for the messaging comparison with MessagePipe), and the host
+  tools under `tools/benchmark-host`.
 - `tools/docs/sync-package-docs.py`, which generates `Documentation~/` from `docs/` and the `onity-use`
   skill, and whose `--check` mode runs in CI.
 

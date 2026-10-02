@@ -134,9 +134,26 @@ Expected pattern:
 - Prefer explicit message types over shared object payloads.
 - Subscription lifetimes must be disposable and tied to scope/object lifetime
   (`AddTo(this)` in a MonoBehaviour, `AddTo(CompositeDisposable)` in plain C#).
-- No per-publish allocation on steady-state paths is a target for hot channels;
-  `MessageChannel<T>` uses the same `SubscriptionEntry[]` design as `Subject<T>`
-  (steady-state `Publish` designed allocation-free, re-entrancy-safe).
+- No per-publish allocation on steady-state paths is a target for hot channels.
+  Since 0.8.0 `MessageChannel<T>` and `AsyncMessageChannel<T>` keep an array of
+  slots, each holding the handler and its subscription object; that object is
+  also the `IDisposable` returned to the caller and knows its index, so a
+  dispose runs at most once and removes its slot in constant time (a swap with
+  the last slot outside a pass; during one, a cleared slot and in-order
+  compaction after the outermost pass, after the async channel has copied its
+  array once so the passes in flight keep theirs). `MessageChannel<T>.Publish` re-reads the count, so a handler added
+  during the pass is reached and a removed one is skipped, and it returns at
+  once without subscribers. `AsyncMessageChannel<T>.PublishAsync` is not an
+  `async` method: it runs synchronously completing handlers inline, moves to an
+  awaiting continuation at the first pending one, counts in-flight passes, and
+  copies the array only when a subscription is disposed while a pass holds it,
+  so every pass keeps its start set; failures complete the returned `ValueTask`
+  (canceled for `OperationCanceledException`, faulted otherwise) and are never
+  thrown synchronously. `Onity.Reactive` uses the same one-object design with
+  its own node list (`OnityObserverNode<T>`, `OnityNodeList<T>`); the two
+  assemblies share no code. On IL2CPP both channels turn null and array-bounds
+  checks off, and their subscription objects null checks, through the
+  assembly's own copy of the `Unity.IL2CPP.CompilerServices` attributes.
 
 ## 8. Reactive Engineering Rules
 

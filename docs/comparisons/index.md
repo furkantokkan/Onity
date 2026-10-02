@@ -19,6 +19,7 @@ has no numbers; the pages do.
 | [DI vs VContainer and Zenject](../Onity-vs-VContainer-Zenject.html) | `OnityContainer`, `OnityObjectPool<T>`, `PooledFactory` | VContainer, Zenject | Feature breadth, resolve and build timing, allocation per operation, pooled factory timing |
 | [Reactive vs R3 and UniRx](reactive-vs-r3-unirx.html) | `Onity.Reactive` | R3, UniRx | Feature breadth and the measured operator workloads |
 | [OnityTask vs UniTask](../guide/onitytask-comparison.html) | `OnityTask` | UniTask | The Release Player gate, API coverage and the remaining gaps |
+| [Messaging vs MessagePipe](messaging-vs-messagepipe.html) | `Onity.Messaging` | MessagePipe | Feature breadth and the measured publish, subscribe and dispose, keyed and async workloads |
 
 ## How to read a ratio
 
@@ -46,6 +47,8 @@ The comparison pages cite these records, which are kept unchanged as measured:
 - [Onity.Reactive vs R3 and UniRx Release Player comparison (2026-10-02)](../assets/benchmarks/reactive-surpass-r3-2026-10-02.md),
   with the five run summaries beside it.
 - [OnityTask vs UniTask Release Player gate (2026-10-02)](../assets/benchmarks/onitytask-surpass-2026-10-02.md).
+- [Onity.Messaging vs MessagePipe 1.8.1 Release Player comparison (2026-10-02)](../assets/benchmarks/messaging-surpass-messagepipe-2026-10-02.md),
+  with the three run summaries beside it.
 - [Pooling: own-stack pool measurements (2026-10-01)](../benchmarks/pool-own-stack-2026-10-01.md) and
   the [factory and pooling verification](../benchmarks/factory-pooling-2026-09-23.md).
 

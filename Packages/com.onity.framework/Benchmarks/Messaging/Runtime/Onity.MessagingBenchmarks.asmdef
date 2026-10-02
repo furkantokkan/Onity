@@ -1,0 +1,21 @@
+{
+    "name": "Onity.MessagingBenchmarks",
+    "rootNamespace": "Onity.Benchmarks",
+    "references": [
+        "Onity.Core",
+        "Onity.Messaging",
+        "MessagePipe",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "ONITY_MESSAGING_BENCHMARKS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

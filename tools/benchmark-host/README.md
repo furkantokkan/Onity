@@ -17,6 +17,22 @@ No Unity code. All PowerShell scripts run on Windows PowerShell 5.1 and PowerShe
 
 `validate-framelifecycle.py` belongs to PERF-3 and is not part of this directory's PERF-0 set.
 
+## Messaging comparison (`run-messaging-comparison.ps1`, `messaging-summary.py`)
+
+The Onity.Messaging vs MessagePipe 1.8.1 comparison
+(`Packages/com.onity.framework/Benchmarks/Messaging/README.md`) uses its own pair, adapted from the reactive
+comparison pair with one competitor:
+
+| Script | Purpose |
+| --- | --- |
+| `run-messaging-comparison.ps1` | Runs the IL2CPP and Mono messaging Players one process at a time (`-Processes`, default 3 per backend), alternating the backend order per round, at `-Priority High` with cores 0-1 excluded. Refuses a non-empty evidence root, a Unity Editor or held lockfile on the host, any running benchmark Player, and Players whose sidecars lack the MessagePipe flavor, package hash or UniTask version or differ between the backends. Writes `runs/<stem>.json`, `.player.log`, `.observation.json` (other Unity Editor CPU) and `run-manifest.json`. `-SelfTest` runs tiny counts. |
+| `messaging-summary.py` | Validates the reports (goldens, Release builds with matching sidecars, process and build counts, one source, one MessagePipe flavor and the official package hash of that flavor: the netstandard2.0 `MessagePipe.dll` for `nuget-netstandard2.0`, `MessagePipe.1.8.1.unitypackage` for `unity-package`; ns/op recomputed from raw ticks), writes `messaging-summary.md` and `.json`, and evaluates the pre-registered gate: IL2CPP, 3 processes, every row `faster`. `--allow-self-test` parses self-tests, which never evaluate the gate. |
+
+The host define `ONITY_MESSAGING_BENCHMARKS_MESSAGEPIPE_UNITASK` selects MessagePipe's Unity package (UniTask
+build, gate B); without it the harness compiles against the NuGet dll (gate A). The Unity package flavor's
+build needs `-onityMessagingBenchmarkMessagePipePackage <.unitypackage>` and verifies the project's MessagePipe
+sources against it.
+
 ## Surpass attempts (`run-attempt.ps1`, `surpass-gate.py`)
 
 Only two real attempts are budgeted, so validate the exact source first with a self-test, then measure the
@@ -89,7 +105,7 @@ Let `$H` = host project, `$SRC` = candidate worktree, `$E` = `$H/BenchmarkResult
    Extras are listed first; any extra not matched by `-AllowedExtraPattern` refuses the run.
    Note: host `package.json` takes the source version, so sidecar labels change.
 4. Roslyn compile check on every changed C# file (in the source worktree):
-   `python C:/Users/e-fur/.claude/skills/unity-cli/scripts/unity_compile_check.py --project $SRC --files <files>`
+   `python <path to unity_compile_check.py> --project $SRC --files <files>`
 5. One final focused test run per packet through the shared batch
    (`unity_test_batch.py submit ... --no-wait`, then `wait --id`); raw logs go to `$E`.
 6. Build the Release Players (Mono and IL2CPP, non-development) for each revision into

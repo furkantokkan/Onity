@@ -5,6 +5,8 @@ This folder contains benchmark tooling for comparing:
 - `VContainer`
 - `Zenject`
 - `OnityTask` vs `UniTask` async hot-path primitives
+- `Onity.Reactive` vs `R3` and `UniRx` (`Reactive/`, define `ONITY_REACTIVE_BENCHMARKS`; see its README)
+- `Onity.Messaging` vs `MessagePipe` (`Messaging/`, define `ONITY_MESSAGING_BENCHMARKS`; see its README)
 
 ## 1. Run DI Benchmarks in Unity
 
@@ -31,10 +33,10 @@ Example:
 ```powershell
 & "C:\Program Files\Unity\Hub\Editor\2022.3.62f2\Editor\Unity.exe" `
   -batchmode -nographics -quit `
-  -projectPath "C:\Users\e-fur\Documents\Repos\Onity" `
+  -projectPath "<development checkout>" `
   -executeMethod Onity.Editor.Benchmarks.OnityDiBenchmarkRunner.RunBenchmarksFromCommandLine `
-  -onityBenchmarkOutputDirectory "C:\Users\e-fur\Documents\Repos\Onity\Temp\di-benchmark-results" `
-  -logFile "C:\Users\e-fur\Documents\Repos\Onity\Temp\onity-di-benchmark.log"
+  -onityBenchmarkOutputDirectory "<development checkout>\Temp\di-benchmark-results" `
+  -logFile "<development checkout>\Temp\onity-di-benchmark.log"
 ```
 
 Precondition:

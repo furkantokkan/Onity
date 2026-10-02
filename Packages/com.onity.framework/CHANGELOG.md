@@ -5,6 +5,157 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-10-03
+
+Onity.Messaging is faster than MessagePipe 1.8.1 in all nine rows of the
+published IL2CPP Release Player comparison, measured against the MessagePipe
+Unity package that Unity users install and against its .NET build, after a
+redesign of the channel subscriptions and of the async publish pass, with no
+public API change. One behavior change is listed under Changed. The reactive,
+DI and OnityTask code is unchanged, so the 0.7.0 results stand.
+
+### Added
+
+- A define-gated messaging comparison benchmark (`Benchmarks/Messaging`,
+  assemblies `Onity.MessagingBenchmarks` and `Onity.MessagingBenchmarks.Editor`
+  under `ONITY_MESSAGING_BENCHMARKS`): nine workloads (publish to no, one and
+  eight subscribers, subscribe and dispose with one and with 64 residents,
+  keyed publish and keyed subscribe and dispose over 16 keys, async publish to
+  one and to eight handlers) run through Onity.Messaging and MessagePipe 1.8.1
+  with a library-independent golden model, an untimed probe and alternating
+  library order, a Release Player build runner
+  (`OnityMessagingBenchmarkPlayerBuildRunner`), a Player entry point
+  (`OnityMessagingBenchmarkPlayerRunner`), and the host tools
+  `tools/benchmark-host/run-messaging-comparison.ps1` and
+  `messaging-summary.py`. MessagePipe is measured in one of two builds: the
+  NuGet netstandard2.0 dll, or the Unity package compiled against UniTask under
+  the host define `ONITY_MESSAGING_BENCHMARKS_MESSAGEPIPE_UNITASK`. The harness
+  README holds the pre-registered classification rule. A normal project never
+  compiles the benchmark.
+- EditMode tests for the new core: `MessageChannelSubscriptionTests` (17 cases
+  for the slot bookkeeping: removal of the first, middle and last subscriber,
+  double and late dispose, subscribe and dispose during a pass, nested publish,
+  a throwing handler, channel dispose during a pass, and the keyed channel) and
+  `OnityAsyncMessagingPassTests` (20 cases for the async pass: the inline pass,
+  the pending continuation, faulted and canceled results, the token checks,
+  dispose and subscribe during a pass, nested and overlapping passes, and the
+  single consumption of a synchronously completed `IValueTaskSource`), and
+  `OnityAsyncMessagingContextTests` (10 cases that pin what the pass does to
+  the caller's `AsyncLocal<T>` value and `SynchronizationContext`, each for a
+  non-`async` handler, an `async` handler that completes synchronously, a
+  handler after the first pending one, while the pass is pending and after it
+  finishes, and the synchronous prefix of a non-`async` first pending handler).
+- Documentation: the comparison page `docs/comparisons/messaging-vs-messagepipe.md`
+  and the evidence record
+  `docs/assets/benchmarks/messaging-surpass-messagepipe-2026-10-02.md` with the
+  three run summaries beside it.
+
+### Changed
+
+- Messaging core, no public API change: a `MessageChannel<T>` or
+  `AsyncMessageChannel<T>` subscription is one object, both the entry the
+  channel keeps and the `IDisposable` returned to the subscriber, and it knows
+  its slot. Dispose runs at most once and removes its slot in constant time:
+  outside a publish pass the last subscriber moves into the freed slot; during
+  a pass the slot is cleared and the slots are compacted in order after the
+  outermost pass, after the async channel has copied its handler array once so
+  the passes in flight keep the array they hold. In `MessageChannel<T>`,
+  delivery order, delivery to a handler added during a pass, skipping of a
+  handler removed during a pass, nested publish and exception propagation are
+  unchanged; `AsyncMessageChannel<T>` still delivers each pass to the handlers
+  registered when it started. `Publish` and `PublishAsync` return at once when
+  the channel has no subscriber.
+- `AsyncMessageChannel<T>.PublishAsync` is no longer an `async` method.
+  Handlers whose `ValueTask` completes synchronously run inline; the first
+  pending one hands the rest of the pass to an awaiting continuation. The
+  handler array is copied only when a subscription is disposed while a pass
+  holds it (copy-on-write), instead of a snapshot copy on every publish; each
+  pass still delivers to the handlers registered when it started. In-flight
+  passes are counted, where a bool flag used to be cleared early by a nested
+  publish. Failures complete the returned `ValueTask` exactly as an `async`
+  method would: canceled for `OperationCanceledException`, faulted otherwise,
+  never thrown synchronously.
+- Behavior: because `PublishAsync` is no longer an `async` method, a handler
+  that is not itself an `async` method runs its synchronous work in the
+  caller's context, whether it returns a completed `ValueTask` or is the first
+  to return a pending one. An `AsyncLocal<T>` value or a
+  `SynchronizationContext` it sets stays visible to the caller after
+  `PublishAsync` returns, as with the synchronous `Publish`, OnityTask at its
+  default (`FlowExecutionContext` off) and MessagePipe's Unity build for a
+  handler of that shape. An `async` handler keeps its own scope, as in 0.7.0:
+  its builder restores the context, so the caller does not see its change.
+  Handlers after the first pending one run inside the continuation, and the
+  caller does not see their changes either.
+- IL2CPP null checks and array-bounds checks are off on the hot messaging
+  members through `Onity.Messaging`'s own internal copies of the
+  `Unity.IL2CPP.CompilerServices` attributes
+  (`OnityMessagingIl2CppCompilerServices.cs`), as `Onity.Reactive` has since
+  0.7.0.
+
+### Performance
+
+- Messaging, 2026-10-02 Release Player comparison (Unity 2022.3.62f2, Windows
+  x64, MessagePipe 1.8.1, three processes per backend; pre-registered rule:
+  faster when the median Onity/MessagePipe time ratio is at most 0.95 and the
+  worst process at most 1.00). The headline run measures the MessagePipe Unity
+  package, the build Unity users install (`MessagePipe.1.8.1.unitypackage`
+  compiled against UniTask 2.5.10), at source `52e209a`, which is the shipped
+  runtime `4cc5763` plus the harness's Unity-package flavor. On IL2CPP
+  Onity.Messaging is faster in all nine rows, median ratios 0.150 to 0.846,
+  worst process 0.895:
+
+  | Scenario | Onity ns/op | MessagePipe ns/op | Median ratio | Worst process |
+  | --- | ---: | ---: | ---: | ---: |
+  | `PublishNoSubscribers` | 2.25 | 5.32 | 0.416 | 0.423 |
+  | `Publish1` | 6.21 | 9.16 | 0.726 | 0.767 |
+  | `Publish8` | 20.97 | 39.40 | 0.526 | 0.532 |
+  | `SubscribeDispose` | 63.49 | 377.52 | 0.168 | 0.193 |
+  | `SubscribeDispose64` | 60.13 | 417.30 | 0.150 | 0.216 |
+  | `KeyedPublish` | 28.35 | 67.83 | 0.418 | 0.436 |
+  | `KeyedSubscribeDispose` | 104.37 | 552.26 | 0.172 | 0.189 |
+  | `AsyncPublish1` | 27.32 | 43.86 | 0.623 | 0.740 |
+  | `AsyncPublish8` | 103.19 | 126.20 | 0.846 | 0.895 |
+
+  Mono, reported and not gated: faster in all nine rows, median ratios 0.280 to
+  0.756, worst process 0.862. Against MessagePipe's .NET build (the NuGet
+  netstandard2.0 dll, whose async publish is an `async ValueTask` method) the
+  same runtime was faster in all nine IL2CPP rows (medians 0.197 to 0.807,
+  worst process 0.974) and in all nine Mono rows (0.280 to 0.762, worst
+  process 0.830). The Unity package's `async UniTask` publish measured cheaper
+  (IL2CPP `AsyncPublish1` 43.86 against 78.49 ns, `AsyncPublish8` 126.20
+  against 167.42 ns), consistent with UniTask's builder running the state
+  machine without the ExecutionContext scope the `async ValueTask` builder
+  pays, a code fact the measurement does not isolate; the claim therefore
+  stands on the Unity package.
+  The released 0.7.0 runtime, measured first as the baseline against the .NET
+  build, was faster in seven IL2CPP rows and slower in `AsyncPublish1` (1.138)
+  and `AsyncPublish8` (1.301). Gen-0 collections during the three
+  subscribe-and-dispose rows fell from 426 to 430 per row to 90 to 93 in the
+  Unity-package run and 92 to 93 in the NuGet run (IL2CPP, sum over three
+  processes). Allocation bytes were not measured on either
+  backend. Evidence:
+  `docs/assets/benchmarks/messaging-surpass-messagepipe-2026-10-02.md`.
+- Reactive, DI and OnityTask: their code is unchanged in 0.8.0, so the 0.7.0
+  results below stand (reactive: faster than R3 1.3.0 and than UniRx 7.1.0 in
+  all nine IL2CPP rows; DI: Onity Baked fastest in all seven scenarios in every
+  process; OnityTask: faster than UniTask 2.5.11 in all 29 gated IL2CPP rows).
+
+### Tested
+
+- Unity 2022.3.62f2 EditMode, batch mode, with default and with Release code
+  optimization: 2,409 tests, 2,406 passed, 0 failed, 3 explicit benchmarks
+  skipped.
+- Unity 2022.3.62f2 PlayMode, batch mode: 255 tests. Default code optimization:
+  252 passed, 0 failed, 2 skipped, 1 inconclusive. Release code optimization:
+  251 passed, 0 failed, 3 skipped, 1 inconclusive. The skipped and inconclusive
+  cases are the same explicit benchmark, graphics-device and `AsyncGPUReadback`
+  tests as in 0.7.0.
+- The suites ran on the runtime this release ships (source `4cc5763`), with the
+  test suites at `c3ef04a`.
+- Every sample of both libraries matched the golden model, and the checksums
+  of Onity and MessagePipe were identical, in every process of the three
+  messaging comparison runs.
+
 ## [0.7.0] - 2026-10-02
 
 Onity.Reactive is faster than R3 1.3.0 and than UniRx 7.1.0 in all nine rows of

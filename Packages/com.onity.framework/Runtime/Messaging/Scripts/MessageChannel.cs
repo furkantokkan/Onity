@@ -1,19 +1,31 @@
 using System;
-using Onity.Core;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using Unity.IL2CPP.CompilerServices;
 
 namespace Onity.Messaging
 {
     /// <summary>
     /// Typed message channel with allocation-free publish on steady state.
     /// </summary>
+    /// <remarks>
+    /// A subscription is one object: it is both the entry the channel keeps and the token returned to the
+    /// subscriber, and it knows its slot, so disposing it is O(1). Outside a publish pass, removal moves the
+    /// last subscriber into the freed slot. During a pass, removal only clears the slot, and the slots are
+    /// compacted in order after the outermost pass. Invariant: <c>m_count &lt;= m_slots.Length</c>, every
+    /// registered subscription sits at its own index, and a slot's subscription and handler are both set or
+    /// both cleared.
+    /// </remarks>
     /// <typeparam name="TMessage">Message type.</typeparam>
+    [Il2CppSetOption(Option.NullChecks, false)]
+    [Il2CppSetOption(Option.ArrayBoundsChecks, false)]
     public sealed class MessageChannel<TMessage> : IPublisher<TMessage>, ISubscriber<TMessage>, IMessageChannelDiagnostics, IDisposable
     {
         private const int k_defaultCapacity = 8;
+        private const string k_objectName = "MessageChannel";
 
-        private SubscriptionEntry[] m_entries;
+        private Slot[] m_slots;
         private int m_count;
-        private int m_nextId;
         private int m_publishDepth;
         private bool m_hasPendingRemovals;
         private bool m_isDisposed;
@@ -23,9 +35,8 @@ namespace Onity.Messaging
         /// </summary>
         public MessageChannel()
         {
-            m_entries = new SubscriptionEntry[k_defaultCapacity];
+            m_slots = new Slot[k_defaultCapacity];
             m_count = 0;
-            m_nextId = 1;
             m_publishDepth = 0;
             m_hasPendingRemovals = false;
             m_isDisposed = false;
@@ -44,42 +55,64 @@ namespace Onity.Messaging
                 throw new ArgumentNullException(nameof(handler));
             }
 
-            ThrowIfDisposed();
-            EnsureCapacity(m_count + 1);
+            if (m_isDisposed)
+            {
+                ThrowDisposed();
+            }
 
-            int id = m_nextId++;
-            m_entries[m_count] = new SubscriptionEntry(id, handler);
-            m_count++;
+            Subscription subscription = new Subscription(this);
+            Slot[] slots = m_slots;
+            int count = m_count;
 
-            return new DisposableAction(() => Unsubscribe(id));
+            if (count == slots.Length)
+            {
+                slots = Grow(count);
+            }
+
+            subscription.Index = count;
+            slots[count].Subscription = subscription;
+            slots[count].Handler = handler;
+            m_count = count + 1;
+            return subscription;
         }
 
         /// <inheritdoc />
         public void Publish(TMessage message)
         {
-            ThrowIfDisposed();
+            if (m_isDisposed)
+            {
+                ThrowDisposed();
+            }
 
-            m_publishDepth++;
+            // No subscriber means no pass: nothing can be pending either, because a cleared slot still counts.
+            if (m_count == 0)
+            {
+                return;
+            }
+
+            // Save and restore instead of increment and decrement; passes of this channel are strictly nested.
+            int depth = m_publishDepth;
+            m_publishDepth = depth + 1;
 
             try
             {
+                // The count and the slots are re-read at every step, so a handler that subscribes is reached
+                // later in this pass and a handler that unsubscribes is skipped.
                 for (int i = 0; i < m_count; i++)
                 {
-                    MessageHandler<TMessage> handler = m_entries[i].Handler;
+                    MessageHandler<TMessage> handler = m_slots[i].Handler;
 
-                    if (handler == null)
+                    if (handler != null)
                     {
-                        continue;
+                        handler(message);
                     }
-
-                    handler(message);
                 }
             }
             finally
             {
-                m_publishDepth--;
+                m_publishDepth = depth;
 
-                if (m_publishDepth == 0 && m_hasPendingRemovals)
+                if (depth == 0 && m_hasPendingRemovals)
                 {
                     Compact();
                 }
@@ -95,120 +128,124 @@ namespace Onity.Messaging
             }
 
             m_isDisposed = true;
-            m_entries = Array.Empty<SubscriptionEntry>();
+            m_slots = Array.Empty<Slot>();
             m_count = 0;
             m_hasPendingRemovals = false;
         }
 
-        private void EnsureCapacity(int requiredCapacity)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowDisposed()
         {
-            if (m_entries.Length >= requiredCapacity)
-            {
-                return;
-            }
-
-            int newCapacity = m_entries.Length * 2;
-
-            if (newCapacity < requiredCapacity)
-            {
-                newCapacity = requiredCapacity;
-            }
-
-            Array.Resize(ref m_entries, newCapacity);
+            throw new ObjectDisposedException(k_objectName);
         }
 
-        private void Unsubscribe(int id)
+        private Slot[] Grow(int count)
+        {
+            Slot[] grown = new Slot[Math.Max(count * 2, k_defaultCapacity)];
+            Array.Copy(m_slots, grown, count);
+            m_slots = grown;
+            return grown;
+        }
+
+        private void Remove(Subscription subscription)
         {
             if (m_isDisposed)
             {
                 return;
             }
 
-            int index = FindIndexById(id);
-
-            if (index < 0)
-            {
-                return;
-            }
+            int index = subscription.Index;
+            Slot[] slots = m_slots;
 
             if (m_publishDepth > 0)
             {
-                m_entries[index].Handler = null;
+                slots[index] = default;
                 m_hasPendingRemovals = true;
                 return;
             }
 
-            RemoveAtSwapBack(index);
-        }
+            // Outside a pass every slot below the count is live.
+            int lastIndex = m_count - 1;
 
-        private int FindIndexById(int id)
-        {
-            for (int i = 0; i < m_count; i++)
+            if (index != lastIndex)
             {
-                if (m_entries[i].Id == id)
-                {
-                    return i;
-                }
+                Subscription last = slots[lastIndex].Subscription;
+                slots[index] = slots[lastIndex];
+                last.Index = index;
             }
 
-            return -1;
-        }
-
-        private void RemoveAtSwapBack(int index)
-        {
-            int lastIndex = m_count - 1;
-            m_entries[index] = m_entries[lastIndex];
-            m_entries[lastIndex] = default;
-            m_count--;
+            slots[lastIndex] = default;
+            m_count = lastIndex;
         }
 
         private void Compact()
         {
+            Slot[] slots = m_slots;
+            int count = m_count;
             int writeIndex = 0;
 
-            for (int readIndex = 0; readIndex < m_count; readIndex++)
+            for (int readIndex = 0; readIndex < count; readIndex++)
             {
-                SubscriptionEntry entry = m_entries[readIndex];
+                Subscription subscription = slots[readIndex].Subscription;
 
-                if (entry.Handler == null)
+                if (subscription == null)
                 {
                     continue;
                 }
 
                 if (writeIndex != readIndex)
                 {
-                    m_entries[writeIndex] = entry;
+                    slots[writeIndex] = slots[readIndex];
+                    subscription.Index = writeIndex;
                 }
 
                 writeIndex++;
             }
 
-            for (int clearIndex = writeIndex; clearIndex < m_count; clearIndex++)
+            for (int clearIndex = writeIndex; clearIndex < count; clearIndex++)
             {
-                m_entries[clearIndex] = default;
+                slots[clearIndex] = default;
             }
 
             m_count = writeIndex;
             m_hasPendingRemovals = false;
         }
 
-        private void ThrowIfDisposed()
+        /// <summary>One registered handler and the subscription that owns it.</summary>
+        private struct Slot
         {
-            if (m_isDisposed)
-            {
-                throw new ObjectDisposedException(nameof(MessageChannel<TMessage>));
-            }
+            public Subscription Subscription;
+            public MessageHandler<TMessage> Handler;
         }
 
-        private struct SubscriptionEntry
+        /// <summary>
+        /// One subscription: the entry the channel keeps and the token returned to the subscriber.
+        /// </summary>
+        [Il2CppSetOption(Option.NullChecks, false)]
+        private sealed class Subscription : IDisposable
         {
-            public int Id;
-            public MessageHandler<TMessage> Handler;
+            private MessageChannel<TMessage> m_owner;
 
-            public SubscriptionEntry(int id, MessageHandler<TMessage> handler)
+            /// <summary>Slot of this subscription in its channel while it is registered.</summary>
+            internal int Index;
+
+            internal Subscription(MessageChannel<TMessage> owner)
             {
-                Id = id;
-                Handler = handler;
+                m_owner = owner;
+            }
+
+            /// <summary>
+            /// Unsubscribes. Runs at most once, also when called concurrently, and is a no-op after the
+            /// channel was disposed.
+            /// </summary>
+            public void Dispose()
+            {
+                MessageChannel<TMessage> owner = Interlocked.Exchange(ref m_owner, null);
+
+                if (owner != null)
+                {
+                    owner.Remove(this);
+                }
             }
         }
     }

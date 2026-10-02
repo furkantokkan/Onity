@@ -24,11 +24,12 @@ Contents: [Read this first](#read-this-first), [Summary table](#summary-table),
 ## Read this first
 
 - Onity is one package for dependency injection, reactive state, typed messaging, factories with pooling
-  and `OnityTask` async. This page covers the DI and pooling axes; the reactive and async comparisons are
-  [Reactive vs R3 and UniRx](comparisons/reactive-vs-r3-unirx.html) and
-  [OnityTask vs UniTask](guide/onitytask-comparison.html).
+  and `OnityTask` async. This page covers the DI and pooling axes; the reactive, async and messaging
+  comparisons are [Reactive vs R3 and UniRx](comparisons/reactive-vs-r3-unirx.html),
+  [OnityTask vs UniTask](guide/onitytask-comparison.html) and
+  [Messaging vs MessagePipe](comparisons/messaging-vs-messagepipe.html).
 - The DI timing numbers are indicative, not a guarantee. The current run (2026-10-02) used Unity
-  2022.3.62f2 and the published 0.6.0 package, whose DI code is unchanged in 0.7.0; the September 2026
+  2022.3.62f2 and the published 0.6.0 package, whose DI code is unchanged in 0.7.0 and 0.8.0; the September 2026
   runs used Unity 2022.3.62f3. Each process ran 512 warmups and 8 samples of 10,000 operations and reports
   mean ns/op. Your hardware, Unity version, scripting backend and graph shape will give different
   absolute numbers and possibly a different ordering.
@@ -258,9 +259,10 @@ rules. Onity is one package with one lifetime model:
   `BuildAsync`.
 - Pools created by `BindPooledFactory` are disposed with the scope.
 
-The measured reactive and async comparisons are on their own pages:
-[Reactive vs R3 and UniRx](comparisons/reactive-vs-r3-unirx.html) and
-[OnityTask vs UniTask](guide/onitytask-comparison.html). If you only need a DI container and already have
+The measured reactive, async and messaging comparisons are on their own pages:
+[Reactive vs R3 and UniRx](comparisons/reactive-vs-r3-unirx.html),
+[OnityTask vs UniTask](guide/onitytask-comparison.html) and
+[Messaging vs MessagePipe](comparisons/messaging-vs-messagepipe.html). If you only need a DI container and already have
 a reactive and event stack you like, this axis is irrelevant to you; if you want one coherent stack, it is
 the main structural difference between Onity and a VContainer or Zenject plus R3, MessagePipe and UniTask
 combination.
@@ -286,5 +288,6 @@ fix. This matters most for AI-assisted or large-team development.
 - Choose Zenject or Extenject when you need its deeper binder and memory-pool variants or its longer
   production record and larger community, and resolve performance is not your binding constraint.
 
-The numbers and feature claims reflect the measured state of Onity 0.7.0 and are revised as target-device
-IL2CPP coverage and benchmark coverage expand.
+The feature claims reflect Onity 0.8.0 and the numbers the measurements named above (the DI code is
+unchanged since the measured 0.6.0 package); both are revised as target-device IL2CPP coverage and
+benchmark coverage expand.

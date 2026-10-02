@@ -1,0 +1,920 @@
+{
+  "schemaVersion": 1,
+  "generatedUtc": "2026-10-02T17:40:09.905632+00:00",
+  "evidenceRoot": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02",
+  "selfTest": false,
+  "reportCount": 6,
+  "processesPerBackend": 3,
+  "warmupSamples": 2,
+  "measuredSamples": 15,
+  "libraryVersions": {
+    "Onity": "0.7.0",
+    "MessagePipe": "1.8.1"
+  },
+  "messagePipeDllSha256": "cf8a702ab31bbb7da9ea6de4349f6dec9e214be396234f7e527d6ebe06a94f1b",
+  "messagePipeSetup": "No DI container. The netstandard2.0 MessagePipe.dll has no BuiltinContainerBuilder, so the public broker types are constructed directly. Once per workload (the singletons AddMessagePipe registers): new MessagePipeOptions() with defaults (no global filters, EnableCaptureStackTrace false, HandlingSubscribeDisposedPolicy Ignore), new MessagePipeDiagnosticsInfo(options), new FilterAttachedMessageHandlerFactory(options, new AttributeFilterProvider<MessageHandlerFilterAttribute>(), provider) and the matching FilterAttachedAsyncMessageHandlerFactory, where provider is an IServiceProvider that throws if asked (no filter is registered, so MessagePipe never asks). Per sample: a new MessageBrokerCore<T>, MessageBrokerCore<TKey, T> or AsyncMessageBrokerCore<T> with one MessageBroker / AsyncMessageBroker wrapper for the publisher interface and one for the subscriber interface, the types AddMessagePipe registers for IPublisher, ISubscriber, IPublisher<TKey, T>, ISubscriber<TKey, T>, IAsyncPublisher and IAsyncSubscriber. Handlers use the Subscribe(Action<T>) and Subscribe(Func<T, CancellationToken, ValueTask>) extensions with no filters. Async publishes pass AsyncPublishStrategy.Sequential explicitly (the default is Parallel; Onity's async channel is sequential).",
+  "messagePipeAsyncApi": "The NuGet build measured here exposes System.Threading.Tasks.ValueTask in its async API; MessagePipe's Unity package compiles the same sync source but replaces ValueTask with UniTask in the async API. The async rows therefore measure the ValueTask build.",
+  "rule": "ratio = Onity process median / MessagePipe process median (time per operation, so below 1 means Onity is faster); faster when the median ratio over processes <= 0.95 and the worst process ratio <= 1.00; slower when the median ratio >= 1.05; otherwise on par",
+  "thresholds": {
+    "fasterMedian": 0.95,
+    "fasterWorst": 1.0,
+    "slowerMedian": 1.05
+  },
+  "backends": [
+    {
+      "backend": "IL2CPP",
+      "processes": [
+        "il2cpp-messaging-p1",
+        "il2cpp-messaging-p2",
+        "il2cpp-messaging-p3"
+      ],
+      "buildGuid": "372b4fe8484c4f8b95c2ceb95a01dde8",
+      "unityVersion": "2022.3.62f2",
+      "onityVersion": "0.7.0",
+      "messagePipeVersion": "1.8.1+e901746b927bcd84ad94d642512a7a7a7600d15b",
+      "sourceHead": "441c44129a2cc4becc16c2849b2b8cb5fa0f4e82",
+      "processorType": "AMD Ryzen 9 5900X 12-Core Processor ",
+      "gcMode": "Enabled",
+      "allocationAvailable": false,
+      "allocationDetail": [
+        "Unavailable on IL2CPP: the counter is not called because the DI harness observed IL2CPP crashes with it."
+      ],
+      "scenarios": [
+        {
+          "id": "PublishNoSubscribers",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              3.9475,
+              3.977,
+              4.0945
+            ],
+            "MessagePipe": [
+              6.0165,
+              6.058,
+              6.182
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 3.977,
+            "MessagePipe": 6.058
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 0,
+            "MessagePipe": 0
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.6561123576830383,
+              0.6564872895344999,
+              0.6623261080556454
+            ],
+            "median": 0.6564872895344999,
+            "worst": 0.6623261080556454,
+            "class": "faster"
+          }
+        },
+        {
+          "id": "Publish1",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              5.6025,
+              5.5575,
+              5.5885
+            ],
+            "MessagePipe": [
+              9.7805,
+              10.3655,
+              10.3765
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 5.5885,
+            "MessagePipe": 10.3655
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 0,
+            "MessagePipe": 0
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.5728234752824498,
+              0.5361535864164777,
+              0.5385727364718353
+            ],
+            "median": 0.5385727364718353,
+            "worst": 0.5728234752824498,
+            "class": "faster"
+          }
+        },
+        {
+          "id": "Publish8",
+          "operationsPerSample": 50000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              16.706,
+              17.392,
+              16.728
+            ],
+            "MessagePipe": [
+              39.42,
+              39.93,
+              45.59
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 16.728,
+            "MessagePipe": 39.93
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 0,
+            "MessagePipe": 0
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.4237950279046169,
+              0.43556223390934135,
+              0.3669225707391972
+            ],
+            "median": 0.4237950279046169,
+            "worst": 0.43556223390934135,
+            "class": "faster"
+          }
+        },
+        {
+          "id": "SubscribeDispose",
+          "operationsPerSample": 20000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              349.01,
+              314.05,
+              155.465
+            ],
+            "MessagePipe": [
+              416.025,
+              419.715,
+              362.055
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 314.05,
+            "MessagePipe": 416.025
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 429,
+            "MessagePipe": 162
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.8389159305330208,
+              0.7482458334822439,
+              0.4293960862299927
+            ],
+            "median": 0.7482458334822439,
+            "worst": 0.8389159305330208,
+            "class": "faster"
+          }
+        },
+        {
+          "id": "SubscribeDispose64",
+          "operationsPerSample": 20000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              448.365,
+              356.03,
+              206.995
+            ],
+            "MessagePipe": [
+              465.185,
+              411.58,
+              356.995
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 356.03,
+            "MessagePipe": 411.58
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 426,
+            "MessagePipe": 154
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.9638423422939261,
+              0.8650323144953593,
+              0.5798260479838653
+            ],
+            "median": 0.8650323144953593,
+            "worst": 0.9638423422939261,
+            "class": "faster"
+          }
+        },
+        {
+          "id": "KeyedPublish",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              23.9795,
+              24.11,
+              24.2615
+            ],
+            "MessagePipe": [
+              54.457,
+              54.5645,
+              55.2345
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 24.11,
+            "MessagePipe": 54.5645
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 0,
+            "MessagePipe": 0
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.4403382485263603,
+              0.44186238305125125,
+              0.4392453991617558
+            ],
+            "median": 0.4403382485263603,
+            "worst": 0.44186238305125125,
+            "class": "faster"
+          }
+        },
+        {
+          "id": "KeyedSubscribeDispose",
+          "operationsPerSample": 20000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              344.705,
+              336.88,
+              200.37
+            ],
+            "MessagePipe": [
+              485.77,
+              483.345,
+              448.0
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 336.88,
+            "MessagePipe": 483.345
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 430,
+            "MessagePipe": 155
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.7096053687959323,
+              0.6969762798828993,
+              0.4472544642857143
+            ],
+            "median": 0.6969762798828993,
+            "worst": 0.7096053687959323,
+            "class": "faster"
+          }
+        },
+        {
+          "id": "AsyncPublish1",
+          "operationsPerSample": 100000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              85.367,
+              86.542,
+              85.047
+            ],
+            "MessagePipe": [
+              74.149,
+              77.129,
+              74.708
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 85.367,
+            "MessagePipe": 74.708
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 0,
+            "MessagePipe": 0
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              1.1512899701951476,
+              1.122042292782222,
+              1.138392140065321
+            ],
+            "median": 1.138392140065321,
+            "worst": 1.1512899701951476,
+            "class": "slower"
+          }
+        },
+        {
+          "id": "AsyncPublish8",
+          "operationsPerSample": 25000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              210.436,
+              206.776,
+              213.128
+            ],
+            "MessagePipe": [
+              161.732,
+              173.696,
+              163.264
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 210.436,
+            "MessagePipe": 163.264
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 0,
+            "MessagePipe": 0
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              1.3011401577919026,
+              1.1904476787030214,
+              1.3054194433555466
+            ],
+            "median": 1.3011401577919026,
+            "worst": 1.3054194433555466,
+            "class": "slower"
+          }
+        }
+      ]
+    },
+    {
+      "backend": "Mono",
+      "processes": [
+        "mono-messaging-p1",
+        "mono-messaging-p2",
+        "mono-messaging-p3"
+      ],
+      "buildGuid": "a26d274cbbf143c4b7ce628f032dae6d",
+      "unityVersion": "2022.3.62f2",
+      "onityVersion": "0.7.0",
+      "messagePipeVersion": "1.8.1+e901746b927bcd84ad94d642512a7a7a7600d15b",
+      "sourceHead": "441c44129a2cc4becc16c2849b2b8cb5fa0f4e82",
+      "processorType": "AMD Ryzen 9 5900X 12-Core Processor ",
+      "gcMode": "Enabled",
+      "allocationAvailable": false,
+      "allocationDetail": [
+        "Unavailable: the positive control read 0 bytes for a 64 KiB array and the empty control read 0 bytes."
+      ],
+      "scenarios": [
+        {
+          "id": "PublishNoSubscribers",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              7.276,
+              7.1925,
+              7.2485
+            ],
+            "MessagePipe": [
+              7.8225,
+              7.8165,
+              7.8675
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 7.2485,
+            "MessagePipe": 7.8225
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 0,
+            "MessagePipe": 0
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.9301374240971556,
+              0.9201688735367493,
+              0.9213218938671751
+            ],
+            "median": 0.9213218938671751,
+            "worst": 0.9301374240971556,
+            "class": "faster"
+          }
+        },
+        {
+          "id": "Publish1",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              8.406,
+              8.609,
+              8.4245
+            ],
+            "MessagePipe": [
+              14.101,
+              14.1575,
+              14.164
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 8.4245,
+            "MessagePipe": 14.1575
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 0,
+            "MessagePipe": 0
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.5961279341890646,
+              0.6080875860851138,
+              0.5947825473030217
+            ],
+            "median": 0.5961279341890646,
+            "worst": 0.6080875860851138,
+            "class": "faster"
+          }
+        },
+        {
+          "id": "Publish8",
+          "operationsPerSample": 50000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              27.37,
+              28.008,
+              27.516
+            ],
+            "MessagePipe": [
+              33.836,
+              33.99,
+              33.94
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 27.516,
+            "MessagePipe": 33.94
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 0,
+            "MessagePipe": 0
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.8089017614375222,
+              0.8240070609002648,
+              0.8107248084855627
+            ],
+            "median": 0.8107248084855627,
+            "worst": 0.8240070609002648,
+            "class": "faster"
+          }
+        },
+        {
+          "id": "SubscribeDispose",
+          "operationsPerSample": 20000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              242.655,
+              270.625,
+              256.85
+            ],
+            "MessagePipe": [
+              273.05,
+              279.965,
+              267.945
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 256.85,
+            "MessagePipe": 273.05
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 430,
+            "MessagePipe": 144
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.888683391320271,
+              0.9666386869787296,
+              0.9585922484091886
+            ],
+            "median": 0.9585922484091886,
+            "worst": 0.9666386869787296,
+            "class": "on par"
+          }
+        },
+        {
+          "id": "SubscribeDispose64",
+          "operationsPerSample": 20000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              290.34,
+              341.555,
+              307.57
+            ],
+            "MessagePipe": [
+              258.235,
+              274.76,
+              263.015
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 307.57,
+            "MessagePipe": 263.015
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 426,
+            "MessagePipe": 135
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              1.1243247429666774,
+              1.2431030717717282,
+              1.1694009847347109
+            ],
+            "median": 1.1694009847347109,
+            "worst": 1.2431030717717282,
+            "class": "slower"
+          }
+        },
+        {
+          "id": "KeyedPublish",
+          "operationsPerSample": 200000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              26.229,
+              26.538,
+              26.3605
+            ],
+            "MessagePipe": [
+              41.9145,
+              41.4365,
+              41.788
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 26.3605,
+            "MessagePipe": 41.788
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 0,
+            "MessagePipe": 0
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.625773896861468,
+              0.6404498449434677,
+              0.6308150665262755
+            ],
+            "median": 0.6308150665262755,
+            "worst": 0.6404498449434677,
+            "class": "faster"
+          }
+        },
+        {
+          "id": "KeyedSubscribeDispose",
+          "operationsPerSample": 20000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              258.675,
+              280.78,
+              280.645
+            ],
+            "MessagePipe": [
+              324.24,
+              320.05,
+              326.07
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 280.645,
+            "MessagePipe": 324.24
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 426,
+            "MessagePipe": 179
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              0.7977886750555144,
+              0.8773004218090922,
+              0.8606894225166375
+            ],
+            "median": 0.8606894225166375,
+            "worst": 0.8773004218090922,
+            "class": "faster"
+          }
+        },
+        {
+          "id": "AsyncPublish1",
+          "operationsPerSample": 100000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              178.743,
+              177.151,
+              173.167
+            ],
+            "MessagePipe": [
+              152.404,
+              156.204,
+              150.507
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 177.151,
+            "MessagePipe": 152.404
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 0,
+            "MessagePipe": 0
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              1.1728235479383744,
+              1.1341002791221735,
+              1.1505577813656507
+            ],
+            "median": 1.1505577813656507,
+            "worst": 1.1728235479383744,
+            "class": "slower"
+          }
+        },
+        {
+          "id": "AsyncPublish8",
+          "operationsPerSample": 25000,
+          "processMediansNsPerOp": {
+            "Onity": [
+              530.5,
+              495.856,
+              501.116
+            ],
+            "MessagePipe": [
+              415.908,
+              397.188,
+              402.192
+            ]
+          },
+          "medianNsPerOp": {
+            "Onity": 501.116,
+            "MessagePipe": 402.192
+          },
+          "gcCollectionsDuringSamples": {
+            "Onity": 0,
+            "MessagePipe": 0
+          },
+          "allocatedBytesPerOp": null,
+          "ratio": {
+            "perProcess": [
+              1.2755224713157718,
+              1.248416367060435,
+              1.2459621275410748
+            ],
+            "median": 1.248416367060435,
+            "worst": 1.2755224713157718,
+            "class": "slower"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "schemaVersion": 1,
+      "stem": "il2cpp-messaging-p1",
+      "backend": "IL2CPP",
+      "round": 1,
+      "sequence": 1,
+      "selfTest": false,
+      "executable": "<host>\\BenchmarkResults\\messaging-players\\20261002-441c441\\IL2CPP\\OnityMessagingBenchmark.exe",
+      "binarySha256": "5DC4AC3627307A53E7C949863A4FEE389D47DEE919B46E90587A1B512EAD840A",
+      "sidecarSha256": "9C28F77F7FBFF8E1554AC4C2A78F6346591E15EB83E2D16F5DAFAD7118C0F169",
+      "buildGuid": "372b4fe8484c4f8b95c2ceb95a01dde8",
+      "arguments": "-batchmode -nographics -onityRunMessagingBenchmark -onityMessagingBenchmarkOutput \"<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\il2cpp-messaging-p1.json\" -onityMessagingBenchmarkBuildMetadata \"<host>\\BenchmarkResults\\messaging-players\\20261002-441c441\\IL2CPP\\OnityMessagingBenchmark.exe.build.json\" -logFile \"<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\il2cpp-messaging-p1.player.log\"",
+      "report": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\il2cpp-messaging-p1.json",
+      "playerLog": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\il2cpp-messaging-p1.player.log",
+      "playerPid": 169292,
+      "startedUtc": "2026-10-02T17:39:42.0155086Z",
+      "elapsedSeconds": 2.8081882,
+      "exitCode": 0,
+      "timedOut": false,
+      "timeoutSeconds": 900,
+      "reportFresh": true,
+      "binaryUnchanged": true,
+      "succeeded": true,
+      "reportSha256": "A01DB7A324525339FABCD958A9F6181B714B9A36D015FF4871AF0F049A1212C9",
+      "priorityRequested": "High",
+      "priorityApplied": "High",
+      "affinityRequested": 16777212,
+      "affinityApplied": 16777212,
+      "otherUnityCpuSeconds": 0.28125,
+      "otherUnityWallFraction": 0.10015354384011727,
+      "noiseStatus": "flagged",
+      "noiseRule": "Other Unity Editor CPU <= 0.5 s and <= 5% of wall time; a missing, new or unreadable process is unknown. Informational."
+    },
+    {
+      "schemaVersion": 1,
+      "stem": "il2cpp-messaging-p2",
+      "backend": "IL2CPP",
+      "round": 2,
+      "sequence": 4,
+      "selfTest": false,
+      "executable": "<host>\\BenchmarkResults\\messaging-players\\20261002-441c441\\IL2CPP\\OnityMessagingBenchmark.exe",
+      "binarySha256": "5DC4AC3627307A53E7C949863A4FEE389D47DEE919B46E90587A1B512EAD840A",
+      "sidecarSha256": "9C28F77F7FBFF8E1554AC4C2A78F6346591E15EB83E2D16F5DAFAD7118C0F169",
+      "buildGuid": "372b4fe8484c4f8b95c2ceb95a01dde8",
+      "arguments": "-batchmode -nographics -onityRunMessagingBenchmark -onityMessagingBenchmarkOutput \"<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\il2cpp-messaging-p2.json\" -onityMessagingBenchmarkBuildMetadata \"<host>\\BenchmarkResults\\messaging-players\\20261002-441c441\\IL2CPP\\OnityMessagingBenchmark.exe.build.json\" -logFile \"<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\il2cpp-messaging-p2.player.log\"",
+      "report": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\il2cpp-messaging-p2.json",
+      "playerLog": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\il2cpp-messaging-p2.player.log",
+      "playerPid": 153176,
+      "startedUtc": "2026-10-02T17:39:56.6097826Z",
+      "elapsedSeconds": 2.3310924,
+      "exitCode": 0,
+      "timedOut": false,
+      "timeoutSeconds": 900,
+      "reportFresh": true,
+      "binaryUnchanged": true,
+      "succeeded": true,
+      "reportSha256": "0FB6EF3324A96A755A04C48B85C3E2CEEA1B162F3056782A751813451716D448",
+      "priorityRequested": "High",
+      "priorityApplied": "High",
+      "affinityRequested": 16777212,
+      "affinityApplied": 16777212,
+      "otherUnityCpuSeconds": 0.15625,
+      "otherUnityWallFraction": 0.06702866003938754,
+      "noiseStatus": "flagged",
+      "noiseRule": "Other Unity Editor CPU <= 0.5 s and <= 5% of wall time; a missing, new or unreadable process is unknown. Informational."
+    },
+    {
+      "schemaVersion": 1,
+      "stem": "il2cpp-messaging-p3",
+      "backend": "IL2CPP",
+      "round": 3,
+      "sequence": 5,
+      "selfTest": false,
+      "executable": "<host>\\BenchmarkResults\\messaging-players\\20261002-441c441\\IL2CPP\\OnityMessagingBenchmark.exe",
+      "binarySha256": "5DC4AC3627307A53E7C949863A4FEE389D47DEE919B46E90587A1B512EAD840A",
+      "sidecarSha256": "9C28F77F7FBFF8E1554AC4C2A78F6346591E15EB83E2D16F5DAFAD7118C0F169",
+      "buildGuid": "372b4fe8484c4f8b95c2ceb95a01dde8",
+      "arguments": "-batchmode -nographics -onityRunMessagingBenchmark -onityMessagingBenchmarkOutput \"<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\il2cpp-messaging-p3.json\" -onityMessagingBenchmarkBuildMetadata \"<host>\\BenchmarkResults\\messaging-players\\20261002-441c441\\IL2CPP\\OnityMessagingBenchmark.exe.build.json\" -logFile \"<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\il2cpp-messaging-p3.player.log\"",
+      "report": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\il2cpp-messaging-p3.json",
+      "playerLog": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\il2cpp-messaging-p3.player.log",
+      "playerPid": 158544,
+      "startedUtc": "2026-10-02T17:40:00.2386718Z",
+      "elapsedSeconds": 2.071187,
+      "exitCode": 0,
+      "timedOut": false,
+      "timeoutSeconds": 900,
+      "reportFresh": true,
+      "binaryUnchanged": true,
+      "succeeded": true,
+      "reportSha256": "8BDAEC6EDF2B06A197A9D8EEC6914F82CE0436698B05F76D4385D047D120881F",
+      "priorityRequested": "High",
+      "priorityApplied": "High",
+      "affinityRequested": 16777212,
+      "affinityApplied": 16777212,
+      "otherUnityCpuSeconds": 0.171875,
+      "otherUnityWallFraction": 0.0829838155608354,
+      "noiseStatus": "flagged",
+      "noiseRule": "Other Unity Editor CPU <= 0.5 s and <= 5% of wall time; a missing, new or unreadable process is unknown. Informational."
+    },
+    {
+      "schemaVersion": 1,
+      "stem": "mono-messaging-p1",
+      "backend": "Mono",
+      "round": 1,
+      "sequence": 2,
+      "selfTest": false,
+      "executable": "<host>\\BenchmarkResults\\messaging-players\\20261002-441c441\\Mono\\OnityMessagingBenchmark.exe",
+      "binarySha256": "5CC71BF032F440AC46A5D24BB4101050A37001DD8F1B8325AEC1067EA0D1FF52",
+      "sidecarSha256": "2B85E677895DB3C086EF18F871FD06485C64E396128CD46CF0379FB30533EC78",
+      "buildGuid": "a26d274cbbf143c4b7ce628f032dae6d",
+      "arguments": "-batchmode -nographics -onityRunMessagingBenchmark -onityMessagingBenchmarkOutput \"<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\mono-messaging-p1.json\" -onityMessagingBenchmarkBuildMetadata \"<host>\\BenchmarkResults\\messaging-players\\20261002-441c441\\Mono\\OnityMessagingBenchmark.exe.build.json\" -logFile \"<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\mono-messaging-p1.player.log\"",
+      "report": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\mono-messaging-p1.json",
+      "playerLog": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\mono-messaging-p1.player.log",
+      "playerPid": 167464,
+      "startedUtc": "2026-10-02T17:39:46.2149233Z",
+      "elapsedSeconds": 4.9103711,
+      "exitCode": 0,
+      "timedOut": false,
+      "timeoutSeconds": 900,
+      "reportFresh": true,
+      "binaryUnchanged": true,
+      "succeeded": true,
+      "reportSha256": "0025F554454BDBA910DF5AFD42B723F5E9CC474C3782FA4FEB22BAC7138859B5",
+      "priorityRequested": "High",
+      "priorityApplied": "High",
+      "affinityRequested": 16777212,
+      "affinityApplied": 16777212,
+      "otherUnityCpuSeconds": 0.984375,
+      "otherUnityWallFraction": 0.20046855521775125,
+      "noiseStatus": "flagged",
+      "noiseRule": "Other Unity Editor CPU <= 0.5 s and <= 5% of wall time; a missing, new or unreadable process is unknown. Informational."
+    },
+    {
+      "schemaVersion": 1,
+      "stem": "mono-messaging-p2",
+      "backend": "Mono",
+      "round": 2,
+      "sequence": 3,
+      "selfTest": false,
+      "executable": "<host>\\BenchmarkResults\\messaging-players\\20261002-441c441\\Mono\\OnityMessagingBenchmark.exe",
+      "binarySha256": "5CC71BF032F440AC46A5D24BB4101050A37001DD8F1B8325AEC1067EA0D1FF52",
+      "sidecarSha256": "2B85E677895DB3C086EF18F871FD06485C64E396128CD46CF0379FB30533EC78",
+      "buildGuid": "a26d274cbbf143c4b7ce628f032dae6d",
+      "arguments": "-batchmode -nographics -onityRunMessagingBenchmark -onityMessagingBenchmarkOutput \"<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\mono-messaging-p2.json\" -onityMessagingBenchmarkBuildMetadata \"<host>\\BenchmarkResults\\messaging-players\\20261002-441c441\\Mono\\OnityMessagingBenchmark.exe.build.json\" -logFile \"<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\mono-messaging-p2.player.log\"",
+      "report": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\mono-messaging-p2.json",
+      "playerLog": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\mono-messaging-p2.player.log",
+      "playerPid": 10928,
+      "startedUtc": "2026-10-02T17:39:52.3782973Z",
+      "elapsedSeconds": 2.9398916,
+      "exitCode": 0,
+      "timedOut": false,
+      "timeoutSeconds": 900,
+      "reportFresh": true,
+      "binaryUnchanged": true,
+      "succeeded": true,
+      "reportSha256": "6FFE4645FF709F2F837112DDCDD37DF2F6D56EED092B03220165473E5F819D56",
+      "priorityRequested": "High",
+      "priorityApplied": "High",
+      "affinityRequested": 16777212,
+      "affinityApplied": 16777212,
+      "otherUnityCpuSeconds": 0.390625,
+      "otherUnityWallFraction": 0.13287054529493536,
+      "noiseStatus": "flagged",
+      "noiseRule": "Other Unity Editor CPU <= 0.5 s and <= 5% of wall time; a missing, new or unreadable process is unknown. Informational."
+    },
+    {
+      "schemaVersion": 1,
+      "stem": "mono-messaging-p3",
+      "backend": "Mono",
+      "round": 3,
+      "sequence": 6,
+      "selfTest": false,
+      "executable": "<host>\\BenchmarkResults\\messaging-players\\20261002-441c441\\Mono\\OnityMessagingBenchmark.exe",
+      "binarySha256": "5CC71BF032F440AC46A5D24BB4101050A37001DD8F1B8325AEC1067EA0D1FF52",
+      "sidecarSha256": "2B85E677895DB3C086EF18F871FD06485C64E396128CD46CF0379FB30533EC78",
+      "buildGuid": "a26d274cbbf143c4b7ce628f032dae6d",
+      "arguments": "-batchmode -nographics -onityRunMessagingBenchmark -onityMessagingBenchmarkOutput \"<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\mono-messaging-p3.json\" -onityMessagingBenchmarkBuildMetadata \"<host>\\BenchmarkResults\\messaging-players\\20261002-441c441\\Mono\\OnityMessagingBenchmark.exe.build.json\" -logFile \"<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\mono-messaging-p3.player.log\"",
+      "report": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\mono-messaging-p3.json",
+      "playerLog": "<host>\\BenchmarkResults\\messaging-baseline-2026-10-02\\runs\\mono-messaging-p3.player.log",
+      "playerPid": 170844,
+      "startedUtc": "2026-10-02T17:40:03.6867072Z",
+      "elapsedSeconds": 2.8724524,
+      "exitCode": 0,
+      "timedOut": false,
+      "timeoutSeconds": 900,
+      "reportFresh": true,
+      "binaryUnchanged": true,
+      "succeeded": true,
+      "reportSha256": "F9B5DDC76DF40B6FE110FEE784A2293C4D5F058CDF74F109A2D007DA2127A733",
+      "priorityRequested": "High",
+      "priorityApplied": "High",
+      "affinityRequested": 16777212,
+      "affinityApplied": 16777212,
+      "otherUnityCpuSeconds": 0.3125,
+      "otherUnityWallFraction": 0.10879205517905188,
+      "noiseStatus": "flagged",
+      "noiseRule": "Other Unity Editor CPU <= 0.5 s and <= 5% of wall time; a missing, new or unreadable process is unknown. Informational."
+    }
+  ],
+  "gate": {
+    "backend": "IL2CPP",
+    "rule": "IL2CPP, 3 processes, every row faster (9 rows, or the 7 synchronous rows if the async rows were dropped); Mono is classified the same way and reported, not gated",
+    "evaluated": true,
+    "pass": false,
+    "rows": [
+      "PublishNoSubscribers",
+      "Publish1",
+      "Publish8",
+      "SubscribeDispose",
+      "SubscribeDispose64",
+      "KeyedPublish",
+      "KeyedSubscribeDispose",
+      "AsyncPublish1",
+      "AsyncPublish8"
+    ],
+    "failingRows": [
+      "AsyncPublish1 (slower)",
+      "AsyncPublish8 (slower)"
+    ],
+    "reason": "",
+    "asyncRowsDropped": false
+  }
+}

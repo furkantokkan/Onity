@@ -314,10 +314,24 @@ int arenaOneSubscribers = waves.GetSubscriberCount(1);
 ## Async channels
 
 `AsyncMessageChannel<TMessage>` (`Onity.Messaging`; `IAsyncPublisher<TMessage>`,
-`IAsyncSubscriber<TMessage>`) awaits each handler before calling the next.
-Delivery walks a pooled snapshot, so a subscribe or unsubscribe from inside a
-handler cannot corrupt the pass. The token passed to `PublishAsync` is checked
-before every handler; cancellation surfaces as `OperationCanceledException`.
+`IAsyncSubscriber<TMessage>`) delivers sequentially: `PublishAsync` awaits each
+handler before calling the next and checks the token before each one. A pass
+delivers to the handlers registered when it started, so a handler disposed
+during the pass still receives that message and one added during the pass
+first receives the next. `PublishAsync` never throws synchronously: a disposed
+channel, a canceled token or a throwing handler completes the returned
+`ValueTask` as an `async` method would, canceled for
+`OperationCanceledException` and faulted otherwise.
+
+Handlers run inline on the caller's stack until the first pending one; from
+there the rest of the pass runs in an awaiting continuation. A handler that is
+not itself an `async` method therefore runs its synchronous work in the
+caller's context, as a handler of the synchronous `Publish` does: an
+`AsyncLocal<T>` value or a `SynchronizationContext` it sets stays visible to
+the caller after `PublishAsync` returns, whether it returned a completed
+`ValueTask` or was the first to return a pending one. An `async` handler keeps
+its own scope, so the caller does not see its change, and the caller does not
+see the changes of the handlers that run inside the continuation either.
 
 ```csharp
 using System;
@@ -447,19 +461,21 @@ There is no filter pipeline on the publish path.
 
 | MessagePipe | Onity |
 | --- | --- |
-| `IAsyncPublisher<T>` / `IAsyncSubscriber<T>` | `AsyncMessageChannel<T>` through `container.DeclareAsyncMessage<T>()`; `SubscribeQueued` when a slow handler must not stall publishers. |
+| `IAsyncPublisher<T>` / `IAsyncSubscriber<T>` | `AsyncMessageChannel<T>` through `container.DeclareAsyncMessage<T>()`; `SubscribeQueued` when a slow handler must not stall publishers. Onity's `PublishAsync` is sequential only, like `AsyncPublishStrategy.Sequential`; there is no parallel strategy. It returns `ValueTask`, never throws synchronously, and runs handlers that complete synchronously inline, as MessagePipe's Unity build does. |
 | Keyed `IPublisher<TKey, T>` / `ISubscriber<TKey, T>` | `KeyedMessageChannel<TKey, T>`, bound with `BindInstance`. |
 | `GlobalMessagePipe` | `OnityEvent.Publish` / `Subscribe` / `Observe` on the active context. |
 | Buffered or request-response brokers | Not shipped; current state is a `ReactiveProperty<T>`, a query is a service call. |
 
 ## Threading and ordering
 
-Publish and subscribe on the Unity main thread. The broker locks channel
-creation only; a channel's `Publish` is not locked. Handlers run in
+Publish and subscribe on the Unity main thread. The broker locks its channel
+table, never the publish path; a channel's `Publish` is not locked. Handlers run in
 subscription order until a subscriber leaves outside a publish pass, when the
 last subscriber moves into the freed slot, so do not treat the order as a
 priority contract. Unsubscribing from inside a handler is safe: the handler is
-skipped for the rest of the pass and removed afterwards.
+skipped for the rest of the pass and removed afterwards. An
+`AsyncMessageChannel<T>` pass instead keeps its start set (see
+[Async channels](#async-channels)).
 
 ## Error handling
 
@@ -468,14 +484,16 @@ skipped for the rest of the pass and removed afterwards.
   do not run. This also applies to a stream from `Observe<T>()`, whose
   observers run inside the channel's handler. Catch inside the handler when one
   listener must not break the others.
-- `ObjectDisposedException`: `Publish`, `Subscribe` or `PublishAsync` after
-  `Dispose()`, or a broker member after the broker was disposed. Tie
-  subscriptions to a lifetime with `AddTo` or `TakeUntilDisable`.
+- `ObjectDisposedException`: `Publish` or `Subscribe` after `Dispose()`, or a
+  broker member after the broker was disposed; `PublishAsync` after `Dispose()`
+  returns a task faulted with it instead of throwing. Tie subscriptions to a
+  lifetime with `AddTo` or `TakeUntilDisable`.
 - `ArgumentNullException`: a null handler, key, broker or owner component.
 - `InvalidOperationException` from `OnityEvent`: no active context could be
   resolved.
 - `OperationCanceledException` from `PublishAsync`: the token was canceled
-  between handlers; normal cancellation, not a failure.
+  before a handler, and the returned task is canceled; normal cancellation,
+  not a failure.
 - `OnityMessagingException` is declared for messaging-core failures; the
   shipped channels throw the standard exceptions above.
 
@@ -485,5 +503,6 @@ skipped for the rest of the pass and removed afterwards.
 - [Reactive](reactive.md): the operator chain `Observe<T>()` feeds, and `ReactiveProperty<T>` for current state.
 - [Dependency Injection](dependency-injection.md#shared-reactive-and-messaging-primitives): `DeclareMessage` and `DeclareAsyncMessage`.
 - [Lifecycle and Scopes](lifecycle-and-scopes.md): what each context binds, and the scope token.
+- [Messaging vs MessagePipe](https://furkantokkan.github.io/Onity/comparisons/messaging-vs-messagepipe.html): the feature comparison and the measured results with their conditions.
 - [Async with OnityTask](onitytask.md#reactive-and-messaging-bridges): the task-side bridges.
 - [Reactive vs R3 and UniRx](https://furkantokkan.github.io/Onity/comparisons/reactive-vs-r3-unirx.html): the measured comparison, and the [Comparisons](https://furkantokkan.github.io/Onity/comparisons/) hub.

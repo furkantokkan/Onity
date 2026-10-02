@@ -9,6 +9,9 @@ not ship so you do not look for it.
 - [From VContainer](From-VContainer.md): registration, lifetimes, entry points, async startup.
 - [From R3 and UniRx](From-R3.md): primitives, operators, lifetime, what is not shipped.
 - [From UniTask](From-UniTask.md): name mapping, behavior differences, 0.5 to 0.6 notes.
+- From MessagePipe: the [Migrating from MessagePipe](../guide/events-messaging.md#migrating-from-messagepipe)
+  section of the Events and Messaging guide, and the
+  [Messaging vs MessagePipe](https://furkantokkan.github.io/Onity/comparisons/messaging-vs-messagepipe.html) comparison.
 
 ## Method
 
@@ -18,7 +21,7 @@ not ship so you do not look for it.
   that bridge the two libraries across the whole project; convert one scene or feature, verify it, then
   move to the next.
 - Verify every name against the installed source under `Packages/com.onity.framework/Runtime/`. The
-  tables are checked against Onity 0.7.0; an API that is not in a table does not exist in Onity, and a
-  Zenject, VContainer, R3, UniRx or UniTask analogy is not evidence that it does.
+  tables are checked against Onity 0.8.0; an API that is not in a table does not exist in Onity, and a
+  Zenject, VContainer, R3, UniRx, UniTask or MessagePipe analogy is not evidence that it does.
 - Read [Lifecycle and Scopes](../guide/lifecycle-and-scopes.md) before you move async startup code.
   The scope token and `IOnityAsyncInitializable` replace most hand-written startup ordering.

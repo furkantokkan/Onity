@@ -1,0 +1,20 @@
+{
+    "name": "Onity.MessagingBenchmarks.Editor",
+    "rootNamespace": "Onity.Editor.Benchmarks",
+    "references": [
+        "Onity.MessagingBenchmarks"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "ONITY_MESSAGING_BENCHMARKS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

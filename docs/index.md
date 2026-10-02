@@ -12,7 +12,7 @@ messaging, async (`OnityTask`) and factories with pooling in one package with on
 owns its services, subscriptions, tasks and pools, and disposes them together. The core is engine-free,
 and the package has no non-Unity third-party runtime dependency.
 
-Current release: [v0.7.0](https://github.com/furkantokkan/Onity/releases/tag/v0.7.0). Unity 2022.3 LTS or
+Current release: [v0.8.0](https://github.com/furkantokkan/Onity/releases/tag/v0.8.0). Unity 2022.3 LTS or
 newer.
 
 ## Install
@@ -26,7 +26,7 @@ https://github.com/furkantokkan/Onity.git#upm
 To pin the current release:
 
 ```text
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.7.0
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.0
 ```
 
 [Getting Started](Getting-Started.html) covers the manifest form, the embedded-package form and the
@@ -130,6 +130,10 @@ the conditions and the known slower cases.
 - Async: faster than UniTask 2.5.11 in all 29 gated IL2CPP rows of the 2026-10-02 gate (medians 0.085 to
   0.808); on Mono faster in 25 of 29, with the four synchronous completed-result rows 1.09x to 1.92x slower
   ([OnityTask vs UniTask](guide/onitytask-comparison.html)).
+- Messaging: faster than MessagePipe 1.8.1 (the Unity package, compiled against UniTask 2.5.10) in all
+  nine IL2CPP rows of the 2026-10-02 comparison (medians 0.150 to 0.846) and in all nine Mono rows (0.280
+  to 0.756); also faster in all nine rows on both backends against MessagePipe's .NET build
+  ([Messaging vs MessagePipe](comparisons/messaging-vs-messagepipe.html)).
 
 ## Guides
 
@@ -162,6 +166,7 @@ In reading order:
 - [DI vs VContainer and Zenject](Onity-vs-VContainer-Zenject.html)
 - [Reactive vs R3 and UniRx](comparisons/reactive-vs-r3-unirx.html)
 - [OnityTask vs UniTask](guide/onitytask-comparison.html)
+- [Messaging vs MessagePipe](comparisons/messaging-vs-messagepipe.html)
 - [Measurement history](archive/index.html): older measurements, kept unchanged.
 
 ## More

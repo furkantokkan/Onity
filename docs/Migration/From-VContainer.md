@@ -14,7 +14,7 @@ three lifetimes map one to one (`Lifetime.Scoped` is `AsScoped()`), entry points
 interfaces that the container collects without a registration call, and `IAsyncStartable` becomes
 `IOnityAsyncInitializable`. The behaviors that differ: `BindInstance` rejects null, circular dependencies
 surface at resolve time rather than at build, and there is no `Func<>` factory registration. Everything
-here is verified against the Onity 0.7.0 source; an API that is not listed does not exist.
+here is verified against the Onity 0.8.0 source; an API that is not listed does not exist.
 
 Contents:
 

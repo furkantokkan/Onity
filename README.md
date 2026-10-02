@@ -63,7 +63,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root and tracks the latest release. To pin a release:
 
 ```text
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.7.0
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.0
 ```
 
 Or in `Packages/manifest.json`:
@@ -71,7 +71,7 @@ Or in `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.onity.framework": "https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.7.0"
+    "com.onity.framework": "https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.0"
   }
 }
 ```
@@ -245,7 +245,7 @@ full tables, the conditions and the known slower cases; these are timing results
 cross-platform claims.
 
 - Dependency injection. In the Windows IL2CPP release Player run of 2026-10-02 (the published 0.6.0
-  package, whose DI code is unchanged in 0.7.0; three processes; 512 warmups and 8 samples of 10,000
+  package, whose DI code is unchanged in 0.7.0 and 0.8.0; three processes; 512 warmups and 8 samples of 10,000
   operations), Onity Baked was fastest in all seven scenarios in every process, with Onity / VContainer
   per-process ratios of 0.21 to 0.59 ([record](docs/benchmarks/di-remeasure-2026-10-02.md)). On
   Editor/Mono it was faster than VContainer and Zenject in all seven scenarios, with the same
@@ -261,6 +261,12 @@ cross-platform claims.
   time than UniTask in all 29 gated IL2CPP rows, median ratios 0.085 to 0.808, worst process 0.906. On
   Mono it is faster in 25 of 29 rows; the four synchronous completed-result rows are 1.09x to 1.92x slower
   ([record](docs/assets/benchmarks/onitytask-surpass-2026-10-02.md)).
+- Messaging. In the Release Player comparison of 2026-10-02 (MessagePipe 1.8.1 as the Unity package
+  compiled against UniTask 2.5.10, three processes per backend), Onity.Messaging 0.8.0 took less time than
+  MessagePipe in all nine IL2CPP rows, median ratios 0.150 to 0.846 with no process above 0.895, and in
+  all nine Mono rows, 0.280 to 0.756 with no process above 0.862. Against MessagePipe's .NET build (the
+  NuGet dll) it took less time in all nine rows on both backends as well
+  ([record](docs/assets/benchmarks/messaging-surpass-messagepipe-2026-10-02.md)).
 - Pooling. Against Zenject's `MemoryPool`, paired within one process: one reused item in the checked
   Editor/Mono test, 0.590x and 0.579x; the 32-item two-parameter burst in a Windows IL2CPP Release Player,
   0.738x and 0.729x ([record](docs/benchmarks/pool-own-stack-2026-10-01.md)).
@@ -286,7 +292,8 @@ single-subscriber publish 1.098x slower than UniRx.
   [From R3 and UniRx](docs/Migration/From-R3.md), [From UniTask](docs/Migration/From-UniTask.md).
 - Comparisons: [DI vs VContainer and Zenject](docs/Onity-vs-VContainer-Zenject.md),
   [Reactive vs R3 and UniRx](docs/comparisons/reactive-vs-r3-unirx.md),
-  [OnityTask vs UniTask](docs/guide/onitytask-comparison.md); older measurements in
+  [OnityTask vs UniTask](docs/guide/onitytask-comparison.md),
+  [Messaging vs MessagePipe](docs/comparisons/messaging-vs-messagepipe.md); older measurements in
   [Measurement history](docs/archive/index.md).
 - [AI usage guide](docs/Onity-AI-Usage-Guide.md): the rules, the canonical scene, the API index and the
   error table for coding assistants. The package ships it with the guides under `Documentation~/`, with

@@ -3,7 +3,7 @@
 Onity (`com.onity.framework`) is a Unity package that puts dependency injection, reactive state, typed
 messaging, async (`OnityTask`) and factories with pooling in one package with one lifetime model: a scope
 owns its services, subscriptions, tasks and pools, and disposes them together. The core is engine-free and
-has no non-Unity third-party runtime dependency. Unity 2022.3 LTS or newer; this is version 0.7.0.
+has no non-Unity third-party runtime dependency. Unity 2022.3 LTS or newer; this is version 0.8.0.
 
 This file describes what is in the installed package. The documentation site is
 [furkantokkan.github.io/Onity](https://furkantokkan.github.io/Onity/), and the same pages ship inside this
@@ -178,6 +178,10 @@ pages.
 - Async (Release Player gate, 2026-10-02, UniTask 2.5.11, three processes per backend and suite): faster in
   all 29 gated IL2CPP rows (medians 0.085 to 0.808); on Mono faster in 25 of 29, with the four synchronous
   completed-result rows 1.09x to 1.92x slower.
+- Messaging (Release Players, 2026-10-02, MessagePipe 1.8.1 as the Unity package with UniTask 2.5.10,
+  three processes per backend): faster in all nine IL2CPP rows (medians 0.150 to 0.846) and in all nine
+  Mono rows (0.280 to 0.756); also faster in all nine rows on both backends against MessagePipe's .NET
+  build.
 
 ## Build and test
 
