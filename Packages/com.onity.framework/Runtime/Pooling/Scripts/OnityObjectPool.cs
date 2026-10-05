@@ -87,6 +87,15 @@ namespace Onity.Pooling
             OnityPoolDiagnosticsRegistry.Register(this);
         }
 
+        /// <summary>Items this pool has created and not destroyed: checked out plus waiting.</summary>
+        public int CountAll => m_countAll;
+
+        /// <summary>Items currently checked out.</summary>
+        public int CountActive => m_countAll - m_inactiveCount;
+
+        /// <summary>Items waiting in the pool for the next get.</summary>
+        public int CountInactive => m_inactiveCount;
+
         /// <inheritdoc />
         public T Get()
         {
@@ -161,6 +170,76 @@ namespace Onity.Pooling
 
             Interlocked.Increment(ref m_getCount);
             return item;
+        }
+
+        /// <summary>Gets an item unless a fixed-size pool has every item checked out.</summary>
+        /// <param name="item">The item taken, or null when none is available.</param>
+        /// <returns>False when a fixed-size pool has no available item; otherwise true.</returns>
+        public bool TryGet(out T item)
+        {
+            if (HasCapacity() == false)
+            {
+                item = null;
+                return false;
+            }
+
+            item = Get();
+            return true;
+        }
+
+        /// <summary>
+        /// Gets an item after applying one runtime parameter, unless a fixed-size pool has every item
+        /// checked out.
+        /// </summary>
+        /// <typeparam name="TParam">Parameter type.</typeparam>
+        /// <param name="param">Runtime parameter.</param>
+        /// <param name="initialize">Sets the item's state before the get hook runs.</param>
+        /// <param name="item">The configured item, or null when none is available.</param>
+        /// <returns>False when a fixed-size pool has no available item; otherwise true.</returns>
+        public bool TryGet<TParam>(TParam param, Action<T, TParam> initialize, out T item)
+        {
+            if (initialize == null)
+            {
+                throw new ArgumentNullException(nameof(initialize));
+            }
+
+            if (HasCapacity() == false)
+            {
+                item = null;
+                return false;
+            }
+
+            item = Get(param, initialize);
+            return true;
+        }
+
+        /// <summary>
+        /// Gets an item after applying two runtime parameters, unless a fixed-size pool has every item
+        /// checked out.
+        /// </summary>
+        /// <typeparam name="TParam1">First parameter type.</typeparam>
+        /// <typeparam name="TParam2">Second parameter type.</typeparam>
+        /// <param name="param1">First runtime parameter.</param>
+        /// <param name="param2">Second runtime parameter.</param>
+        /// <param name="initialize">Sets the item's state before the get hook runs.</param>
+        /// <param name="item">The configured item, or null when none is available.</param>
+        /// <returns>False when a fixed-size pool has no available item; otherwise true.</returns>
+        public bool TryGet<TParam1, TParam2>(
+            TParam1 param1, TParam2 param2, Action<T, TParam1, TParam2> initialize, out T item)
+        {
+            if (initialize == null)
+            {
+                throw new ArgumentNullException(nameof(initialize));
+            }
+
+            if (HasCapacity() == false)
+            {
+                item = null;
+                return false;
+            }
+
+            item = Get(param1, param2, initialize);
+            return true;
         }
 
         /// <inheritdoc />
@@ -257,12 +336,18 @@ namespace Onity.Pooling
 
         private void CheckCapacity()
         {
-            ThrowIfDisposed();
-
-            if (m_fixedSize && m_inactiveCount == 0 && m_countAll >= m_maxSize)
+            if (HasCapacity() == false)
             {
                 throw new InvalidOperationException("Fixed-size pool has no available items.");
             }
+        }
+
+        // Throws when disposed; false when a fixed-size pool has every item checked out.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool HasCapacity()
+        {
+            ThrowIfDisposed();
+            return m_fixedSize == false || m_inactiveCount != 0 || m_countAll < m_maxSize;
         }
 
         private void OnGet(T item)

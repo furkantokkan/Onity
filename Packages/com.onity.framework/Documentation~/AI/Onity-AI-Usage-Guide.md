@@ -261,7 +261,7 @@ Which factory or pool API:
 | --- | --- | --- | --- |
 | A new plain object per call from 0, 1 or 2 runtime arguments | your `IFactory<...>` class and `BindFactory<...>()` | `IFactory<...>` and the factory type (one shared instance) | no pooling; you write `Create` |
 | Reusable prefab instances, no arguments | `BindPooledFactory(prefab, parent, defaultCapacity, maxSize)` in a `MonoInstaller` | `IPool<TComponent>` (instance) and `IFactory<TComponent>` (`PooledFactory<TComponent>` singleton) | defaults 16 and 512; no prewarm, fixed-size or name option; the scope disposes the pool it creates (10.4) |
-| A prefab pool with prewarm, fixed capacity or a diagnostics name | `new PrefabComponentPool<T>(...)`, then `BindPooledFactory(pool)` | the same two bindings | caller-owned: `pool.AddTo(container)` or dispose it yourself (10.4) |
+| A prefab pool with prewarm, fixed capacity, a create hook or a diagnostics name | `new PrefabComponentPool<T>(...)`, then `BindPooledFactory(pool)` | the same two bindings | caller-owned: `pool.AddTo(container)` or dispose it yourself (10.4) |
 | A pool you already built, any item type | `BindPooledFactory(IPool<T>)` | the same two bindings | caller-owned; the container disposes it only after `pool.AddTo(container)` |
 | Pooled spawn with 1 or 2 runtime arguments | `new PooledFactory<TParam, T>(pool, initialize)` or the two-parameter form, bound with `BindInstance<IFactory<TParam, T>>(...)` | what you bind | needs an `IParameterizedPool<T>`; `initialize` runs before the get hooks and activation (10.2) |
 | Reusable plain C# objects, no `GameObject` | `new OnityObjectPool<T>(...)` (`T : class`), optionally `BindPooledFactory(pool)` | what you bind | reset in `actionOnGet` and `actionOnRelease`; `IPoolHooks` is not called (10.3) |
@@ -1186,10 +1186,16 @@ DON'T:
   called only by `PrefabComponentPool<T>`).
 - `OnityObjectPool<T>` (`T : class`; `IParameterizedPool<T>`, `IDisposable`, `IOnityPoolDiagnosticsSource`):
   `(Func<T> createFunc, Action<T> actionOnGet = null, Action<T> actionOnRelease = null, Action<T> actionOnDestroy = null, bool collectionCheck = false, int defaultCapacity = 16, int maxSize = 1024, string diagnosticsName = null, int initialSize = 0, bool fixedSize = false)`;
-  `Get()`, `Get<TParam>(...)`, `Get<TParam1, TParam2>(...)`, `Release(T)`, `Prewarm(int count)`, `Clear()`,
-  `Dispose()`, `GetDiagnosticsSnapshot()`.
+  `Get()`, `Get<TParam>(...)`, `Get<TParam1, TParam2>(...)`, `TryGet(out T item)`,
+  `TryGet<TParam>(TParam param, Action<T, TParam> initialize, out T item)`,
+  `TryGet<TParam1, TParam2>(TParam1 param1, TParam2 param2, Action<T, TParam1, TParam2> initialize, out T item)`
+  (`false`, with a `null` item, only when a fixed-size pool has every item checked out), `Release(T)`,
+  `Prewarm(int count)`, `Clear()`, `Dispose()`, `GetDiagnosticsSnapshot()`; `int CountAll`, `CountActive`,
+  `CountInactive` (created, checked out, waiting).
 - `PrefabComponentPool<TComponent>` (`TComponent : Component`; the same interfaces and members):
-  `(TComponent prefab, Transform parent = null, int defaultCapacity = 16, int maxSize = 512, string diagnosticsName = null, int initialSize = 0, bool fixedSize = false)`.
+  `(TComponent prefab, Transform parent = null, int defaultCapacity = 16, int maxSize = 512, string diagnosticsName = null, int initialSize = 0, bool fixedSize = false, Action<TComponent> actionOnCreate = null)`;
+  `actionOnCreate` runs once per new clone, under `parent` and still inactive, before its first `Awake`
+  and `OnEnable`.
 - `PooledFactory<TValue>` (`(IPool<TValue> pool)`), `PooledFactory<TParam, TValue>`
   (`(IParameterizedPool<TValue> pool, Action<TValue, TParam> initialize)`),
   `PooledFactory<TParam1, TParam2, TValue>` (`(IParameterizedPool<TValue> pool, Action<TValue, TParam1, TParam2> initialize)`);
@@ -1315,8 +1321,8 @@ classes throw standard .NET exceptions.
 | `OnityResolveException`: `Failed to instantiate '<YourType>' using constructor '<YourType>(System.Int32)'. Error: Type 'System.Int32' has no accessible constructor...` (a `string` parameter reports `Failed to instantiate 'System.String'...`) | A container-built class takes a runtime value as a constructor parameter. | Move the value into an `IFactory<TParam, TValue>` and call `Create(value)`. |
 | `OnityBindingException`: `Cannot bind pooled factory with a null prefab.` / `Cannot bind pooled factory with a null pool.` | `BindPooledFactory` received an unassigned or destroyed prefab, or a null pool. | Assign the prefab on the installer, or pass a constructed pool. |
 | `InvalidOperationException`: `Item has already been returned to the pool.` | A second `Release` of an inactive item in an `OnityObjectPool<T>` created with `collectionCheck: true`. `PrefabComponentPool<T>` never throws this. | Release each item exactly once; clear the stored release callback in `OnPoolRelease` or `actionOnRelease`. |
-| `InvalidOperationException`: `Fixed-size pool has no available items.` / `Fixed-size prefab pool has no available items.` | A `fixedSize: true` pool has all `maxSize` items checked out. | Release items, raise `maxSize`, or drop `fixedSize`. |
-| `ObjectDisposedException` (object name: the pool's diagnostics name) from `Get`, `Release`, `Clear`, `Prewarm` or `PooledFactory.Create` | The pool was disposed: by your code, by its scope ending (`BindPooledFactory(prefab, ...)` pools are scope-owned), or you hold a pool from a finished scope. | Return checked-out items before the scope ends; resolve from a live scope. |
+| `InvalidOperationException`: `Fixed-size pool has no available items.` / `Fixed-size prefab pool has no available items.` | A `fixedSize: true` pool has all `maxSize` items checked out. | Release items, raise `maxSize`, or drop `fixedSize`; where running out is expected, call `TryGet` and handle `false`. |
+| `ObjectDisposedException` (object name: the pool's diagnostics name) from `Get`, `TryGet`, `Release`, `Clear`, `Prewarm` or `PooledFactory.Create` | The pool was disposed: by your code, by its scope ending (`BindPooledFactory(prefab, ...)` pools are scope-owned), or you hold a pool from a finished scope. | Return checked-out items before the scope ends; resolve from a live scope. |
 | `ArgumentOutOfRangeException`: `Pool capacity must be positive and initialSize must be within maxSize.` (or from `Prewarm`) | `maxSize <= 0`, an `initialSize` outside `0..maxSize`, or a `Prewarm` count outside that range. | Fix the capacity arguments; `Prewarm(count)` is a target total. |
 | `ArgumentNullException` (`createFunc`, `prefab`, `pool`, `initialize`) | A null create delegate, prefab, pool or initializer reached a pool or `PooledFactory` constructor or `Get`. | Pass non-null arguments. |
 
@@ -1557,9 +1563,15 @@ the real names and defaults:
 | `initialSize` | `0` | items created in the constructor without running hooks; `0..maxSize` |
 | `fixedSize` | `false` | `true` makes `Get()` throw `InvalidOperationException` when all `maxSize` items are checked out |
 
-`PrefabComponentPool<T>` takes `(prefab, parent = null, defaultCapacity = 16, maxSize = 512, diagnosticsName = null, initialSize = 0, fixedSize = false)`;
-its default `diagnosticsName` is `PrefabComponentPool<T>:<prefab name>`. `Prewarm(count)` on either pool
-raises the created total to `count` (a target, not an increment) without running hooks.
+`PrefabComponentPool<T>` takes `(prefab, parent = null, defaultCapacity = 16, maxSize = 512, diagnosticsName = null, initialSize = 0, fixedSize = false, actionOnCreate = null)`;
+its default `diagnosticsName` is `PrefabComponentPool<T>:<prefab name>`. `actionOnCreate` runs once for
+each new clone (prewarmed ones too), under `parent` and still inactive, so before its first `Awake` and
+`OnEnable`; if it throws, the clone is destroyed and the exception propagates. Use it for setup a clone
+needs once; `createFunc` is that place in `OnityObjectPool<T>`. `Prewarm(count)` on either pool raises
+the created total to `count` (a target, not an increment) without running get or release hooks.
+`TryGet(out item)` and its one- and two-parameter forms return `false`, with a `null` item, when a
+fixed-size pool has every item checked out, where `Get` throws. `CountAll`, `CountActive` and
+`CountInactive` read the created, checked-out and waiting counts without allocating.
 
 ```csharp
 // Recipe F: a service that owns a plain pool, using every constructor option.
@@ -1632,8 +1644,8 @@ public sealed class PathNodePool : IDisposable
   `Destroy` in play mode and `DestroyImmediate` otherwise, plus the hidden root), unregisters the pool,
   and leaves checked-out items untouched, so return them first: a scope-owned pool is disposed before the
   scope's singletons, so a service's own `Dispose()` can no longer release into it. Afterwards `Get`,
-  `Release`, `Clear`, `Prewarm` and every `PooledFactory.Create` throw `ObjectDisposedException`, and
-  snapshots report zero counts with `IsDisposed == true`.
+  `TryGet`, `Release`, `Clear`, `Prewarm` and every `PooledFactory.Create` throw `ObjectDisposedException`,
+  and snapshots report zero counts with `IsDisposed == true`.
 - Parent lifetime: keep `parent` (and the scene it lives in) at least as long-lived as the pool. Unity
   destroys clones together with their parent, and `PrefabComponentPool<T>` does not check for destroyed
   items (10.5).
@@ -1650,11 +1662,12 @@ when only the code supports the row.
 | Use after release | DON'T read, write or keep a reference to an item after `Release`: the next `Get` may hand it to someone else, the prefab pool has deactivated it, and an item above `maxSize` (or still inactive at `Clear()` or `Dispose()`) is destroyed. | `OnityObjectPool_ReusesReleasedInstances`, `PrefabComponentPool_GetAndRelease_*` |
 | Release only what the pool issued | DON'T release `null` or an item from another pool. `Release` does not validate origin: a released `null` can come back from a later `Get()`, and `CountActive` can go negative. | source |
 | Reset in hooks | DO reset per-use state in `OnPoolRelease` or `actionOnRelease` (once per use, before deactivation), not in spawn code. Use `OnPoolGet` or `actionOnGet` only for setup that needs the live item and must not overwrite state a parameterized `initialize` already set. Prewarm (`initialSize`, `Prewarm`) runs no get hooks and suppresses release hooks. | `OnityObjectPool_PrewarmAndFixedCapacity_*`, `PrefabComponentPool_PrewarmAndParameterizedGet_*` |
+| One-time setup | DO put setup an instance needs once (references it keeps for life, buffers it reuses) in `createFunc` or in the prefab pool's `actionOnCreate`, not in a rent-all-then-release loop. `actionOnCreate` runs once per clone, prewarmed ones included, under `parent` and still inactive, so before its first `Awake` and `OnEnable`; a throwing `actionOnCreate` destroys that clone and propagates. | `PrefabComponentPool_ActionOnCreate*`; PlayMode `ActionOnCreate_RunsOnceBeforeFirstAwakeAndOnEnable` |
 | `IPoolHooks` scope | DON'T put `IPoolHooks` on a plain item and expect `OnityObjectPool<T>` to call it: that pool runs only `actionOnGet` and `actionOnRelease`. `PrefabComponentPool<T>` calls `IPoolHooks` on the pooled component. | source |
 | Failing hooks | A throwing get hook or parameterized `initialize` returns the item to the pool, skips the release hook, does not count the get, and rethrows. A throwing release hook leaves the item checked out: retry the same `Release`. | `*_GetHookFailure_*`, `TwoParameterPooledFactory_Recovers*`, `OnityObjectPool_InitializerFailure_*`, `OnityObjectPool_CheckedReturns_TrackRetriesOverflowAndClear` |
 | Never destroy a pooled item | DON'T `Destroy` or `DestroyImmediate` a pooled instance, or destroy its `parent` or scene while the pool lives: release it. The pool keeps its reference, `PrefabComponentPool<T>.Get` has no destroyed-item check, and a clone destroyed while checked out never leaves `CountActive`. | source |
-| Capacity above `maxSize` | `maxSize` caps retained inactive items. A release above it runs `actionOnRelease`, then `actionOnDestroy`, and `CountAll` drops. With `fixedSize: true`, `maxSize` is the total cap and `Get()` throws `InvalidOperationException` (`Fixed-size pool has no available items.` / `Fixed-size prefab pool has no available items.`) when every item is checked out. | `OnityObjectPool_CheckedReturns_TrackRetriesOverflowAndClear`, `OnityObjectPool_PrewarmAndFixedCapacity_*` |
-| `Clear()` | `Clear()` destroys inactive items only. Checked-out items stay active and tracked; `OnityObjectPool<T>` subtracts only the destroyed ones from `CountAll`. | `OnityObjectPool_Clear_*` |
+| Capacity above `maxSize` | `maxSize` caps retained inactive items. A release above it runs `actionOnRelease`, then `actionOnDestroy`, and `CountAll` drops. With `fixedSize: true`, `maxSize` is the total cap and `Get()` throws `InvalidOperationException` (`Fixed-size pool has no available items.` / `Fixed-size prefab pool has no available items.`) when every item is checked out. DO call `TryGet` where running out is expected: it returns `false` at that point without running hooks or `initialize`, instead of throwing; don't keep your own active counter beside the pool, read `CountActive`. | `OnityObjectPool_CheckedReturns_TrackRetriesOverflowAndClear`, `OnityObjectPool_PrewarmAndFixedCapacity_*`, `*_TryGet_ReturnsFalseOnlyWhenFixedPoolIsExhausted` |
+| `Clear()` | `Clear()` destroys inactive items only. Checked-out items stay active and tracked: both pools subtract only the destroyed ones from `CountAll`, so items checked out across a `Clear()` still count toward a fixed size. | `OnityObjectPool_Clear_*`, `OnityObjectPool_Counts_*`, `PrefabComponentPool_ClearWithCheckedOutInstance_*` |
 | Prefab activation | `PrefabComponentPool<T>` runs `SetActive(true)` then `OnPoolGet` on `Get`, and `OnPoolRelease` then `SetActive(false)` on `Release`, so `OnEnable` and `OnDisable` run on every use. Clones start inactive: `OnEnable` first fires on the first `Get`, after any `initialize`. DON'T read runtime parameters in `Awake`. | `PrefabComponentPool_GetAndRelease_*`; PlayMode `ActivePrefab_FirstParameterizedGet_InitializesBeforeOnEnable` |
 | No container injection | DON'T expect `[Inject]` members on a pooled clone to be filled: the prefab pool only instantiates it. Pass dependencies in on spawn (as `Launch(...)` does in Recipe C) or call `IResolver.Inject(clone)` yourself. | source |
 | Threading | DON'T share a pool across threads. `Get` and `Release` take no lock (the diagnostic counters use `Interlocked` only so the Editor monitor can read them), and the prefab pool touches Unity objects. | source |
@@ -1663,15 +1676,16 @@ when only the code supports the row.
 ### 10.6 Allocation and diagnostics
 
 - The EditMode pooling tests lock in that the warmed rent and return path of `OnityObjectPool<T>`
-  (default and `collectionCheck: true`), all three `PooledFactory` forms and a hook-less
-  `PrefabComponentPool<T>` records no `GC.Alloc` events. That covers the warmed path only: a `Get` that
+  (default and `collectionCheck: true`, through `Get` and `TryGet`), all three `PooledFactory` forms and
+  a hook-less `PrefabComponentPool<T>` (`Get` and `TryGet`) records no `GC.Alloc` events. That covers the warmed path only: a `Get` that
   finds no inactive item runs `createFunc` or instantiates, `Prewarm` creates items, and the inactive
   stack grows (doubling, up to `maxSize`) once `defaultCapacity` is exceeded. Cache the delegates you
   pass in; converting a method group allocates each time. Measured comparisons with their conditions:
   [DI vs VContainer and Zenject](https://furkantokkan.github.io/Onity/Onity-vs-VContainer-Zenject.html).
 - `pool.GetDiagnosticsSnapshot()` returns `PoolName`, `PoolType`, `ItemType`, `CountAll`, `CountActive`,
   `CountInactive`, `GetCount`, `ReleaseCount` and `IsDisposed`; `OnityPoolDiagnosticsRegistry.GetSnapshots(list)`
-  lists every registered pool, and `Onity/Tools/Pool Monitor` reads that registry.
+  lists every registered pool, and `Onity/Tools/Pool Monitor` reads that registry. Gameplay code that
+  needs a count reads the `CountAll`, `CountActive` and `CountInactive` properties of the pool itself.
 
 ---
 

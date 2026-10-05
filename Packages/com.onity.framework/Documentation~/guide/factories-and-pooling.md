@@ -200,8 +200,8 @@ instance exactly once; a second release of the same instance is an error.
 `BindPooledFactory(prefab, ...)` creates the pool, so the scope owns it: the pool is disposed when the
 container is disposed, after the scope token is canceled. A context disposes its container when it is
 destroyed. Disposing a prefab pool destroys its inactive instances only. Instances that are still
-checked out stay with their owners, so release them before the scope ends; `Get`, `Release`, `Prewarm`
-and `Clear` throw `ObjectDisposedException` afterwards. See
+checked out stay with their owners, so release them before the scope ends; `Get`, `TryGet`, `Release`,
+`Prewarm` and `Clear` throw `ObjectDisposedException` afterwards. See
 [Disposal ownership](lifecycle-and-scopes.md#disposal-ownership).
 
 A pool you build yourself and pass to `BindPooledFactory(pool)` stays caller-owned: the container never
@@ -223,6 +223,30 @@ constructor) and `fixedSize` (when true, `maxSize` is the total number of items,
 `InvalidOperationException` once all of them are checked out). `pool.Prewarm(count)` raises the created
 total to `count`; it is a target, not an increment, and it runs no get or release hooks. `maxSize`
 without `fixedSize` limits the retained inactive items: a release beyond it destroys the item.
+
+On a fixed-size pool, `TryGet(out item)` returns `false` instead of throwing when every item is checked
+out; `TryGet(param, initialize, out item)` and its two-parameter form do the same for a parameterized
+get. `CountAll`, `CountActive` and `CountInactive` report the items the pool created, the ones checked
+out and the ones waiting. `Clear()` destroys waiting items only, so items checked out across it still
+count toward a fixed size.
+
+`PrefabComponentPool<T>` also takes `actionOnCreate`. It runs once for each new clone, under `parent`
+and still inactive, so before the clone's first `Awake` and `OnEnable`, including the clones that
+`initialSize` and `Prewarm` create. Use it for setup a clone needs once; per-use state still belongs in
+`IPoolHooks`. If it throws, the clone is destroyed and the exception propagates. In
+`OnityObjectPool<T>`, `createFunc` is that place (fragment):
+
+```csharp
+// At most 16 markers at once; each clone is set up once, before its first OnEnable.
+PrefabComponentPool<HitMarker> pool = new PrefabComponentPool<HitMarker>(
+    m_hitMarkerPrefab, m_hitMarkerRoot, maxSize: 16, initialSize: 16, fixedSize: true,
+    actionOnCreate: marker => marker.gameObject.layer = m_overlayLayer);
+
+if (pool.TryGet(out HitMarker marker))  // false while all 16 are checked out
+{
+    marker.Show(amount);
+}
+```
 
 `BindPooledFactory(prefab, parent, defaultCapacity, maxSize)` has no prewarm, fixed-size or
 diagnostics-name option. Build the pool yourself, as in [Pool lifetime](#pool-lifetime), when you need
@@ -350,7 +374,7 @@ Feature shape only; measured pooling results, with their conditions, are on
 | Runtime-argument factory | your `IFactory<...>` class and `BindFactory` | `BindFactory` and `PlaceholderFactory` chains | factory delegates registered on the builder |
 | Prefab pooled factory | `BindPooledFactory(prefab)` binds `IFactory<T>` and `IPool<T>` | `MemoryPool` and `MonoMemoryPool` with installer wiring | none built in; combine registration with your own pool |
 | Reset lifecycle | `IPoolHooks` on the component, or `actionOnGet` and `actionOnRelease` on `OnityObjectPool<T>` | pool callbacks such as `OnSpawned` and `OnDespawned` | your own |
-| Prewarm, fixed capacity, retention limit | constructor arguments and `Prewarm(count)` on both pools | pool size options on the memory pool binding | your own |
+| Prewarm, fixed capacity, retention limit | constructor arguments, `Prewarm(count)`, `TryGet` and the `Count*` properties on both pools | pool size options on the memory pool binding | your own |
 | Fluent factory bodies | none; a C# factory class | `FromMethod`, `FromIFactory` and related | delegates |
 
 Onity ships fewer factory concepts and no fluent factory bodies; custom construction logic is a C#

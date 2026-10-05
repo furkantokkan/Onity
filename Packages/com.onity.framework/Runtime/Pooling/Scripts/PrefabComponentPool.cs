@@ -15,11 +15,14 @@ namespace Onity.Pooling
         private readonly TComponent m_prefab;
         private readonly Transform m_parent;
         private readonly ObjectPool<TComponent> m_pool;
+        private readonly Action<TComponent> m_actionOnCreate;
         private readonly string m_poolName;
         private readonly int m_maxSize;
         private readonly bool m_fixedSize;
         private long m_getCount;
         private long m_releaseCount;
+        // Counted here because ObjectPool.Clear resets its CountAll while instances are still checked out.
+        private int m_activeCount;
         private bool m_isDisposed;
         private bool m_suppressReleaseHook;
         private Transform m_inactiveParent;
@@ -34,6 +37,11 @@ namespace Onity.Pooling
         /// <param name="diagnosticsName">Optional diagnostics label.</param>
         /// <param name="initialSize">Number of distinct instances to create before first use.</param>
         /// <param name="fixedSize">Rejects a get when all maxSize instances are checked out.</param>
+        /// <param name="actionOnCreate">
+        /// Invoked once for each new instance, under its parent and still inactive, so it runs before the
+        /// instance's first Awake and OnEnable; instances that initialSize and Prewarm create run it too.
+        /// If it throws, the instance is destroyed and the exception propagates.
+        /// </param>
         public PrefabComponentPool(
             TComponent prefab,
             Transform parent = null,
@@ -41,7 +49,8 @@ namespace Onity.Pooling
             int maxSize = 512,
             string diagnosticsName = null,
             int initialSize = 0,
-            bool fixedSize = false)
+            bool fixedSize = false,
+            Action<TComponent> actionOnCreate = null)
         {
             if (prefab == null)
             {
@@ -56,6 +65,7 @@ namespace Onity.Pooling
 
             m_prefab = prefab;
             m_parent = parent;
+            m_actionOnCreate = actionOnCreate;
             m_maxSize = maxSize;
             m_fixedSize = fixedSize;
             m_poolName = string.IsNullOrWhiteSpace(diagnosticsName)
@@ -91,6 +101,15 @@ namespace Onity.Pooling
             OnityPoolDiagnosticsRegistry.Register(this);
         }
 
+        /// <summary>Instances this pool has created and not destroyed: checked out plus waiting.</summary>
+        public int CountAll => m_activeCount + m_pool.CountInactive;
+
+        /// <summary>Instances currently checked out, including ones checked out before a Clear.</summary>
+        public int CountActive => m_activeCount;
+
+        /// <summary>Instances waiting in the pool for the next get.</summary>
+        public int CountInactive => m_pool.CountInactive;
+
         /// <inheritdoc />
         public TComponent Get()
         {
@@ -107,6 +126,7 @@ namespace Onity.Pooling
                 throw;
             }
 
+            m_activeCount++;
             Interlocked.Increment(ref m_getCount);
             return item;
         }
@@ -133,6 +153,7 @@ namespace Onity.Pooling
                 throw;
             }
 
+            m_activeCount++;
             Interlocked.Increment(ref m_getCount);
             return item;
         }
@@ -161,8 +182,81 @@ namespace Onity.Pooling
                 throw;
             }
 
+            m_activeCount++;
             Interlocked.Increment(ref m_getCount);
             return item;
+        }
+
+        /// <summary>Gets an instance unless a fixed-size pool has every instance checked out.</summary>
+        /// <param name="item">The active instance, or null when none is available.</param>
+        /// <returns>False when a fixed-size pool has no available instance; otherwise true.</returns>
+        public bool TryGet(out TComponent item)
+        {
+            if (HasCapacity() == false)
+            {
+                item = null;
+                return false;
+            }
+
+            item = Get();
+            return true;
+        }
+
+        /// <summary>
+        /// Gets an instance after applying one runtime parameter, unless a fixed-size pool has every
+        /// instance checked out.
+        /// </summary>
+        /// <typeparam name="TParam">Parameter type.</typeparam>
+        /// <param name="param">Runtime parameter.</param>
+        /// <param name="initialize">Sets the instance's state before activation and the get hook.</param>
+        /// <param name="item">The configured active instance, or null when none is available.</param>
+        /// <returns>False when a fixed-size pool has no available instance; otherwise true.</returns>
+        public bool TryGet<TParam>(TParam param, Action<TComponent, TParam> initialize, out TComponent item)
+        {
+            if (initialize == null)
+            {
+                throw new ArgumentNullException(nameof(initialize));
+            }
+
+            if (HasCapacity() == false)
+            {
+                item = null;
+                return false;
+            }
+
+            item = Get(param, initialize);
+            return true;
+        }
+
+        /// <summary>
+        /// Gets an instance after applying two runtime parameters, unless a fixed-size pool has every
+        /// instance checked out.
+        /// </summary>
+        /// <typeparam name="TParam1">First parameter type.</typeparam>
+        /// <typeparam name="TParam2">Second parameter type.</typeparam>
+        /// <param name="param1">First runtime parameter.</param>
+        /// <param name="param2">Second runtime parameter.</param>
+        /// <param name="initialize">Sets the instance's state before activation and the get hook.</param>
+        /// <param name="item">The configured active instance, or null when none is available.</param>
+        /// <returns>False when a fixed-size pool has no available instance; otherwise true.</returns>
+        public bool TryGet<TParam1, TParam2>(
+            TParam1 param1, TParam2 param2,
+            Action<TComponent, TParam1, TParam2> initialize,
+            out TComponent item)
+        {
+            if (initialize == null)
+            {
+                throw new ArgumentNullException(nameof(initialize));
+            }
+
+            if (HasCapacity() == false)
+            {
+                item = null;
+                return false;
+            }
+
+            item = Get(param1, param2, initialize);
+            return true;
         }
 
         /// <inheritdoc />
@@ -170,6 +264,7 @@ namespace Onity.Pooling
         {
             ThrowIfDisposed();
             m_pool.Release(item);
+            m_activeCount--;
             Interlocked.Increment(ref m_releaseCount);
         }
 
@@ -184,7 +279,7 @@ namespace Onity.Pooling
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            int missing = count - m_pool.CountAll;
+            int missing = count - CountAll;
             if (missing <= 0)
             {
                 return;
@@ -247,9 +342,9 @@ namespace Onity.Pooling
 
             if (m_isDisposed == false)
             {
-                countAll = m_pool.CountAll;
-                countActive = m_pool.CountActive;
-                countInactive = m_pool.CountInactive;
+                countAll = CountAll;
+                countActive = CountActive;
+                countInactive = CountInactive;
             }
 
             return new OnityPoolDiagnosticsSnapshot(
@@ -277,6 +372,20 @@ namespace Onity.Pooling
             TComponent instance = UnityEngine.Object.Instantiate(m_prefab, m_inactiveParent);
             instance.gameObject.SetActive(false);
             instance.transform.SetParent(m_parent, false);
+
+            if (m_actionOnCreate != null)
+            {
+                try
+                {
+                    m_actionOnCreate(instance);
+                }
+                catch
+                {
+                    OnDestroyPooled(instance);
+                    throw;
+                }
+            }
+
             return instance;
         }
 
@@ -302,12 +411,17 @@ namespace Onity.Pooling
 
         private void CheckCapacity()
         {
-            ThrowIfDisposed();
-
-            if (m_fixedSize && m_pool.CountInactive == 0 && m_pool.CountAll >= m_maxSize)
+            if (HasCapacity() == false)
             {
                 throw new InvalidOperationException("Fixed-size prefab pool has no available items.");
             }
+        }
+
+        // Throws when disposed; false when a fixed-size pool has every instance checked out.
+        private bool HasCapacity()
+        {
+            ThrowIfDisposed();
+            return m_fixedSize == false || m_pool.CountInactive != 0 || m_activeCount < m_maxSize;
         }
 
         private void ReturnWithoutHook(TComponent item)

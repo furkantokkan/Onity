@@ -63,7 +63,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root and tracks the latest release. To pin a release:
 
 ```text
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.0
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.1
 ```
 
 Or in `Packages/manifest.json`:
@@ -71,7 +71,7 @@ Or in `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.onity.framework": "https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.0"
+    "com.onity.framework": "https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.1"
   }
 }
 ```
@@ -245,7 +245,7 @@ full tables, the conditions and the known slower cases; these are timing results
 cross-platform claims.
 
 - Dependency injection. In the Windows IL2CPP release Player run of 2026-10-02 (the published 0.6.0
-  package, whose DI code is unchanged in 0.7.0 and 0.8.0; three processes; 512 warmups and 8 samples of 10,000
+  package, whose DI code is unchanged through 0.8.1; three processes; 512 warmups and 8 samples of 10,000
   operations), Onity Baked was fastest in all seven scenarios in every process, with Onity / VContainer
   per-process ratios of 0.21 to 0.59 ([record](docs/benchmarks/di-remeasure-2026-10-02.md)). On
   Editor/Mono it was faster than VContainer and Zenject in all seven scenarios, with the same

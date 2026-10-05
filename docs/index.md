@@ -12,7 +12,7 @@ messaging, async (`OnityTask`) and factories with pooling in one package with on
 owns its services, subscriptions, tasks and pools, and disposes them together. The core is engine-free,
 and the package has no non-Unity third-party runtime dependency.
 
-Current release: [v0.8.0](https://github.com/furkantokkan/Onity/releases/tag/v0.8.0). Unity 2022.3 LTS or
+Current release: [v0.8.1](https://github.com/furkantokkan/Onity/releases/tag/v0.8.1). Unity 2022.3 LTS or
 newer.
 
 ## Install
@@ -26,7 +26,7 @@ https://github.com/furkantokkan/Onity.git#upm
 To pin the current release:
 
 ```text
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.0
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.1
 ```
 
 [Getting Started](Getting-Started.html) covers the manifest form, the embedded-package form and the

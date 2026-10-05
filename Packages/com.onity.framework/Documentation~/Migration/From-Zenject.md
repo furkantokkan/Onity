@@ -9,7 +9,7 @@ behaviors differ and are worth reading before the tables: Onity is last-binding-
 on a duplicate bind; it selects the public constructor with the most parameters (or the single `[Inject]`
 constructor) instead of the fewest; it detects circular dependencies at resolve time; its `AsScoped()`
 is a lifetime, not a sub-container; and signals are replaced by the messaging pillar. Everything in
-these tables is verified against the Onity 0.8.0 source; an API that is not listed does not exist.
+these tables is verified against the Onity 0.8.1 source; an API that is not listed does not exist.
 
 Contents:
 

@@ -5,6 +5,33 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-10-05
+
+Pools report their counts and can decline a get without throwing, prefab pools
+take a one-time create hook, and a prefab pool no longer loses count of its
+checked-out instances on `Clear()`. The DI, reactive, messaging and OnityTask
+code is unchanged.
+
+### Added
+
+- Pools: `CountAll`, `CountActive` and `CountInactive` properties on
+  `OnityObjectPool<T>` and `PrefabComponentPool<T>`, and `TryGet(out item)`
+  with one- and two-parameter forms, which return `false` instead of throwing
+  when a fixed-size pool has every item checked out. A caller no longer keeps
+  its own active counter beside a fixed-size pool.
+- `PrefabComponentPool<T>` takes an optional `actionOnCreate` that runs once for
+  each new clone, prewarmed ones included, while the clone is inactive under its
+  parent and before its first `Awake` and `OnEnable`, so one-time setup no longer
+  needs a rent-all-then-release loop. A throwing hook destroys that clone.
+
+### Fixed
+
+- `PrefabComponentPool<T>` lost count of checked-out instances on `Clear()`,
+  because `UnityEngine.Pool.ObjectPool<T>.Clear()` resets its `CountAll`. A
+  fixed-size prefab pool could then create more than `maxSize` instances,
+  `Prewarm` created too many, and diagnostics reported a wrong `CountActive`.
+  The pool now counts its checked-out instances itself.
+
 ## [0.8.0] - 2026-10-03
 
 Onity.Messaging is faster than MessagePipe 1.8.1 in all nine rows of the

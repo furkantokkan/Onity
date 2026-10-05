@@ -245,6 +245,59 @@ namespace Onity.Tests.PlayMode
             }
         }
 
+        [Test]
+        public void ActionOnCreate_RunsOnceBeforeFirstAwakeAndOnEnable()
+        {
+            GameObject prefabRoot = new GameObject("CreateHookPoolPrefab");
+            PoolEnableProbe prefab = prefabRoot.AddComponent<PoolEnableProbe>();
+            PrefabComponentPool<PoolEnableProbe> pool = null;
+            PoolEnableProbe instance = null;
+            int created = 0;
+            int awakeCountAtCreate = -1;
+            int enableCountAtCreate = -1;
+
+            try
+            {
+                pool = new PrefabComponentPool<PoolEnableProbe>(
+                    prefab, maxSize: 1, initialSize: 1, fixedSize: true,
+                    actionOnCreate: item =>
+                    {
+                        created++;
+                        awakeCountAtCreate = item.AwakeCount;
+                        enableCountAtCreate = item.EnableCount;
+                        item.Value = 5;
+                    });
+
+                Assert.That(created, Is.EqualTo(1));
+                Assert.That(awakeCountAtCreate, Is.Zero);
+                Assert.That(enableCountAtCreate, Is.Zero);
+
+                instance = pool.Get();
+                Assert.That(instance.AwakeCount, Is.EqualTo(1));
+                Assert.That(instance.EnableCount, Is.EqualTo(1));
+                Assert.That(instance.FirstSeenOnEnable, Is.EqualTo(5));
+                pool.Release(instance);
+
+                instance = pool.Get();
+                Assert.That(created, Is.EqualTo(1));
+                Assert.That(instance.AwakeCount, Is.EqualTo(1));
+                Assert.That(instance.EnableCount, Is.EqualTo(2));
+                pool.Release(instance);
+                instance = null;
+            }
+            finally
+            {
+                pool?.Dispose();
+
+                if (instance != null)
+                {
+                    Object.Destroy(instance.gameObject);
+                }
+
+                Object.Destroy(prefabRoot);
+            }
+        }
+
         [UnityTest]
         public IEnumerator DestroyingGameObjectContext_DisposesPoolCreatedByBindPooledFactory()
         {
@@ -357,9 +410,16 @@ namespace Onity.Tests.PlayMode
         {
             public int Value { get; set; }
 
+            public int AwakeCount { get; private set; }
+
             public int EnableCount { get; private set; }
 
             public int FirstSeenOnEnable { get; private set; }
+
+            private void Awake()
+            {
+                AwakeCount++;
+            }
 
             private void OnEnable()
             {

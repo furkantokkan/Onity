@@ -91,7 +91,7 @@ process; below 1 means Onity took less time. The [Comparisons](../comparisons/in
 full tables.
 
 - Dependency injection. In the Windows IL2CPP release Player run of 2026-10-02 (Unity 2022.3.62f2, the
-  published 0.6.0 package whose DI code is unchanged in 0.7.0 and 0.8.0, 19 generated activators, three processes,
+  published 0.6.0 package whose DI code is unchanged through 0.8.1, 19 generated activators, three processes,
   512 warmups and 8 samples of 10,000 operations), Onity Baked was fastest in all seven scenarios in every
   process, with Onity / VContainer per-process ratios of 0.21 to 0.59
   ([record](../benchmarks/di-remeasure-2026-10-02.md)). The 2026-10-01 re-measurement found 0.23 to 0.57

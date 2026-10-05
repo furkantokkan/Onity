@@ -39,6 +39,9 @@
 tools/**/bin/
 tools/**/obj/
 
+# Local task-tracking files (task contracts and their records); never published
+/production/
+
 # OS files
 .DS_Store
 Thumbs.db

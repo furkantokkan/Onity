@@ -99,9 +99,94 @@ namespace Onity.Tests.EditMode
             pool.Dispose();
 
             Assert.That(() => pool.Get(), Throws.TypeOf<ObjectDisposedException>());
+            Assert.That(() => pool.TryGet(out _), Throws.TypeOf<ObjectDisposedException>());
             Assert.That(() => pool.Prewarm(1), Throws.TypeOf<ObjectDisposedException>());
             Assert.That(() => pool.Release(item), Throws.TypeOf<ObjectDisposedException>());
             Assert.That(() => pool.Clear(), Throws.TypeOf<ObjectDisposedException>());
+        }
+
+        [Test]
+        public void OnityObjectPool_Counts_TrackGetsReleasesClearAndPrewarm()
+        {
+            using OnityObjectPool<PooledReference> pool = new OnityObjectPool<PooledReference>(
+                () => new PooledReference(),
+                initialSize: 2,
+                maxSize: 4);
+            Assert.That(CountsOf(pool), Is.EqualTo(new[] { 2, 0, 2 }));
+
+            PooledReference first = pool.Get();
+            PooledReference second = pool.Get();
+            PooledReference third = pool.Get();
+            Assert.That(CountsOf(pool), Is.EqualTo(new[] { 3, 3, 0 }));
+
+            pool.Release(first);
+            Assert.That(CountsOf(pool), Is.EqualTo(new[] { 3, 2, 1 }));
+
+            pool.Clear();
+            Assert.That(CountsOf(pool), Is.EqualTo(new[] { 2, 2, 0 }));
+
+            pool.Prewarm(4);
+            Assert.That(CountsOf(pool), Is.EqualTo(new[] { 4, 2, 2 }));
+
+            pool.Release(second);
+            pool.Release(third);
+            OnityPoolDiagnosticsSnapshot snapshot = pool.GetDiagnosticsSnapshot();
+            Assert.That(CountsOf(pool), Is.EqualTo(new[] { 4, 0, 4 }));
+            Assert.That(CountsOf(pool),
+                Is.EqualTo(new[] { snapshot.CountAll, snapshot.CountActive, snapshot.CountInactive }));
+        }
+
+        [Test]
+        public void OnityObjectPool_TryGet_ReturnsFalseOnlyWhenFixedPoolIsExhausted()
+        {
+            int created = 0;
+            int getHooks = 0;
+            int initializeCalls = 0;
+            using OnityObjectPool<PooledReference> pool = new OnityObjectPool<PooledReference>(
+                () =>
+                {
+                    created++;
+                    return new PooledReference();
+                },
+                actionOnGet: _ => getHooks++,
+                maxSize: 2,
+                fixedSize: true);
+
+            Assert.That(pool.TryGet(out PooledReference first), Is.True);
+            Assert.That(pool.TryGet(out PooledReference second), Is.True);
+            Assert.That(first, Is.Not.SameAs(second));
+            Assert.That(pool.TryGet(out PooledReference missing), Is.False);
+            Assert.That(missing, Is.Null);
+            Assert.That(pool.TryGet(1, (item, number) => initializeCalls++, out missing), Is.False);
+            Assert.That(pool.TryGet(1, 2, (item, left, right) => initializeCalls++, out missing), Is.False);
+            Assert.That(() => pool.Get(), Throws.TypeOf<InvalidOperationException>());
+            Assert.That(() => pool.TryGet(1, null, out _), Throws.TypeOf<ArgumentNullException>());
+            Assert.That(created, Is.EqualTo(2));
+            Assert.That(getHooks, Is.EqualTo(2));
+            Assert.That(initializeCalls, Is.Zero);
+            Assert.That(pool.GetDiagnosticsSnapshot().GetCount, Is.EqualTo(2));
+
+            pool.Release(first);
+            Assert.That(pool.TryGet(5, (item, number) => item.Number = number, out PooledReference one),
+                Is.True);
+            Assert.That(one, Is.SameAs(first));
+            Assert.That(one.Number, Is.EqualTo(5));
+            pool.Release(one);
+            Assert.That(pool.TryGet(2, 4, (item, left, right) => item.Number = left + right,
+                out PooledReference two), Is.True);
+            Assert.That(two.Number, Is.EqualTo(6));
+            Assert.That(created, Is.EqualTo(2));
+            pool.Release(two);
+            pool.Release(second);
+
+            using OnityObjectPool<PooledReference> growing = new OnityObjectPool<PooledReference>(
+                () => new PooledReference(),
+                maxSize: 1);
+            Assert.That(growing.TryGet(out PooledReference retained), Is.True);
+            Assert.That(growing.TryGet(out PooledReference overflow), Is.True);
+            growing.Release(retained);
+            growing.Release(overflow);
+            Assert.That(CountsOf(growing), Is.EqualTo(new[] { 1, 0, 1 }));
         }
 
         [Test]
@@ -489,10 +574,22 @@ namespace Onity.Tests.EditMode
                 new PooledFactory<int, int, PooledReference>(
                     pool, (item, first, second) => item.Number = first + second);
 
+            Action<PooledReference, int> setNumber = (item, number) => item.Number = number;
+
             Action positiveControl = () => s_allocationProbe = new byte[1024];
             Action direct = () =>
             {
                 PooledReference item = pool.Get();
+                pool.Release(item);
+            };
+            Action tryGet = () =>
+            {
+                pool.TryGet(out PooledReference item);
+                pool.Release(item);
+            };
+            Action tryGetOne = () =>
+            {
+                pool.TryGet(1, setNumber, out PooledReference item);
                 pool.Release(item);
             };
             Action plain = () =>
@@ -514,6 +611,8 @@ namespace Onity.Tests.EditMode
             Assert.That(CountAllocEvents(positiveControl), Is.GreaterThan(0),
                 "The allocation counter must detect its positive control.");
             Assert.That(CountAllocEvents(direct), Is.Zero);
+            Assert.That(CountAllocEvents(tryGet), Is.Zero);
+            Assert.That(CountAllocEvents(tryGetOne), Is.Zero);
             Assert.That(CountAllocEvents(plain), Is.Zero);
             Assert.That(CountAllocEvents(one), Is.Zero);
             Assert.That(CountAllocEvents(two), Is.Zero);
@@ -828,6 +927,7 @@ namespace Onity.Tests.EditMode
                 pool.Dispose();
 
                 Assert.That(() => pool.Get(), Throws.TypeOf<ObjectDisposedException>());
+                Assert.That(() => pool.TryGet(out _), Throws.TypeOf<ObjectDisposedException>());
                 Assert.That(() => pool.Prewarm(1), Throws.TypeOf<ObjectDisposedException>());
                 Assert.That(() => pool.Release(item), Throws.TypeOf<ObjectDisposedException>());
                 Assert.That(() => pool.Clear(), Throws.TypeOf<ObjectDisposedException>());
@@ -858,8 +958,14 @@ namespace Onity.Tests.EditMode
                     FactoryProbe item = pool.Get();
                     pool.Release(item);
                 };
+                Action tryGet = () =>
+                {
+                    pool.TryGet(out FactoryProbe item);
+                    pool.Release(item);
+                };
 
                 Assert.That(CountAllocEvents(operation), Is.Zero);
+                Assert.That(CountAllocEvents(tryGet), Is.Zero);
             }
             finally
             {
@@ -893,6 +999,179 @@ namespace Onity.Tests.EditMode
                 Assert.That(reused.SeenOnGet, Is.EqualTo(9));
                 pool.Release(reused);
                 pool.Clear();
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(prefabRoot);
+            }
+        }
+
+        [Test]
+        public void PrefabComponentPool_TryGet_ReturnsFalseOnlyWhenFixedPoolIsExhausted()
+        {
+            GameObject prefabRoot = new GameObject("TryGetPoolPrefab");
+            ParameterizedPoolProbe prefab = prefabRoot.AddComponent<ParameterizedPoolProbe>();
+            int initializeCalls = 0;
+
+            try
+            {
+                using PrefabComponentPool<ParameterizedPoolProbe> pool =
+                    new PrefabComponentPool<ParameterizedPoolProbe>(
+                        prefab, maxSize: 1, initialSize: 1, fixedSize: true);
+
+                Assert.That(pool.TryGet(out ParameterizedPoolProbe first), Is.True);
+                Assert.That(first.gameObject.activeSelf, Is.True);
+                Assert.That(pool.TryGet(out ParameterizedPoolProbe missing), Is.False);
+                Assert.That(missing, Is.Null);
+                Assert.That(pool.TryGet(1, (item, value) => initializeCalls++, out missing), Is.False);
+                Assert.That(pool.TryGet(1, 2, (item, left, right) => initializeCalls++, out missing),
+                    Is.False);
+                Assert.That(initializeCalls, Is.Zero);
+                Assert.That(CountsOf(pool), Is.EqualTo(new[] { 1, 1, 0 }));
+
+                pool.Release(first);
+                Assert.That(pool.TryGet(7, (item, value) => item.Value = value,
+                    out ParameterizedPoolProbe one), Is.True);
+                Assert.That(one, Is.SameAs(first));
+                Assert.That(one.SeenOnGet, Is.EqualTo(7));
+                pool.Release(one);
+                Assert.That(pool.TryGet(2, 4, (item, left, right) => item.Value = left + right,
+                    out ParameterizedPoolProbe two), Is.True);
+                Assert.That(two.SeenOnGet, Is.EqualTo(6));
+                pool.Release(two);
+                Assert.That(CountsOf(pool), Is.EqualTo(new[] { 1, 0, 1 }));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(prefabRoot);
+            }
+        }
+
+        [Test]
+        public void PrefabComponentPool_ClearWithCheckedOutInstance_KeepsCountsAndFixedCapacity()
+        {
+            GameObject prefabRoot = new GameObject("ClearedFixedPoolPrefab");
+            FactoryProbe prefab = prefabRoot.AddComponent<FactoryProbe>();
+            int created = 0;
+
+            try
+            {
+                using PrefabComponentPool<FactoryProbe> pool = new PrefabComponentPool<FactoryProbe>(
+                    prefab, maxSize: 2, initialSize: 2, fixedSize: true,
+                    actionOnCreate: _ => created++);
+                FactoryProbe first = pool.Get();
+                pool.Clear();
+
+                // The instance checked out before Clear still counts toward the fixed capacity.
+                Assert.That(CountsOf(pool), Is.EqualTo(new[] { 1, 1, 0 }));
+                Assert.That(pool.GetDiagnosticsSnapshot().CountActive, Is.EqualTo(1));
+
+                FactoryProbe second = pool.Get();
+                Assert.That(created, Is.EqualTo(3));
+                Assert.That(pool.TryGet(out FactoryProbe third), Is.False);
+                Assert.That(third, Is.Null);
+                Assert.That(() => pool.Get(), Throws.TypeOf<InvalidOperationException>());
+
+                pool.Release(first);
+                pool.Release(second);
+                pool.Prewarm(2);
+                Assert.That(CountsOf(pool), Is.EqualTo(new[] { 2, 0, 2 }));
+                Assert.That(created, Is.EqualTo(3));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(prefabRoot);
+            }
+        }
+
+        [Test]
+        public void PrefabComponentPool_ActionOnCreate_RunsOncePerInstanceUnderParentBeforeActivation()
+        {
+            GameObject prefabRoot = new GameObject("CreateHookPoolPrefab");
+            CreateHookProbe prefab = prefabRoot.AddComponent<CreateHookProbe>();
+            GameObject parent = new GameObject("CreateHookPoolParent");
+
+            try
+            {
+                using PrefabComponentPool<CreateHookProbe> pool = new PrefabComponentPool<CreateHookProbe>(
+                    prefab, parent.transform, maxSize: 3, initialSize: 2,
+                    actionOnCreate: item =>
+                    {
+                        item.CreateCount++;
+                        item.ActiveOnCreate = item.gameObject.activeSelf;
+                        item.ParentOnCreate = item.transform.parent;
+                    });
+
+                CreateHookProbe first = pool.Get();
+                CreateHookProbe second = pool.Get();
+                CreateHookProbe third = pool.Get();
+                pool.Release(first);
+                pool.Release(second);
+                pool.Release(third);
+                pool.Prewarm(3);
+                pool.Release(pool.Get());
+
+                CreateHookProbe[] instances = { first, second, third };
+                for (int i = 0; i < instances.Length; i++)
+                {
+                    Assert.That(instances[i].CreateCount, Is.EqualTo(1));
+                    Assert.That(instances[i].ActiveOnCreate, Is.False);
+                    Assert.That(instances[i].ParentOnCreate, Is.EqualTo(parent.transform));
+                }
+
+                Assert.That(CountsOf(pool), Is.EqualTo(new[] { 3, 0, 3 }));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+                UnityEngine.Object.DestroyImmediate(prefabRoot);
+            }
+        }
+
+        [Test]
+        public void PrefabComponentPool_ActionOnCreateFailure_DestroysTheInstance()
+        {
+            GameObject prefabRoot = new GameObject("FailingCreateHookPrefab");
+            FactoryProbe prefab = prefabRoot.AddComponent<FactoryProbe>();
+            List<FactoryProbe> createdInstances = new List<FactoryProbe>();
+
+            try
+            {
+                Assert.That(() => new PrefabComponentPool<FactoryProbe>(
+                    prefab, maxSize: 2, initialSize: 2,
+                    actionOnCreate: item =>
+                    {
+                        createdInstances.Add(item);
+                        if (createdInstances.Count == 2)
+                        {
+                            throw new InvalidOperationException("Create hook failed.");
+                        }
+                    }), Throws.TypeOf<InvalidOperationException>());
+                Assert.That(createdInstances.Count, Is.EqualTo(2));
+                Assert.That(createdInstances[0] == null, Is.True, "The failed constructor destroys its prewarmed instance.");
+                Assert.That(createdInstances[1] == null, Is.True, "The instance whose hook failed is destroyed.");
+
+                bool fail = true;
+                using PrefabComponentPool<FactoryProbe> pool = new PrefabComponentPool<FactoryProbe>(
+                    prefab, maxSize: 1, fixedSize: true,
+                    actionOnCreate: item =>
+                    {
+                        createdInstances.Add(item);
+                        if (fail)
+                        {
+                            fail = false;
+                            throw new InvalidOperationException("Create hook failed.");
+                        }
+                    });
+
+                Assert.That(() => pool.Get(), Throws.TypeOf<InvalidOperationException>());
+                Assert.That(createdInstances[2] == null, Is.True, "The instance whose hook failed is destroyed.");
+                Assert.That(CountsOf(pool), Is.EqualTo(new[] { 0, 0, 0 }));
+
+                FactoryProbe recovered = pool.Get();
+                Assert.That(recovered, Is.SameAs(createdInstances[3]));
+                Assert.That(CountsOf(pool), Is.EqualTo(new[] { 1, 1, 0 }));
+                pool.Release(recovered);
             }
             finally
             {
@@ -1082,6 +1361,18 @@ namespace Onity.Tests.EditMode
             List<OnityPoolDiagnosticsSnapshot> snapshots = new List<OnityPoolDiagnosticsSnapshot>();
             OnityPoolDiagnosticsRegistry.GetSnapshots(snapshots);
             return snapshots.Count;
+        }
+
+        private static int[] CountsOf<T>(OnityObjectPool<T> pool)
+            where T : class
+        {
+            return new[] { pool.CountAll, pool.CountActive, pool.CountInactive };
+        }
+
+        private static int[] CountsOf<T>(PrefabComponentPool<T> pool)
+            where T : Component
+        {
+            return new[] { pool.CountAll, pool.CountActive, pool.CountInactive };
         }
 
         private sealed class PooledReference
@@ -1384,6 +1675,15 @@ namespace Onity.Tests.EditMode
 
         private sealed class FactoryProbe : MonoBehaviour
         {
+        }
+
+        private sealed class CreateHookProbe : MonoBehaviour
+        {
+            public int CreateCount { get; set; }
+
+            public bool ActiveOnCreate { get; set; }
+
+            public Transform ParentOnCreate { get; set; }
         }
     }
 }
