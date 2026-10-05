@@ -1241,7 +1241,15 @@ DON'T:
 - Physics (`Onity.Unity.Physics`): `OnityNonAllocPhysics`, `OnityRaycastCommandBatch`. Scene flow
   (`Onity.Unity.SceneFlow`): `OnitySceneFlow`, `OnitySceneFlowProfile`, `OnitySceneFlowStateId`,
   `OnitySceneFlowStateMachine`, `OnitySceneTransitionStore`, `OnitySceneInitiator`,
-  `OnityBootstrapSceneInitiator`, `OnityLoadingSceneInitiator`, `OnityLoadingView`, `IOnitySceneEnterData`.
+  `OnityBootstrapSceneInitiator`, `OnityLoadingSceneInitiator`, `OnityLoadingView`, `IOnitySceneEnterData`;
+  covered transitions and preloading (guide: Lifecycle and Scopes, Scene transitions):
+  `OnityCoveredSceneTransition` (`RunAsync(change, bool showCover, ct)`, `RunAsync(change, IOnitySceneCover, ct)`
+  returning `Task<bool>`, false when another change runs), `IOnitySceneCover`, `OnitySceneCoverView` (derive and
+  implement `ApplyProgress`), `OnityScreenFadeView` (color or image, `OnityScreenFade.uxml`),
+  `OnityIrisCoverView` (circle wipe, `Center`, `OnityIrisCover.uxml`), `IOnitySceneReadiness`,
+  `OnityActiveSceneReadiness`, `OnitySceneRevealPolicy`, `OnityScenePreloader` (`PrepareAsync`,
+  `TryStartAsync`, static `TryGetPrepareData<T>(Scene, out T)`, `LoadStep`), `IOnityPreparedScene`,
+  `OnitySceneScopes.TryFind(Scene, out SceneContext)`, `OnitySceneVisuals.Hide(Scene)`.
 - Async (`Onity.Unity.Async`; the full index is 11.7): `OnityTask`, `OnityTask<T>`, `OnityTaskVoid`,
   `OnityPlayerLoopTiming`, `OnityTaskPlayerLoop`, `OnityYieldAwaitable`, `OnityDelayType`,
   `OnityPlayerLoopTimer`, `OnityTimeoutController`, `OnityTaskCompletionSource(<T>)`,

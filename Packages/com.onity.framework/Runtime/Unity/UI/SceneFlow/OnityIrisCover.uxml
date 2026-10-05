@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <!-- Onity iris (circle wipe) cover. OnityIrisCoverView binds "onity-iris-cover", hides it before the first
+         rendered frame and draws the cover with a circular hole while a scene change is covered; shown, it blocks
+         presses on every panel below. The standalone document previews the closed iris. -->
+    <ui:Style src="OnityIrisCover.uss" />
+    <ui:VisualElement name="onity-iris-cover" class="onity-iris-cover" />
+</ui:UXML>

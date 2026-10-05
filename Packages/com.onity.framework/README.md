@@ -3,7 +3,7 @@
 Onity (`com.onity.framework`) is a Unity package that puts dependency injection, reactive state, typed
 messaging, async (`OnityTask`) and factories with pooling in one package with one lifetime model: a scope
 owns its services, subscriptions, tasks and pools, and disposes them together. The core is engine-free and
-has no non-Unity third-party runtime dependency. Unity 2022.3 LTS or newer; this is version 0.8.1.
+has no non-Unity third-party runtime dependency. Unity 2022.3 LTS or newer; this is version 0.8.2.
 
 This file describes what is in the installed package. The documentation site is
 [furkantokkan.github.io/Onity](https://furkantokkan.github.io/Onity/), and the same pages ship inside this

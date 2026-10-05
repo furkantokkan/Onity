@@ -29,7 +29,7 @@ Contents: [Read this first](#read-this-first), [Summary table](#summary-table),
   [OnityTask vs UniTask](guide/onitytask-comparison.html) and
   [Messaging vs MessagePipe](comparisons/messaging-vs-messagepipe.html).
 - The DI timing numbers are indicative, not a guarantee. The current run (2026-10-02) used Unity
-  2022.3.62f2 and the published 0.6.0 package, whose DI code is unchanged through 0.8.1; the September 2026
+  2022.3.62f2 and the published 0.6.0 package, whose DI code is unchanged through 0.8.2; the September 2026
   runs used Unity 2022.3.62f3. Each process ran 512 warmups and 8 samples of 10,000 operations and reports
   mean ns/op. Your hardware, Unity version, scripting backend and graph shape will give different
   absolute numbers and possibly a different ordering.
@@ -288,6 +288,6 @@ fix. This matters most for AI-assisted or large-team development.
 - Choose Zenject or Extenject when you need its deeper binder and memory-pool variants or its longer
   production record and larger community, and resolve performance is not your binding constraint.
 
-The feature claims reflect Onity 0.8.1 and the numbers the measurements named above (the DI code is
+The feature claims reflect Onity 0.8.2 and the numbers the measurements named above (the DI code is
 unchanged since the measured 0.6.0 package); both are revised as target-device IL2CPP coverage and
 benchmark coverage expand.

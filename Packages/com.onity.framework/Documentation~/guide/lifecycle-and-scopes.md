@@ -323,6 +323,79 @@ SceneContext
     Installers: [GameInstaller]                    // per scene; resolves the project services above
 ```
 
+## Scene transitions
+
+`Onity.Unity.SceneFlow` can hide a scene change behind a screen cover and can keep the next scene built
+in the background. Both outlive the scene that asks for them, so bind them on the `ProjectContext`:
+
+```csharp
+public sealed class SceneFlowInstaller : MonoInstaller
+{
+    [SerializeField] private OnityScreenFadeView m_fade;   // on the ProjectContext prefab
+
+    public override void InstallBindings(OnityContainer container)
+    {
+        container.BindInstance<IOnitySceneCover>(m_fade);
+        container.Bind<IOnitySceneReadiness>().To<OnityActiveSceneReadiness>().AsSingle();
+        container.BindInterfacesAndSelfTo<OnityCoveredSceneTransition>().AsSingle();
+        container.BindInterfacesAndSelfTo<OnityScenePreloader>().AsSingle();
+    }
+}
+```
+
+`OnityCoveredSceneTransition.RunAsync(change, showCover, token)` shows the cover, runs the change, waits
+until the new active scene's `SceneContext.ReadyTask` completes (plus the settle frames of
+`OnitySceneRevealPolicy`, with a maximum wait), then hides the cover. With `showCover: false` the same
+flow runs with no cover; `RunAsync(change, cover, token)` uses another cover for one change, and a null
+cover means none. The change receives the transition's own lifetime token, because the scene that asks is
+usually the one the change unloads; the caller's token ends only the caller's wait. One change runs at a
+time: a request while another runs, or after disposal, returns `false` at once. A change that throws hides
+the cover over the old scene again and fails the task with its exception.
+
+```csharp
+bool ran = await m_transition.RunAsync(
+    token => OnitySceneFlow.TransitionAsync(m_profile, OnitySceneFlowStateId.Gameplay, request, token),
+    showCover: true,
+    cancellationToken);
+```
+
+Covers are `IOnitySceneCover` implementations. `OnitySceneCoverView` is the base for a cover drawn by
+one element of a `UIDocument`: it owns the timing (unscaled, a serialized duration and curve each way), the
+cancellation, input blocking and hiding, and a derived cover only implements `ApplyProgress(progress)`
+(0 is clear, 1 is covered). Two ship with templates under `Runtime/Unity/UI/SceneFlow`:
+
+- `OnityScreenFadeView` with `OnityScreenFade.uxml`: fades the USS color (black), or its optional
+  image. Give each image its own fade view and pass the one you want to `RunAsync`.
+- `OnityIrisCoverView` with `OnityIrisCover.uxml`: a circle wipe drawn with `Painter2D`, closing on its
+  `Center` (normalized panel position).
+
+Put the cover's `UIDocument` on the `ProjectContext` prefab with a `PanelSettings` whose sort order is
+above every other panel. A visible cover blocks presses below it; a clear one is `display: none`. The
+animation allocates nothing per frame.
+
+`OnityScenePreloader` keeps one scene ready: `PrepareAsync(sceneName, prepareData, token)` loads it
+additively behind the active scene, and `TryStartAsync(sceneName, startData, token)` starts it in one
+frame (it becomes active, the old scene hides with `OnitySceneVisuals.Hide` and unloads). The prepared
+scene learns it is being prepared from `OnityScenePreloader.TryGetPrepareData<T>(gameObject.scene, out T)`
+while it installs, keeps itself hidden, and binds an `IOnityPreparedScene` that decides which start
+requests it accepts (`CanStart`) and shows itself in `Activate`. Prepare data is kept per loading scene,
+never in the shared `OnitySceneTransitionStore` slot, so a scene-flow transition running at the same time
+cannot take it. `TryStartAsync` returns `false` when nothing matching is prepared; load the scene normally
+then. The preloader knows nothing about covers, so the two compose in the change:
+
+```csharp
+await m_transition.RunAsync(async token =>
+{
+    if (await m_preloader.TryStartAsync("Game", request, token) == false)
+    {
+        await OnitySceneFlow.TransitionAsync(m_profile, OnitySceneFlowStateId.Gameplay, request, token);
+    }
+}, showCover: useCover, cancellationToken);
+```
+
+`OnitySceneScopes.TryFind(scene, out SceneContext context)` finds a loaded scene's context; call it once
+per scene change, never per frame.
+
 ## See also
 
 - [Dependency Injection](dependency-injection.md): bindings, injection sites and `MonoInstaller`; [Build and async startup](dependency-injection.md#build-and-async-startup).

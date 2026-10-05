@@ -1,6 +1,6 @@
 {
   "name": "com.onity.framework",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "displayName": "Onity",
   "description": "One Unity package for dependency injection, reactive state, typed messaging, OnityTask async, and factories with pooling - one lifetime model, an engine-free core, and low-allocation hot paths. Replaces Zenject/VContainer, R3/UniRx, MessagePipe, and UniTask with a single coherent API.",
   "unity": "2022.3",

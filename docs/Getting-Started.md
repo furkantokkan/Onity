@@ -57,7 +57,7 @@ The `upm` branch is the package at its repository root and tracks the latest rel
 use the explicit form:
 
 ```text
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.1
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.2
 ```
 
 Or add the dependency to `Packages/manifest.json` yourself:
@@ -65,7 +65,7 @@ Or add the dependency to `Packages/manifest.json` yourself:
 ```json
 {
   "dependencies": {
-    "com.onity.framework": "https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.1"
+    "com.onity.framework": "https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.2"
   }
 }
 ```

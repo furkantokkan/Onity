@@ -5,6 +5,41 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2026-10-05
+
+Scene changes can run behind a screen cover (a fade, an image, an iris wipe or
+a custom cover) that lifts only once the new scene's `SceneContext` is ready,
+and a scene can be prepared hidden behind the active one and started in one
+frame. The DI, reactive, messaging, OnityTask and pooling code is unchanged.
+
+### Added
+
+- Covered scene transitions in `Onity.Unity.SceneFlow`:
+  `OnityCoveredSceneTransition` runs one scene change at a time behind an
+  `IOnitySceneCover`, waits until the new active scene's `SceneContext` is
+  ready (`IOnitySceneReadiness`, `OnityActiveSceneReadiness`,
+  `OnitySceneRevealPolicy` with settle frames and a maximum wait), then hides
+  the cover. `RunAsync(change, showCover, token)` chooses per change whether
+  the default cover shows, `RunAsync(change, cover, token)` uses another cover,
+  and both return `Task<bool>`, false when another change runs. The change gets
+  the transition's lifetime token; the caller's token ends only the caller's
+  wait.
+- Cover views on UI Toolkit: the abstract `OnitySceneCoverView` (unscaled
+  timing, curves, cancellation, input blocking, no per-frame allocation; a
+  derived cover implements `ApplyProgress`), `OnityScreenFadeView` (USS color
+  or an optional image) and `OnityIrisCoverView` (a `Painter2D` circle wipe
+  around `Center`), with the templates `OnityScreenFade.uxml`/`.uss` and
+  `OnityIrisCover.uxml`/`.uss` under `Runtime/Unity/UI/SceneFlow`.
+- `OnityScenePreloader`: prepares a scene additively behind the active one
+  (`PrepareAsync`) and starts it in one frame (`TryStartAsync`), hiding
+  (`OnitySceneVisuals.Hide`) and unloading the scene it replaces. The prepared
+  scene reads its prepare data with `TryGetPrepareData<T>(Scene, out T)`, kept
+  per loading scene instead of the shared `OnitySceneTransitionStore` slot,
+  and binds an `IOnityPreparedScene`. The preloader knows nothing about covers;
+  the two compose inside the transition's scene change.
+- `OnitySceneScopes.TryFind(Scene, out SceneContext)` finds a loaded scene's
+  context.
+
 ## [0.8.1] - 2026-10-05
 
 Pools report their counts and can decline a get without throwing, prefab pools

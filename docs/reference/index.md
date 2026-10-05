@@ -14,5 +14,5 @@ it; the guides explain when to use what.
 - [Reactive Operators](reactive-operators.html): every operator, factory, bridge and provider, with signatures.
 - [Messaging API](messaging-api.html): broker, channels, hub, `OnityEvent`, binding helpers and async consumers.
 
-OnityTask has no separate catalog in 0.8.1. Its reference material, organized by task, is the
+OnityTask has no separate catalog in 0.8.2. Its reference material, organized by task, is the
 [Async with OnityTask](../guide/onitytask.html) guide.

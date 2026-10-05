@@ -1,0 +1,15 @@
+/*
+ * Onity iris cover. The background color previews the closed iris in UI Builder only: OnityIrisCoverView clears it
+ * at runtime and draws the cover itself in its serialized color. overflow: hidden clips the drawing to the panel.
+ */
+
+.onity-iris-cover {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgb(0, 0, 0);
+    overflow: hidden;
+    display: flex;
+}

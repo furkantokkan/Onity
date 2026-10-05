@@ -26,7 +26,7 @@ not ship so you do not look for it.
   that bridge the two libraries across the whole project; convert one scene or feature, verify it, then
   move to the next.
 - Verify every name against the installed source under `Packages/com.onity.framework/Runtime/`. The
-  tables are checked against Onity 0.8.1; an API that is not in a table does not exist in Onity, and a
+  tables are checked against Onity 0.8.2; an API that is not in a table does not exist in Onity, and a
   Zenject, VContainer, R3, UniRx, UniTask or MessagePipe analogy is not evidence that it does.
 - Read [Lifecycle and Scopes](../guide/lifecycle-and-scopes.html) before you move async startup code.
   The scope token and `IOnityAsyncInitializable` replace most hand-written startup ordering.
