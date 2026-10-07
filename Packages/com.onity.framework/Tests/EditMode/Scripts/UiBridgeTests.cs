@@ -105,6 +105,53 @@ namespace Onity.Tests.EditMode
             Assert.That(presenter.PropertyService, Is.Not.Null);
         }
 
+        [Test]
+        public void UiServiceLocator_OutOfOrderScopeDisposalPreservesNewerResolver()
+        {
+            TestService first = new TestService("First");
+            TestService second = new TestService("Second");
+            using IDisposable firstScope = OnityUiServiceLocator.PushResolverScope(_ => first);
+            using IDisposable secondScope = OnityUiServiceLocator.PushResolverScope(_ => second);
+            Assert.That(OnityUiServiceLocator.Get<ITestService>(), Is.SameAs(second));
+            firstScope.Dispose();
+            Assert.That(OnityUiServiceLocator.Get<ITestService>(), Is.SameAs(second));
+            secondScope.Dispose();
+            Assert.That(OnityUiServiceLocator.Get<ITestService>(), Is.Null);
+        }
+
+        [Test]
+        public void UiServiceLocator_StaleAndNullScopesDoNotRemoveCurrentResolver()
+        {
+            using IDisposable stale = OnityUiServiceLocator.PushResolverScope(_ => new TestService("Stale"));
+            OnityUiServiceLocator.Clear();
+            TestService current = new TestService("Current");
+            using IDisposable currentScope = OnityUiServiceLocator.PushResolverScope(_ => current);
+            using IDisposable empty = OnityUiServiceLocator.PushResolverScope(null);
+            empty.Dispose();
+            stale.Dispose();
+            Assert.That(OnityUiServiceLocator.Get<ITestService>(), Is.SameAs(current));
+        }
+
+        [Test]
+        public void UiResolverBridge_OutOfOrderDisposalSkipsDisposedPredecessors()
+        {
+            PropertyInjectedPresenter originalPresenter = new PropertyInjectedPresenter();
+            Func<Type, IOnityUiPresenter> originalFactory = _ => originalPresenter;
+            OnityUiPresenterFactory.CustomFactory = originalFactory;
+            using OnityContainer firstContainer = new OnityContainer();
+            using OnityContainer secondContainer = new OnityContainer();
+            firstContainer.Build();
+            secondContainer.Build();
+            using OnityUiResolverBridge first = new OnityUiResolverBridge(firstContainer);
+            using OnityUiResolverBridge second = new OnityUiResolverBridge(secondContainer);
+            first.Dispose();
+            firstContainer.Dispose();
+
+            Assert.That(OnityUiPresenterFactory.CustomFactory(typeof(IOnityUiPresenter)), Is.SameAs(originalPresenter));
+            second.Dispose();
+            Assert.That(OnityUiPresenterFactory.CustomFactory, Is.SameAs(originalFactory));
+        }
+
         private interface ITestService
         {
             string Name { get; }

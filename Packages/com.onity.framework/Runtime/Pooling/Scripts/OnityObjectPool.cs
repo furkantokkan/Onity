@@ -428,15 +428,40 @@ namespace Onity.Pooling
         private void DestroyInactive()
         {
             int count = m_inactiveCount;
+            if (count == 0)
+            {
+                return;
+            }
+
+            T[] inactive = m_inactive;
+            m_inactive = Array.Empty<T>();
             m_inactiveCount = 0;
             m_countAll -= count;
             m_inactiveItems?.Clear();
+            List<Exception> exceptions = null;
 
             for (int i = 0; i < count; i++)
             {
-                T item = m_inactive[i];
-                m_inactive[i] = null;
-                m_actionOnDestroy?.Invoke(item);
+                T item = inactive[i];
+                inactive[i] = null;
+                try
+                {
+                    m_actionOnDestroy?.Invoke(item);
+                }
+                catch (Exception exception)
+                {
+                    (exceptions ??= new List<Exception>()).Add(exception);
+                }
+            }
+
+            if (m_isDisposed == false && m_inactiveCount == 0)
+            {
+                m_inactive = inactive;
+            }
+
+            if (exceptions != null)
+            {
+                throw new AggregateException(exceptions);
             }
         }
 

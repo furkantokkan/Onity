@@ -5,6 +5,36 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.3] - 2026-10-07
+
+Fix scope initialization and teardown, reactive subscription ownership, timer
+callbacks, UI resolution and Editor save isolation. Public API signatures and
+dependencies are unchanged; the pool counts and TryGet APIs from 0.8.1 remain.
+
+### Fixed
+
+- DI: stop Tick, FixedTick and LateTick dispatch when a callback disposes its
+  scope. Inherited scoped services now join the child scope's initialization
+  and tick lifecycle, including services resolved during or after Build.
+  Asynchronous initialization joins the existing BuildAsync queue.
+- Pooling and reactive cleanup: drain all owned items when a destroy/dispose
+  callback throws, and preserve items added during reentrant cleanup.
+  Cleanup reports collected failures as an AggregateException after draining.
+- Reactive operators: roll back acquired subscriptions when a later Merge,
+  CombineLatest or Sample subscription fails. Recheck TakeUntil cancellation
+  and completion at subscription time. Timed buffers retain ownership after
+  observer failures and release upstream when their time provider fails.
+- Timers: keep registry iteration stable when callbacks add or remove timers,
+  and stop interval catch-up immediately after Stop, Pause or Dispose.
+- UI: remove the exact resolver registration when scope tokens are disposed
+  out of order, and skip disposed presenter-factory bridges during restoration.
+- Editor: gather contexts under every scene root, and save only the intended
+  ProjectContext prefab instead of saving unrelated dirty assets.
+- Analyzer: ONITY002 no longer flags valid Resolve calls after Build.
+- Tests: enforce the no-LINQ policy against actual runtime source roots and
+  resolve deferred-load scene fixtures in either repository layout without
+  changing the project's Build Settings.
+
 ## [0.8.2] - 2026-10-05
 
 Scene changes can run behind a screen cover (a fade, an image, an iris wipe or

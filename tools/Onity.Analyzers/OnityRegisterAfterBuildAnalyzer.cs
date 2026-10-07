@@ -8,8 +8,8 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Onity.Analyzers
 {
     /// <summary>
-    /// ONITY002: reports a container binding/resolution call
-    /// (<c>Bind</c>, <c>BindInstance</c>, <c>BindFactory</c>, or <c>Resolve</c>)
+    /// ONITY002: reports a container registration call
+    /// (<c>Bind</c>, <c>BindInstance</c>, or <c>BindFactory</c>)
     /// made on a local that already had <c>Build()</c> called on it earlier in the
     /// same method body.
     /// </summary>
@@ -17,8 +17,8 @@ namespace Onity.Analyzers
     /// The analysis is a best-effort, purely-syntactic intra-method dataflow walk:
     /// it visits the statements of a single method/accessor/lambda/local-function
     /// body in source order, records the simple receiver name of each
-    /// <c>x.Build()</c> call, and then flags any later <c>x.Bind*(...)</c> or
-    /// <c>x.Resolve(...)</c> on a receiver with the same name. It does not bind the
+    /// <c>x.Build()</c> call, and then flags any later <c>x.Bind*(...)</c>
+    /// on a receiver with the same name. It does not bind the
     /// receiver type, follow the local across method calls, or reason about
     /// branches, so it intentionally only fires on the high-confidence
     /// straight-line "build then register" mistake on a single named local.
@@ -29,7 +29,7 @@ namespace Onity.Analyzers
         private const string k_buildMethodName = "Build";
 
         private static readonly ImmutableHashSet<string> s_registerMethodNames =
-            ImmutableHashSet.Create("Bind", "BindInstance", "BindFactory", "Resolve");
+            ImmutableHashSet.Create("Bind", "BindInstance", "BindFactory");
 
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics

@@ -58,24 +58,29 @@ namespace Onity.Reactive
                             }
                         });
 
-                    IDisposable secondSubscription = second.Subscribe(
-                        value =>
-                        {
-                            hasSecond = true;
-                            latestSecond = value;
-
-                            if (hasFirst)
+                    CompositeDisposable subscriptions = new CompositeDisposable();
+                    subscriptions.Add(firstSubscription);
+                    try
+                    {
+                        subscriptions.Add(second.Subscribe(
+                            value =>
                             {
-                                observer(resultSelector(latestFirst, latestSecond));
-                            }
-                        });
+                                hasSecond = true;
+                                latestSecond = value;
 
-                    return new DisposableAction(
-                        () =>
-                        {
-                            firstSubscription.Dispose();
-                            secondSubscription.Dispose();
-                        });
+                                if (hasFirst)
+                                {
+                                    observer(resultSelector(latestFirst, latestSecond));
+                                }
+                            }));
+                    }
+                    catch (Exception exception)
+                    {
+                        DisposeAfterSubscribeFailure(subscriptions, exception);
+                        throw;
+                    }
+
+                    return subscriptions;
                 });
         }
     }

@@ -12,6 +12,7 @@ namespace Onity.Unity.Reactive
     {
         private static readonly List<OnityTimer> s_timers = new List<OnityTimer>(64);
         private static IDisposable s_updateSubscription;
+        private static bool s_isUpdating;
 
         public static void Register(OnityTimer timer)
         {
@@ -43,6 +44,12 @@ namespace Onity.Unity.Reactive
                 return;
             }
 
+            if (s_isUpdating)
+            {
+                s_timers[timerIndex] = null;
+                return;
+            }
+
             RemoveAtSwapBack(timerIndex);
 
             if (s_timers.Count == 0)
@@ -63,30 +70,41 @@ namespace Onity.Unity.Reactive
 
         private static void UpdateTimers()
         {
-            if (s_timers.Count == 0)
+            UpdateTimers(Time.deltaTime, Time.unscaledDeltaTime);
+        }
+
+        private static void UpdateTimers(float deltaTimeSeconds, float unscaledDeltaTimeSeconds)
+        {
+            if (s_isUpdating || s_timers.Count == 0)
             {
                 return;
             }
 
-            float deltaTimeSeconds = Time.deltaTime;
-            float unscaledDeltaTimeSeconds = Time.unscaledDeltaTime;
-
-            for (int i = s_timers.Count - 1; i >= 0; i--)
+            s_isUpdating = true;
+            try
             {
-                OnityTimer timer = s_timers[i];
-
-                if (timer == null)
+                // Registrations made by callbacks begin on the next update.
+                for (int i = s_timers.Count - 1; i >= 0; i--)
                 {
-                    RemoveAtSwapBack(i);
-                    continue;
+                    OnityTimer timer = s_timers[i];
+                    timer?.TickFromRunner(deltaTimeSeconds, unscaledDeltaTimeSeconds);
+                }
+            }
+            finally
+            {
+                s_isUpdating = false;
+                for (int i = s_timers.Count - 1; i >= 0; i--)
+                {
+                    if (s_timers[i] == null)
+                    {
+                        RemoveAtSwapBack(i);
+                    }
                 }
 
-                timer.TickFromRunner(deltaTimeSeconds, unscaledDeltaTimeSeconds);
-            }
-
-            if (s_timers.Count == 0)
-            {
-                DisposeUpdateSubscription();
+                if (s_timers.Count == 0)
+                {
+                    DisposeUpdateSubscription();
+                }
             }
         }
 

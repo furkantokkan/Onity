@@ -187,14 +187,52 @@ namespace Onity.Reactive
                 {
                     object gate = new object();
                     CancellationTokenSource lifetimeCancellation = new CancellationTokenSource();
+                    CancellationToken lifetimeToken = lifetimeCancellation.Token;
                     List<T> buffer = new List<T>();
 
-                    IDisposable sourceSubscription = source.Subscribe(
-                        value =>
-                        {
-                            lock (gate)
+                    IDisposable sourceSubscription;
+                    try
+                    {
+                        sourceSubscription = source.Subscribe(
+                            value =>
                             {
-                                buffer.Add(value);
+                                lock (gate)
+                                {
+                                    if (lifetimeToken.IsCancellationRequested == false)
+                                    {
+                                        buffer.Add(value);
+                                    }
+                                }
+                            });
+                    }
+                    catch
+                    {
+                        lifetimeCancellation.Dispose();
+                        throw;
+                    }
+
+                    IDisposable subscription = new DisposableAction(
+                        () =>
+                        {
+                            try
+                            {
+                                lifetimeCancellation.Cancel();
+                            }
+                            finally
+                            {
+                                try
+                                {
+                                    sourceSubscription.Dispose();
+                                }
+                                finally
+                                {
+                                    lock (gate)
+                                    {
+                                        buffer.Clear();
+                                    }
+
+                                    lifetimeCancellation.Dispose();
+                                }
                             }
                         });
 
@@ -202,47 +240,61 @@ namespace Onity.Reactive
 
                     async Task PumpAsync()
                     {
-                        while (lifetimeCancellation.IsCancellationRequested == false)
+                        try
+                        {
+                            while (lifetimeToken.IsCancellationRequested == false)
+                            {
+                                await resolvedProvider.DelayAsync(timeSpan, lifetimeToken);
+                                if (lifetimeToken.IsCancellationRequested)
+                                {
+                                    return;
+                                }
+
+                                List<T> emitted = null;
+
+                                lock (gate)
+                                {
+                                    if (buffer.Count > 0)
+                                    {
+                                        emitted = buffer;
+                                        buffer = new List<T>();
+                                    }
+                                }
+
+                                if (emitted != null)
+                                {
+                                    try
+                                    {
+                                        observer(emitted);
+                                    }
+                                    catch (Exception exception)
+                                    {
+                                        OnityObservableExceptionHandler.Publish(exception);
+                                    }
+                                }
+                            }
+                        }
+                        catch (OperationCanceledException)
+                        {
+                        }
+                        catch (Exception exception)
+                        {
+                            OnityObservableExceptionHandler.Publish(exception);
+                        }
+                        finally
                         {
                             try
                             {
-                                await resolvedProvider.DelayAsync(timeSpan, lifetimeCancellation.Token);
-                            }
-                            catch (OperationCanceledException)
-                            {
-                                return;
+                                subscription.Dispose();
                             }
                             catch (Exception exception)
                             {
                                 OnityObservableExceptionHandler.Publish(exception);
-                                return;
-                            }
-
-                            List<T> emitted = null;
-
-                            lock (gate)
-                            {
-                                if (buffer.Count > 0)
-                                {
-                                    emitted = buffer;
-                                    buffer = new List<T>();
-                                }
-                            }
-
-                            if (emitted != null)
-                            {
-                                observer(emitted);
                             }
                         }
                     }
 
-                    return new DisposableAction(
-                        () =>
-                        {
-                            lifetimeCancellation.Cancel();
-                            sourceSubscription.Dispose();
-                            lifetimeCancellation.Dispose();
-                        });
+                    return subscription;
                 });
         }
     }

@@ -41,8 +41,8 @@ namespace Onity.Analyzers
             helpLinkUri: "https://github.com/Onity/Onity/blob/main/docs/Onity-AI-Usage-Guide.md");
 
         /// <summary>
-        /// ONITY002 id: a container binding/resolution call
-        /// (<c>Bind</c>/<c>BindInstance</c>/<c>BindFactory</c>/<c>Resolve</c>) is
+        /// ONITY002 id: a container registration call
+        /// (<c>Bind</c>/<c>BindInstance</c>/<c>BindFactory</c>) is
         /// made on a local after <c>Build()</c> was already called on that same
         /// local earlier in the method.
         /// </summary>
@@ -62,8 +62,9 @@ namespace Onity.Analyzers
             isEnabledByDefault: true,
             description:
                 "Build() finalizes the container's resolution graph. Calling Bind, BindInstance, "
-                + "BindFactory, or Resolve on the same container instance after Build() either throws "
-                + "or does not affect the already-baked graph. Register every binding before calling "
+                + "or BindFactory on the same container instance after Build() either throws "
+                + "or does not affect the already-baked graph. Resolving after Build() is valid. "
+                + "Register every binding before calling "
                 + "Build().",
             helpLinkUri: "https://github.com/Onity/Onity/blob/main/docs/Onity-AI-Usage-Guide.md");
 

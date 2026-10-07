@@ -14,7 +14,7 @@ reference `UnityEngine`.
 | Id         | Title                                              | What it catches                                                                                                                                                          | Code fix |
 | ---------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
 | `ONITY001` | Resolve call inside a per-frame Unity method       | A `Resolve<T>(...)` / `Resolve(...)` call sitting directly inside `Update` / `FixedUpdate` / `LateUpdate`. Resolve once in an installer/`Awake` and cache the instance. | Yes      |
-| `ONITY002` | Container modified after `Build()`                 | A `Bind` / `BindInstance` / `BindFactory` / `Resolve` call on a container local after `Build()` was already called on that same local earlier in the method.            | No       |
+| `ONITY002` | Container modified after `Build()`                 | A `Bind` / `BindInstance` / `BindFactory` call on a container local after `Build()` was already called on that same local earlier in the method. Resolving after `Build()` is valid. | No       |
 | `ONITY003` | Subscribe result is not disposed                   | A `Subscribe` / `SubscribeAwait` call returning an `IDisposable` that is discarded instead of `.AddTo(...)`, assigned, or returned. `void` overloads are not reported.   | Yes      |
 | `ONITY004` | Type has multiple `[Inject]` constructors          | A type declaring two or more constructors marked `[Inject]`, leaving the injection constructor ambiguous. Mark exactly one constructor with `[Inject]`.                 | No       |
 | `ONITY005` | `[Inject]` member cannot be injected               | An `[Inject]` property with no setter, an `[Inject]` indexer, a generic `[Inject]` method, or a static `[Inject]` field/property/method.                                 | No       |
@@ -38,7 +38,7 @@ check on the invoked method:
   different cadence than the per-frame method body.
 - `ONITY002` does a best-effort, straight-line intra-method dataflow walk over a
   single body. It records each `x.Build()` on a named receiver (`container` or
-  `this.container`) and flags a later `x.Bind*`/`x.Resolve` on the same name. It
+  `this.container`) and flags a later `x.Bind*` on the same name. It
   does not reason across branches, lambdas, or method calls, so it only fires on
   the unambiguous "build then register on the same local" mistake.
 - `ONITY003` fires only when a `Subscribe(...)` or `SubscribeAwait(...)` call (or

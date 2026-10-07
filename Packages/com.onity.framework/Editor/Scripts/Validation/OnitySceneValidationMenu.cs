@@ -383,11 +383,13 @@ namespace Onity.Editor.Validation
         private static List<OnityContext> GatherContexts(Scene scene)
         {
             List<OnityContext> contexts = new List<OnityContext>(16);
+            List<OnityContext> rootContexts = new List<OnityContext>(16);
             GameObject[] rootObjects = scene.GetRootGameObjects();
 
             for (int i = 0; i < rootObjects.Length; i++)
             {
-                rootObjects[i].GetComponentsInChildren(true, contexts);
+                rootObjects[i].GetComponentsInChildren(true, rootContexts);
+                contexts.AddRange(rootContexts);
             }
 
             return contexts;

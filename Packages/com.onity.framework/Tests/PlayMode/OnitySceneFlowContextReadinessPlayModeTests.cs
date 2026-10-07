@@ -166,6 +166,9 @@ namespace Onity.Tests.PlayMode
         [UnityTest]
         public IEnumerator DeferredSceneLoad_CanceledAfterStart_ReturnsActivatableOperation()
         {
+#if UNITY_EDITOR
+            using FixtureSceneLoadScope sceneLoadScope = new FixtureSceneLoadScope();
+#endif
             Scene[] scenesBeforeLoad = CaptureScenes();
             using CancellationTokenSource cancellationTokenSource =
                 new CancellationTokenSource();
@@ -218,6 +221,9 @@ namespace Onity.Tests.PlayMode
         [UnityTest]
         public IEnumerator DeferredSceneLoad_ThrowingProgressCallback_StillReleasesQueue()
         {
+#if UNITY_EDITOR
+            using FixtureSceneLoadScope sceneLoadScope = new FixtureSceneLoadScope();
+#endif
             Scene[] scenesBeforeLoad = CaptureScenes();
             int callbackCount = 0;
             System.Action<float> onProgress = _ =>
@@ -284,10 +290,11 @@ namespace Onity.Tests.PlayMode
 
         private static Scene FindNewFixtureScene(Scene[] scenesBeforeLoad)
         {
+            string fixtureScenePath = GetFixtureScenePath();
             for (int index = 0; index < SceneManager.sceneCount; index++)
             {
                 Scene scene = SceneManager.GetSceneAt(index);
-                if (scene.path != k_deferredLoadScenePath)
+                if (scene.path != fixtureScenePath)
                 {
                     continue;
                 }
@@ -310,6 +317,61 @@ namespace Onity.Tests.PlayMode
 
             return default;
         }
+
+        private static string GetFixtureScenePath()
+        {
+#if UNITY_EDITOR
+            const string developmentPath =
+                "Assets/Onity-Packages/Onity/Tests/Fixtures/OnityDeferredLoadFixture.unity";
+            if (System.IO.File.Exists(developmentPath))
+            {
+                return developmentPath;
+            }
+
+            Assert.That(System.IO.File.Exists(k_deferredLoadScenePath), Is.True,
+                "The deferred-load scene fixture must exist in the development or public package layout.");
+#endif
+            return k_deferredLoadScenePath;
+        }
+
+#if UNITY_EDITOR
+        private sealed class FixtureSceneLoadScope : SceneManagerAPI, System.IDisposable
+        {
+            private readonly SceneManagerAPI m_previousApi;
+            private readonly string m_fixturePath;
+
+            public FixtureSceneLoadScope()
+            {
+                m_fixturePath = GetFixtureScenePath();
+                m_previousApi = overrideAPI;
+                Assert.That(m_previousApi, Is.Null,
+                    "The fixture must not replace another owner's scene API override.");
+                overrideAPI = this;
+            }
+
+            protected override AsyncOperation LoadSceneAsyncByNameOrIndex(
+                string sceneName,
+                int sceneBuildIndex,
+                LoadSceneParameters parameters,
+                bool mustCompleteNextFrame)
+            {
+                if (sceneName == k_deferredLoadSceneName && mustCompleteNextFrame == false)
+                {
+                    // Keep OnitySceneLoader's real deferred operation, without changing Build Settings.
+                    return UnityEditor.SceneManagement.EditorSceneManager.LoadSceneAsyncInPlayMode(
+                        m_fixturePath, parameters);
+                }
+
+                return base.LoadSceneAsyncByNameOrIndex(
+                    sceneName, sceneBuildIndex, parameters, mustCompleteNextFrame);
+            }
+
+            public void Dispose()
+            {
+                overrideAPI = m_previousApi;
+            }
+        }
+#endif
 
         private static IEnumerator WaitForTask(Task task)
         {

@@ -55,23 +55,35 @@ namespace Onity.Unity.UI
 
             if (ReferenceEquals(OnityUiPresenterFactory.CustomFactory, m_presenterFactory))
             {
-                OnityUiPresenterFactory.CustomFactory = m_previousFactory;
+                OnityUiPresenterFactory.CustomFactory = GetPreviousFactory();
             }
         }
 
         private IOnityUiPresenter ResolvePresenter(Type presenterType)
         {
-            if (m_resolver(presenterType) is IOnityUiPresenter presenter)
+            if (m_isDisposed == false && m_resolver(presenterType) is IOnityUiPresenter presenter)
             {
                 return presenter;
             }
 
-            if (m_previousFactory != null)
+            Func<Type, IOnityUiPresenter> previousFactory = GetPreviousFactory();
+            if (previousFactory != null)
             {
-                return m_previousFactory(presenterType);
+                return previousFactory(presenterType);
             }
 
             return null;
+        }
+
+        private Func<Type, IOnityUiPresenter> GetPreviousFactory()
+        {
+            Func<Type, IOnityUiPresenter> factory = m_previousFactory;
+            while (factory?.Target is OnityUiResolverBridge bridge && bridge.m_isDisposed)
+            {
+                factory = bridge.m_previousFactory;
+            }
+
+            return factory;
         }
     }
 }

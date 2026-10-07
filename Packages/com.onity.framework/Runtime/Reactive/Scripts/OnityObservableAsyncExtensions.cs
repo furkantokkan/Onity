@@ -85,6 +85,12 @@ namespace Onity.Reactive
             return new OnityObservableV2<T>(
                 observer =>
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        observer.OnCompleted();
+                        return DisposableAction.Empty;
+                    }
+
                     int isTerminated = 0;
                     IDisposable sourceSubscription = source.Subscribe(
                         new AnonymousOnityObserver<T>(
@@ -159,6 +165,12 @@ namespace Onity.Reactive
             return new OnityObservableV2<T>(
                 observer =>
                 {
+                    if (untilTask.IsCompleted)
+                    {
+                        observer.OnCompleted();
+                        return DisposableAction.Empty;
+                    }
+
                     int isTerminated = 0;
                     IDisposable sourceSubscription = source.Subscribe(
                         new AnonymousOnityObserver<T>(

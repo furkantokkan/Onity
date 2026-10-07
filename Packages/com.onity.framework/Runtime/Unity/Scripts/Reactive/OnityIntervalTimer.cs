@@ -89,7 +89,7 @@ namespace Onity.Unity.Reactive
             m_elapsedSinceLastIntervalSeconds += deltaTimeSeconds;
             m_totalElapsedSeconds += deltaTimeSeconds;
 
-            while (m_elapsedSinceLastIntervalSeconds >= m_intervalSeconds)
+            while (IsRunning && m_elapsedSinceLastIntervalSeconds >= m_intervalSeconds)
             {
                 m_elapsedSinceLastIntervalSeconds -= m_intervalSeconds;
                 m_tickCount++;

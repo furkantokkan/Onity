@@ -14,7 +14,7 @@ namespace Onity.Unity.UI
         private static readonly List<ResolverEntry> s_resolverStack = new List<ResolverEntry>(4);
         private static readonly object s_gate = new object();
 
-        private struct ResolverEntry
+        private sealed class ResolverEntry
         {
             public Func<Type, object> Resolver;
             public Dictionary<Type, object> Cache;
@@ -81,14 +81,36 @@ namespace Onity.Unity.UI
         }
 
         /// <summary>
-        /// Pushes one resolver and returns a disposable scope that pops it.
+        /// Pushes one resolver and returns a scope that removes only that registration.
         /// </summary>
         /// <param name="resolver">Resolver callback.</param>
         /// <returns>Disposable scope token.</returns>
         public static IDisposable PushResolverScope(Func<Type, object> resolver)
         {
-            PushResolver(resolver);
-            return new DisposableAction(PopResolver);
+            if (resolver == null)
+            {
+                return DisposableAction.Empty;
+            }
+
+            ResolverEntry entry = new ResolverEntry
+            {
+                Resolver = resolver,
+                Cache = new Dictionary<Type, object>(16)
+            };
+            lock (s_gate)
+            {
+                s_resolverStack.Add(entry);
+            }
+
+            return new DisposableAction(
+                () =>
+                {
+                    lock (s_gate)
+                    {
+                        s_resolverStack.Remove(entry);
+                        entry.Cache.Clear();
+                    }
+                });
         }
 
         /// <summary>
@@ -166,7 +188,6 @@ namespace Onity.Unity.UI
                     }
 
                     entry.Cache[type] = resolved;
-                    s_resolverStack[i] = entry;
                     return resolved;
                 }
 

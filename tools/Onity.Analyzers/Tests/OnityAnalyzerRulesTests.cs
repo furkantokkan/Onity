@@ -45,7 +45,7 @@ class Container
         }
 
         [Test]
-        public void Onity002_ResolveAfterBuildOnSameLocal_Reports()
+        public void Onity002_ResolveAfterBuildOnSameLocal_NoDiagnostic()
         {
             const string source = @"
 class C
@@ -65,11 +65,56 @@ class Container
     public void Resolve() { }
 }";
 
+            OnityAnalyzerVerifier<OnityRegisterAfterBuildAnalyzer>.Verify(source);
+        }
+
+        [Test]
+        public void Onity002_GenericResolveAfterBuild_NoDiagnostic()
+        {
+            const string source = @"
+class C
+{
+    void Configure()
+    {
+        var container = new Container();
+        container.Build();
+        container.Resolve<int>();
+    }
+}
+
+class Container
+{
+    public void Build() { }
+    public T Resolve<T>() { return default(T); }
+}";
+
+            OnityAnalyzerVerifier<OnityRegisterAfterBuildAnalyzer>.Verify(source);
+        }
+
+        [Test]
+        public void Onity002_BindInstanceAfterBuild_Reports()
+        {
+            const string source = @"
+class C
+{
+    void Configure()
+    {
+        var container = new Container();
+        container.Build();
+        container.BindInstance(1);
+    }
+}
+
+class Container
+{
+    public void Build() { }
+    public void BindInstance(object value) { }
+}";
+
             DiagnosticResult expected = OnityAnalyzerVerifier<OnityRegisterAfterBuildAnalyzer>
                 .Diagnostic(OnityDiagnostics.k_registerAfterBuildId)
-                .WithSpan(8, 9, 8, 28)
-                .WithArguments("container", "Resolve");
-
+                .WithSpan(8, 9, 8, 34)
+                .WithArguments("container", "BindInstance");
             OnityAnalyzerVerifier<OnityRegisterAfterBuildAnalyzer>.Verify(source, expected);
         }
 

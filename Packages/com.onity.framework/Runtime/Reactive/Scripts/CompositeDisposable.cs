@@ -8,7 +8,7 @@ namespace Onity.Reactive
     /// </summary>
     public sealed class CompositeDisposable : IDisposable
     {
-        private readonly List<IDisposable> m_disposables;
+        private List<IDisposable> m_disposables;
         private bool m_isDisposed;
 
         /// <summary>
@@ -23,7 +23,7 @@ namespace Onity.Reactive
         /// <summary>
         /// Gets the current item count.
         /// </summary>
-        public int Count => m_disposables.Count;
+        public int Count => m_disposables?.Count ?? 0;
 
         /// <summary>
         /// Adds a disposable.
@@ -42,7 +42,7 @@ namespace Onity.Reactive
                 return;
             }
 
-            m_disposables.Add(disposable);
+            (m_disposables ??= new List<IDisposable>(16)).Add(disposable);
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace Onity.Reactive
         /// <returns>True when removed; otherwise false.</returns>
         public bool Remove(IDisposable disposable)
         {
-            if (disposable == null)
+            if (disposable == null || m_disposables == null)
             {
                 return false;
             }
@@ -74,12 +74,37 @@ namespace Onity.Reactive
         /// </summary>
         public void Clear()
         {
-            for (int i = m_disposables.Count - 1; i >= 0; i--)
+            List<IDisposable> disposables = m_disposables;
+            if (disposables == null)
             {
-                m_disposables[i].Dispose();
+                return;
             }
 
-            m_disposables.Clear();
+            // Detach before callbacks so reentrant Clear/Add cannot change this batch.
+            m_disposables = null;
+            List<Exception> exceptions = null;
+            for (int i = disposables.Count - 1; i >= 0; i--)
+            {
+                try
+                {
+                    disposables[i].Dispose();
+                }
+                catch (Exception exception)
+                {
+                    (exceptions ??= new List<Exception>()).Add(exception);
+                }
+            }
+
+            disposables.Clear();
+            if (m_isDisposed == false && m_disposables == null)
+            {
+                m_disposables = disposables;
+            }
+
+            if (exceptions != null)
+            {
+                throw new AggregateException(exceptions);
+            }
         }
 
         /// <inheritdoc />

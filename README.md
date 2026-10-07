@@ -63,7 +63,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root and tracks the latest release. To pin a release:
 
 ```text
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.2
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.3
 ```
 
 Or in `Packages/manifest.json`:
@@ -71,7 +71,7 @@ Or in `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.onity.framework": "https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.2"
+    "com.onity.framework": "https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.3"
   }
 }
 ```

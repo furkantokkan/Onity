@@ -45,23 +45,35 @@ namespace Onity.Reactive
             return new OnityObservable<T>(
                 observer =>
                 {
-                    IDisposable[] subscriptions = new IDisposable[others.Length + 1];
-                    subscriptions[0] = source.Subscribe(value => observer(value));
-
-                    for (int i = 0; i < others.Length; i++)
+                    CompositeDisposable subscriptions = new CompositeDisposable();
+                    try
                     {
-                        subscriptions[i + 1] = others[i].Subscribe(value => observer(value));
+                        subscriptions.Add(source.Subscribe(observer));
+                        for (int i = 0; i < others.Length; i++)
+                        {
+                            subscriptions.Add(others[i].Subscribe(observer));
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        DisposeAfterSubscribeFailure(subscriptions, exception);
+                        throw;
                     }
 
-                    return new DisposableAction(
-                        () =>
-                        {
-                            for (int i = 0; i < subscriptions.Length; i++)
-                            {
-                                subscriptions[i]?.Dispose();
-                            }
-                        });
+                    return subscriptions;
                 });
+        }
+
+        private static void DisposeAfterSubscribeFailure(CompositeDisposable subscriptions, Exception exception)
+        {
+            try
+            {
+                subscriptions.Dispose();
+            }
+            catch (Exception cleanupException)
+            {
+                throw new AggregateException(exception, cleanupException);
+            }
         }
     }
 }

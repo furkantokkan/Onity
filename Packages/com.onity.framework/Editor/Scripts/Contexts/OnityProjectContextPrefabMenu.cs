@@ -36,37 +36,27 @@ namespace Onity.Editor.Contexts
                 return existingPrefab;
             }
 
-            GameObject root = new GameObject("ProjectContext");
-            root.AddComponent<ProjectContext>();
-
-            if (existingPrefab == null)
-            {
-                PrefabUtility.SaveAsPrefabAsset(root, k_prefabAssetPath);
-                Object.DestroyImmediate(root);
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-                Debug.Log($"Created Onity ProjectContext prefab at '{k_prefabAssetPath}'.");
-                return AssetDatabase.LoadAssetAtPath<GameObject>(k_prefabAssetPath);
-            }
-
-            bool overwrite = EditorUtility.DisplayDialog(
+            if (existingPrefab != null && EditorUtility.DisplayDialog(
                 "Onity ProjectContext",
                 $"A prefab already exists at '{k_prefabAssetPath}' but it does not contain ProjectContext. Overwrite it?",
                 "Overwrite",
-                "Cancel");
-
-            if (overwrite == false)
+                "Cancel") == false)
             {
-                Object.DestroyImmediate(root);
                 return null;
             }
 
-            PrefabUtility.SaveAsPrefabAsset(root, k_prefabAssetPath);
-            Object.DestroyImmediate(root);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            Debug.Log($"Updated Onity ProjectContext prefab at '{k_prefabAssetPath}'.");
-            return AssetDatabase.LoadAssetAtPath<GameObject>(k_prefabAssetPath);
+            GameObject root = new GameObject("ProjectContext");
+            try
+            {
+                root.AddComponent<ProjectContext>();
+                GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, k_prefabAssetPath);
+                Debug.Log($"Saved Onity ProjectContext prefab at '{k_prefabAssetPath}'.");
+                return prefab;
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
         }
 
         private static void EnsureParentFolder()

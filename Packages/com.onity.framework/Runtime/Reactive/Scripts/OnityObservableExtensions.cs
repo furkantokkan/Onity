@@ -277,6 +277,11 @@ namespace Onity.Reactive
             return new OnityObservable<T>(
                 observer =>
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return DisposableAction.Empty;
+                    }
+
                     IDisposable sourceSubscription = source.Subscribe(observer);
                     CancellationTokenRegistration registration =
                         cancellationToken.Register(sourceSubscription.Dispose);

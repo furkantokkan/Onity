@@ -43,23 +43,28 @@ namespace Onity.Reactive
                             latestValue = value;
                         });
 
-                    IDisposable samplerSubscription = sampler.Subscribe(
-                        _ =>
-                        {
-                            if (hasValue == false)
+                    CompositeDisposable subscriptions = new CompositeDisposable();
+                    subscriptions.Add(sourceSubscription);
+                    try
+                    {
+                        subscriptions.Add(sampler.Subscribe(
+                            _ =>
                             {
-                                return;
-                            }
+                                if (hasValue == false)
+                                {
+                                    return;
+                                }
 
-                            observer(latestValue);
-                        });
+                                observer(latestValue);
+                            }));
+                    }
+                    catch (Exception exception)
+                    {
+                        DisposeAfterSubscribeFailure(subscriptions, exception);
+                        throw;
+                    }
 
-                    return new DisposableAction(
-                        () =>
-                        {
-                            samplerSubscription.Dispose();
-                            sourceSubscription.Dispose();
-                        });
+                    return subscriptions;
                 });
         }
     }

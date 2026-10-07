@@ -88,6 +88,8 @@ namespace Onity.DI
         private readonly List<Func<IResolver, CancellationToken, Task>> m_asyncBuildCallbacks;
         private bool m_isBuildFinalized;
         private bool m_lifecycleReady;
+        private bool m_isInitializingLifecycle;
+        private HashSet<object> m_buildLifecycleInstances;
         private Task m_cachedBuildTask;
         private bool m_isDisposed;
         // Scope lifetime: created by the first LifetimeToken request (a container whose token is
@@ -551,11 +553,20 @@ namespace Onity.DI
         /// </summary>
         public void Tick()
         {
+            if (m_isDisposed)
+            {
+                return;
+            }
+
             if (m_tickables != null)
             {
                 for (int i = 0; i < m_tickables.Count; i++)
                 {
                     m_tickables[i].Tick();
+                    if (m_isDisposed)
+                    {
+                        return;
+                    }
                 }
             }
 
@@ -567,6 +578,10 @@ namespace Onity.DI
             for (int i = 0; i < m_subContainerScopeList.Count; i++)
             {
                 m_subContainerScopeList[i].Tick();
+                if (m_isDisposed)
+                {
+                    return;
+                }
             }
         }
 
@@ -577,11 +592,20 @@ namespace Onity.DI
         /// </summary>
         public void FixedTick()
         {
+            if (m_isDisposed)
+            {
+                return;
+            }
+
             if (m_fixedTickables != null)
             {
                 for (int i = 0; i < m_fixedTickables.Count; i++)
                 {
                     m_fixedTickables[i].FixedTick();
+                    if (m_isDisposed)
+                    {
+                        return;
+                    }
                 }
             }
 
@@ -593,6 +617,10 @@ namespace Onity.DI
             for (int i = 0; i < m_subContainerScopeList.Count; i++)
             {
                 m_subContainerScopeList[i].FixedTick();
+                if (m_isDisposed)
+                {
+                    return;
+                }
             }
         }
 
@@ -603,11 +631,20 @@ namespace Onity.DI
         /// </summary>
         public void LateTick()
         {
+            if (m_isDisposed)
+            {
+                return;
+            }
+
             if (m_lateTickables != null)
             {
                 for (int i = 0; i < m_lateTickables.Count; i++)
                 {
                     m_lateTickables[i].LateTick();
+                    if (m_isDisposed)
+                    {
+                        return;
+                    }
                 }
             }
 
@@ -619,6 +656,10 @@ namespace Onity.DI
             for (int i = 0; i < m_subContainerScopeList.Count; i++)
             {
                 m_subContainerScopeList[i].LateTick();
+                if (m_isDisposed)
+                {
+                    return;
+                }
             }
         }
 
@@ -632,100 +673,49 @@ namespace Onity.DI
         // Async initializables are collected here too; BuildAsync runs them.
         private void CollectAndInitializeLifecycle()
         {
-            HashSet<object> seen = null;
-
-            for (int i = 0; i < m_ownedProviders.Count; i++)
+            try
             {
-                IProvider provider = m_ownedProviders[i];
-
-                if (m_retiredProviders != null && m_retiredProviders.Contains(provider))
+                for (int i = 0; i < m_ownedProviders.Count; i++)
                 {
-                    continue;
+                    RegisterLifecycle(m_ownedProviders[i], false);
                 }
 
-                if (provider is SubContainerProvider)
+                if (m_scopedInstances != null)
                 {
-                    continue;
+                    foreach (IProvider provider in m_scopedInstances.Keys)
+                    {
+                        RegisterLifecycle(provider, false);
+                    }
                 }
 
-                BakedLifetime lifetime = provider.BakedLifetime;
-
-                if (lifetime != BakedLifetime.Singleton && lifetime != BakedLifetime.Instance
-                    && lifetime != BakedLifetime.Scoped)
+                m_isInitializingLifecycle = true;
+                if (m_initializables != null)
                 {
-                    continue;
-                }
-
-                Type implementationType = provider.ImplementationType;
-                bool isInitializable = typeof(IOnityInitializable).IsAssignableFrom(implementationType);
-                bool isTickable = typeof(IOnityTickable).IsAssignableFrom(implementationType);
-                bool isFixedTickable = typeof(IOnityFixedTickable).IsAssignableFrom(implementationType);
-                bool isLateTickable = typeof(IOnityLateTickable).IsAssignableFrom(implementationType);
-                bool isAsyncInitializable = typeof(IOnityAsyncInitializable).IsAssignableFrom(implementationType);
-
-                if (isInitializable == false
-                    && isTickable == false
-                    && isFixedTickable == false
-                    && isLateTickable == false
-                    && isAsyncInitializable == false)
-                {
-                    continue;
-                }
-
-                object instance = provider.Get(this);
-                (m_lifecycleInstances ??= new Dictionary<IProvider, object>())[provider] = instance;
-
-                // The same instance can be bound twice (e.g. two BindInstance calls),
-                // producing two providers; collect each entry point only once.
-                seen ??= new HashSet<object>(ReferenceIdentityComparer.Instance);
-
-                if (seen.Add(instance) == false)
-                {
-                    continue;
-                }
-
-                if (isInitializable)
-                {
-                    (m_initializables ??= new List<IOnityInitializable>()).Add((IOnityInitializable)instance);
-                }
-
-                if (isTickable)
-                {
-                    (m_tickables ??= new List<IOnityTickable>()).Add((IOnityTickable)instance);
-                }
-
-                if (isFixedTickable)
-                {
-                    (m_fixedTickables ??= new List<IOnityFixedTickable>()).Add((IOnityFixedTickable)instance);
-                }
-
-                if (isLateTickable)
-                {
-                    (m_lateTickables ??= new List<IOnityLateTickable>()).Add((IOnityLateTickable)instance);
-                }
-
-                if (isAsyncInitializable)
-                {
-                    (m_asyncInitializables ??= new List<IOnityAsyncInitializable>())
-                        .Add((IOnityAsyncInitializable)instance);
+                    for (int i = 0; i < m_initializables.Count; i++)
+                    {
+                        m_initializables[i].Initialize();
+                        EnsureNotDisposed();
+                    }
                 }
             }
-
-            if (m_initializables == null)
+            finally
             {
-                return;
-            }
-
-            for (int i = 0; i < m_initializables.Count; i++)
-            {
-                m_initializables[i].Initialize();
+                m_isInitializingLifecycle = false;
+                m_buildLifecycleInstances = null;
             }
         }
 
         private void RegisterLifecycleAfterBuild(IProvider provider)
         {
-            if (m_lifecycleReady == false
-                || (m_retiredProviders != null && m_retiredProviders.Contains(provider))
+            if (m_lifecycleReady)
+            {
+                RegisterLifecycle(provider, true);
+            }
+        }
+
+        private void RegisterLifecycle(IProvider provider, bool initialize)
+        {
+            if ((m_retiredProviders != null && m_retiredProviders.Contains(provider))
                 || (m_lifecycleInstances != null && m_lifecycleInstances.ContainsKey(provider))
                 || provider is SubContainerProvider)
             {
@@ -753,19 +743,36 @@ namespace Onity.DI
             }
 
             object instance = provider.Get(this);
+            EnsureNotDisposed();
             if (m_lifecycleInstances != null)
             {
-                foreach (object registered in m_lifecycleInstances.Values)
+                // Materializing a scoped instance can register it reentrantly.
+                if (m_lifecycleInstances.ContainsKey(provider))
                 {
-                    if (ReferenceEquals(registered, instance))
+                    return;
+                }
+
+                if (m_lifecycleReady)
+                {
+                    foreach (object registered in m_lifecycleInstances.Values)
                     {
-                        m_lifecycleInstances.Add(provider, instance);
-                        return;
+                        if (ReferenceEquals(registered, instance))
+                        {
+                            m_lifecycleInstances.Add(provider, instance);
+                            return;
+                        }
                     }
                 }
             }
 
             (m_lifecycleInstances ??= new Dictionary<IProvider, object>()).Add(provider, instance);
+            if (m_lifecycleReady == false
+                && (m_buildLifecycleInstances ??= new HashSet<object>(ReferenceIdentityComparer.Instance))
+                    .Add(instance) == false)
+            {
+                return;
+            }
+
             if (isInitializable)
             {
                 (m_initializables ??= new List<IOnityInitializable>()).Add((IOnityInitializable)instance);
@@ -793,9 +800,10 @@ namespace Onity.DI
                     .Add((IOnityAsyncInitializable)instance);
             }
 
-            if (isInitializable)
+            if (initialize && isInitializable)
             {
                 ((IOnityInitializable)instance).Initialize();
+                EnsureNotDisposed();
             }
         }
 
@@ -2970,6 +2978,11 @@ namespace Onity.DI
 
             instance = CreateAndInject(implementationType);
             (m_scopedInstances ??= new Dictionary<IProvider, object>()).Add(provider, instance);
+            if (m_lifecycleReady || m_isInitializingLifecycle)
+            {
+                RegisterLifecycle(provider, m_lifecycleReady);
+            }
+
             return instance;
         }
 

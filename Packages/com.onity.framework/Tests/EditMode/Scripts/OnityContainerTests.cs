@@ -463,6 +463,8 @@ namespace Onity.Tests.EditMode
         public void OnitySources_DoNotUseSystemLinq()
         {
             string[] sourceRoots = GetSourceRoots();
+            int existingRootCount = 0;
+            int scannedFileCount = 0;
 
             for (int rootIndex = 0; rootIndex < sourceRoots.Length; rootIndex++)
             {
@@ -473,7 +475,9 @@ namespace Onity.Tests.EditMode
                     continue;
                 }
 
+                existingRootCount++;
                 string[] sourceFiles = Directory.GetFiles(sourceRoot, "*.cs", SearchOption.AllDirectories);
+                scannedFileCount += sourceFiles.Length;
 
                 for (int fileIndex = 0; fileIndex < sourceFiles.Length; fileIndex++)
                 {
@@ -495,10 +499,13 @@ namespace Onity.Tests.EditMode
                         }
 
                         Assert.Fail(
-                            $"Source should avoid System.Linq (use loops): {filePath}:{lineIndex + 1}");
+                            $"Runtime source should avoid System.Linq (use loops): {filePath}:{lineIndex + 1}");
                     }
                 }
             }
+
+            Assert.That(existingRootCount, Is.GreaterThan(0), "No Onity runtime source root was found.");
+            Assert.That(scannedFileCount, Is.GreaterThan(0), "No Onity runtime C# source files were checked.");
         }
 
         private static string[] GetSourceRoots()
@@ -507,7 +514,8 @@ namespace Onity.Tests.EditMode
 
             return new[]
             {
-                Path.Combine(projectRoot, "Assets", "Onity-Packages", "Onity")
+                Path.Combine(projectRoot, "Assets", "Onity-Packages", "Onity", "Runtime"),
+                Path.Combine(projectRoot, "Packages", "com.onity.framework", "Runtime")
             };
         }
 
