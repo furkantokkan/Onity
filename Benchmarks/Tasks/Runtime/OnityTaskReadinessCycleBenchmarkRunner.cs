@@ -1,0 +1,1139 @@
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Cysharp.Threading.Tasks;
+using Onity.Unity.Async;
+using Unity.Collections;
+using Unity.Jobs;
+using UnityEngine;
+using Readiness = Onity.Benchmarks.OnityTaskReadinessBenchmarkRunner;
+
+namespace Onity.Benchmarks
+{
+    /// <summary>Measures controlled readiness CPU cycles with real single-suspension native task consumers.</summary>
+    public sealed class OnityTaskReadinessCycleBenchmarkRunner : MonoBehaviour
+    {
+        private const int k_capacity = 4096;
+        private const int k_pending = 1;
+        private const int k_canceled = 2;
+        private const int k_waitNext = 4;
+        private const int k_managedProof = 0x4D414E47;
+        private const int k_burstProof = 0x42555253;
+        private const int k_samples = 8;
+        private const int k_warmups = 2;
+        private readonly Readiness.Record[] m_records = new Readiness.Record[k_capacity];
+        private readonly Readiness.Token[] m_ready = new Readiness.Token[k_capacity];
+        private readonly Gate[] m_gates = new Gate[k_capacity];
+        private readonly OnityTask<int>[] m_onity = new OnityTask<int>[k_capacity];
+        private readonly UniTask<int>[] m_uni = new UniTask<int>[k_capacity];
+        private readonly int[] m_generations = new int[k_capacity];
+        private readonly int[] m_results = new int[k_capacity];
+        private readonly int[] m_outcomes = new int[k_capacity];
+        private readonly bool[] m_attempted = new bool[k_capacity];
+        private readonly bool[] m_expectCanceled = new bool[k_capacity];
+        private NativeArray<Readiness.Record> m_nativeInput;
+        private NativeArray<Readiness.Record> m_nativeUpdated;
+        private NativeArray<Readiness.Token> m_nativeReady;
+        private NativeArray<int> m_nativeHeader;
+        private Readiness.BurstJob m_job;
+        private Readiness.Snapshot m_snapshot;
+        private Action m_drain;
+        private FieldInfo m_pendingField;
+        private FieldInfo m_drainStateField;
+        private Action m_registerOnity;
+        private Action m_registerUni;
+        private Action m_tickManaged;
+        private Action m_tickBurst;
+        private Action m_consumeOnity;
+        private Action m_consumeUni;
+        private Action m_reentry;
+        private OnityBenchmarkAllocationCounter m_counter;
+        private bool m_allocationAvailable;
+        private int m_count;
+        private int m_registered;
+        private int m_readyCount;
+        private int m_proof;
+        private int m_dispatched;
+        private int m_rejected;
+        private long m_dispatchChecksum;
+        private bool m_onityArm;
+        private bool m_burstArm;
+        private bool m_hasSettings;
+        private bool m_oldFlow;
+        private bool m_oldTracking;
+        private bool m_oldStackTrace;
+        private bool m_listening;
+        private string m_loggedError;
+        private string m_path;
+        private Action<string, Exception> m_completed;
+
+        /// <summary>Starts the Release Player controlled readiness/consumer cycle suite.</summary>
+        /// <param name="path">Output JSON path.</param>
+        /// <param name="completed">Receives the report path and any failure after cleanup.</param>
+        public static void Run(string path, Action<string, Exception> completed)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                throw new ArgumentException("Readiness-cycle output path is required.", nameof(path));
+            }
+            GameObject owner = new GameObject("Onity Readiness Consumer Cycle Benchmark");
+            DontDestroyOnLoad(owner);
+            OnityTaskReadinessCycleBenchmarkRunner runner = owner.AddComponent<OnityTaskReadinessCycleBenchmarkRunner>();
+            runner.m_path = Path.GetFullPath(path);
+            runner.m_completed = completed;
+        }
+
+        private IEnumerator Start()
+        {
+            Report report = new Report();
+            Exception failure = null;
+            try
+            {
+                Application.logMessageReceived += OnLog;
+                m_listening = true;
+                m_oldFlow = OnityTask.FlowExecutionContext;
+                m_oldTracking = OnityTaskTracker.IsEnabled;
+                m_oldStackTrace = OnityTaskTracker.EnableStackTrace;
+                m_hasSettings = true;
+                OnityTask.FlowExecutionContext = false; // library default; restored with the other settings
+                OnityTaskTracker.IsEnabled = false;
+                OnityTaskTracker.EnableStackTrace = false;
+                if (OnityTask.RunnerPoolCapacity != 128)
+                {
+                    throw new InvalidOperationException("Readiness cycle requires the unchanged default runner retention of 128.");
+                }
+                report.environment = OnityTaskBenchmarkEnvironment.Capture();
+                report.unityVersion = Application.unityVersion;
+                report.platform = Application.platform.ToString();
+                if (Application.isEditor || report.environment.isDevelopment)
+                {
+                    throw new InvalidOperationException("Readiness cycle requires a non-development Release Player.");
+                }
+                BindDrain(report);
+                m_registerOnity = RegisterOnity;
+                m_registerUni = RegisterUni;
+                m_tickManaged = TickManaged;
+                m_tickBurst = TickBurst;
+                m_consumeOnity = ConsumeOnity;
+                m_consumeUni = ConsumeUni;
+                m_reentry = ChangeNextGeneration;
+                for (int i = 0; i < k_capacity; i++)
+                {
+                    m_gates[i] = new Gate();
+                }
+                m_nativeInput = new NativeArray<Readiness.Record>(k_capacity, Allocator.Persistent);
+                m_nativeUpdated = new NativeArray<Readiness.Record>(k_capacity, Allocator.Persistent);
+                m_nativeReady = new NativeArray<Readiness.Token>(k_capacity, Allocator.Persistent);
+                m_nativeHeader = new NativeArray<int>(2, Allocator.Persistent);
+                m_job = new Readiness.BurstJob
+                {
+                    Input = m_nativeInput, Updated = m_nativeUpdated, Ready = m_nativeReady, Header = m_nativeHeader
+                };
+                report.nativePayloadBytes = k_capacity * (2L * Marshal.SizeOf(typeof(Readiness.Record))
+                    + Marshal.SizeOf(typeof(Readiness.Token))) + 2L * sizeof(int);
+                m_counter = OnityBenchmarkAllocationCounter.Create(false, false);
+                m_allocationAvailable = m_counter.IsAvailable && m_counter.Kind == OnityBenchmarkAllocationCounter.k_kindPerThread;
+                report.allocationAvailable = m_allocationAvailable;
+                report.allocationCounterKind = m_counter.Kind;
+                report.allocationCounter = m_counter.Description;
+                report.allocationCalibrationBytes = m_counter.CalibrationBytes;
+                report.allocationEmptyBytes = m_counter.EmptyDeltaBytes;
+                report.allocationRejectionReasons = m_counter.RejectedCandidates;
+                report.allocationScope = m_allocationAvailable
+                    ? "Sum of calibrated current-thread managed deltas around each measured phase; setup/validation/native retention excluded."
+                    : "Unavailable: no calibrated current-thread counter; no zero-managed-allocation claim.";
+                CheckGoldens(report);
+            }
+            catch (Exception exception)
+            {
+                failure = exception;
+            }
+
+            IEnumerator measurements = Measure(report);
+            try
+            {
+                while (failure == null)
+                {
+                    bool next;
+                    try
+                    {
+                        next = measurements.MoveNext();
+                    }
+                    catch (Exception exception)
+                    {
+                        failure = exception;
+                        break;
+                    }
+                    if (!next)
+                    {
+                        break;
+                    }
+                    yield return null;
+                }
+            }
+            finally
+            {
+                try
+                {
+                    try
+                    {
+                        (measurements as IDisposable)?.Dispose();
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            CleanupCohort();
+                        }
+                        finally
+                        {
+                            DisposeBuffers();
+                        }
+                    }
+                    report.nativeBuffersDisposed = !m_nativeInput.IsCreated && !m_nativeUpdated.IsCreated
+                        && !m_nativeReady.IsCreated && !m_nativeHeader.IsCreated;
+                    CheckLog();
+                }
+                catch (Exception exception)
+                {
+                    failure = failure ?? exception;
+                }
+                finally
+                {
+                    RestoreSettings();
+                }
+            }
+            report.completed = failure == null && report.nativeBuffersDisposed;
+            report.failure = failure?.ToString();
+            report.loggedError = m_loggedError;
+            report.generatedAtUtc = DateTime.UtcNow.ToString("O");
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(m_path));
+                File.WriteAllText(m_path, JsonUtility.ToJson(report, true));
+            }
+            catch (Exception exception)
+            {
+                failure = failure ?? exception;
+            }
+            try
+            {
+                m_completed?.Invoke(m_path, failure);
+            }
+            finally
+            {
+                Destroy(gameObject);
+            }
+        }
+
+        private void BindDrain(Report report)
+        {
+            Type type = typeof(OnityTask).Assembly.GetType("Onity.Unity.Async.OnityTaskMainThreadDispatcher", true);
+            RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+            const BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+            MethodInfo drain = type.GetMethod("Drain", flags, null, Type.EmptyTypes, null);
+            m_pendingField = type.GetField("s_pendingCount", flags);
+            m_drainStateField = type.GetField("s_drainState", flags);
+            if (drain == null || drain.ReturnType != typeof(void)
+                || m_pendingField == null || m_drainStateField == null)
+            {
+                throw new InvalidOperationException("Exact runtime Drain/queue-state binding unavailable or AOT-stripped.");
+            }
+            m_drain = (Action)Delegate.CreateDelegate(typeof(Action), drain, true);
+            report.drainBinding = type.FullName + ".Drain; cached Action; s_pendingCount/s_drainState read outside timing.";
+            RuntimeHelpers.RunClassConstructor(typeof(TaskPool).TypeHandle);
+            FieldInfo uniPool = typeof(TaskPool).GetField("MaxPoolSize", flags);
+            report.uniTaskMaxPoolSize = uniPool == null ? -1 : (int)uniPool.GetValue(null);
+            CheckQueue();
+        }
+
+        private IEnumerator Measure(Report report)
+        {
+            int[] counts = { 128, 4096 };
+            for (int size = 0; size < counts.Length; size++)
+            {
+                for (int arm = 0; arm < 4; arm++)
+                {
+                    report.metrics[size * 4 + arm] = new Metric
+                    {
+                        arm = ArmName(arm), count = counts[size], warmups = new Sample[k_warmups], samples = new Sample[k_samples]
+                    };
+                }
+                for (int warmup = 0; warmup < k_warmups; warmup++)
+                {
+                    for (int order = 0; order < 4; order++)
+                    {
+                        int arm = (warmup + order) % 4;
+                        Sample sample = RunBatch(counts[size], arm, warmup, order);
+                        report.metrics[size * 4 + arm].warmups[warmup] = sample;
+                        sample.drainStartFrame = Time.frameCount;
+                        yield return null;
+                        yield return null;
+                        CheckFrames(sample);
+                    }
+                }
+                for (int index = 0; index < k_samples; index++)
+                {
+                    for (int order = 0; order < 4; order++)
+                    {
+                        int arm = (index + order) % 4;
+                        Sample sample = RunBatch(counts[size], arm, index, order);
+                        report.metrics[size * 4 + arm].samples[index] = sample;
+                        sample.drainStartFrame = Time.frameCount;
+                        yield return null;
+                        yield return null;
+                        CheckFrames(sample);
+                    }
+                }
+            }
+        }
+
+        private Sample RunBatch(int count, int arm, int index, int order)
+        {
+            Select(count, arm);
+            Sample sample = new Sample
+            {
+                index = index, order = order, pendingTicks = new long[8], tickProofs = new int[9], tickReadyCounts = new int[9],
+                managedBytes = m_allocationAvailable ? 0 : -1, allocationValid = m_allocationAvailable
+            };
+            sample.pendingBefore = CheckQueue();
+            Action register = m_onityArm ? m_registerOnity : m_registerUni;
+            Action tick = m_burstArm ? m_tickBurst : m_tickManaged;
+            Action consume = m_onityArm ? m_consumeOnity : m_consumeUni;
+            bool succeeded = false;
+            try
+            {
+                sample.registrationTicks = TimePhase(register, sample);
+                CheckRegistered();
+                for (int i = 0; i < 9; i++)
+                {
+                    m_snapshot.CurrentFrame = 101 + i;
+                    PoisonProof();
+                    long ticks = TimePhase(tick, sample);
+                    sample.tickProofs[i] = m_proof;
+                    sample.tickReadyCounts[i] = m_readyCount;
+                    CheckTick(i);
+                    if (i < 8)
+                    {
+                        sample.pendingTicks[i] = ticks;
+                    }
+                    else
+                    {
+                        sample.terminalTicks = ticks;
+                    }
+                }
+                sample.consumptionTicks = TimePhase(consume, sample);
+                sample.pendingBeforeDrain = ReadPending();
+                sample.drainFirstTicks = TimePhase(m_drain, sample);
+                sample.pendingBetweenDrains = ReadPending();
+                sample.drainSecondTicks = TimePhase(m_drain, sample);
+                sample.pendingAfter = CheckQueue();
+                ValidateConsumers(sample);
+                sample.totalTicks = sample.registrationTicks + sample.terminalTicks + sample.consumptionTicks
+                    + sample.drainFirstTicks + sample.drainSecondTicks;
+                for (int i = 0; i < 8; i++)
+                {
+                    sample.totalTicks += sample.pendingTicks[i];
+                }
+                sample.totalNanosecondsPerConsumer = sample.totalTicks * 1000000000d / Stopwatch.Frequency / m_count;
+                sample.validated = true;
+                succeeded = true;
+                return sample;
+            }
+            finally
+            {
+                if (!succeeded)
+                {
+                    CleanupCohort();
+                }
+                ClearOutputs();
+            }
+        }
+
+        private long TimePhase(Action work, Sample sample)
+        {
+            long before = m_allocationAvailable ? m_counter.Read() : 0;
+            long started = Stopwatch.GetTimestamp();
+            work();
+            long stopped = Stopwatch.GetTimestamp();
+            if (m_allocationAvailable)
+            {
+                long bytes = m_counter.Read() - before;
+                sample.managedBytes += bytes;
+                sample.allocationValid &= bytes >= 0;
+            }
+            return stopped - started;
+        }
+
+        private void Select(int count, int arm)
+        {
+            m_count = count;
+            m_onityArm = (arm & 1) == 0;
+            m_burstArm = arm >= 2;
+            m_snapshot = new Readiness.Snapshot { CurrentFrame = 100, Delta = 0.25f, UnscaledDelta = 0.25f };
+            CheckQueue();
+        }
+
+        private void InitSlot(int index)
+        {
+            m_gates[index].Reset();
+            m_generations[index] = 7;
+            m_results[index] = -1;
+            m_outcomes[index] = 0;
+            m_attempted[index] = false;
+            m_expectCanceled[index] = false;
+            m_records[index] = new Readiness.Record
+            {
+                Slot = index, Generation = 7, CurrentGeneration = 7, Kind = 1,
+                StartFrame = 99, RemainingFrames = 0, RemainingSeconds = 2.25f, Flags = k_pending | k_waitNext
+            };
+        }
+
+        private void RegisterOnity()
+        {
+            m_registered = 0;
+            m_dispatched = 0;
+            m_rejected = 0;
+            m_dispatchChecksum = 0;
+            for (int i = 0; i < m_count; i++)
+            {
+                InitSlot(i);
+                m_onity[i] = AwaitOnity(m_gates[i]);
+                m_registered++;
+            }
+        }
+
+        private void RegisterUni()
+        {
+            m_registered = 0;
+            m_dispatched = 0;
+            m_rejected = 0;
+            m_dispatchChecksum = 0;
+            for (int i = 0; i < m_count; i++)
+            {
+                InitSlot(i);
+                m_uni[i] = AwaitUni(m_gates[i]);
+                m_registered++;
+            }
+        }
+
+        private void TickManaged()
+        {
+            for (int i = 0; i < m_count; i++)
+            {
+                m_records[i].CurrentGeneration = m_generations[i];
+            }
+            Readiness.ScanManaged(m_records, m_records, m_ready, m_snapshot, m_count, out m_readyCount, out m_proof);
+            Dispatch();
+        }
+
+        private void TickBurst()
+        {
+            for (int i = 0; i < m_count; i++)
+            {
+                m_records[i].CurrentGeneration = m_generations[i];
+                m_nativeInput[i] = m_records[i];
+            }
+            m_job.Snapshot = m_snapshot;
+            m_job.Count = m_count;
+            m_job.Run();
+            m_readyCount = m_nativeHeader[0];
+            m_proof = m_nativeHeader[1];
+            for (int i = 0; i < m_count; i++)
+            {
+                m_records[i] = m_nativeUpdated[i];
+            }
+            for (int i = 0; i < m_readyCount; i++)
+            {
+                m_ready[i] = m_nativeReady[i];
+            }
+            Dispatch();
+        }
+
+        private void Dispatch()
+        {
+            for (int i = 0; i < m_readyCount; i++)
+            {
+                Readiness.Token token = m_ready[i];
+                if (m_generations[token.Slot] != token.Generation)
+                {
+                    m_rejected++;
+                    continue;
+                }
+                m_outcomes[token.Slot] = token.Outcome;
+                m_dispatchChecksum += token.Slot + 1L;
+                m_dispatched++;
+                m_gates[token.Slot].Complete(token.Outcome == 2);
+            }
+        }
+
+        private void ConsumeOnity()
+        {
+            for (int i = 0; i < m_registered; i++)
+            {
+                m_attempted[i] = true;
+                try
+                {
+                    m_results[i] = m_onity[i].GetAwaiter().GetResult();
+                }
+                catch (OperationCanceledException)
+                {
+                    if (!m_expectCanceled[i])
+                    {
+                        throw;
+                    }
+                    m_results[i] = 0;
+                }
+            }
+        }
+
+        private void ConsumeUni()
+        {
+            for (int i = 0; i < m_registered; i++)
+            {
+                m_attempted[i] = true;
+                try
+                {
+                    m_results[i] = m_uni[i].GetAwaiter().GetResult();
+                }
+                catch (OperationCanceledException)
+                {
+                    if (!m_expectCanceled[i])
+                    {
+                        throw;
+                    }
+                    m_results[i] = 0;
+                }
+            }
+        }
+
+        private static async OnityTask<int> AwaitOnity(Gate gate)
+        {
+            await gate;
+            return 42;
+        }
+
+        private static async UniTask<int> AwaitUni(Gate gate)
+        {
+            await gate;
+            return 42;
+        }
+
+        private void PoisonProof()
+        {
+            m_proof = 0;
+            m_nativeHeader[1] = 0;
+        }
+
+        private void CheckRegistered()
+        {
+            if (m_registered != m_count)
+            {
+                throw new InvalidOperationException("Readiness consumers were not all registered.");
+            }
+            for (int i = 0; i < m_count; i++)
+            {
+                if (m_gates[i].Registrations != 1 || m_gates[i].Completions != 0)
+                {
+                    throw new InvalidOperationException("Readiness consumer did not suspend exactly once.");
+                }
+            }
+        }
+
+        private void CheckTick(int tick)
+        {
+            if (m_proof != (m_burstArm ? k_burstProof : k_managedProof)
+                || m_readyCount != (tick == 8 ? m_count : 0) || m_rejected != 0)
+            {
+                throw new InvalidOperationException("Readiness tick proof/count failed.");
+            }
+            float expected = 2.25f - (tick + 1) * 0.25f;
+            for (int i = 0; i < m_count; i++)
+            {
+                if (m_records[i].RemainingSeconds != expected || m_records[i].Generation != 7
+                    || m_records[i].CurrentGeneration != 7 || m_records[i].Slot != i
+                    || m_records[i].Flags != (tick == 8 ? k_waitNext : k_pending | k_waitNext)
+                    || m_gates[i].Completions != (tick == 8 ? 1 : 0))
+                {
+                    throw new InvalidOperationException("Readiness state was not forwarded across pending ticks.");
+                }
+            }
+            if (tick == 8)
+            {
+                for (int i = 0; i < m_count; i++)
+                {
+                    if (m_ready[i].Slot != m_count - 1 - i || m_ready[i].Generation != 7 || m_ready[i].Outcome != 1)
+                    {
+                        throw new InvalidOperationException("Readiness terminal token order/generation failed.");
+                    }
+                }
+            }
+            CheckLog();
+        }
+
+        private void ValidateConsumers(Sample sample)
+        {
+            for (int i = 0; i < m_count; i++)
+            {
+                Gate gate = m_gates[i];
+                if (gate.Registrations != 1 || gate.Completions != 1 || gate.Callbacks != 1 || gate.ResultReads != 1
+                    || !m_attempted[i] || m_results[i] != 42 || m_outcomes[i] != 1)
+                {
+                    throw new InvalidOperationException("Readiness native consumer count/result validation failed.");
+                }
+                sample.registrations += gate.Registrations;
+                sample.callbacks += gate.Callbacks;
+                sample.gateResults += gate.ResultReads;
+                sample.completions += gate.Completions;
+                sample.nativeConsumptions++;
+                sample.resultChecksum += m_results[i];
+            }
+            sample.dispatches = m_dispatched;
+            sample.dispatchChecksum = m_dispatchChecksum;
+            if (m_dispatched != m_count || sample.resultChecksum != 42L * m_count
+                || m_dispatchChecksum != (long)m_count * (m_count + 1) / 2)
+            {
+                throw new InvalidOperationException("Readiness consumer checksum failed.");
+            }
+            CheckLog();
+        }
+
+        private int ReadPending() => (int)m_pendingField.GetValue(null);
+
+        private int CheckQueue()
+        {
+            CheckLog();
+            int pending = ReadPending();
+            int state = (int)m_drainStateField.GetValue(null);
+            if (pending != 0 || state != 0)
+            {
+                throw new InvalidOperationException("Deferred-return queue is not empty/idle; pending=" + pending + ", state=" + state);
+            }
+            return pending;
+        }
+
+        private void CheckFrames(Sample sample)
+        {
+            sample.drainEndFrame = Time.frameCount;
+            sample.drainFrames = sample.drainEndFrame - sample.drainStartFrame;
+            if (sample.drainFrames < 2)
+            {
+                throw new InvalidOperationException("Two real Unity safety frames did not advance.");
+            }
+            CheckQueue();
+        }
+
+        private void OnLog(string condition, string stackTrace, LogType type)
+        {
+            if ((type == LogType.Error || type == LogType.Exception)
+                && m_loggedError == null)
+            {
+                m_loggedError = condition + "\n" + stackTrace;
+            }
+        }
+
+        private void CheckLog()
+        {
+            if (m_loggedError != null)
+            {
+                throw new InvalidOperationException("Logged callback/drain error: " + m_loggedError);
+            }
+        }
+
+        private void CheckGoldens(Report report)
+        {
+            for (int arm = 0; arm < 4; arm++)
+            {
+                Golden golden = new Golden { arm = ArmName(arm) };
+                report.goldens[arm] = golden;
+                Select(2, arm);
+                try
+                {
+                    RegisterSelected();
+                    CheckRegistered();
+                    for (int tick = 0; tick < 9; tick++)
+                    {
+                        m_snapshot.CurrentFrame = 101 + tick;
+                        PoisonProof();
+                        TickSelected();
+                        CheckTick(tick);
+                    }
+                    ConsumeSelected();
+                    DrainGolden();
+                    ValidateConsumers(new Sample());
+                    golden.forwardedEightPendingThenTerminal = true;
+                    ClearOutputs();
+
+                    RegisterSelected();
+                    m_records[0].Flags |= k_canceled;
+                    m_expectCanceled[0] = true;
+                    PoisonProof();
+                    TickSelected();
+                    CheckKernelProof();
+                    if (m_readyCount != 1 || m_ready[0].Slot != 0 || m_ready[0].Outcome != 2
+                        || m_records[0].RemainingSeconds != 2.25f || m_gates[0].Completions != 1
+                        || m_gates[1].Completions != 0)
+                    {
+                        throw new InvalidOperationException("Cancellation-before-deadline golden failed.");
+                    }
+                    for (int tick = 1; tick < 9; tick++)
+                    {
+                        PoisonProof();
+                        TickSelected();
+                        CheckKernelProof();
+                        if (m_records[1].RemainingSeconds != 2.25f - (tick + 1)
+                            * 0.25f)
+                        {
+                            throw new InvalidOperationException("Cancellation golden lost forwarded countdown state.");
+                        }
+                    }
+                    ConsumeSelected();
+                    DrainGolden();
+                    if (m_results[0] != 0 || m_results[1] != 42 || m_outcomes[0] != 2)
+                    {
+                        throw new InvalidOperationException("Actual canceled native consumer result failed.");
+                    }
+                    golden.cancellationBeforeDeadline = true;
+                    ClearOutputs();
+
+                    CheckRejection(false);
+                    golden.postScanGenerationRejection = true;
+                    CheckRejection(true);
+                    golden.callbackReentryGenerationRejection = true;
+                    golden.reusedGenerationCompletedOnce = true;
+                }
+                finally
+                {
+                    CleanupCohort();
+                    ClearOutputs();
+                }
+            }
+            report.goldensPassed = true;
+        }
+
+        private void CheckRejection(bool reentry)
+        {
+            RegisterSelected();
+            m_records[0].RemainingSeconds = 0.25f;
+            m_records[1].RemainingSeconds = 0.25f;
+            PoisonProof();
+            // Obtain valid tokens without dispatch so the generation can change between scan and consumption.
+            if (m_burstArm)
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    m_nativeInput[i] = m_records[i];
+                }
+                m_job.Snapshot = m_snapshot;
+                m_job.Count = 2;
+                m_job.Run();
+                m_readyCount = m_nativeHeader[0];
+                m_proof = m_nativeHeader[1];
+                for (int i = 0; i < 2; i++)
+                {
+                    m_records[i] = m_nativeUpdated[i];
+                    m_ready[i] = m_nativeReady[i];
+                }
+            }
+            else
+            {
+                Readiness.ScanManaged(m_records, m_records, m_ready, m_snapshot, 2, out m_readyCount, out m_proof);
+            }
+            if (m_readyCount != 2 || m_ready[0].Slot != 1 || m_ready[1].Slot != 0
+                || m_ready[0].Generation != 7 || m_ready[1].Generation != 7
+                || m_proof != (m_burstArm ? k_burstProof : k_managedProof))
+            {
+                throw new InvalidOperationException("Generation/reentry golden did not produce valid descending tokens.");
+            }
+            if (reentry)
+            {
+                m_gates[1].AfterResult = m_reentry;
+            }
+            else
+            {
+                m_generations[0] = 8;
+            }
+            Dispatch();
+            if (m_generations[0] != 8 || m_gates[0].Completions != 0 || m_gates[0].Callbacks != 0
+                || m_outcomes[0] != 0 || m_gates[1].Completions != 1 || m_outcomes[1] != 1
+                || m_dispatched != 1 || m_rejected != 1 || m_dispatchChecksum != 2)
+            {
+                throw new InvalidOperationException("Generation reuse/reentry did not reject the stale token.");
+            }
+            // Retire the intentionally rejected old consumer as part of untimed golden cleanup, never a passing timed sample.
+            m_expectCanceled[0] = true;
+            m_gates[0].Complete(true);
+            ConsumeSelected();
+            DrainGolden();
+            if (m_results[0] != 0 || m_results[1] != 42 || m_gates[0].ResultReads != 1 || m_gates[1].ResultReads != 1)
+            {
+                throw new InvalidOperationException("Generation golden left an unconsumed native task.");
+            }
+            ClearOutputs();
+            // Only after both old outputs are settled/consumed, create and complete a new generation-8 consumer.
+            RegisterSelected();
+            m_generations[0] = 8;
+            m_records[0].Generation = 8;
+            m_records[0].CurrentGeneration = 8;
+            m_records[0].RemainingSeconds = 0.25f;
+            m_records[1].RemainingSeconds = 0.25f;
+            PoisonProof();
+            TickSelected();
+            CheckKernelProof();
+            if (m_readyCount != 2 || m_ready[1].Slot != 0 || m_ready[1].Generation != 8
+                || m_dispatched != 2 || m_rejected != 0)
+            {
+                throw new InvalidOperationException("Replacement generation did not produce its own terminal token.");
+            }
+            ConsumeSelected();
+            DrainGolden();
+            for (int i = 0; i < 2; i++)
+            {
+                if (m_results[i] != 42 || !m_attempted[i] || m_gates[i].Registrations != 1
+                    || m_gates[i].Completions != 1 || m_gates[i].Callbacks != 1 || m_gates[i].ResultReads != 1)
+                {
+                    throw new InvalidOperationException("Replacement native consumer was not completed/consumed exactly once.");
+                }
+            }
+            ClearOutputs();
+        }
+
+        private void CheckKernelProof()
+        {
+            if (m_proof != (m_burstArm ? k_burstProof : k_managedProof))
+            {
+                throw new InvalidOperationException("Golden readiness kernel proof failed.");
+            }
+            CheckLog();
+        }
+
+        private void ChangeNextGeneration() => m_generations[0] = 8;
+        private void RegisterSelected()
+        {
+            if (m_onityArm)
+            {
+                RegisterOnity();
+            }
+            else
+            {
+                RegisterUni();
+            }
+        }
+
+        private void TickSelected()
+        {
+            if (m_burstArm)
+            {
+                TickBurst();
+            }
+            else
+            {
+                TickManaged();
+            }
+        }
+
+        private void ConsumeSelected()
+        {
+            if (m_onityArm)
+            {
+                ConsumeOnity();
+            }
+            else
+            {
+                ConsumeUni();
+            }
+        }
+
+        private void DrainGolden()
+        {
+            m_drain();
+            m_drain();
+            CheckQueue();
+        }
+
+        private void CleanupCohort()
+        {
+            for (int i = 0; i < m_registered; i++)
+            {
+                try
+                {
+                    if (m_gates[i].Registrations == 1 && m_gates[i].Completions == 0)
+                    {
+                        m_gates[i].Complete(true);
+                    }
+                }
+                catch (Exception)
+                {
+                    // Preserve the original benchmark failure while settling the remaining cohort.
+                }
+            }
+            for (int i = 0; i < m_registered; i++)
+            {
+                if (m_attempted[i])
+                {
+                    continue;
+                }
+                m_attempted[i] = true;
+                try
+                {
+                    if (m_onityArm)
+                    {
+                        m_onity[i].GetAwaiter().GetResult();
+                    }
+                    else
+                    {
+                        m_uni[i].GetAwaiter().GetResult();
+                    }
+                }
+                catch (Exception)
+                {
+                    // A failed GetResult may already have retired the native source; never retry it.
+                }
+            }
+            // Only failed/untimed cleanup can reach here with work left; successful batches already proved both timed drains empty.
+            if (m_drain != null && m_registered != 0)
+            {
+                m_drain();
+                m_drain();
+            }
+            ClearOutputs();
+        }
+
+        private void ClearOutputs()
+        {
+            Array.Clear(m_onity, 0, m_registered);
+            Array.Clear(m_uni, 0, m_registered);
+            m_registered = 0;
+        }
+
+        private void DisposeBuffers()
+        {
+            if (m_nativeInput.IsCreated)
+            {
+                m_nativeInput.Dispose();
+            }
+            if (m_nativeUpdated.IsCreated)
+            {
+                m_nativeUpdated.Dispose();
+            }
+            if (m_nativeReady.IsCreated)
+            {
+                m_nativeReady.Dispose();
+            }
+            if (m_nativeHeader.IsCreated)
+            {
+                m_nativeHeader.Dispose();
+            }
+            m_counter?.Dispose();
+            m_counter = null;
+        }
+
+        private void RestoreSettings()
+        {
+            if (m_hasSettings)
+            {
+                OnityTask.FlowExecutionContext = m_oldFlow;
+                OnityTaskTracker.IsEnabled = m_oldTracking;
+                OnityTaskTracker.EnableStackTrace = m_oldStackTrace;
+                m_hasSettings = false;
+            }
+            if (m_listening)
+            {
+                Application.logMessageReceived -= OnLog;
+                m_listening = false;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            try
+            {
+                CleanupCohort();
+            }
+            finally
+            {
+                try
+                {
+                    DisposeBuffers();
+                }
+                finally
+                {
+                    RestoreSettings();
+                }
+            }
+        }
+
+        private static string ArmName(int arm)
+        {
+            return (arm >= 2 ? "Burst" : "Managed") + "/" + ((arm & 1) == 0 ? "OnityTask<int>" : "UniTask<int>");
+        }
+
+        private sealed class Gate : ICriticalNotifyCompletion
+        {
+            private Action m_continuation;
+            private bool m_completed;
+            private bool m_canceled;
+            internal int Registrations { get; private set; }
+            internal int Completions { get; private set; }
+            internal int Callbacks { get; private set; }
+            internal int ResultReads { get; private set; }
+            internal Action AfterResult { get; set; }
+            public bool IsCompleted => m_completed;
+            public Gate GetAwaiter() => this;
+            public void OnCompleted(Action continuation) => UnsafeOnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation)
+            {
+                if (m_continuation != null || m_completed || continuation == null)
+                {
+                    throw new InvalidOperationException("Invalid readiness gate registration.");
+                }
+                m_continuation = continuation;
+                Registrations++;
+            }
+            public void GetResult()
+            {
+                if (!m_completed)
+                {
+                    throw new InvalidOperationException("Readiness gate is pending.");
+                }
+                ResultReads++;
+                AfterResult?.Invoke();
+                if (m_canceled)
+                {
+                    throw new OperationCanceledException();
+                }
+            }
+            internal void Reset()
+            {
+                m_continuation = null;
+                m_completed = false;
+                m_canceled = false;
+                Registrations = Completions = Callbacks = ResultReads = 0;
+                AfterResult = null;
+            }
+            internal void Complete(bool canceled)
+            {
+                if (m_completed || m_continuation == null)
+                {
+                    throw new InvalidOperationException("Readiness gate has no pending consumer.");
+                }
+                m_completed = true;
+                m_canceled = canceled;
+                Completions++;
+                Action continuation = m_continuation;
+                m_continuation = null;
+                Callbacks++;
+                continuation();
+            }
+        }
+
+        [Serializable]
+        private sealed class Report
+        {
+            public int schemaVersion = 1;
+            public string title = "Controlled readiness CPU cycle with actual native async consumers";
+            public string measurementScope = "Sum of registration (gate/record initialization included), eight pending ticks, terminal tick/actual continuations, "
+                + "single external native GetResult consumption, and SAME two runtime deferred-return Drain calls in all four arms. "
+                + "Burst includes every managed/native stage, IJob.Run, updated-state/token transfer and dispatch. Updated countdown records are forwarded every tick. "
+                + "Setup/reflection, proof and state validation, two real safety frames, final cleanup/disposal and wall-clock delay are excluded. "
+                + "Proof sentinel writes and any GC during a timed phase are included. "
+                + "Controlled synchronous CPU phases with synthetic timer snapshots, not natural Unity PlayerLoop timer latency or general async superiority.";
+            public string flowPolicy = "Onity FlowExecutionContext=false (library default, UniTask-equivalent no-flow semantics). No AsyncLocal seeded.";
+            public string retentionPolicy = "Onity runner retention remains default128; UniTask pool policy is not capped to match. "
+                + "Installed UniTask default is int.MaxValue unless its environment/config overrides it; measured MaxPoolSize reported when reflected.";
+            public int uniTaskMaxPoolSize;
+            public int onityRunnerPoolCapacity = 128;
+            public string burstPolicy = "Same archived readiness engine; synchronous IJob.Run; CompileSynchronously=true; FloatMode.Strict; no workers.";
+            public string drainBinding;
+            public string queuePolicy = "Require s_pendingCount=0 and s_drainState=0 before timing and after exactly two timed Drain calls; "
+                + "fail logged Error/Exception or residual work. Uncounted failed/golden cleanup cannot make a timed sample pass.";
+            public int ticksPerCycle = 9;
+            public int pendingTicksPerCycle = 8;
+            public float initialRemainingSeconds = 2.25f;
+            public float deltaSeconds = 0.25f;
+            public int nativeCapacity = k_capacity;
+            public long nativePayloadBytes;
+            public string nativeMemoryScope = "Retained input+updated 4096-record buffers, 4096 ready tokens, two-int header; payload only, allocator overhead excluded. "
+                + "All buffers disposed after the last synchronous Run, with no outstanding scheduled jobs. Managed gate/output/report arrays preallocated outside CPU windows.";
+            public bool nativeBuffersDisposed;
+            public bool allocationAvailable;
+            public string allocationScope;
+            public string allocationCounterKind;
+            public string allocationCounter;
+            public long allocationCalibrationBytes;
+            public long allocationEmptyBytes;
+            public string allocationRejectionReasons;
+            public long stopwatchFrequency = Stopwatch.Frequency;
+            public string order = "Four-arm order rotates by sample/warmup index modulo4; raw samples retain order; 2warmups and8samples per arm/count.";
+            public string unityVersion;
+            public string platform;
+            public OnityTaskBenchmarkEnvironment environment;
+            public bool goldensPassed;
+            public Golden[] goldens = new Golden[4];
+            public Metric[] metrics = new Metric[8];
+            public bool completed;
+            public string failure;
+            public string loggedError;
+            public string generatedAtUtc;
+        }
+
+        [Serializable]
+        private sealed class Metric
+        {
+            public string arm;
+            public int count;
+            public Sample[] warmups;
+            public Sample[] samples;
+        }
+
+        [Serializable]
+        private sealed class Sample
+        {
+            public int index;
+            public int order;
+            public long registrationTicks;
+            public long[] pendingTicks;
+            public long terminalTicks;
+            public long consumptionTicks;
+            public long drainFirstTicks;
+            public long drainSecondTicks;
+            public long totalTicks;
+            public double totalNanosecondsPerConsumer;
+            public long managedBytes;
+            public bool allocationValid = true;
+            public int[] tickProofs;
+            public int[] tickReadyCounts;
+            public int pendingBefore;
+            public int pendingBeforeDrain;
+            public int pendingBetweenDrains;
+            public int pendingAfter;
+            public int registrations;
+            public int callbacks;
+            public int completions;
+            public int gateResults;
+            public int nativeConsumptions;
+            public long resultChecksum;
+            public int dispatches;
+            public long dispatchChecksum;
+            public int drainStartFrame;
+            public int drainEndFrame;
+            public int drainFrames;
+            public bool validated;
+        }
+
+        [Serializable]
+        private sealed class Golden
+        {
+            public string arm;
+            public bool forwardedEightPendingThenTerminal;
+            public bool cancellationBeforeDeadline;
+            public bool postScanGenerationRejection;
+            public bool callbackReentryGenerationRejection;
+            public bool reusedGenerationCompletedOnce;
+        }
+    }
+}

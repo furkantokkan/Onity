@@ -1,0 +1,31 @@
+{
+  "name": "Onity.Tests.UGUI.PlayMode",
+  "rootNamespace": "Onity.Tests.UGUI.PlayMode",
+  "references": [
+    "Onity.Core",
+    "Onity.Reactive",
+    "Onity.Unity",
+    "Onity.Unity.UGUI",
+    "UnityEngine.UI"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "ONITY_UGUI"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.unity.ugui",
+      "expression": "",
+      "define": "ONITY_UGUI"
+    }
+  ],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <!-- Onity screen fade cover. OnityScreenFadeView binds "onity-screen-fade", hides it before the first rendered
+         frame and shows it only while a scene change is covered; shown, it blocks presses on every panel below.
+         The standalone document previews the fully covered state. -->
+    <ui:Style src="OnityScreenFade.uss" />
+    <ui:VisualElement name="onity-screen-fade" class="onity-screen-fade" />
+</ui:UXML>

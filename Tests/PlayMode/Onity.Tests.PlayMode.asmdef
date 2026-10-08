@@ -1,0 +1,36 @@
+{
+  "name": "Onity.Tests.PlayMode",
+  "rootNamespace": "Onity.Tests.PlayMode",
+  "references": [
+    "Onity.Core",
+    "Onity.Composition",
+    "Onity.DI",
+    "Onity.DOTS",
+    "Onity.Factory",
+    "Onity.Messaging",
+    "Onity.Reactive",
+    "Onity.Pooling",
+    "Onity.Unity",
+    "Unity.Collections",
+    "Unity.Entities",
+    "Unity.Mathematics"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [
+    {
+      "name": "com.unity.entities",
+      "expression": "1.0.0",
+      "define": "ONITY_ENTITIES"
+    }
+  ],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

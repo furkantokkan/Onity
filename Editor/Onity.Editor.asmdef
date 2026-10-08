@@ -1,0 +1,26 @@
+{
+  "name": "Onity.Editor",
+  "rootNamespace": "Onity.Editor",
+  "references": [
+    "Onity.Unity",
+    "Onity.Reactive",
+    "Onity.DI",
+    "Onity.Pooling",
+    "Onity.Messaging",
+    "Onity.DOTS",
+    "Unity.Collections",
+    "Unity.Entities",
+    "Unity.Entities.Hybrid"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

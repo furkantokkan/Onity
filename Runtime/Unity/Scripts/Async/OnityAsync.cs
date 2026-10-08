@@ -1,0 +1,4535 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Onity.Core;
+using Onity.Messaging;
+using Onity.Reactive;
+using Onity.Unity.Reactive;
+using Unity.IL2CPP.CompilerServices;
+using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
+
+namespace Onity.Unity.Async
+{
+    /// <summary>
+    /// Onity-owned awaitable facade for Unity gameplay async flows.
+    /// Pooled Unity operations are single-consumer and must be awaited only once.
+    /// </summary>
+    [AsyncMethodBuilder(typeof(OnityTaskMethodBuilder))]
+    public readonly partial struct OnityTask
+    {
+        /// <summary>
+        /// Completed Onity task.
+        /// </summary>
+        // No initializer: OnityTask must stay free of a static constructor, so inlined members carry no
+        // class-initialization check. Settings live in OnityTaskSettings for the same reason.
+        public static readonly OnityTask CompletedTask;
+
+        private readonly object m_state;
+        private readonly int m_token;
+
+        /// <summary>
+        /// Controls whether <c>async OnityTask</c> and <c>async OnityTask&lt;T&gt;</c> methods flow the
+        /// execution context, including <see cref="AsyncLocal{T}"/> values, across their awaits.
+        /// Disabled by default, which gives the same semantics as UniTask: <see cref="AsyncLocal{T}"/>
+        /// values do not flow across awaits and no context is captured per suspension. Set it to
+        /// <c>true</c> before any async Onity method starts to opt in to flow.
+        /// The setting is read at each suspension and applies process-wide.
+        /// </summary>
+        /// <remarks>
+        /// Known limitation of the opt-in flow: the synchronous prefix of an async method, which is the
+        /// code before its first suspension, runs in <c>Start</c> without a copy-on-write execution
+        /// context scope, so an <see cref="AsyncLocal{T}"/> value written there can leak to the caller.
+        /// A later release is planned to scope it.
+        /// </remarks>
+        public static bool FlowExecutionContext
+        {
+            get => OnityTaskSettings.s_flowExecutionContext;
+            set => Volatile.Write(ref OnityTaskSettings.s_flowExecutionContext, value);
+        }
+
+        /// <summary>
+        /// Maximum number of released runners kept per <c>async OnityTask</c> method, that is per
+        /// compiler-generated state machine type. A burst of more concurrent suspended calls of one
+        /// method than this allocates a runner for each extra call and lets it be collected
+        /// afterwards. Raise it before the burst to keep those runners; the memory is retained until
+        /// the domain reloads. Defaults to 128. Configure it before async methods start; a running
+        /// method may observe the previous value once.
+        /// </summary>
+        public static int RunnerPoolCapacity
+        {
+            get => OnityTaskSettings.s_runnerPoolCapacity;
+            set => Volatile.Write(ref OnityTaskSettings.s_runnerPoolCapacity, value < 0 ? 0 : value);
+        }
+
+        /// <summary>
+        /// Maximum number of released pooled sources kept per source type, such as explicit timing,
+        /// delay, predicate, operation, timeout, cancellation and composition sources. A burst above
+        /// this allocates a source for each extra operation and lets it be collected afterwards; the
+        /// retained memory lasts until the domain reloads. Defaults to 256. The equivalent of UniTask's
+        /// <c>TaskPool.SetMaxPoolSize</c>, which keeps every source by default.
+        /// </summary>
+        public static int SourcePoolCapacity
+        {
+            get => OnityTaskSettings.s_sourcePoolCapacity;
+            set => Volatile.Write(ref OnityTaskSettings.s_sourcePoolCapacity, value < 0 ? 0 : value);
+        }
+
+        /// <summary>
+        /// Initializes a task wrapper.
+        /// </summary>
+        /// <param name="task">Wrapped task.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public OnityTask(Task task)
+        {
+            m_state = task ?? throw new ArgumentNullException(nameof(task));
+            m_token = 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal OnityTask(IOnityTaskSource source)
+        {
+            m_state = source ?? throw new ArgumentNullException(nameof(source));
+            m_token = source.Version;
+        }
+
+        /// <summary>Binds a source whose current token the caller already holds.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal OnityTask(IOnityTaskSource source, int token)
+        {
+            m_state = source;
+            m_token = token;
+        }
+
+        /// <summary>
+        /// Completed Onity task.
+        /// </summary>
+        public static OnityTask Completed
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => CompletedTask;
+        }
+
+        /// <summary>
+        /// Creates a typed task completed with a result.
+        /// </summary>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="result">Result value.</param>
+        /// <returns>Completed typed task.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static OnityTask<T> FromResult<T>(T result)
+        {
+            return new OnityTask<T>(result);
+        }
+
+        /// <summary>
+        /// Completes when either input completes and returns the winner's argument index.
+        /// Both inputs are consumed; the loser continues running and is not canceled.
+        /// </summary>
+        /// <param name="first">Input at index zero.</param>
+        /// <param name="second">Input at index one.</param>
+        /// <returns>A single-consumer task with the first completed input's index.</returns>
+        /// <exception cref="ArgumentException">
+        /// Both inputs refer to the same single-consumer native operation.
+        /// </exception>
+        public static OnityTask<int> WhenAny(OnityTask first, OnityTask second)
+        {
+            if (first.m_state is IOnityTaskSource
+                && !(first.m_state is IOnityMultiConsumerTaskSource)
+                && ReferenceEquals(first.m_state, second.m_state)
+                && first.m_token == second.m_token)
+            {
+                throw new ArgumentException(
+                    "A single-consumer OnityTask cannot be passed to WhenAny twice.",
+                    nameof(second));
+            }
+
+            return new OnityTask<int>(new OnityWhenAnyTaskSource(first, second));
+        }
+
+        /// <summary>
+        /// Completes with the index of the first observed terminal input. Every input is observed;
+        /// losing operations continue running and are not canceled.
+        /// </summary>
+        /// <remarks>
+        /// Inputs are snapshotted and registered in order. Already terminal inputs favor the lowest
+        /// index; concurrent callbacks race by observation, not by an atomic completion-time snapshot.
+        /// Native publication can run on a producer worker, without an implicit main-thread hop.
+        /// A pending loser retains its observer. The returned native task is single-consumer.
+        /// </remarks>
+        /// <param name="tasks">Nonempty input array. Default and one-element inputs are supported.</param>
+        /// <returns>A single-consumer task with the winner index, or its failure/cancellation.</returns>
+        /// <exception cref="ArgumentNullException">The array is null.</exception>
+        /// <exception cref="ArgumentException">The array is empty or repeats a single-consumer source/token.</exception>
+        public static OnityTask<int> WhenAny(params OnityTask[] tasks)
+        {
+            if (tasks == null)
+            {
+                throw new ArgumentNullException(nameof(tasks));
+            }
+            if (tasks.Length == 0)
+            {
+                throw new ArgumentException("WhenAny requires at least one input.", nameof(tasks));
+            }
+
+            OnityWhenAnyArrayTaskSource source = OnityWhenAnyArrayTaskSource.Rent(tasks);
+            OnityTask<int> output = new OnityTask<int>(source);
+            source.Start();
+            return output;
+        }
+
+        /// <summary>
+        /// Completes with the first observed terminal input's index and result. Every input is
+        /// observed; losing operations continue running and are not canceled.
+        /// </summary>
+        /// <remarks>
+        /// Inputs are snapshotted and registered in order. Already terminal inputs favor the lowest
+        /// index; concurrent callbacks race by observation, not by an atomic completion-time snapshot.
+        /// Winning fault/cancellation status is preserved. Native publication can run on a producer
+        /// worker. A pending loser retains its observer. The returned native task is single-consumer.
+        /// </remarks>
+        /// <typeparam name="T">Shared input result type.</typeparam>
+        /// <param name="tasks">Nonempty input array. Default and one-element inputs are supported.</param>
+        /// <returns>A single-consumer task with the winner index/result, or its failure/cancellation.</returns>
+        /// <exception cref="ArgumentNullException">The array is null.</exception>
+        /// <exception cref="ArgumentException">The array is empty or repeats a single-consumer source/token.</exception>
+        public static OnityTask<(int winnerIndex, T result)> WhenAny<T>(params OnityTask<T>[] tasks)
+        {
+            if (tasks == null)
+            {
+                throw new ArgumentNullException(nameof(tasks));
+            }
+            if (tasks.Length == 0)
+            {
+                throw new ArgumentException("WhenAny requires at least one input.", nameof(tasks));
+            }
+
+            OnityWhenAnyArrayTaskSource<T> source = OnityWhenAnyArrayTaskSource<T>.Rent(tasks);
+            OnityTask<(int winnerIndex, T result)> output = new OnityTask<(int winnerIndex, T result)>(source);
+            source.Start();
+            return output;
+        }
+
+        internal bool TryGetWhenAnyIdentity(out OnityWhenAnyInputIdentity identity)
+        {
+            identity = new OnityWhenAnyInputIdentity(m_state, m_token);
+            return m_state is IOnityTaskSource && !(m_state is IOnityMultiConsumerTaskSource);
+        }
+
+        internal void RegisterWhenAnyObserver(Action callback)
+        {
+            if (m_state is Task task)
+            {
+                var awaiter = task.ConfigureAwait(false).GetAwaiter();
+                if (awaiter.IsCompleted)
+                {
+                    callback();
+                }
+                else
+                {
+                    awaiter.UnsafeOnCompleted(callback);
+                }
+                return;
+            }
+
+            OnityTaskAwaiter native = GetAwaiter();
+            if (native.IsCompleted)
+            {
+                callback();
+            }
+            else
+            {
+                native.UnsafeOnCompleted(callback);
+            }
+        }
+
+        internal OnityTaskSourceStatus ReadWhenAnyOutcome(out Exception fault, out CancellationToken cancellationToken)
+        {
+            fault = null;
+            cancellationToken = default;
+            if (m_state == null)
+            {
+                return OnityTaskSourceStatus.Succeeded;
+            }
+
+            if (m_state is OnityTaskCompletionSource<bool> completion)
+            {
+                return completion.ReadCompletedOutcome(
+                    out bool ignored, out fault, out cancellationToken);
+            }
+
+            OnityTaskSourceStatus status = m_state is IOnityTaskSource source
+                ? source.GetStatus(m_token)
+                : ((Task)m_state).IsCanceled ? OnityTaskSourceStatus.Canceled
+                : ((Task)m_state).IsFaulted ? OnityTaskSourceStatus.Faulted
+                : ((Task)m_state).IsCompleted ? OnityTaskSourceStatus.Succeeded : OnityTaskSourceStatus.Pending;
+            if (status == OnityTaskSourceStatus.Pending)
+            {
+                throw new InvalidOperationException("OnityTask is not completed.");
+            }
+
+            try
+            {
+                GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (status == OnityTaskSourceStatus.Canceled)
+                {
+                    cancellationToken = exception.CancellationToken;
+                }
+                else
+                {
+                    fault = exception;
+                }
+            }
+            catch (Exception exception)
+            {
+                fault = exception;
+            }
+
+            return status;
+        }
+
+        /// <summary>
+        /// True when the wrapped task completed.
+        /// </summary>
+        public bool IsCompleted => m_state == null
+            || (m_state is IOnityTaskSource source
+                ? source.GetStatus(m_token) != OnityTaskSourceStatus.Pending
+                : ((Task)m_state).IsCompleted);
+
+        /// <summary>
+        /// True when the wrapped task completed successfully.
+        /// </summary>
+        public bool IsCompletedSuccessfully =>
+            m_state == null
+            || (m_state is IOnityTaskSource source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Succeeded
+                : ((Task)m_state).IsCompletedSuccessfully);
+
+        /// <summary>
+        /// True when the wrapped task is canceled.
+        /// </summary>
+        public bool IsCanceled => m_state != null
+            && (m_state is IOnityTaskSource source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Canceled
+                : ((Task)m_state).IsCanceled);
+
+        /// <summary>
+        /// True when the wrapped task is faulted.
+        /// </summary>
+        public bool IsFaulted => m_state != null
+            && (m_state is IOnityTaskSource source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Faulted
+                : ((Task)m_state).IsFaulted);
+
+        /// <summary>
+        /// Wraps a task as an Onity task.
+        /// </summary>
+        /// <param name="task">Task to wrap.</param>
+        /// <returns>Onity task.</returns>
+        public static OnityTask FromTask(Task task)
+        {
+            return new OnityTask(task);
+        }
+
+        /// <summary>
+        /// Creates a canceled Onity task.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Canceled task.</returns>
+        public static OnityTask FromCanceled(CancellationToken cancellationToken)
+        {
+            return new OnityTask(Task.FromCanceled(cancellationToken));
+        }
+
+        /// <summary>
+        /// Creates a faulted Onity task.
+        /// </summary>
+        /// <param name="exception">Failure exception.</param>
+        /// <returns>Faulted task.</returns>
+        public static OnityTask FromException(Exception exception)
+        {
+            return new OnityTask(Task.FromException(exception));
+        }
+
+        /// <summary>
+        /// Returns the wrapped task for interop.
+        /// </summary>
+        /// <returns>Wrapped task.</returns>
+        public Task AsTask()
+        {
+            if (m_state == null)
+            {
+                return Task.CompletedTask;
+            }
+
+            return m_state is IOnityTaskSource source ? source.AsTask(m_token) : (Task)m_state;
+        }
+
+        /// <summary>
+        /// Shares a single-consumer native task with multiple pending or later awaiters.
+        /// The original native task is claimed by this call and must not be consumed again.
+        /// Already shareable and Task-backed tasks are returned without allocation.
+        /// </summary>
+        /// <returns>A task that retains the completion result for multiple consumers.</returns>
+        public OnityTask Preserve()
+        {
+            if (!(m_state is IOnityTaskSource source)
+                || m_state is IOnityMultiConsumerTaskSource)
+            {
+                return this;
+            }
+
+            OnityPreservedTaskSource preserved = new OnityPreservedTaskSource(source, m_token);
+            return preserved.Task;
+        }
+
+        /// <summary>
+        /// Returns the task awaiter.
+        /// </summary>
+        /// <returns>Task awaiter.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public OnityTaskAwaiter GetAwaiter()
+        {
+            return new OnityTaskAwaiter(m_state, m_token);
+        }
+
+        /// <summary>
+        /// Runs task without awaiting and routes exceptions to callback or Unity log.
+        /// A single-consumer native task is observed directly, without a .NET task bridge; while task
+        /// tracking is on it is also recorded as a native tracker row.
+        /// </summary>
+        /// <param name="exceptionHandler">Optional exception callback.</param>
+        public void Forget(Action<Exception> exceptionHandler = null)
+        {
+            // A stateless PlayerLoop wait has no consumer state to observe and is ended by its session.
+            if (m_state is OnityTaskCore core && core.IsStatelessWait)
+            {
+                return;
+            }
+
+            if (m_state is IOnityTaskSource source && !(m_state is IOnityMultiConsumerTaskSource))
+            {
+                OnityTaskForgetObserver.Observe(source, m_token, exceptionHandler);
+                return;
+            }
+
+            AsTask().Forget(exceptionHandler);
+        }
+
+        /// <summary>
+        /// Yields to the next drain of Onity's Update node, which may occur in this rendered frame; the
+        /// equivalent of UniTask's <c>UniTask.Yield()</c>. The awaitable holds no reference and rents
+        /// nothing: awaiting it queues the continuation directly. It may be awaited from any thread.
+        /// </summary>
+        /// <returns>An awaitable that converts implicitly to <see cref="OnityTask"/>.</returns>
+        /// <exception cref="InvalidOperationException">No Play/player session is accepting waits.</exception>
+        public static OnityYieldAwaitable Yield()
+        {
+            OnityTaskPlayerLoop.ValidateYield(OnityPlayerLoopTiming.Update);
+            return new OnityYieldAwaitable(OnityPlayerLoopTiming.Update);
+        }
+
+        /// <summary>
+        /// Yields to the next drain of the <paramref name="timing"/> node, which may occur in this
+        /// rendered frame; the equivalent of UniTask's <c>UniTask.Yield(PlayerLoopTiming)</c>. The awaitable
+        /// holds no reference and rents nothing, and it may be awaited from any thread. A timing other than
+        /// the eager three installs its node on first use.
+        /// </summary>
+        /// <param name="timing">Selected PlayerLoop timing.</param>
+        /// <returns>An awaitable that converts implicitly to <see cref="OnityTask"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timing"/> is not defined.</exception>
+        /// <exception cref="InvalidOperationException">No Play/player session is accepting waits.</exception>
+        public static OnityYieldAwaitable Yield(OnityPlayerLoopTiming timing)
+        {
+            OnityTaskPlayerLoop.ValidateYield(timing);
+            return new OnityYieldAwaitable(timing);
+        }
+
+        /// <summary>
+        /// Awaits the next drain of Onity's Update node with a cancellation token.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation published on Unity's main thread.</param>
+        /// <returns>Completion task; see <see cref="Yield(OnityPlayerLoopTiming, CancellationToken)"/>.</returns>
+        public static OnityTask Yield(CancellationToken cancellationToken)
+        {
+            return OnityTaskPlayerLoop.Schedule(OnityPlayerLoopTiming.Update, 0, true, cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits the next drain of Onity's Update node with a cancellation token.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="cancelImmediately">True to publish the cancellation on the canceling thread, which
+        /// then runs the continuation; false to publish it at the next Update drain.</param>
+        /// <returns>Completion task; see <see cref="Yield(OnityPlayerLoopTiming, CancellationToken)"/>.</returns>
+        public static OnityTask Yield(CancellationToken cancellationToken, bool cancelImmediately)
+        {
+            return OnityTaskPlayerLoop.Schedule(
+                OnityPlayerLoopTiming.Update, 0, true, cancellationToken, cancelImmediately);
+        }
+
+        /// <summary>
+        /// Awaits the next selected PlayerLoop drain, which may occur in this rendered frame.
+        /// </summary>
+        /// <param name="timing">Selected PlayerLoop phase.</param>
+        /// <param name="cancellationToken">Cancellation published on Unity's main thread.</param>
+        /// <returns>A single-consumer completion task. A token that cannot be canceled gives a stateless
+        /// task that rents nothing and that any number of consumers may await.</returns>
+        /// <remarks>Requires the main thread and active Play/player execution. Requests
+        /// created during a drain wait for its next occurrence. No same-frame completion
+        /// is promised from callers later than the selected node, including ECS Update.</remarks>
+        public static OnityTask Yield(
+            OnityPlayerLoopTiming timing = OnityPlayerLoopTiming.Update,
+            CancellationToken cancellationToken = default)
+        {
+            return OnityTaskPlayerLoop.Schedule(timing, 0, true, cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits the next selected PlayerLoop drain, which may occur in this rendered frame.
+        /// </summary>
+        /// <param name="timing">Selected PlayerLoop phase.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="cancelImmediately">True to publish the cancellation on the canceling thread, which
+        /// then runs the continuation; false to publish it at the next Update drain.</param>
+        /// <returns>Completion task; see <see cref="Yield(OnityPlayerLoopTiming, CancellationToken)"/>.</returns>
+        public static OnityTask Yield(
+            OnityPlayerLoopTiming timing, CancellationToken cancellationToken, bool cancelImmediately)
+        {
+            return OnityTaskPlayerLoop.Schedule(timing, 0, true, cancellationToken, cancelImmediately);
+        }
+
+        /// <summary>
+        /// Awaits the next drain of the <c>LastFixedUpdate</c> node, after the physics simulation of the
+        /// fixed step, like Unity's <c>WaitForFixedUpdate</c> instruction; the equivalent of UniTask's
+        /// <c>WaitForFixedUpdate()</c>. <see cref="NextFixedFrame"/> resumes earlier, right after the fixed
+        /// script callbacks.
+        /// </summary>
+        /// <returns>An awaitable that converts implicitly to <see cref="OnityTask"/>.</returns>
+        /// <exception cref="InvalidOperationException">No Play/player session is accepting waits.</exception>
+        public static OnityYieldAwaitable WaitForFixedUpdate()
+        {
+            return Yield(OnityPlayerLoopTiming.LastFixedUpdate);
+        }
+
+        /// <summary>
+        /// Awaits the next drain of the <c>LastFixedUpdate</c> node with a cancellation token; see
+        /// <see cref="WaitForFixedUpdate()"/>.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="cancelImmediately">True to publish the cancellation on the canceling thread.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask WaitForFixedUpdate(CancellationToken cancellationToken, bool cancelImmediately = false)
+        {
+            return OnityTaskPlayerLoop.Schedule(
+                OnityPlayerLoopTiming.LastFixedUpdate, 0, true, cancellationToken, cancelImmediately);
+        }
+
+        /// <summary>
+        /// Queues <paramref name="action"/> for the next drain of <paramref name="timing"/>; the equivalent
+        /// of UniTask's <c>UniTask.Post</c>. May be called from any thread; the action runs on Unity's main
+        /// thread, and an exception it throws is logged.
+        /// </summary>
+        /// <param name="action">Action to run.</param>
+        /// <param name="timing">Selected PlayerLoop timing.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is null.</exception>
+        /// <exception cref="InvalidOperationException">No Play/player session is accepting work.</exception>
+        public static void Post(Action action, OnityPlayerLoopTiming timing = OnityPlayerLoopTiming.Update)
+        {
+            OnityTaskPlayerLoop.AddContinuation(timing, action);
+        }
+
+        /// <summary>Awaits Unity's real rendering end-of-frame coroutine primitive.</summary>
+        /// <param name="cancellationToken">Cancellation published on the main thread,
+        /// including through Update while the rendering coroutine is stalled.</param>
+        /// <returns>A single-consumer completion task, or a pre-canceled task.</returns>
+        /// <remarks>Requires the main thread, active accepting Play/player execution and
+        /// a non-null graphics device. Editor batch mode is unsupported. These checks
+        /// precede pre-cancellation. Completion may occur in the registration frame;
+        /// requests created during its drain wait for a later drain. Editor Scene-view
+        /// switching can stall the Unity primitive. Cold host/coroutine creation allocates.</remarks>
+        /// <exception cref="InvalidOperationException">The thread/session is unavailable.</exception>
+        /// <exception cref="PlatformNotSupportedException">Rendering is unsupported.</exception>
+        public static OnityTask WaitForEndOfFrame(CancellationToken cancellationToken = default)
+        {
+            return OnityTaskPlayerLoop.ScheduleEndOfFrame(cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits Unity's rendering end of frame; the equivalent of UniTask's
+        /// <c>WaitForEndOfFrame(MonoBehaviour)</c>. Onity runs the wait on its own hidden host, so the
+        /// behaviour is only validated: disabling or destroying it does not stop the wait.
+        /// </summary>
+        /// <param name="coroutineRunner">Behaviour UniTask would run the coroutine on; must not be null.</param>
+        /// <returns>See <see cref="WaitForEndOfFrame(CancellationToken)"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="coroutineRunner"/> is null.</exception>
+        public static OnityTask WaitForEndOfFrame(MonoBehaviour coroutineRunner)
+        {
+            if (coroutineRunner == null)
+            {
+                throw new ArgumentNullException(nameof(coroutineRunner));
+            }
+
+            return OnityTaskPlayerLoop.ScheduleEndOfFrame(default);
+        }
+
+        /// <summary>
+        /// Awaits Unity's rendering end of frame with a cancellation token; see
+        /// <see cref="WaitForEndOfFrame(MonoBehaviour)"/>.
+        /// </summary>
+        /// <param name="coroutineRunner">Behaviour UniTask would run the coroutine on; must not be null.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="cancelImmediately">True to publish the cancellation on the canceling thread, which
+        /// then runs the continuation; false to publish it on Unity's main thread.</param>
+        /// <returns>See <see cref="WaitForEndOfFrame(CancellationToken)"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="coroutineRunner"/> is null.</exception>
+        public static OnityTask WaitForEndOfFrame(
+            MonoBehaviour coroutineRunner, CancellationToken cancellationToken, bool cancelImmediately = false)
+        {
+            if (coroutineRunner == null)
+            {
+                throw new ArgumentNullException(nameof(coroutineRunner));
+            }
+
+            return OnityTaskPlayerLoop.ScheduleEndOfFrame(cancellationToken, cancelImmediately);
+        }
+
+        /// <summary>
+        /// Awaits a later rendered frame at the selected PlayerLoop phase.
+        /// </summary>
+        /// <param name="timing">Selected PlayerLoop phase.</param>
+        /// <param name="cancellationToken">Cancellation published on Unity's main thread.</param>
+        /// <returns>A single-consumer completion task. A token that cannot be canceled gives a stateless
+        /// task that rents nothing and that any number of consumers may await.</returns>
+        /// <remarks>Requires the main thread and active Play/player execution.</remarks>
+        public static OnityTask NextFrame(
+            OnityPlayerLoopTiming timing, CancellationToken cancellationToken)
+        {
+            return OnityTaskPlayerLoop.Schedule(timing, 1, false, cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits the following rendered frame at Onity's Update node.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="cancelImmediately">True to publish the cancellation on the canceling thread, which
+        /// then runs the continuation (Play/player only); false behaves as
+        /// <see cref="NextFrame(CancellationToken)"/>.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask NextFrame(CancellationToken cancellationToken, bool cancelImmediately)
+        {
+            if (!cancelImmediately || !cancellationToken.CanBeCanceled)
+            {
+                return NextFrame(cancellationToken);
+            }
+
+            return OnityTaskPlayerLoop.Schedule(OnityPlayerLoopTiming.Update, 1, false, cancellationToken, true);
+        }
+
+        /// <summary>
+        /// Awaits a later rendered frame at the selected PlayerLoop phase; the equivalent of UniTask's
+        /// <c>NextFrame(PlayerLoopTiming, CancellationToken, bool)</c>. Without a cancelable token it is a
+        /// stateless task that rents nothing and that any number of consumers may await.
+        /// </summary>
+        /// <remarks>The token stays optional here and required in
+        /// <see cref="NextFrame(OnityPlayerLoopTiming, CancellationToken)"/>, so <c>NextFrame(default)</c>
+        /// keeps binding to <see cref="NextFrame(CancellationToken)"/>. Requires the main thread and active
+        /// Play/player execution.</remarks>
+        /// <param name="timing">Selected PlayerLoop phase.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="cancelImmediately">True to publish the cancellation on the canceling thread, which
+        /// then runs the continuation; false to publish it at the next Update drain.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask NextFrame(
+            OnityPlayerLoopTiming timing,
+            CancellationToken cancellationToken = default,
+            bool cancelImmediately = false)
+        {
+            return OnityTaskPlayerLoop.Schedule(timing, 1, false, cancellationToken, cancelImmediately);
+        }
+
+        /// <summary>
+        /// Awaits elapsed rendered frames at the selected PlayerLoop phase.
+        /// </summary>
+        /// <param name="frameCount">Number of future rendered frames; zero completes immediately.</param>
+        /// <param name="timing">Selected PlayerLoop phase.</param>
+        /// <param name="cancellationToken">Cancellation published on Unity's main thread.</param>
+        /// <returns>A single-consumer completion task, or an inline zero-frame result. A token that cannot
+        /// be canceled gives a stateless task that rents nothing and that any number of consumers may
+        /// await.</returns>
+        /// <remarks>Requires the main thread and active Play/player execution, including
+        /// pre-canceled and zero-frame calls. Multiple fixed ticks cannot shorten the wait.</remarks>
+        public static OnityTask DelayFrames(
+            int frameCount, OnityPlayerLoopTiming timing, CancellationToken cancellationToken)
+        {
+            return OnityTaskPlayerLoop.Schedule(timing, frameCount, false, cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits elapsed rendered frames; the equivalent of UniTask's <c>UniTask.DelayFrame</c>. Zero frames
+        /// waits for the next drain of the timing, as in UniTask, unlike <see cref="DelayFrames(int, CancellationToken)"/>.
+        /// </summary>
+        /// <param name="delayFrameCount">Number of future rendered frames.</param>
+        /// <param name="delayTiming">Selected PlayerLoop phase. The default, Onity's Update node, keeps the
+        /// paths of <see cref="DelayFrames(int, CancellationToken)"/> for a positive count, including Edit
+        /// Mode; other timings, zero frames and <paramref name="cancelImmediately"/> require the main thread
+        /// and active Play/player execution.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="cancelImmediately">True to publish the cancellation on the canceling thread, which
+        /// then runs the continuation.</param>
+        /// <returns>Completion task.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="delayFrameCount"/> is negative.</exception>
+        public static OnityTask DelayFrame(
+            int delayFrameCount,
+            OnityPlayerLoopTiming delayTiming = OnityPlayerLoopTiming.Update,
+            CancellationToken cancellationToken = default,
+            bool cancelImmediately = false)
+        {
+            if (delayFrameCount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delayFrameCount));
+            }
+
+            if (delayFrameCount == 0)
+            {
+                return OnityTaskPlayerLoop.Schedule(delayTiming, 0, true, cancellationToken, cancelImmediately);
+            }
+
+            if (delayTiming == OnityPlayerLoopTiming.Update && (!cancelImmediately || !cancellationToken.CanBeCanceled))
+            {
+                return DelayFrames(delayFrameCount, cancellationToken);
+            }
+
+            return OnityTaskPlayerLoop.Schedule(
+                delayTiming, delayFrameCount, false, cancellationToken, cancelImmediately);
+        }
+
+        /// <summary>
+        /// Awaits the following rendered frame, never the frame that schedules it. In Play it resumes at
+        /// Onity's Update node, after every MonoBehaviour <c>Update</c>.
+        /// </summary>
+        /// <returns>
+        /// In Play a stateless task: it allocates nothing, any number of consumers may await it, and
+        /// <c>Preserve()</c> returns it unchanged. Session exit cancels a pending wait. In Edit Mode the
+        /// legacy runner serves it.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static OnityTask NextFrame()
+        {
+            return OnityTaskPlayerLoop.CreateFrameWait(1);
+        }
+
+        /// <summary>
+        /// Awaits the following rendered frame, never the frame that schedules it. In Play it resumes at
+        /// Onity's Update node, after every MonoBehaviour <c>Update</c>.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation published on Unity's main thread. A token that
+        /// cannot be canceled gives the stateless task of <see cref="NextFrame()"/>.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask NextFrame(CancellationToken cancellationToken = default)
+        {
+            if (!cancellationToken.CanBeCanceled)
+            {
+                return OnityTaskPlayerLoop.CreateFrameWait(1);
+            }
+
+            return cancellationToken.IsCancellationRequested
+                ? FromCanceled(cancellationToken)
+                : OnityTaskPlayerLoop.CreateCancelableDefaultWait(OnityTaskLoopPhase.Update, 1, cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits the requested number of rendered frames. In Play it resumes at Onity's Update node.
+        /// </summary>
+        /// <param name="frameCount">Number of future frames to await. Zero completes immediately.</param>
+        /// <param name="cancellationToken">Cancellation published on Unity's main thread. A token that
+        /// cannot be canceled gives a stateless task that allocates nothing and may be awaited by any
+        /// number of consumers.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask DelayFrames(int frameCount, CancellationToken cancellationToken = default)
+        {
+            if (frameCount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(frameCount));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return FromCanceled(cancellationToken);
+            }
+
+            if (frameCount == 0)
+            {
+                return Completed;
+            }
+
+            return cancellationToken.CanBeCanceled
+                ? OnityTaskPlayerLoop.CreateCancelableDefaultWait(OnityTaskLoopPhase.Update, frameCount, cancellationToken)
+                : OnityTaskPlayerLoop.CreateFrameWait(frameCount);
+        }
+
+        /// <summary>
+        /// Awaits one fixed update: in Play the next drain of Onity's FixedUpdate node.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation published on Unity's main thread. A token that
+        /// cannot be canceled gives a stateless task.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask NextFixedFrame(CancellationToken cancellationToken = default)
+        {
+            if (!cancellationToken.CanBeCanceled)
+            {
+                return OnityTaskPlayerLoop.CreateNextDrainWait(OnityTaskLoopPhase.FixedUpdate);
+            }
+
+            return cancellationToken.IsCancellationRequested
+                ? FromCanceled(cancellationToken)
+                : OnityTaskPlayerLoop.CreateCancelableDefaultWait(OnityTaskLoopPhase.FixedUpdate, 1, cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits one late update: in Play the next drain of Onity's LateUpdate node.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation published on Unity's main thread. A token that
+        /// cannot be canceled gives a stateless task.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask NextLateFrame(CancellationToken cancellationToken = default)
+        {
+            if (!cancellationToken.CanBeCanceled)
+            {
+                return OnityTaskPlayerLoop.CreateNextDrainWait(OnityTaskLoopPhase.LateUpdate);
+            }
+
+            return cancellationToken.IsCancellationRequested
+                ? FromCanceled(cancellationToken)
+                : OnityTaskPlayerLoop.CreateCancelableDefaultWait(OnityTaskLoopPhase.LateUpdate, 1, cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits a scaled delay in seconds, starting no earlier than the next rendered frame in Play Mode.
+        /// </summary>
+        /// <param name="delaySeconds">Delay duration in seconds.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask Delay(float delaySeconds, CancellationToken cancellationToken = default)
+        {
+            return Delay(delaySeconds, false, cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits a delay in seconds, starting no earlier than the next rendered frame in Play Mode.
+        /// </summary>
+        /// <param name="delaySeconds">Delay duration in seconds.</param>
+        /// <param name="useUnscaledTime">Use unscaled time.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask Delay(
+            float delaySeconds,
+            bool useUnscaledTime,
+            CancellationToken cancellationToken = default)
+        {
+            if (delaySeconds < 0f)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delaySeconds));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return FromCanceled(cancellationToken);
+            }
+
+            if (delaySeconds <= 0f)
+            {
+                return Completed;
+            }
+
+            return new OnityTask(
+                OnityDelayTaskSource.Rent(delaySeconds, useUnscaledTime, cancellationToken));
+        }
+
+        /// <summary>
+        /// Awaits an unscaled delay in seconds, starting no earlier than the next rendered frame in Play Mode.
+        /// </summary>
+        /// <param name="delaySeconds">Delay duration in seconds.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask DelayUnscaled(float delaySeconds, CancellationToken cancellationToken = default)
+        {
+            return Delay(delaySeconds, true, cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits a delay using a time provider.
+        /// </summary>
+        /// <param name="delay">Delay duration.</param>
+        /// <param name="timeProvider">Optional time provider.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask Delay(
+            TimeSpan delay,
+            OnityTimeProvider timeProvider = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (delay < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delay));
+            }
+
+            if (timeProvider != null)
+            {
+                return FromTask(OnityAsync.DelayAsync(delay, timeProvider, cancellationToken));
+            }
+
+            double totalSeconds = delay.TotalSeconds;
+            if (totalSeconds > float.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delay));
+            }
+
+            return Delay((float)totalSeconds, false, cancellationToken);
+        }
+
+        /// <summary>
+        /// Awaits until predicate returns true.
+        /// </summary>
+        /// <param name="predicate">Predicate callback.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask WaitUntil(
+            Func<bool> predicate,
+            CancellationToken cancellationToken = default)
+        {
+            if (predicate == null)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return FromCanceled(cancellationToken);
+            }
+
+            return predicate()
+                ? Completed
+                : new OnityTask(OnityPredicateTaskSource.Rent(predicate, false, cancellationToken));
+        }
+
+        /// <summary>
+        /// Awaits while predicate remains true.
+        /// </summary>
+        /// <param name="predicate">Predicate callback.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask WaitWhile(
+            Func<bool> predicate,
+            CancellationToken cancellationToken = default)
+        {
+            if (predicate == null)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return FromCanceled(cancellationToken);
+            }
+
+            return predicate() == false
+                ? Completed
+                : new OnityTask(OnityPredicateTaskSource.Rent(predicate, true, cancellationToken));
+        }
+
+        /// <summary>
+        /// Returns an awaitable that resumes on Unity's main thread. Awaiting it on the main thread
+        /// completes synchronously without a frame delay, on a path designed not to allocate; awaiting
+        /// it on another thread resumes the continuation during the Update phase of a following frame.
+        /// </summary>
+        /// <remarks>
+        /// Cancellation is observed when the await completes: <c>GetResult</c> throws
+        /// <see cref="OperationCanceledException"/> with the token on the destination thread when the
+        /// token is canceled, including a token that was already canceled. Outside Play Mode the Editor
+        /// resumes queued continuations from its update loop while it is not compiling or importing
+        /// assets. Continuations queued in an earlier Play Mode session, or after the player started
+        /// quitting, are discarded.
+        /// </remarks>
+        /// <param name="cancellationToken">Cancellation token observed when the switch completes.</param>
+        /// <returns>Main-thread switch awaitable.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static OnityTaskThreadSwitch SwitchToMainThread(CancellationToken cancellationToken = default)
+        {
+            return new OnityTaskThreadSwitch(cancellationToken, OnityTaskMainThreadDispatcher.Session);
+        }
+
+        /// <summary>
+        /// Returns an awaitable that resumes on Unity's main thread at the next drain of
+        /// <paramref name="timing"/>; on the main thread it completes synchronously. The equivalent of
+        /// UniTask's <c>SwitchToMainThread(PlayerLoopTiming, CancellationToken)</c>.
+        /// </summary>
+        /// <param name="timing">PlayerLoop timing a worker resumes at.</param>
+        /// <param name="cancellationToken">Cancellation token observed when the switch completes.</param>
+        /// <returns>Timed main-thread switch awaitable.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timing"/> is not defined.</exception>
+        public static OnityTimingSwitch SwitchToMainThread(
+            OnityPlayerLoopTiming timing, CancellationToken cancellationToken = default)
+        {
+            if ((uint)timing > (uint)OnityPlayerLoopTiming.LastTimeUpdate)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timing));
+            }
+
+            return new OnityTimingSwitch(timing, cancellationToken);
+        }
+
+        /// <summary>
+        /// Returns a scope that resumes on Unity's main thread when it closes, through the queue of
+        /// <see cref="SwitchToMainThread(CancellationToken)"/> (Edit Mode included). Use it with
+        /// <c>await using</c> around code that switches to a worker; the equivalent of UniTask's
+        /// <c>ReturnToMainThread(CancellationToken)</c>.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token observed when the scope completes.</param>
+        /// <returns>Return scope.</returns>
+        public static OnityReturnToMainThread ReturnToMainThread(CancellationToken cancellationToken = default)
+        {
+            return new OnityReturnToMainThread(
+                OnityPlayerLoopTiming.Update, false, OnityTaskMainThreadDispatcher.Session, cancellationToken);
+        }
+
+        /// <summary>
+        /// Returns a scope that resumes on Unity's main thread at the next drain of <paramref name="timing"/>
+        /// when it closes (Play/player only). Use it with <c>await using</c>; the equivalent of UniTask's
+        /// <c>ReturnToMainThread(PlayerLoopTiming, CancellationToken)</c>.
+        /// </summary>
+        /// <param name="timing">PlayerLoop timing to resume at.</param>
+        /// <param name="cancellationToken">Cancellation token observed when the scope completes.</param>
+        /// <returns>Return scope.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timing"/> is not defined.</exception>
+        public static OnityReturnToMainThread ReturnToMainThread(
+            OnityPlayerLoopTiming timing, CancellationToken cancellationToken = default)
+        {
+            if ((uint)timing > (uint)OnityPlayerLoopTiming.LastTimeUpdate)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timing));
+            }
+
+            return new OnityReturnToMainThread(timing, true, OnityTaskPlayerLoop.s_epoch, cancellationToken);
+        }
+
+        /// <summary>
+        /// Returns an awaitable that always queues its continuation to the thread pool,
+        /// including when requested from a worker thread.
+        /// </summary>
+        /// <remarks>
+        /// Cancellation is observed on the worker when the await completes. The awaiter does not
+        /// capture execution context; async builders own context flow. Direct continuation
+        /// registration does not flow context. WebGL players do not support this operation.
+        /// </remarks>
+        /// <param name="cancellationToken">Cancellation token observed on the worker.</param>
+        /// <returns>Thread-pool switch awaitable.</returns>
+        /// <exception cref="PlatformNotSupportedException">Called in a WebGL player.</exception>
+        public static OnityTaskThreadPoolSwitch SwitchToThreadPool(CancellationToken cancellationToken = default)
+        {
+            OnityTaskThreadPoolDispatcher.ThrowIfUnsupported();
+            return new OnityTaskThreadPoolSwitch(cancellationToken);
+        }
+
+        /// <summary>
+        /// Runs synchronous work on the thread pool and optionally returns to Unity's main thread
+        /// before publishing completion, fault or cancellation.
+        /// </summary>
+        /// <remarks>
+        /// Pre-canceled work is not dispatched. Cancellation is checked before and after invocation
+        /// but cannot interrupt the delegate. A delegate exception takes precedence over cancellation.
+        /// Main-thread returns use the originating session and discard stale-session continuations.
+        /// An await of an already completed task may run inline on the consumer's thread.
+        /// </remarks>
+        /// <param name="action">Synchronous work. Do not access Unity objects from the worker.</param>
+        /// <param name="returnToMainThread">Return through the main-thread dispatcher after work.</param>
+        /// <param name="cancellationToken">Cancellation token observed before and after work.</param>
+        /// <returns>Task representing work and the optional return to the main thread.</returns>
+        /// <exception cref="ArgumentNullException">The action is null.</exception>
+        /// <exception cref="PlatformNotSupportedException">Called in a WebGL player.</exception>
+        public static OnityTask RunOnThreadPool(
+            Action action,
+            bool returnToMainThread = true,
+            CancellationToken cancellationToken = default)
+        {
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            OnityTaskThreadPoolDispatcher.ThrowIfUnsupported();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return FromCanceled(cancellationToken);
+            }
+
+            return OnityTaskThreadPoolDispatcher.Run(
+                action, returnToMainThread, cancellationToken, OnityTaskMainThreadDispatcher.Session);
+        }
+
+        /// <summary>
+        /// Runs synchronous work on the thread pool and optionally returns to Unity's main thread
+        /// before publishing its result, fault or cancellation.
+        /// </summary>
+        /// <remarks>
+        /// Pre-canceled work is not dispatched. Cancellation is checked before and after invocation
+        /// but cannot interrupt the delegate. A delegate exception takes precedence over cancellation.
+        /// Main-thread returns use the originating session and discard stale-session continuations.
+        /// An await of an already completed task may run inline on the consumer's thread.
+        /// </remarks>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="function">Synchronous work. Do not access Unity objects from the worker.</param>
+        /// <param name="returnToMainThread">Return through the main-thread dispatcher after work.</param>
+        /// <param name="cancellationToken">Cancellation token observed before and after work.</param>
+        /// <returns>Task containing the worker result after the optional main-thread return.</returns>
+        /// <exception cref="ArgumentNullException">The function is null.</exception>
+        /// <exception cref="PlatformNotSupportedException">Called in a WebGL player.</exception>
+        public static OnityTask<T> RunOnThreadPool<T>(
+            Func<T> function,
+            bool returnToMainThread = true,
+            CancellationToken cancellationToken = default)
+        {
+            if (function == null)
+            {
+                throw new ArgumentNullException(nameof(function));
+            }
+
+            OnityTaskThreadPoolDispatcher.ThrowIfUnsupported();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return OnityTask<T>.FromCanceled(cancellationToken);
+            }
+
+            return OnityTaskThreadPoolDispatcher.Run(
+                function, returnToMainThread, cancellationToken, OnityTaskMainThreadDispatcher.Session);
+        }
+
+        /// <summary>
+        /// Awaits a Unit observable.
+        /// </summary>
+        /// <param name="observable">Source observable.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask AwaitObservable(
+            IOnityObservable<Unit> observable,
+            CancellationToken cancellationToken = default)
+        {
+            return FromTask(OnityAsync.AwaitObservable(observable, cancellationToken));
+        }
+
+        /// <summary>
+        /// Awaits completion of all Onity tasks.
+        /// </summary>
+        /// <param name="tasks">Task list.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask WhenAll(params OnityTask[] tasks)
+        {
+            if (tasks == null)
+            {
+                throw new ArgumentNullException(nameof(tasks));
+            }
+
+            if (tasks.Length == 2)
+            {
+                return WhenAll(tasks[0], tasks[1]);
+            }
+
+            Task[] taskArray = new Task[tasks.Length];
+
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                taskArray[i] = tasks[i].AsTask();
+            }
+
+            return FromTask(OnityAsync.WhenAll(taskArray));
+        }
+
+        /// <summary>
+        /// Completes after both inputs complete. Already successful inputs are
+        /// consumed immediately without creating a .NET task bridge.
+        /// </summary>
+        /// <param name="first">First input task.</param>
+        /// <param name="second">Second input task.</param>
+        /// <returns>A task that completes after both inputs.</returns>
+        public static OnityTask WhenAll(OnityTask first, OnityTask second)
+        {
+            bool duplicateSingleConsumer =
+                ReferenceEquals(first.m_state, second.m_state)
+                && first.m_state is IOnityTaskSource
+                && !(first.m_state is IOnityMultiConsumerTaskSource);
+
+            if (duplicateSingleConsumer == false
+                && first.IsCompletedSuccessfully
+                && second.IsCompletedSuccessfully)
+            {
+                first.GetAwaiter().GetResult();
+                second.GetAwaiter().GetResult();
+                return Completed;
+            }
+
+            if (duplicateSingleConsumer == false
+                && first.IsPairCoordinatorEligible
+                && second.IsPairCoordinatorEligible
+                && (first.IsCompleted == false || second.IsCompleted == false))
+            {
+                TaskCompletionSource<bool> completion =
+                    OnityTaskCompletionSource<bool>.CreateTaskBridge();
+                OnityWhenAllPairCoordinator.Rent(first, second, completion).Start();
+                return FromTask(OnityTaskTracker.Track(
+                    (Task)completion.Task, "OnityAsync.WhenAll"));
+            }
+
+            return FromTask(OnityAsync.WhenAll(first.AsTask(), second.AsTask()));
+        }
+
+        /// <summary>
+        /// True for the default completed task, an untyped completion source without a .NET task
+        /// bridge, and any single-consumer native source such as a frame wait or a suspended async
+        /// method that no awaiter, bridge, or consumer has claimed yet. Task-backed, preserved, and
+        /// already claimed tasks keep the .NET composition path, whose <c>AsTask()</c> calls report
+        /// the conflict instead of stranding the coordinator.
+        /// </summary>
+        private bool IsPairCoordinatorEligible
+        {
+            get
+            {
+                if (m_state == null)
+                {
+                    return true;
+                }
+
+                if (m_state is OnityTaskCompletionSource completionSource)
+                {
+                    return !completionSource.HasTaskBridge;
+                }
+
+                if (m_state is OnityTaskSourceBase sourceBase)
+                {
+                    return !sourceBase.HasConsumer;
+                }
+
+                // Stateless PlayerLoop waits accept any number of observers.
+                if (m_state is OnityTaskCore core && core.IsStatelessWait)
+                {
+                    return true;
+                }
+
+                return m_state is IOnityTaskSource && !(m_state is IOnityMultiConsumerTaskSource);
+            }
+        }
+
+        internal OnityTaskSourceStatus ReadCompletedSourceOutcome(
+            out Exception fault,
+            out CancellationToken cancellationToken)
+        {
+            if (m_state == null)
+            {
+                fault = null;
+                cancellationToken = default;
+                return OnityTaskSourceStatus.Succeeded;
+            }
+
+            if (m_state is OnityTaskCompletionSource completionSource)
+            {
+                return completionSource.ReadCompletedOutcome(out fault, out cancellationToken);
+            }
+
+            // A single-consumer source is consumed here; reading its result observes the outcome
+            // and releases the source.
+            IOnityTaskSource source = (IOnityTaskSource)m_state;
+            OnityTaskSourceStatus status = source.GetStatus(m_token);
+            fault = null;
+            cancellationToken = default;
+            if (status == OnityTaskSourceStatus.Pending)
+            {
+                return status;
+            }
+
+            try
+            {
+                source.GetResult(m_token);
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (status == OnityTaskSourceStatus.Canceled)
+                {
+                    cancellationToken = exception.CancellationToken;
+                }
+                else
+                {
+                    fault = exception;
+                }
+            }
+            catch (Exception exception)
+            {
+                fault = exception;
+            }
+
+            return status;
+        }
+
+        /// <summary>
+        /// Awaits all typed Onity tasks and returns results in input order.
+        /// Eligible already successful inputs are consumed without .NET task bridges.
+        /// Each input task is consumed once.
+        /// </summary>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="tasks">Task list.</param>
+        /// <returns>Ordered task results.</returns>
+        public static OnityTask<T[]> WhenAll<T>(params OnityTask<T>[] tasks)
+        {
+            if (tasks == null)
+            {
+                throw new ArgumentNullException(nameof(tasks));
+            }
+
+            const int k_maxNativeDuplicateScanLength = 16;
+            bool allCompletedSuccessfully = true;
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                if (tasks[i].IsCompletedSuccessfully == false)
+                {
+                    allCompletedSuccessfully = false;
+                    break;
+                }
+            }
+
+            if (allCompletedSuccessfully)
+            {
+                for (int i = 0; i < tasks.Length && allCompletedSuccessfully; i++)
+                {
+                    if (tasks[i].HasSingleConsumerSource == false)
+                    {
+                        continue;
+                    }
+
+                    if (tasks.Length > k_maxNativeDuplicateScanLength)
+                    {
+                        allCompletedSuccessfully = false;
+                        break;
+                    }
+
+                    for (int j = i + 1; j < tasks.Length; j++)
+                    {
+                        if (tasks[i].SharesSingleConsumerSourceWith(tasks[j]))
+                        {
+                            allCompletedSuccessfully = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (allCompletedSuccessfully)
+            {
+                T[] results = tasks.Length == 0 ? Array.Empty<T>() : new T[tasks.Length];
+                for (int i = 0; i < tasks.Length; i++)
+                {
+                    results[i] = tasks[i].GetAwaiter().GetResult();
+                }
+
+                return OnityTask<T[]>.FromResult(results);
+            }
+
+            if (OnityWhenAllTypedCoordinator<T>.TryRent(tasks, out OnityWhenAllTypedCoordinator<T> coordinator))
+            {
+                Task<T[]> completion = coordinator.Start();
+                return OnityTask<T[]>.FromTask(OnityTaskTracker.Track(completion, "OnityAsync.WhenAll<T>"));
+            }
+
+            Task<T>[] taskArray = new Task<T>[tasks.Length];
+
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                taskArray[i] = tasks[i].AsTask();
+            }
+
+            return OnityTask<T[]>.FromTask(OnityAsync.WhenAll(taskArray));
+        }
+
+        /// <summary>
+        /// Loads a scene in single mode and awaits completion.
+        /// </summary>
+        /// <param name="sceneName">Scene name from Build Settings.</param>
+        /// <param name="onProgress">Optional normalized progress callback (0..1).</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask LoadScene(
+            string sceneName,
+            Action<float> onProgress = null,
+            CancellationToken cancellationToken = default)
+        {
+            return FromTask(OnitySceneLoader.LoadSingleAsync(sceneName, onProgress, cancellationToken));
+        }
+
+        /// <summary>
+        /// Loads a scene in single mode and awaits completion.
+        /// </summary>
+        /// <param name="sceneName">Scene name from Build Settings.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask LoadScene(
+            string sceneName,
+            CancellationToken cancellationToken)
+        {
+            return LoadScene(sceneName, null, cancellationToken);
+        }
+
+        /// <summary>
+        /// Loads a scene in additive mode and awaits completion.
+        /// </summary>
+        /// <param name="sceneName">Scene name from Build Settings.</param>
+        /// <param name="onProgress">Optional normalized progress callback (0..1).</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask LoadSceneAdditive(
+            string sceneName,
+            Action<float> onProgress = null,
+            CancellationToken cancellationToken = default)
+        {
+            return FromTask(OnitySceneLoader.LoadAdditiveAsync(sceneName, onProgress, cancellationToken));
+        }
+
+        /// <summary>
+        /// Loads a scene in additive mode and awaits completion.
+        /// </summary>
+        /// <param name="sceneName">Scene name from Build Settings.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask LoadSceneAdditive(
+            string sceneName,
+            CancellationToken cancellationToken)
+        {
+            return LoadSceneAdditive(sceneName, null, cancellationToken);
+        }
+
+        /// <summary>
+        /// Loads a scene and returns the underlying async operation.
+        /// </summary>
+        /// <param name="sceneName">Scene name from Build Settings.</param>
+        /// <param name="loadSceneMode">Load mode.</param>
+        /// <param name="activateOnLoad">Scene activation flag.</param>
+        /// <param name="onProgress">Optional normalized progress callback (0..1).</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Loaded operation task.</returns>
+        public static OnityTask<AsyncOperation> LoadSceneAsync(
+            string sceneName,
+            LoadSceneMode loadSceneMode = LoadSceneMode.Single,
+            bool activateOnLoad = true,
+            Action<float> onProgress = null,
+            CancellationToken cancellationToken = default)
+        {
+            return OnityTask<AsyncOperation>.FromTask(
+                OnitySceneLoader.LoadAsync(
+                    sceneName,
+                    loadSceneMode,
+                    activateOnLoad,
+                    onProgress,
+                    cancellationToken));
+        }
+
+        /// <summary>
+        /// Activates a prepared scene load operation.
+        /// </summary>
+        /// <param name="operation">Prepared scene load operation.</param>
+        /// <param name="onProgress">Optional normalized progress callback (0..1).</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask ActivateScene(
+            AsyncOperation operation,
+            Action<float> onProgress = null,
+            CancellationToken cancellationToken = default)
+        {
+            return FromTask(OnitySceneLoader.ActivateAsync(operation, onProgress, cancellationToken));
+        }
+
+        /// <summary>
+        /// Activates a prepared scene load operation.
+        /// </summary>
+        /// <param name="operation">Prepared scene load operation.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask ActivateScene(
+            AsyncOperation operation,
+            CancellationToken cancellationToken)
+        {
+            return ActivateScene(operation, null, cancellationToken);
+        }
+
+        /// <summary>
+        /// Unloads a scene and awaits completion.
+        /// </summary>
+        /// <param name="sceneName">Scene name from Build Settings.</param>
+        /// <param name="onProgress">Optional normalized progress callback (0..1).</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask UnloadScene(
+            string sceneName,
+            Action<float> onProgress = null,
+            CancellationToken cancellationToken = default)
+        {
+            return FromTask(OnitySceneLoader.UnloadAsync(sceneName, onProgress, cancellationToken));
+        }
+
+        /// <summary>
+        /// Unloads a scene and awaits completion.
+        /// </summary>
+        /// <param name="sceneName">Scene name from Build Settings.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask UnloadScene(
+            string sceneName,
+            CancellationToken cancellationToken)
+        {
+            return UnloadScene(sceneName, null, cancellationToken);
+        }
+
+        /// <summary>
+        /// Sends a Unity web request and returns the completed request.
+        /// </summary>
+        /// <param name="request">Request instance. Caller owns disposal.</param>
+        /// <param name="onProgress">Optional download progress callback (0..1).</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completed request task.</returns>
+        public static OnityTask<UnityWebRequest> Send(
+            UnityWebRequest request,
+            Action<float> onProgress = null,
+            CancellationToken cancellationToken = default)
+        {
+            return OnityTask<UnityWebRequest>.FromTask(
+                OnityTaskTracker.Track(
+                    SendInternalAsync(request, onProgress, cancellationToken),
+                    "OnityTask.Send"));
+        }
+
+        /// <summary>
+        /// Sends a Unity web request and returns the completed request.
+        /// </summary>
+        /// <param name="request">Request instance. Caller owns disposal.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completed request task.</returns>
+        public static OnityTask<UnityWebRequest> Send(
+            UnityWebRequest request,
+            CancellationToken cancellationToken)
+        {
+            return Send(request, null, cancellationToken);
+        }
+
+        /// <summary>
+        /// Sends a GET request and deserializes a JSON response.
+        /// </summary>
+        /// <typeparam name="TResponse">Response DTO type.</typeparam>
+        /// <param name="url">Request URL.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Response DTO task.</returns>
+        public static OnityTask<TResponse> GetJson<TResponse>(
+            string url,
+            CancellationToken cancellationToken = default)
+        {
+            return GetJson<TResponse>(url, null, cancellationToken);
+        }
+
+        /// <summary>
+        /// Sends a GET request and deserializes a JSON response.
+        /// </summary>
+        /// <typeparam name="TResponse">Response DTO type.</typeparam>
+        /// <param name="url">Request URL.</param>
+        /// <param name="onProgress">Optional download progress callback (0..1).</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Response DTO task.</returns>
+        public static OnityTask<TResponse> GetJson<TResponse>(
+            string url,
+            Action<float> onProgress,
+            CancellationToken cancellationToken = default)
+        {
+            return OnityTask<TResponse>.FromTask(
+                OnityTaskTracker.Track(
+                    GetJsonInternalAsync<TResponse>(url, onProgress, cancellationToken),
+                    "OnityTask.GetJson"));
+        }
+
+        /// <summary>
+        /// Sends a JSON POST request and deserializes a JSON response.
+        /// </summary>
+        /// <typeparam name="TRequest">Request DTO type.</typeparam>
+        /// <typeparam name="TResponse">Response DTO type.</typeparam>
+        /// <param name="url">Request URL.</param>
+        /// <param name="request">Request DTO.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Response DTO task.</returns>
+        public static OnityTask<TResponse> PostJson<TRequest, TResponse>(
+            string url,
+            TRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            return PostJson<TRequest, TResponse>(url, request, null, cancellationToken);
+        }
+
+        /// <summary>
+        /// Sends a JSON POST request and deserializes a JSON response.
+        /// </summary>
+        /// <typeparam name="TRequest">Request DTO type.</typeparam>
+        /// <typeparam name="TResponse">Response DTO type.</typeparam>
+        /// <param name="url">Request URL.</param>
+        /// <param name="request">Request DTO.</param>
+        /// <param name="onProgress">Optional download progress callback (0..1).</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Response DTO task.</returns>
+        public static OnityTask<TResponse> PostJson<TRequest, TResponse>(
+            string url,
+            TRequest request,
+            Action<float> onProgress,
+            CancellationToken cancellationToken = default)
+        {
+            return OnityTask<TResponse>.FromTask(
+                OnityTaskTracker.Track(
+                    PostJsonInternalAsync<TRequest, TResponse>(
+                        url,
+                        request,
+                        onProgress,
+                        cancellationToken),
+                    "OnityTask.PostJson"));
+        }
+
+        private static async Task<UnityWebRequest> SendInternalAsync(
+            UnityWebRequest request,
+            Action<float> onProgress,
+            CancellationToken cancellationToken)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            UnityWebRequestAsyncOperation operation = request.SendWebRequest();
+            CancellationTokenRegistration registration = default;
+
+            if (cancellationToken.CanBeCanceled)
+            {
+                registration = cancellationToken.Register(request.Abort);
+            }
+
+            try
+            {
+                onProgress?.Invoke(0f);
+
+                while (operation.isDone == false)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    onProgress?.Invoke(GetRequestProgress(request, operation));
+                    await Task.Yield();
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                onProgress?.Invoke(1f);
+
+                if (IsFailed(request))
+                {
+                    throw new OnityUnityWebRequestException(request);
+                }
+
+                return request;
+            }
+            finally
+            {
+                registration.Dispose();
+            }
+        }
+
+        private static async Task<TResponse> GetJsonInternalAsync<TResponse>(
+            string url,
+            Action<float> onProgress,
+            CancellationToken cancellationToken)
+        {
+            ValidateUrl(url);
+
+            using UnityWebRequest request = UnityWebRequest.Get(url);
+            request.SetRequestHeader("Accept", "application/json");
+
+            UnityWebRequest completedRequest = await SendInternalAsync(
+                request,
+                onProgress,
+                cancellationToken);
+
+            return DeserializeJson<TResponse>(completedRequest.downloadHandler?.text);
+        }
+
+        private static async Task<TResponse> PostJsonInternalAsync<TRequest, TResponse>(
+            string url,
+            TRequest requestDto,
+            Action<float> onProgress,
+            CancellationToken cancellationToken)
+        {
+            ValidateUrl(url);
+
+            string json = SerializeJson(requestDto);
+            byte[] payload = Encoding.UTF8.GetBytes(json);
+
+            using UnityWebRequest request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST)
+            {
+                uploadHandler = new UploadHandlerRaw(payload),
+                downloadHandler = new DownloadHandlerBuffer()
+            };
+
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.SetRequestHeader("Accept", "application/json");
+
+            UnityWebRequest completedRequest = await SendInternalAsync(
+                request,
+                onProgress,
+                cancellationToken);
+
+            return DeserializeJson<TResponse>(completedRequest.downloadHandler?.text);
+        }
+
+        private static string SerializeJson<T>(T value)
+        {
+            if (value == null)
+            {
+                return "{}";
+            }
+
+            return JsonUtility.ToJson(value);
+        }
+
+        private static T DeserializeJson<T>(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return default;
+            }
+
+            return JsonUtility.FromJson<T>(json);
+        }
+
+        private static void ValidateUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                throw new ArgumentException("URL cannot be empty.", nameof(url));
+            }
+        }
+
+        private static float GetRequestProgress(
+            UnityWebRequest request,
+            UnityWebRequestAsyncOperation operation)
+        {
+            if (request.downloadProgress >= 0f)
+            {
+                return Mathf.Clamp01(request.downloadProgress);
+            }
+
+            return Mathf.Clamp01(operation.progress);
+        }
+
+        private static bool IsFailed(UnityWebRequest request)
+        {
+            return request.result == UnityWebRequest.Result.ConnectionError
+                || request.result == UnityWebRequest.Result.ProtocolError
+                || request.result == UnityWebRequest.Result.DataProcessingError;
+        }
+    }
+
+    /// <summary>
+    /// Onity-owned awaitable facade for Unity gameplay async flows with a typed result.
+    /// Pooled Unity operations are single-consumer and must be awaited only once.
+    /// </summary>
+    /// <typeparam name="T">Result type.</typeparam>
+    [AsyncMethodBuilder(typeof(OnityTaskMethodBuilder<>))]
+    public readonly partial struct OnityTask<T>
+    {
+        private readonly object m_state;
+        private readonly T m_result;
+        private readonly int m_token;
+
+        /// <summary>
+        /// Initializes a typed task wrapper.
+        /// </summary>
+        /// <param name="task">Wrapped task.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public OnityTask(Task<T> task)
+        {
+            m_state = task ?? throw new ArgumentNullException(nameof(task));
+            m_result = default;
+            m_token = 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal OnityTask(IOnityTaskSource<T> source)
+        {
+            m_state = source ?? throw new ArgumentNullException(nameof(source));
+            m_result = default;
+            m_token = source.Version;
+        }
+
+        /// <summary>Binds a source whose current token the caller already holds.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal OnityTask(IOnityTaskSource<T> source, int token)
+        {
+            m_state = source;
+            m_result = default;
+            m_token = token;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal OnityTask(T result)
+        {
+            // initobj instead of a null reference store: IL2CPP emits no write barrier for it.
+            this = default;
+            m_result = result;
+        }
+
+        /// <summary>
+        /// True when the wrapped task completed.
+        /// </summary>
+        public bool IsCompleted => m_state == null
+            || (m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token) != OnityTaskSourceStatus.Pending
+                : ((Task<T>)m_state).IsCompleted);
+
+        /// <summary>
+        /// True when the wrapped task completed successfully.
+        /// </summary>
+        public bool IsCompletedSuccessfully =>
+            m_state == null
+            || (m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Succeeded
+                : ((Task<T>)m_state).IsCompletedSuccessfully);
+
+        /// <summary>
+        /// True when the wrapped task is canceled.
+        /// </summary>
+        public bool IsCanceled => m_state != null
+            && (m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Canceled
+                : ((Task<T>)m_state).IsCanceled);
+
+        /// <summary>
+        /// True when the wrapped task is faulted.
+        /// </summary>
+        public bool IsFaulted => m_state != null
+            && (m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Faulted
+                : ((Task<T>)m_state).IsFaulted);
+
+        /// <summary>
+        /// Wraps a typed task as an Onity task.
+        /// </summary>
+        /// <param name="task">Task to wrap.</param>
+        /// <returns>Onity task.</returns>
+        public static OnityTask<T> FromTask(Task<T> task)
+        {
+            return new OnityTask<T>(task);
+        }
+
+        /// <summary>
+        /// Creates a typed task completed with a result.
+        /// </summary>
+        /// <param name="result">Result value.</param>
+        /// <returns>Completed task.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static OnityTask<T> FromResult(T result)
+        {
+            return new OnityTask<T>(result);
+        }
+
+        /// <summary>
+        /// Creates a canceled typed Onity task.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Canceled task.</returns>
+        public static OnityTask<T> FromCanceled(CancellationToken cancellationToken)
+        {
+            return new OnityTask<T>(Task.FromCanceled<T>(cancellationToken));
+        }
+
+        /// <summary>
+        /// Creates a faulted typed Onity task.
+        /// </summary>
+        /// <param name="exception">Failure exception.</param>
+        /// <returns>Faulted task.</returns>
+        public static OnityTask<T> FromException(Exception exception)
+        {
+            return new OnityTask<T>(Task.FromException<T>(exception));
+        }
+
+        /// <summary>
+        /// Returns the wrapped task for interop.
+        /// </summary>
+        /// <returns>Wrapped task.</returns>
+        public Task<T> AsTask()
+        {
+            if (m_state == null)
+            {
+                return Task.FromResult(m_result);
+            }
+
+            return m_state is IOnityTaskSource<T> source ? source.AsTask(m_token) : (Task<T>)m_state;
+        }
+
+        /// <summary>
+        /// Shares a single-consumer native task with multiple pending or later awaiters.
+        /// The original native task is claimed by this call and must not be consumed again.
+        /// Already shareable and Task-backed tasks are returned without allocation.
+        /// </summary>
+        /// <returns>A task that retains the completion result for multiple consumers.</returns>
+        public OnityTask<T> Preserve()
+        {
+            if (!(m_state is IOnityTaskSource<T> source)
+                || m_state is IOnityMultiConsumerTaskSource)
+            {
+                return this;
+            }
+
+            OnityPreservedTaskSource<T> preserved =
+                new OnityPreservedTaskSource<T>(source, m_token);
+            return preserved.Task;
+        }
+
+        internal bool SharesSingleConsumerSourceWith(OnityTask<T> other)
+        {
+            return HasSingleConsumerSource
+                && ReferenceEquals(m_state, other.m_state)
+                && m_token == other.m_token;
+        }
+
+        internal bool HasSingleConsumerSource =>
+            m_state is IOnityTaskSource<T>
+            && !(m_state is IOnityMultiConsumerTaskSource);
+
+        internal bool TryGetWhenAnyIdentity(out OnityWhenAnyInputIdentity identity)
+        {
+            identity = new OnityWhenAnyInputIdentity(m_state, m_token);
+            return HasSingleConsumerSource;
+        }
+
+        internal void RegisterWhenAnyObserver(Action callback)
+        {
+            if (m_state is Task<T> task)
+            {
+                var awaiter = task.ConfigureAwait(false).GetAwaiter();
+                if (awaiter.IsCompleted)
+                {
+                    callback();
+                }
+                else
+                {
+                    awaiter.UnsafeOnCompleted(callback);
+                }
+                return;
+            }
+
+            OnityTaskAwaiter<T> native = GetAwaiter();
+            if (native.IsCompleted)
+            {
+                callback();
+            }
+            else
+            {
+                native.UnsafeOnCompleted(callback);
+            }
+        }
+
+        internal OnityTaskSourceStatus ReadWhenAnyOutcome(
+            out T result, out Exception fault, out CancellationToken cancellationToken)
+        {
+            result = default;
+            fault = null;
+            cancellationToken = default;
+            if (m_state == null)
+            {
+                result = m_result;
+                return OnityTaskSourceStatus.Succeeded;
+            }
+
+            if (m_state is OnityTaskCompletionSource<T> completion)
+            {
+                return completion.ReadCompletedOutcome(out result, out fault, out cancellationToken);
+            }
+
+            OnityTaskSourceStatus status = m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token)
+                : ((Task<T>)m_state).IsCanceled ? OnityTaskSourceStatus.Canceled
+                : ((Task<T>)m_state).IsFaulted ? OnityTaskSourceStatus.Faulted
+                : ((Task<T>)m_state).IsCompleted ? OnityTaskSourceStatus.Succeeded : OnityTaskSourceStatus.Pending;
+            if (status == OnityTaskSourceStatus.Pending)
+            {
+                throw new InvalidOperationException("OnityTask is not completed.");
+            }
+
+            try
+            {
+                result = GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (status == OnityTaskSourceStatus.Canceled)
+                {
+                    cancellationToken = exception.CancellationToken;
+                }
+                else
+                {
+                    fault = exception;
+                }
+            }
+            catch (Exception exception)
+            {
+                fault = exception;
+            }
+
+            return status;
+        }
+
+        internal bool IsTypedCoordinatorEligible => m_state == null
+            || (m_state.GetType() == typeof(OnityTaskCompletionSource<T>)
+                && !((OnityTaskCompletionSource<T>)m_state).HasTaskBridge);
+
+        internal bool SharesTypedCoordinatorSourceWith(OnityTask<T> other)
+        {
+            return m_state != null && ReferenceEquals(m_state, other.m_state);
+        }
+
+        internal OnityTaskSourceStatus ReadTypedCoordinatorOutcome(
+            out T result,
+            out Exception fault,
+            out CancellationToken cancellationToken)
+        {
+            if (m_state == null)
+            {
+                result = m_result;
+                fault = null;
+                cancellationToken = default;
+                return OnityTaskSourceStatus.Succeeded;
+            }
+
+            return ((OnityTaskCompletionSource<T>)m_state).ReadCompletedOutcome(
+                out result, out fault, out cancellationToken);
+        }
+
+        /// <summary>
+        /// Returns the task awaiter.
+        /// </summary>
+        /// <returns>Task awaiter.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public OnityTaskAwaiter<T> GetAwaiter()
+        {
+            return new OnityTaskAwaiter<T>(m_state, m_result, m_token);
+        }
+
+        /// <summary>
+        /// Untyped view of this task. It shares the source and token instead of consuming the task, so
+        /// it allocates nothing; awaiting either the typed task or the view consumes a single-consumer
+        /// source once, as with UniTask's <c>AsUniTask()</c>.
+        /// </summary>
+        /// <summary>
+        /// Views a typed task as an untyped one without consuming it and without allocating; the
+        /// equivalent of UniTask's implicit <c>UniTask&lt;T&gt;</c> to <c>UniTask</c> conversion. The view
+        /// shares the typed task's source and token, so awaiting either one consumes a single-consumer
+        /// source once; a completed result converts to <see cref="OnityTask.CompletedTask"/>.
+        /// </summary>
+        /// <param name="task">Typed task.</param>
+        public static implicit operator OnityTask(OnityTask<T> task)
+        {
+            return task.AsUntypedView();
+        }
+
+        internal OnityTask AsUntypedView()
+        {
+            object state = m_state;
+            if (state == null)
+            {
+                return OnityTask.CompletedTask;
+            }
+
+            if (state is OnityTaskCore core)
+            {
+                return new OnityTask(core, m_token);
+            }
+
+            if (state is IOnityTaskSource source)
+            {
+                return new OnityTask(source, m_token);
+            }
+
+            return new OnityTask((Task)state);
+        }
+
+        /// <summary>
+        /// Runs task without awaiting and routes exceptions to callback or Unity log.
+        /// A single-consumer native task is observed directly, without a .NET task bridge; while task
+        /// tracking is on it is also recorded as a native tracker row.
+        /// </summary>
+        /// <param name="exceptionHandler">Optional exception callback.</param>
+        public void Forget(Action<Exception> exceptionHandler = null)
+        {
+            if (m_state is IOnityTaskSource<T> source && !(m_state is IOnityMultiConsumerTaskSource))
+            {
+                OnityTaskForgetObserver<T>.Observe(source, m_token, exceptionHandler);
+                return;
+            }
+
+            AsTask().Forget(exceptionHandler);
+        }
+    }
+
+    internal sealed class OnityWhenAllPairCoordinator
+    {
+        private static readonly Stack<OnityWhenAllPairCoordinator> s_pool =
+            new Stack<OnityWhenAllPairCoordinator>(32);
+
+        private readonly Action m_completeFirst;
+        private readonly Action m_completeSecond;
+
+        private OnityTask m_first;
+        private OnityTask m_second;
+        private TaskCompletionSource<bool> m_completion;
+        private Exception m_firstFault;
+        private Exception m_secondFault;
+        private CancellationToken m_firstCancellationToken;
+        private CancellationToken m_secondCancellationToken;
+        private bool m_firstCanceled;
+        private bool m_secondCanceled;
+        private bool m_registrationPinned;
+        private bool m_returned;
+        private int m_remaining;
+        private int m_activeCallbacks;
+
+        private OnityWhenAllPairCoordinator()
+        {
+            m_completeFirst = CompleteFirst;
+            m_completeSecond = CompleteSecond;
+        }
+
+        public static OnityWhenAllPairCoordinator Rent(
+            OnityTask first,
+            OnityTask second,
+            TaskCompletionSource<bool> completion)
+        {
+            OnityWhenAllPairCoordinator coordinator;
+            lock (s_pool)
+            {
+                coordinator = s_pool.Count == 0
+                    ? new OnityWhenAllPairCoordinator()
+                    : s_pool.Pop();
+            }
+
+            lock (coordinator)
+            {
+                coordinator.m_first = first;
+                coordinator.m_second = second;
+                coordinator.m_completion = completion;
+                coordinator.m_registrationPinned = true;
+                coordinator.m_returned = false;
+                coordinator.m_remaining = 2;
+                coordinator.m_activeCallbacks = 0;
+            }
+
+            return coordinator;
+        }
+
+        public void Start()
+        {
+            int registered = 0;
+            Exception registrationFailure = null;
+            try
+            {
+                Register(m_first, m_completeFirst);
+                registered = 1;
+                Register(m_second, m_completeSecond);
+                registered = 2;
+            }
+            catch (Exception exception)
+            {
+                registrationFailure = exception;
+                throw;
+            }
+            finally
+            {
+                TaskCompletionSource<bool> failedCompletion = null;
+                lock (this)
+                {
+                    m_registrationPinned = false;
+                    if (registered < 2)
+                    {
+                        // An input whose registration threw never calls back. Record the failure
+                        // for it so the caller's exception also settles the tracked completion
+                        // and the coordinator returns to the pool once the other input reports.
+                        if (registered == 0)
+                        {
+                            m_firstFault = registrationFailure;
+                            m_remaining--;
+                        }
+
+                        m_secondFault = registrationFailure;
+                        m_remaining--;
+                        if (m_remaining == 0)
+                        {
+                            failedCompletion = m_completion;
+                        }
+                    }
+                }
+
+                if (failedCompletion != null)
+                {
+                    failedCompletion.TrySetException(registrationFailure);
+                }
+
+                lock (this)
+                {
+                    ReturnIfReady();
+                }
+            }
+        }
+
+        private static void Register(OnityTask task, Action continuation)
+        {
+            OnityTaskAwaiter awaiter = task.GetAwaiter();
+            if (awaiter.IsCompleted)
+            {
+                continuation();
+                return;
+            }
+
+            awaiter.UnsafeOnCompleted(continuation);
+        }
+
+        private void CompleteFirst()
+        {
+            CompleteInput(true);
+        }
+
+        private void CompleteSecond()
+        {
+            CompleteInput(false);
+        }
+
+        private void CompleteInput(bool isFirst)
+        {
+            OnityTask input;
+            lock (this)
+            {
+                m_activeCallbacks++;
+                input = isFirst ? m_first : m_second;
+            }
+
+            try
+            {
+                Exception fault;
+                CancellationToken cancellationToken;
+                OnityTaskSourceStatus status;
+                try
+                {
+                    status = input.ReadCompletedSourceOutcome(out fault, out cancellationToken);
+                    if (status == OnityTaskSourceStatus.Pending)
+                    {
+                        fault = new InvalidOperationException("OnityTask is not completed.");
+                    }
+                }
+                catch (Exception exception)
+                {
+                    // A single-consumer input consumed elsewhere between its completion and this
+                    // callback rejects its token; report that instead of leaving the pair pending.
+                    status = OnityTaskSourceStatus.Faulted;
+                    fault = exception;
+                    cancellationToken = default;
+                }
+
+                bool canceled = status == OnityTaskSourceStatus.Canceled;
+
+                TaskCompletionSource<bool> completion = null;
+                Exception firstFault = null;
+                Exception secondFault = null;
+                bool firstCanceled = false;
+                bool secondCanceled = false;
+                CancellationToken firstCancellationToken = default;
+                CancellationToken secondCancellationToken = default;
+
+                lock (this)
+                {
+                    if (isFirst)
+                    {
+                        m_firstFault = fault;
+                        m_firstCanceled = canceled;
+                        m_firstCancellationToken = cancellationToken;
+                    }
+                    else
+                    {
+                        m_secondFault = fault;
+                        m_secondCanceled = canceled;
+                        m_secondCancellationToken = cancellationToken;
+                    }
+
+                    if (--m_remaining == 0)
+                    {
+                        completion = m_completion;
+                        firstFault = m_firstFault;
+                        secondFault = m_secondFault;
+                        firstCanceled = m_firstCanceled;
+                        secondCanceled = m_secondCanceled;
+                        firstCancellationToken = m_firstCancellationToken;
+                        secondCancellationToken = m_secondCancellationToken;
+                    }
+                }
+
+                if (completion != null)
+                {
+                    if (firstFault != null && secondFault != null)
+                    {
+                        completion.TrySetException(new[] { firstFault, secondFault });
+                    }
+                    else if (firstFault != null || secondFault != null)
+                    {
+                        completion.TrySetException(firstFault ?? secondFault);
+                    }
+                    else if (firstCanceled || secondCanceled)
+                    {
+                        completion.TrySetCanceled(firstCanceled
+                            ? firstCancellationToken
+                            : secondCancellationToken);
+                    }
+                    else
+                    {
+                        completion.TrySetResult(true);
+                    }
+                }
+            }
+            finally
+            {
+                lock (this)
+                {
+                    m_activeCallbacks--;
+                    ReturnIfReady();
+                }
+            }
+        }
+
+        private void ReturnIfReady()
+        {
+            // Both callers hold this lock until the pool push is complete.
+            if (m_returned || m_registrationPinned
+                || m_remaining != 0 || m_activeCallbacks != 0)
+            {
+                return;
+            }
+
+            m_returned = true;
+            m_first = default;
+            m_second = default;
+            m_completion = null;
+            m_firstFault = null;
+            m_secondFault = null;
+            m_firstCancellationToken = default;
+            m_secondCancellationToken = default;
+            m_firstCanceled = false;
+            m_secondCanceled = false;
+
+            lock (s_pool)
+            {
+                if (s_pool.Count < OnityTaskSettings.s_sourcePoolCapacity)
+                {
+                    s_pool.Push(this);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Awaiter for <see cref="OnityTask"/>.
+    /// </summary>
+    [Il2CppSetOption(Option.NullChecks, false)]
+    public readonly struct OnityTaskAwaiter : ICriticalNotifyCompletion
+    {
+        private readonly object m_state;
+        private readonly int m_token;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal OnityTaskAwaiter(object state, int token)
+        {
+            // initobj plus a conditional store: awaiting a completed task performs no reference store,
+            // so neither IL2CPP nor Mono's incremental GC pays a write barrier on that path.
+            this = default;
+            if (state != null)
+            {
+                m_state = state;
+                m_token = token;
+            }
+        }
+
+        /// <summary>
+        /// True when the awaited operation completed.
+        /// </summary>
+        public bool IsCompleted
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                object state = m_state;
+                if (state == null)
+                {
+                    return true;
+                }
+
+                // Native sources and stateless waits: one class test and one virtual call.
+                if (state is OnityTaskCore core)
+                {
+                    return core.GetCoreStatus(m_token) != OnityTaskSourceStatus.Pending;
+                }
+
+                return IsCompletedSlow(state, m_token);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool IsCompletedSlow(object state, int token)
+        {
+            return state is IOnityTaskSource source
+                ? source.GetStatus(token) != OnityTaskSourceStatus.Pending
+                : ((Task)state).IsCompleted;
+        }
+
+        internal bool IsCanceled => m_state != null
+            && (m_state is IOnityTaskSource source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Canceled
+                : ((Task)m_state).IsCanceled);
+
+        /// <summary>
+        /// Completes the await and throws if the operation failed or was canceled.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void GetResult()
+        {
+            object state = m_state;
+            if (state == null)
+            {
+                return;
+            }
+
+            if (state is OnityTaskCore core)
+            {
+                core.ConsumeCore(m_token);
+                return;
+            }
+
+            GetResultSlow(state, m_token);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void GetResultSlow(object state, int token)
+        {
+            if (state is IOnityTaskSource source)
+            {
+                source.GetResult(token);
+                return;
+            }
+
+            ((Task)state).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Registers a continuation.
+        /// </summary>
+        /// <param name="continuation">Continuation callback.</param>
+        public void OnCompleted(Action continuation)
+        {
+            object state = m_state;
+            if (state == null)
+            {
+                continuation?.Invoke();
+                return;
+            }
+
+            if (continuation == null)
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
+
+            if (state is OnityTaskCore core)
+            {
+                core.OnCoreCompleted(continuation, m_token);
+                return;
+            }
+
+            if (state is IOnityTaskSource source)
+            {
+                source.OnCompleted(continuation, m_token);
+                return;
+            }
+
+            ((Task)state).GetAwaiter().OnCompleted(continuation);
+        }
+
+        /// <summary>
+        /// Registers a continuation without flowing execution context.
+        /// </summary>
+        /// <param name="continuation">Continuation callback.</param>
+        public void UnsafeOnCompleted(Action continuation)
+        {
+            object state = m_state;
+            if (state == null)
+            {
+                continuation?.Invoke();
+                return;
+            }
+
+            if (continuation == null)
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
+
+            if (state is OnityTaskCore core)
+            {
+                core.OnCoreCompleted(continuation, m_token);
+                return;
+            }
+
+            UnsafeOnCompletedSlow(state, m_token, continuation);
+        }
+
+        /// <summary>
+        /// Registers a continuation that receives <paramref name="state"/>, without flowing execution
+        /// context; the equivalent of UniTask's <c>Awaiter.SourceOnCompleted</c>. It allocates a small
+        /// wrapper; the compiler-facing <see cref="UnsafeOnCompleted"/> does not.
+        /// </summary>
+        /// <param name="continuation">Continuation callback.</param>
+        /// <param name="state">State passed to the continuation.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="continuation"/> is null.</exception>
+        public void SourceOnCompleted(Action<object> continuation, object state)
+        {
+            if (continuation == null)
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
+
+            UnsafeOnCompleted(new OnityStateContinuation(continuation, state).Invoke);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void UnsafeOnCompletedSlow(object state, int token, Action continuation)
+        {
+            if (state is IOnityTaskSource source)
+            {
+                source.OnCompleted(continuation, token);
+                return;
+            }
+
+            ((Task)state).GetAwaiter().UnsafeOnCompleted(continuation);
+        }
+    }
+
+    /// <summary>Pairs a state continuation with its state for <c>SourceOnCompleted</c>.</summary>
+    internal sealed class OnityStateContinuation
+    {
+        private readonly Action<object> m_continuation;
+        private readonly object m_state;
+
+        internal OnityStateContinuation(Action<object> continuation, object state)
+        {
+            m_continuation = continuation;
+            m_state = state;
+        }
+
+        internal void Invoke()
+        {
+            m_continuation(m_state);
+        }
+    }
+
+    /// <summary>
+    /// Awaiter for <see cref="OnityTask{T}"/>.
+    /// </summary>
+    /// <typeparam name="T">Result type.</typeparam>
+    [Il2CppSetOption(Option.NullChecks, false)]
+    public readonly struct OnityTaskAwaiter<T> : ICriticalNotifyCompletion
+    {
+        private readonly object m_state;
+        private readonly T m_result;
+        private readonly int m_token;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal OnityTaskAwaiter(
+            object state,
+            T result,
+            int token)
+        {
+            // initobj plus conditional stores: a completed task stores only its inline result.
+            this = default;
+            if (state != null)
+            {
+                m_state = state;
+                m_token = token;
+            }
+            else
+            {
+                m_result = result;
+            }
+        }
+
+        /// <summary>
+        /// True when the awaited operation completed.
+        /// </summary>
+        public bool IsCompleted
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                object state = m_state;
+                if (state == null)
+                {
+                    return true;
+                }
+
+                // Pooled typed sources and runners: one class test and a non-virtual call.
+                if (state is OnityTaskSourceBase<T> source)
+                {
+                    return source.GetStatus(m_token) != OnityTaskSourceStatus.Pending;
+                }
+
+                return IsCompletedSlow(state, m_token);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool IsCompletedSlow(object state, int token)
+        {
+            return state is IOnityTaskSource<T> source
+                ? source.GetStatus(token) != OnityTaskSourceStatus.Pending
+                : ((Task<T>)state).IsCompleted;
+        }
+
+        internal bool IsCanceled => m_state != null
+            && (m_state is IOnityTaskSource<T> source
+                ? source.GetStatus(m_token) == OnityTaskSourceStatus.Canceled
+                : ((Task<T>)m_state).IsCanceled);
+
+        /// <summary>
+        /// Completes the await and returns the result.
+        /// </summary>
+        /// <returns>Awaited result.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T GetResult()
+        {
+            object state = m_state;
+            if (state == null)
+            {
+                return m_result;
+            }
+
+            if (state is OnityTaskSourceBase<T> source)
+            {
+                return source.GetResult(m_token);
+            }
+
+            return GetResultSlow(state, m_token);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static T GetResultSlow(object state, int token)
+        {
+            if (state is IOnityTaskSource<T> source)
+            {
+                return source.GetResult(token);
+            }
+
+            return ((Task<T>)state).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Registers a continuation.
+        /// </summary>
+        /// <param name="continuation">Continuation callback.</param>
+        public void OnCompleted(Action continuation)
+        {
+            object state = m_state;
+            if (state == null)
+            {
+                continuation?.Invoke();
+                return;
+            }
+
+            if (continuation == null)
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
+
+            if (state is OnityTaskSourceBase<T> native)
+            {
+                native.OnCompleted(continuation, m_token);
+                return;
+            }
+
+            if (state is IOnityTaskSource<T> source)
+            {
+                source.OnCompleted(continuation, m_token);
+                return;
+            }
+
+            ((Task<T>)state).GetAwaiter().OnCompleted(continuation);
+        }
+
+        /// <summary>
+        /// Registers a continuation without flowing execution context.
+        /// </summary>
+        /// <param name="continuation">Continuation callback.</param>
+        public void UnsafeOnCompleted(Action continuation)
+        {
+            object state = m_state;
+            if (state == null)
+            {
+                continuation?.Invoke();
+                return;
+            }
+
+            if (continuation == null)
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
+
+            if (state is OnityTaskSourceBase<T> native)
+            {
+                native.OnCompleted(continuation, m_token);
+                return;
+            }
+
+            UnsafeOnCompletedSlow(state, m_token, continuation);
+        }
+
+        /// <summary>
+        /// Registers a continuation that receives <paramref name="state"/>, without flowing execution
+        /// context; the equivalent of UniTask's <c>Awaiter.SourceOnCompleted</c>. It allocates a small
+        /// wrapper; the compiler-facing <see cref="UnsafeOnCompleted"/> does not.
+        /// </summary>
+        /// <param name="continuation">Continuation callback.</param>
+        /// <param name="state">State passed to the continuation.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="continuation"/> is null.</exception>
+        public void SourceOnCompleted(Action<object> continuation, object state)
+        {
+            if (continuation == null)
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
+
+            UnsafeOnCompleted(new OnityStateContinuation(continuation, state).Invoke);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void UnsafeOnCompletedSlow(object state, int token, Action continuation)
+        {
+            if (state is IOnityTaskSource<T> source)
+            {
+                source.OnCompleted(continuation, token);
+                return;
+            }
+
+            ((Task<T>)state).GetAwaiter().UnsafeOnCompleted(continuation);
+        }
+    }
+
+    internal enum OnityTaskSourceStatus
+    {
+        Pending,
+        Succeeded,
+        Canceled,
+        Faulted
+    }
+
+    internal enum OnityTaskLoopPhase
+    {
+        Update,
+        FixedUpdate,
+        LateUpdate
+    }
+
+    internal interface IOnityTaskSource
+    {
+        int Version { get; }
+
+        OnityTaskSourceStatus GetStatus(int token);
+
+        Task AsTask(int token);
+
+        void OnCompleted(Action continuation, int token);
+
+        void GetResult(int token);
+    }
+
+    internal interface IOnityTaskSource<T>
+    {
+        int Version { get; }
+
+        OnityTaskSourceStatus GetStatus(int token);
+
+        Task<T> AsTask(int token);
+
+        void OnCompleted(Action continuation, int token);
+
+        T GetResult(int token);
+    }
+
+    internal interface IOnityPreservedTaskContinuation
+    {
+        void Complete();
+    }
+
+    internal interface IOnityPreservedTaskSource
+    {
+        void OnCompleted(IOnityPreservedTaskContinuation continuation, int token);
+    }
+
+    internal interface IOnityTaskTickSource
+    {
+        int Version { get; }
+
+        bool IsCancellationRequested { get; }
+
+        bool TrySetCanceledFromRunner(int token);
+
+        bool TrySetRetiredFromRunner(int token);
+
+        bool Tick(OnityTaskRunner owner, float deltaTime, float unscaledDeltaTime);
+    }
+
+    internal static class OnityTaskContinuation
+    {
+        public static void Invoke(Action continuation)
+        {
+            if (continuation == null)
+            {
+                return;
+            }
+
+            try
+            {
+                continuation();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+        }
+
+        public static void Invoke(IOnityPreservedTaskContinuation continuation)
+        {
+            if (continuation == null)
+            {
+                return;
+            }
+
+            try
+            {
+                continuation.Complete();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+        }
+    }
+
+    internal sealed class OnityWhenAnyTaskSource : OnityTaskSourceBase<int>
+    {
+        private readonly Action m_firstContinuation;
+        private readonly Action m_secondContinuation;
+
+        private OnityTaskAwaiter m_firstAwaiter;
+        private OnityTaskAwaiter m_secondAwaiter;
+        private int m_winner;
+
+        public OnityWhenAnyTaskSource(OnityTask first, OnityTask second)
+        {
+            m_firstContinuation = CompleteFirst;
+            m_secondContinuation = CompleteSecond;
+            Reset(default);
+            RegisterFirst(first);
+            RegisterSecond(second);
+        }
+
+        protected override void ReleaseSource()
+        {
+            // The losing input can complete after the result is consumed.
+        }
+
+        private void RegisterFirst(OnityTask task)
+        {
+            m_firstAwaiter = task.GetAwaiter();
+            try
+            {
+                if (m_firstAwaiter.IsCompleted)
+                {
+                    CompleteFirst();
+                }
+                else
+                {
+                    m_firstAwaiter.UnsafeOnCompleted(m_firstContinuation);
+                }
+            }
+            catch (Exception exception)
+            {
+                m_firstAwaiter = default;
+                CompleteRegistrationFailure(0, exception);
+            }
+        }
+
+        private void RegisterSecond(OnityTask task)
+        {
+            m_secondAwaiter = task.GetAwaiter();
+            try
+            {
+                if (m_secondAwaiter.IsCompleted)
+                {
+                    CompleteSecond();
+                }
+                else
+                {
+                    m_secondAwaiter.UnsafeOnCompleted(m_secondContinuation);
+                }
+            }
+            catch (Exception exception)
+            {
+                m_secondAwaiter = default;
+                CompleteRegistrationFailure(1, exception);
+            }
+        }
+
+        private void CompleteFirst()
+        {
+            OnityTaskAwaiter awaiter = m_firstAwaiter;
+            m_firstAwaiter = default;
+            CompleteInput(0, awaiter);
+        }
+
+        private void CompleteSecond()
+        {
+            OnityTaskAwaiter awaiter = m_secondAwaiter;
+            m_secondAwaiter = default;
+            CompleteInput(1, awaiter);
+        }
+
+        private void CompleteInput(int index, OnityTaskAwaiter awaiter)
+        {
+            bool isWinner = Interlocked.CompareExchange(ref m_winner, index + 1, 0) == 0;
+            bool isCanceled = false;
+            try
+            {
+                isCanceled = awaiter.IsCanceled;
+                awaiter.GetResult();
+                if (isWinner)
+                {
+                    TrySetResult(index);
+                }
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (isWinner)
+                {
+                    if (isCanceled)
+                    {
+                        TrySetCanceled(exception);
+                    }
+                    else
+                    {
+                        TrySetException(exception);
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                if (isWinner)
+                {
+                    TrySetException(exception);
+                }
+            }
+        }
+
+        private void CompleteRegistrationFailure(int index, Exception exception)
+        {
+            if (Interlocked.CompareExchange(ref m_winner, index + 1, 0) == 0)
+            {
+                TrySetException(exception);
+            }
+        }
+    }
+
+    [ExecuteAlways]
+    internal sealed class OnityTaskRunner : MonoBehaviour
+    {
+        private struct Entry
+        {
+            internal IOnityTaskTickSource Source;
+            internal int Version;
+        }
+
+        private static OnityTaskRunner s_instance;
+        private static int s_cancellationRequestCount;
+        private static int s_sessionEpoch;
+        private static bool s_accepting = true;
+        private static bool s_shuttingDown;
+
+        private List<Entry> m_updateSources = new List<Entry>(64);
+        private List<Entry> m_fixedUpdateSources = new List<Entry>(16);
+        private List<Entry> m_lateUpdateSources = new List<Entry>(16);
+        private bool m_retired;
+        private bool m_ticking;
+        private Entry m_activeEntry;
+
+        internal bool IsRetired => m_retired;
+
+        internal static void ValidateAcceptance()
+        {
+            if (!s_accepting || s_shuttingDown)
+            {
+                throw new InvalidOperationException("The legacy Onity task runner is closing its session.");
+            }
+        }
+
+        /// <summary>
+        /// Stops accepting legacy waits ahead of this runner's own session close, so retirement
+        /// callbacks of the PlayerLoop scheduler cannot create replacement legacy waits. The runner's
+        /// own close still retires its pending waits, and its next session begin accepts again.
+        /// </summary>
+        internal static void CloseAcceptance()
+        {
+            s_accepting = false;
+        }
+
+        public static void Schedule(IOnityTaskTickSource source, OnityTaskLoopPhase phase)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            OnityTaskRunner runner = GetOrCreate();
+            Entry entry = new Entry { Source = source, Version = source.Version };
+            if (phase == OnityTaskLoopPhase.FixedUpdate)
+            {
+                runner.m_fixedUpdateSources.Add(entry);
+            }
+            else if (phase == OnityTaskLoopPhase.LateUpdate)
+            {
+                runner.m_lateUpdateSources.Add(entry);
+            }
+            else
+            {
+                runner.m_updateSources.Add(entry);
+            }
+        }
+
+        public static void NotifyCancellationRequested()
+        {
+            Interlocked.Increment(ref s_cancellationRequestCount);
+        }
+
+        /// <summary>
+        /// True while a runner instance exists. Main thread only.
+        /// </summary>
+        public static bool IsAlive => !ReferenceEquals(s_instance, null);
+
+        /// <summary>
+        /// Creates the runner when it does not exist. Main thread only.
+        /// </summary>
+        public static void EnsureCreated()
+        {
+            GetOrCreate();
+        }
+
+        private static OnityTaskRunner GetOrCreate()
+        {
+            ValidateAcceptance();
+            if (!ReferenceEquals(s_instance, null))
+            {
+                return s_instance;
+            }
+
+            GameObject gameObject = new GameObject("OnityTaskRunner");
+            gameObject.hideFlags = HideFlags.HideAndDontSave;
+
+            if (Application.isPlaying)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
+
+            s_instance = gameObject.AddComponent<OnityTaskRunner>();
+            OnityTaskMainThreadDispatcher.NotifyRunnerCreated();
+            return s_instance;
+        }
+
+        private void Update()
+        {
+            if (m_retired || m_ticking)
+            {
+                return;
+            }
+            DrainCancellationRequests();
+            if (m_retired)
+            {
+                return;
+            }
+            TickSources(m_updateSources, Time.deltaTime, Time.unscaledDeltaTime);
+            if (m_retired)
+            {
+                return;
+            }
+            OnityJobHandleRegistry.Update();
+            if (m_retired)
+            {
+                return;
+            }
+            OnityTaskMainThreadDispatcher.Drain();
+        }
+
+        private void FixedUpdate()
+        {
+            if (m_retired)
+            {
+                return;
+            }
+            TickSources(m_fixedUpdateSources, Time.fixedDeltaTime, Time.fixedUnscaledDeltaTime);
+        }
+
+        private void LateUpdate()
+        {
+            if (m_retired)
+            {
+                return;
+            }
+            TickSources(m_lateUpdateSources, Time.deltaTime, Time.unscaledDeltaTime);
+        }
+
+        private void OnDestroy()
+        {
+            Retire();
+        }
+
+        private void Retire()
+        {
+            if (m_retired)
+            {
+                return;
+            }
+
+            m_retired = true;
+            List<Entry> update = m_updateSources;
+            List<Entry> fixedUpdate = m_fixedUpdateSources;
+            List<Entry> lateUpdate = m_lateUpdateSources;
+            m_updateSources = null;
+            m_fixedUpdateSources = null;
+            m_lateUpdateSources = null;
+            bool owned = ReferenceEquals(s_instance, this);
+            if (owned)
+            {
+                s_instance = null;
+            }
+            try
+            {
+                if (owned)
+                {
+                    // Retire old Jobs before legacy continuations can create a replacement.
+                    OnityJobHandleRegistry.RetireRunner();
+                }
+            }
+            finally
+            {
+                try
+                {
+                    RetireEntries(update);
+                    RetireEntries(fixedUpdate);
+                    RetireEntries(lateUpdate);
+                }
+                finally
+                {
+                    if (owned && ReferenceEquals(s_instance, null))
+                    {
+                        OnityTaskMainThreadDispatcher.NotifyRunnerDestroyed();
+                    }
+                }
+            }
+        }
+
+        private void RetireEntries(List<Entry> entries)
+        {
+            for (int i = entries.Count - 1; i >= 0; i--)
+            {
+                Entry entry = entries[i];
+                entries.RemoveAt(i);
+                if (m_ticking && ReferenceEquals(entry.Source, m_activeEntry.Source)
+                    && entry.Version == m_activeEntry.Version)
+                {
+                    // A predicate/progress callback still owns these fields. Its Tick
+                    // finally publishes cancellation only after the callback has returned.
+                    continue;
+                }
+                CancelRetired(entry);
+            }
+        }
+
+        private static void CancelRetired(Entry entry)
+        {
+            try
+            {
+                entry.Source.TrySetRetiredFromRunner(entry.Version);
+            }
+            catch (Exception exception)
+            {
+                try
+                {
+                    Debug.LogException(exception);
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
+        private void TickSources(
+            List<Entry> sources,
+            float deltaTime,
+            float unscaledDeltaTime)
+        {
+            if (m_ticking)
+            {
+                return;
+            }
+            int count = sources.Count;
+            for (int i = count - 1; i >= 0 && !m_retired; i--)
+            {
+                Entry entry = sources[i];
+                IOnityTaskTickSource source = entry.Source;
+                if (source.Version != entry.Version)
+                {
+                    RemoveAtSwapBack(sources, i);
+                    continue;
+                }
+                if (source.IsCancellationRequested)
+                {
+                    RemoveAtSwapBack(sources, i);
+                    source.TrySetCanceledFromRunner(entry.Version);
+                    continue;
+                }
+
+                bool completed;
+                m_activeEntry = entry;
+                m_ticking = true;
+                try
+                {
+                    completed = source.Tick(this, deltaTime, unscaledDeltaTime);
+                }
+                finally
+                {
+                    m_activeEntry = default;
+                    m_ticking = false;
+                    if (m_retired)
+                    {
+                        CancelRetired(entry);
+                    }
+                }
+                if (m_retired)
+                {
+                    return;
+                }
+                if (completed)
+                {
+                    RemoveAtSwapBack(sources, i);
+                }
+            }
+        }
+
+        private void DrainCancellationRequests()
+        {
+            if (Interlocked.Exchange(ref s_cancellationRequestCount, 0) == 0)
+            {
+                return;
+            }
+
+            CancelRequestedSources(m_updateSources);
+            if (m_retired)
+            {
+                return;
+            }
+            CancelRequestedSources(m_fixedUpdateSources);
+            if (m_retired)
+            {
+                return;
+            }
+            CancelRequestedSources(m_lateUpdateSources);
+        }
+
+        private void CancelRequestedSources(List<Entry> sources)
+        {
+            for (int i = sources.Count - 1; i >= 0 && !m_retired; i--)
+            {
+                Entry entry = sources[i];
+                IOnityTaskTickSource source = entry.Source;
+                if (source.IsCancellationRequested == false)
+                {
+                    continue;
+                }
+
+                RemoveAtSwapBack(sources, i);
+                source.TrySetCanceledFromRunner(entry.Version);
+            }
+        }
+
+        private static void RemoveAtSwapBack(List<Entry> sources, int index)
+        {
+            int lastIndex = sources.Count - 1;
+            sources[index] = sources[lastIndex];
+            sources.RemoveAt(lastIndex);
+        }
+
+        private static void CloseSession()
+        {
+            s_accepting = false;
+            s_sessionEpoch++;
+            OnityTaskRunner runner = s_instance;
+            GameObject owner = runner != null ? runner.gameObject : null;
+            try
+            {
+                if (!ReferenceEquals(runner, null))
+                {
+                    runner.Retire();
+                }
+            }
+            finally
+            {
+                // Callbacks may create a different runner; destroy only this captured host.
+                if (owner != null)
+                {
+                    if (Application.isPlaying)
+                    {
+                        Destroy(owner);
+                    }
+                    else
+                    {
+                        DestroyImmediate(owner);
+                    }
+                }
+            }
+        }
+
+        private static void CloseApplication()
+        {
+            s_shuttingDown = true;
+            CloseSession();
+        }
+
+        private static void BeginSession(bool force)
+        {
+            if (s_shuttingDown || (!force && s_accepting))
+            {
+                return;
+            }
+            int expectedEpoch = unchecked(s_sessionEpoch + 1);
+            CloseSession();
+            if (s_sessionEpoch == expectedEpoch && !s_shuttingDown)
+            {
+                s_accepting = true;
+            }
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void InitializeRuntime()
+        {
+#if !UNITY_EDITOR
+            Application.quitting -= CloseApplication;
+            Application.quitting += CloseApplication;
+#endif
+            BeginSession(true);
+        }
+
+#if UNITY_EDITOR
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void InitializeEditor()
+        {
+            UnityEditor.EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+            UnityEditor.EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+            UnityEditor.EditorApplication.quitting -= CloseApplication;
+            UnityEditor.EditorApplication.quitting += CloseApplication;
+            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= CloseApplication;
+            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += CloseApplication;
+            BeginSession(false);
+        }
+
+        private static void HandlePlayModeStateChanged(UnityEditor.PlayModeStateChange state)
+        {
+            if (state == UnityEditor.PlayModeStateChange.ExitingEditMode
+                || state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
+            {
+                CloseSession();
+            }
+            else if (state == UnityEditor.PlayModeStateChange.EnteredEditMode
+                || state == UnityEditor.PlayModeStateChange.EnteredPlayMode)
+            {
+                BeginSession(false);
+            }
+        }
+#endif
+
+    }
+
+    internal sealed class OnityFrameTaskSource :
+        OnityTaskSourceBase, IOnityTaskTickSource, IOnityPooledRunner<OnityFrameTaskSource>
+    {
+        private static OnityRunnerPool<OnityFrameTaskSource> s_pool;
+
+        private OnityFrameTaskSource m_nextPooled;
+        private int m_startFrameCount;
+        private int m_remainingFrames;
+        private bool m_waitForNextRenderedFrame;
+
+        ref OnityFrameTaskSource IOnityPooledRunner<OnityFrameTaskSource>.NextPooled => ref m_nextPooled;
+
+        public static OnityFrameTaskSource Rent(
+            OnityTaskLoopPhase phase,
+            CancellationToken cancellationToken,
+            int frameCount = 1)
+        {
+            OnityTaskRunner.ValidateAcceptance();
+            // As with state machine runners, a contended rent allocates instead of waiting.
+            if (!s_pool.TryPop(out OnityFrameTaskSource source))
+            {
+                source = new OnityFrameTaskSource();
+            }
+
+            source.Reset(cancellationToken);
+            source.m_remainingFrames = frameCount;
+            source.m_waitForNextRenderedFrame = Application.isPlaying && phase == OnityTaskLoopPhase.Update;
+            source.m_startFrameCount = source.m_waitForNextRenderedFrame ? Time.frameCount : 0;
+            OnityTaskRunner.Schedule(source, phase);
+            return source;
+        }
+
+        public bool Tick(OnityTaskRunner owner, float deltaTime, float unscaledDeltaTime)
+        {
+            if (IsPending == false)
+            {
+                return true;
+            }
+
+            if (m_waitForNextRenderedFrame && Time.frameCount == m_startFrameCount)
+            {
+                return false;
+            }
+
+            m_remainingFrames--;
+            if (m_remainingFrames > 0)
+            {
+                return false;
+            }
+
+            TrySetResult();
+            return true;
+        }
+
+        protected override void ReleaseSource()
+        {
+            m_startFrameCount = 0;
+            m_remainingFrames = 0;
+            m_waitForNextRenderedFrame = false;
+            // Publish only cleared fields; a contended or full return lets the source be collected.
+            s_pool.TryPush(this, OnityTaskSettings.s_sourcePoolCapacity);
+        }
+    }
+
+    internal sealed class OnityDelayTaskSource : OnityTaskSourceBase, IOnityTaskTickSource
+    {
+        private static readonly Stack<OnityDelayTaskSource> s_pool = new Stack<OnityDelayTaskSource>(32);
+
+        private int m_startFrameCount;
+        private float m_remainingSeconds;
+        private bool m_useUnscaledTime;
+        private bool m_waitForNextRenderedFrame;
+
+        public static OnityDelayTaskSource Rent(
+            float delaySeconds,
+            bool useUnscaledTime,
+            CancellationToken cancellationToken)
+        {
+            OnityTaskRunner.ValidateAcceptance();
+            OnityDelayTaskSource source;
+            lock (s_pool)
+            {
+                source = s_pool.Count > 0 ? s_pool.Pop() : new OnityDelayTaskSource();
+            }
+
+            source.Reset(cancellationToken);
+            source.m_waitForNextRenderedFrame = Application.isPlaying;
+            source.m_startFrameCount = source.m_waitForNextRenderedFrame ? Time.frameCount : 0;
+            source.m_remainingSeconds = delaySeconds;
+            source.m_useUnscaledTime = useUnscaledTime;
+            OnityTaskRunner.Schedule(source, OnityTaskLoopPhase.Update);
+            return source;
+        }
+
+        public bool Tick(OnityTaskRunner owner, float deltaTime, float unscaledDeltaTime)
+        {
+            if (IsPending == false)
+            {
+                return true;
+            }
+
+            if (m_waitForNextRenderedFrame && Time.frameCount == m_startFrameCount)
+            {
+                return false;
+            }
+
+            m_remainingSeconds -= m_useUnscaledTime ? unscaledDeltaTime : deltaTime;
+            if (m_remainingSeconds > 0f)
+            {
+                return false;
+            }
+
+            TrySetResult();
+            return true;
+        }
+
+        protected override void ReleaseSource()
+        {
+            m_startFrameCount = 0;
+            m_remainingSeconds = 0f;
+            m_useUnscaledTime = false;
+            m_waitForNextRenderedFrame = false;
+            lock (s_pool)
+            {
+                if (s_pool.Count < OnityTaskSettings.s_sourcePoolCapacity)
+                {
+                    s_pool.Push(this);
+                }
+            }
+        }
+    }
+
+    internal sealed class OnityPredicateTaskSource : OnityTaskSourceBase, IOnityTaskTickSource
+    {
+        private static readonly Stack<OnityPredicateTaskSource> s_pool = new Stack<OnityPredicateTaskSource>(16);
+
+        private Func<bool> m_predicate;
+        private bool m_waitWhile;
+
+        public static OnityPredicateTaskSource Rent(
+            Func<bool> predicate,
+            bool waitWhile,
+            CancellationToken cancellationToken)
+        {
+            OnityTaskRunner.ValidateAcceptance();
+            OnityPredicateTaskSource source;
+            lock (s_pool)
+            {
+                source = s_pool.Count > 0 ? s_pool.Pop() : new OnityPredicateTaskSource();
+            }
+
+            source.Reset(cancellationToken);
+            source.m_predicate = predicate;
+            source.m_waitWhile = waitWhile;
+            OnityTaskRunner.Schedule(source, OnityTaskLoopPhase.Update);
+            return source;
+        }
+
+        public bool Tick(OnityTaskRunner owner, float deltaTime, float unscaledDeltaTime)
+        {
+            if (IsPending == false)
+            {
+                return true;
+            }
+
+            bool value;
+            try
+            {
+                value = m_predicate();
+                if (owner.IsRetired)
+                {
+                    return true;
+                }
+            }
+            catch (Exception exception)
+            {
+                if (owner.IsRetired)
+                {
+                    return true;
+                }
+                TrySetException(exception);
+                return true;
+            }
+
+            bool shouldComplete = m_waitWhile ? value == false : value;
+            if (shouldComplete == false)
+            {
+                return false;
+            }
+
+            TrySetResult();
+            return true;
+        }
+
+        protected override void ReleaseSource()
+        {
+            m_predicate = null;
+            m_waitWhile = false;
+            lock (s_pool)
+            {
+                if (s_pool.Count < OnityTaskSettings.s_sourcePoolCapacity)
+                {
+                    s_pool.Push(this);
+                }
+            }
+        }
+    }
+
+    internal sealed class OnityAsyncOperationTaskSource<TAsyncOperation> :
+        OnityTaskSourceBase<TAsyncOperation>,
+        IOnityTaskTickSource
+        where TAsyncOperation : AsyncOperation
+    {
+        private static readonly Stack<OnityAsyncOperationTaskSource<TAsyncOperation>> s_pool =
+            new Stack<OnityAsyncOperationTaskSource<TAsyncOperation>>(16);
+
+        private TAsyncOperation m_operation;
+        private Action<float> m_onProgress;
+
+        public static OnityAsyncOperationTaskSource<TAsyncOperation> Rent(
+            TAsyncOperation operation,
+            Action<float> onProgress,
+            CancellationToken cancellationToken)
+        {
+            OnityTaskRunner.ValidateAcceptance();
+            OnityAsyncOperationTaskSource<TAsyncOperation> source;
+            lock (s_pool)
+            {
+                source = s_pool.Count > 0
+                    ? s_pool.Pop()
+                    : new OnityAsyncOperationTaskSource<TAsyncOperation>();
+            }
+
+            source.Reset(cancellationToken);
+            source.m_operation = operation;
+            source.m_onProgress = onProgress;
+            OnityTaskRunner.Schedule(source, OnityTaskLoopPhase.Update);
+            return source;
+        }
+
+        public bool Tick(OnityTaskRunner owner, float deltaTime, float unscaledDeltaTime)
+        {
+            if (IsPending == false)
+            {
+                return true;
+            }
+
+            TAsyncOperation operation = m_operation;
+            try
+            {
+                m_onProgress?.Invoke(Mathf.Clamp01(operation.progress));
+                if (owner.IsRetired)
+                {
+                    return true;
+                }
+
+                if (operation.isDone == false)
+                {
+                    return false;
+                }
+
+                m_onProgress?.Invoke(1f);
+                if (owner.IsRetired)
+                {
+                    return true;
+                }
+            }
+            catch (Exception exception)
+            {
+                if (owner.IsRetired)
+                {
+                    return true;
+                }
+                TrySetException(exception);
+                return true;
+            }
+
+            TrySetResult(operation);
+            return true;
+        }
+
+        protected override void ReleaseSource()
+        {
+            m_operation = null;
+            m_onProgress = null;
+            lock (s_pool)
+            {
+                if (s_pool.Count < OnityTaskSettings.s_sourcePoolCapacity)
+                {
+                    s_pool.Push(this);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Async method builder for async methods returning <see cref="OnityTask"/>.
+    /// A method that completes without suspending produces the completed task, or a Task-backed
+    /// task for a synchronous fault or cancellation. A method that suspends binds a pooled runner
+    /// that holds the state machine by value and is the method's single-consumer native source.
+    /// </summary>
+    [Il2CppSetOption(Option.NullChecks, false)]
+    public struct OnityTaskMethodBuilder
+    {
+        private OnityRunnerBase m_runner;
+        private Task m_synchronousFailure;
+
+        /// <summary>
+        /// Creates a method builder.
+        /// </summary>
+        /// <returns>Created builder.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static OnityTaskMethodBuilder Create()
+        {
+            return default;
+        }
+
+        /// <summary>
+        /// Gets the task controlled by this builder. After a suspension the task is a
+        /// single-consumer native task; call <see cref="OnityTask.Preserve"/> to share it.
+        /// </summary>
+        public OnityTask Task
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (m_runner != null)
+                {
+                    return m_runner.Task;
+                }
+
+                return m_synchronousFailure != null
+                    ? OnityTask.FromTask(m_synchronousFailure)
+                    : OnityTask.CompletedTask;
+            }
+        }
+
+        /// <summary>
+        /// Starts the async state machine on the calling thread.
+        /// </summary>
+        /// <typeparam name="TStateMachine">State machine type.</typeparam>
+        /// <param name="stateMachine">State machine.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Start<TStateMachine>(ref TStateMachine stateMachine)
+            where TStateMachine : IAsyncStateMachine
+        {
+            stateMachine.MoveNext();
+        }
+
+        /// <summary>
+        /// Part of the builder contract that is never invoked: the compiler-generated state machine
+        /// forwards this call only when a builder boxes it, and the runner stores the state machine
+        /// by value instead.
+        /// </summary>
+        /// <param name="stateMachine">State machine.</param>
+        public void SetStateMachine(IAsyncStateMachine stateMachine)
+        {
+        }
+
+        /// <summary>
+        /// Schedules a continuation for a safe awaiter.
+        /// </summary>
+        /// <typeparam name="TAwaiter">Awaiter type.</typeparam>
+        /// <typeparam name="TStateMachine">State machine type.</typeparam>
+        /// <param name="awaiter">Awaiter.</param>
+        /// <param name="stateMachine">State machine.</param>
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(
+            ref TAwaiter awaiter,
+            ref TStateMachine stateMachine)
+            where TAwaiter : INotifyCompletion
+            where TStateMachine : IAsyncStateMachine
+        {
+            OnityRunnerBase runner = m_runner
+                ?? OnityAsyncStateMachineRunner<TStateMachine>.Rent(ref stateMachine, ref m_runner);
+            if (OnityTaskSettings.s_flowExecutionContext)
+            {
+                runner.CaptureExecutionContext();
+            }
+
+            awaiter.OnCompleted(runner.m_moveNext);
+        }
+
+        /// <summary>
+        /// Schedules a continuation for a critical awaiter.
+        /// </summary>
+        /// <typeparam name="TAwaiter">Awaiter type.</typeparam>
+        /// <typeparam name="TStateMachine">State machine type.</typeparam>
+        /// <param name="awaiter">Awaiter.</param>
+        /// <param name="stateMachine">State machine.</param>
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
+            ref TAwaiter awaiter,
+            ref TStateMachine stateMachine)
+            where TAwaiter : ICriticalNotifyCompletion
+            where TStateMachine : IAsyncStateMachine
+        {
+            OnityRunnerBase runner = m_runner
+                ?? OnityAsyncStateMachineRunner<TStateMachine>.Rent(ref stateMachine, ref m_runner);
+            if (OnityTaskSettings.s_flowExecutionContext)
+            {
+                runner.CaptureExecutionContext();
+            }
+
+            awaiter.UnsafeOnCompleted(runner.m_moveNext);
+        }
+
+        /// <summary>
+        /// Completes the async method successfully.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetResult()
+        {
+            if (m_runner != null)
+            {
+                m_runner.SetResult();
+            }
+        }
+
+        /// <summary>
+        /// Completes the async method with an exception. An <see cref="OperationCanceledException"/>
+        /// cancels the task and is rethrown as the same instance by the consumer.
+        /// </summary>
+        /// <param name="exception">Failure exception.</param>
+        public void SetException(Exception exception)
+        {
+            if (m_runner != null)
+            {
+                m_runner.SetException(exception);
+                return;
+            }
+
+            AsyncTaskMethodBuilder builder = AsyncTaskMethodBuilder.Create();
+            builder.SetException(exception);
+            m_synchronousFailure = builder.Task;
+        }
+    }
+
+    /// <summary>
+    /// Async method builder for async methods returning <see cref="OnityTask{T}"/>.
+    /// A method that completes without suspending stores its result inline, or a Task-backed
+    /// task for a synchronous fault or cancellation. A method that suspends binds a pooled runner
+    /// that holds the state machine by value and is the method's single-consumer native source.
+    /// </summary>
+    /// <typeparam name="T">Result type.</typeparam>
+    [Il2CppSetOption(Option.NullChecks, false)]
+    public struct OnityTaskMethodBuilder<T>
+    {
+        private OnityRunnerBase<T> m_runner;
+        private Task<T> m_synchronousFailure;
+        private T m_result;
+
+        /// <summary>
+        /// Creates a typed method builder.
+        /// </summary>
+        /// <returns>Created builder.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static OnityTaskMethodBuilder<T> Create()
+        {
+            return default;
+        }
+
+        /// <summary>
+        /// Gets the task controlled by this builder. After a suspension the task is a
+        /// single-consumer native task; call <see cref="OnityTask{T}.Preserve"/> to share it.
+        /// </summary>
+        public OnityTask<T> Task
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (m_runner != null)
+                {
+                    return m_runner.Task;
+                }
+
+                // The inline result is built directly (initobj plus one store) instead of through the
+                // FromResult call chain.
+                return m_synchronousFailure != null
+                    ? OnityTask<T>.FromTask(m_synchronousFailure)
+                    : new OnityTask<T>(m_result);
+            }
+        }
+
+        /// <summary>
+        /// Starts the async state machine on the calling thread.
+        /// </summary>
+        /// <typeparam name="TStateMachine">State machine type.</typeparam>
+        /// <param name="stateMachine">State machine.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Start<TStateMachine>(ref TStateMachine stateMachine)
+            where TStateMachine : IAsyncStateMachine
+        {
+            stateMachine.MoveNext();
+        }
+
+        /// <summary>
+        /// Part of the builder contract that is never invoked: the compiler-generated state machine
+        /// forwards this call only when a builder boxes it, and the runner stores the state machine
+        /// by value instead.
+        /// </summary>
+        /// <param name="stateMachine">State machine.</param>
+        public void SetStateMachine(IAsyncStateMachine stateMachine)
+        {
+        }
+
+        /// <summary>
+        /// Schedules a continuation for a safe awaiter.
+        /// </summary>
+        /// <typeparam name="TAwaiter">Awaiter type.</typeparam>
+        /// <typeparam name="TStateMachine">State machine type.</typeparam>
+        /// <param name="awaiter">Awaiter.</param>
+        /// <param name="stateMachine">State machine.</param>
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(
+            ref TAwaiter awaiter,
+            ref TStateMachine stateMachine)
+            where TAwaiter : INotifyCompletion
+            where TStateMachine : IAsyncStateMachine
+        {
+            OnityRunnerBase<T> runner = m_runner
+                ?? OnityAsyncStateMachineRunner<TStateMachine, T>.Rent(ref stateMachine, ref m_runner);
+            if (OnityTaskSettings.s_flowExecutionContext)
+            {
+                runner.CaptureExecutionContext();
+            }
+
+            awaiter.OnCompleted(runner.m_moveNext);
+        }
+
+        /// <summary>
+        /// Schedules a continuation for a critical awaiter.
+        /// </summary>
+        /// <typeparam name="TAwaiter">Awaiter type.</typeparam>
+        /// <typeparam name="TStateMachine">State machine type.</typeparam>
+        /// <param name="awaiter">Awaiter.</param>
+        /// <param name="stateMachine">State machine.</param>
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
+            ref TAwaiter awaiter,
+            ref TStateMachine stateMachine)
+            where TAwaiter : ICriticalNotifyCompletion
+            where TStateMachine : IAsyncStateMachine
+        {
+            OnityRunnerBase<T> runner = m_runner
+                ?? OnityAsyncStateMachineRunner<TStateMachine, T>.Rent(ref stateMachine, ref m_runner);
+            if (OnityTaskSettings.s_flowExecutionContext)
+            {
+                runner.CaptureExecutionContext();
+            }
+
+            awaiter.UnsafeOnCompleted(runner.m_moveNext);
+        }
+
+        /// <summary>
+        /// Completes the async method successfully.
+        /// </summary>
+        /// <param name="result">Async method result.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetResult(T result)
+        {
+            if (m_runner != null)
+            {
+                m_runner.SetResult(result);
+                return;
+            }
+
+            m_result = result;
+        }
+
+        /// <summary>
+        /// Completes the async method with an exception. An <see cref="OperationCanceledException"/>
+        /// cancels the task and is rethrown as the same instance by the consumer.
+        /// </summary>
+        /// <param name="exception">Failure exception.</param>
+        public void SetException(Exception exception)
+        {
+            if (m_runner != null)
+            {
+                m_runner.SetException(exception);
+                return;
+            }
+
+            AsyncTaskMethodBuilder<T> builder = AsyncTaskMethodBuilder<T>.Create();
+            builder.SetException(exception);
+            m_synchronousFailure = builder.Task;
+        }
+    }
+
+    /// <summary>
+    /// Exception raised when an Onity Unity web request fails.
+    /// </summary>
+    public sealed class OnityUnityWebRequestException : Exception
+    {
+        /// <summary>
+        /// Initializes a request failure exception.
+        /// </summary>
+        /// <param name="request">Failed request.</param>
+        public OnityUnityWebRequestException(UnityWebRequest request)
+            : base(CreateMessage(request))
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            Url = request.url ?? string.Empty;
+            ResponseCode = request.responseCode;
+            Result = request.result;
+            RequestError = request.error ?? string.Empty;
+            UnityWebRequest = request;
+            Error = request.error;
+            if (request.downloadHandler is DownloadHandlerBuffer buffer)
+            {
+                try
+                {
+                    Text = buffer.text;
+                }
+                catch (Exception)
+                {
+                    // A disposed or undecodable buffer has no text to report.
+                }
+            }
+
+            ResponseHeaders = request.GetResponseHeaders();
+        }
+
+        /// <summary>
+        /// The failed request; the equivalent of UniTask's <c>UnityWebRequest</c> member. The owner of the
+        /// request may have disposed it since.
+        /// </summary>
+        public UnityWebRequest UnityWebRequest { get; }
+
+        /// <summary>True for a connection failure (<c>UnityWebRequest.Result.ConnectionError</c>).</summary>
+        public bool IsNetworkError => Result == UnityWebRequest.Result.ConnectionError;
+
+        /// <summary>True for an HTTP error status (<c>UnityWebRequest.Result.ProtocolError</c>).</summary>
+        public bool IsHttpError => Result == UnityWebRequest.Result.ProtocolError;
+
+        /// <summary>The request's error string as Unity reported it, or null.</summary>
+        public string Error { get; }
+
+        /// <summary>The response body of a buffer download handler when the request failed, or null.</summary>
+        public string Text { get; }
+
+        /// <summary>The response headers when the request failed, or null.</summary>
+        public Dictionary<string, string> ResponseHeaders { get; }
+
+        /// <summary>
+        /// Request URL.
+        /// </summary>
+        public string Url { get; }
+
+        /// <summary>
+        /// HTTP response code.
+        /// </summary>
+        public long ResponseCode { get; }
+
+        /// <summary>
+        /// Unity request result.
+        /// </summary>
+        public UnityWebRequest.Result Result { get; }
+
+        /// <summary>
+        /// Unity request error string.
+        /// </summary>
+        public string RequestError { get; }
+
+        private static string CreateMessage(UnityWebRequest request)
+        {
+            if (request == null)
+            {
+                return "UnityWebRequest failed.";
+            }
+
+            return $"UnityWebRequest failed ({request.result}, {request.responseCode}) for {request.url}: {request.error}";
+        }
+    }
+
+    /// <summary>
+    /// Lightweight async helpers inspired by common Unity task workflows.
+    /// </summary>
+    public static class OnityAsync
+    {
+        /// <summary>
+        /// Awaits one rendered frame.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static Task NextFrameAsync(CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return OnityTaskTracker.Track(
+                    Task.FromCanceled(cancellationToken),
+                    "OnityAsync.NextFrameAsync");
+            }
+
+            return OnityTaskTracker.Track(
+                OnityUnityObservable.EveryUpdate().ToTask(cancellationToken),
+                "OnityAsync.NextFrameAsync");
+        }
+
+        /// <summary>
+        /// Awaits one fixed update frame.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static Task NextFixedFrameAsync(CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return OnityTaskTracker.Track(
+                    Task.FromCanceled(cancellationToken),
+                    "OnityAsync.NextFixedFrameAsync");
+            }
+
+            return OnityTaskTracker.Track(
+                OnityUnityObservable.EveryFixedUpdate().ToTask(cancellationToken),
+                "OnityAsync.NextFixedFrameAsync");
+        }
+
+        /// <summary>
+        /// Awaits one late update frame.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static Task NextLateFrameAsync(CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return OnityTaskTracker.Track(
+                    Task.FromCanceled(cancellationToken),
+                    "OnityAsync.NextLateFrameAsync");
+            }
+
+            return OnityTaskTracker.Track(
+                OnityUnityObservable.EveryLateUpdate().ToTask(cancellationToken),
+                "OnityAsync.NextLateFrameAsync");
+        }
+
+        /// <summary>
+        /// Awaits a delay in seconds.
+        /// </summary>
+        /// <param name="delaySeconds">Delay duration in seconds.</param>
+        /// <param name="useUnscaledTime">Use unscaled time.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static Task DelayAsync(
+            float delaySeconds,
+            bool useUnscaledTime = false,
+            CancellationToken cancellationToken = default)
+        {
+            if (delaySeconds < 0f)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delaySeconds));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return OnityTaskTracker.Track(
+                    Task.FromCanceled(cancellationToken),
+                    "OnityAsync.DelayAsync");
+            }
+
+            if (delaySeconds <= 0f)
+            {
+                return OnityTaskTracker.Track(
+                    Task.CompletedTask,
+                    "OnityAsync.DelayAsync");
+            }
+
+            return OnityTaskTracker.Track(
+                OnityUnityObservable.Timer(delaySeconds, useUnscaledTime).ToTask(cancellationToken),
+                "OnityAsync.DelayAsync");
+        }
+
+        /// <summary>
+        /// Awaits a delay using a time provider.
+        /// </summary>
+        /// <param name="delay">Delay duration.</param>
+        /// <param name="timeProvider">Optional time provider.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static Task DelayAsync(
+            TimeSpan delay,
+            OnityTimeProvider timeProvider = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (delay < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delay));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return OnityTaskTracker.Track(
+                    Task.FromCanceled(cancellationToken),
+                    "OnityAsync.DelayAsync(TimeSpan)");
+            }
+
+            if (delay == TimeSpan.Zero)
+            {
+                return OnityTaskTracker.Track(
+                    Task.CompletedTask,
+                    "OnityAsync.DelayAsync(TimeSpan)");
+            }
+
+            OnityTimeProvider resolvedTimeProvider = timeProvider ?? OnityTimeProvider.System;
+
+            return OnityTaskTracker.Track(
+                resolvedTimeProvider.DelayAsync(delay, cancellationToken),
+                "OnityAsync.DelayAsync(TimeSpan)");
+        }
+
+        /// <summary>
+        /// Awaits until predicate returns true.
+        /// </summary>
+        /// <param name="predicate">Predicate callback.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static Task WaitUntilAsync(
+            Func<bool> predicate,
+            CancellationToken cancellationToken = default)
+        {
+            if (predicate == null)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return OnityTaskTracker.Track(
+                    Task.FromCanceled(cancellationToken),
+                    "OnityAsync.WaitUntilAsync");
+            }
+
+            if (predicate())
+            {
+                return OnityTaskTracker.Track(
+                    Task.CompletedTask,
+                    "OnityAsync.WaitUntilAsync");
+            }
+
+            return OnityTaskTracker.Track(
+                OnityUnityObservable
+                    .EveryUpdate(cancellationToken)
+                    .Where(_ => predicate())
+                    .ToTask(cancellationToken),
+                "OnityAsync.WaitUntilAsync");
+        }
+
+        /// <summary>
+        /// Awaits while predicate remains true.
+        /// </summary>
+        /// <param name="predicate">Predicate callback.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static Task WaitWhileAsync(
+            Func<bool> predicate,
+            CancellationToken cancellationToken = default)
+        {
+            if (predicate == null)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return OnityTaskTracker.Track(
+                    Task.FromCanceled(cancellationToken),
+                    "OnityAsync.WaitWhileAsync");
+            }
+
+            if (predicate() == false)
+            {
+                return OnityTaskTracker.Track(
+                    Task.CompletedTask,
+                    "OnityAsync.WaitWhileAsync");
+            }
+
+            return OnityTaskTracker.Track(
+                OnityUnityObservable
+                    .EveryUpdate(cancellationToken)
+                    .Where(_ => predicate() == false)
+                    .ToTask(cancellationToken),
+                "OnityAsync.WaitWhileAsync");
+        }
+
+        /// <summary>
+        /// Returns a completed task for Unit payload streams.
+        /// </summary>
+        /// <param name="observable">Source stream.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static Task AwaitObservable(
+            IOnityObservable<Unit> observable,
+            CancellationToken cancellationToken = default)
+        {
+            if (observable == null)
+            {
+                throw new ArgumentNullException(nameof(observable));
+            }
+
+            return OnityTaskTracker.Track(
+                observable.ToTask(cancellationToken),
+                "OnityAsync.AwaitObservable");
+        }
+
+        /// <summary>
+        /// Awaits completion of all tasks.
+        /// </summary>
+        /// <param name="tasks">Task list.</param>
+        /// <returns>Completion task.</returns>
+        public static Task WhenAll(params Task[] tasks)
+        {
+            if (tasks == null)
+            {
+                throw new ArgumentNullException(nameof(tasks));
+            }
+
+            return OnityTaskTracker.Track(
+                Task.WhenAll(tasks),
+                "OnityAsync.WhenAll");
+        }
+
+        /// <summary>
+        /// Awaits completion of all typed tasks.
+        /// </summary>
+        /// <typeparam name="T">Task result type.</typeparam>
+        /// <param name="tasks">Task list.</param>
+        /// <returns>Task array result.</returns>
+        public static Task<T[]> WhenAll<T>(params Task<T>[] tasks)
+        {
+            if (tasks == null)
+            {
+                throw new ArgumentNullException(nameof(tasks));
+            }
+
+            return OnityTaskTracker.Track(
+                Task.WhenAll(tasks),
+                "OnityAsync.WhenAll<T>");
+        }
+
+        /// <summary>
+        /// Awaits the first completed task from list.
+        /// </summary>
+        /// <param name="tasks">Task list.</param>
+        /// <returns>Winner task.</returns>
+        public static Task<Task> WhenAny(params Task[] tasks)
+        {
+            if (tasks == null)
+            {
+                throw new ArgumentNullException(nameof(tasks));
+            }
+
+            return OnityTaskTracker.Track(
+                Task.WhenAny(tasks),
+                "OnityAsync.WhenAny");
+        }
+
+        /// <summary>
+        /// Awaits the first completed typed task from list.
+        /// </summary>
+        /// <typeparam name="T">Task result type.</typeparam>
+        /// <param name="tasks">Task list.</param>
+        /// <returns>Winner task.</returns>
+        public static Task<Task<T>> WhenAny<T>(params Task<T>[] tasks)
+        {
+            if (tasks == null)
+            {
+                throw new ArgumentNullException(nameof(tasks));
+            }
+
+            return OnityTaskTracker.Track(
+                Task.WhenAny(tasks),
+                "OnityAsync.WhenAny<T>");
+        }
+    }
+
+    /// <summary>
+    /// OnityTask bridge methods for Unity async operations and observables.
+    /// </summary>
+    public static class OnityTaskBridgeExtensions
+    {
+        /// <summary>
+        /// Converts a Unity async operation into an OnityTask.
+        /// </summary>
+        /// <typeparam name="TAsyncOperation">Async operation type.</typeparam>
+        /// <param name="operation">Target operation.</param>
+        /// <param name="onProgress">Optional progress callback.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>OnityTask completed by the Unity operation.</returns>
+        public static OnityTask<TAsyncOperation> AsOnityTask<TAsyncOperation>(
+            this TAsyncOperation operation,
+            Action<float> onProgress = null,
+            CancellationToken cancellationToken = default)
+            where TAsyncOperation : AsyncOperation
+        {
+            if (operation == null)
+            {
+                throw new ArgumentNullException(nameof(operation));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return OnityTask<TAsyncOperation>.FromCanceled(cancellationToken);
+            }
+
+            if (operation.isDone)
+            {
+                onProgress?.Invoke(1f);
+                return OnityTask<TAsyncOperation>.FromResult(operation);
+            }
+
+            return new OnityTask<TAsyncOperation>(
+                OnityAsyncOperationTaskSource<TAsyncOperation>.Rent(
+                    operation,
+                    onProgress,
+                    cancellationToken));
+        }
+
+        /// <summary>
+        /// Converts a Unity async operation into a cancelable OnityTask.
+        /// </summary>
+        /// <typeparam name="TAsyncOperation">Async operation type.</typeparam>
+        /// <param name="operation">Target operation.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="onProgress">Optional progress callback.</param>
+        /// <returns>OnityTask completed by the Unity operation.</returns>
+        public static OnityTask<TAsyncOperation> WithOnityCancellation<TAsyncOperation>(
+            this TAsyncOperation operation,
+            CancellationToken cancellationToken,
+            Action<float> onProgress = null)
+            where TAsyncOperation : AsyncOperation
+        {
+            return operation.AsOnityTask(onProgress, cancellationToken);
+        }
+
+        /// <summary>
+        /// Returns an OnityTask completed by the first source value.
+        /// </summary>
+        /// <typeparam name="T">Value type.</typeparam>
+        /// <param name="source">Source stream.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>OnityTask completed by first source value.</returns>
+        public static OnityTask<T> FirstOnityTask<T>(
+            this IOnityObservable<T> source,
+            CancellationToken cancellationToken = default)
+        {
+            return OnityTask<T>.FromTask(source.FirstAsync(cancellationToken));
+        }
+
+        /// <summary>
+        /// Returns an OnityTask that completes when the source emits one Unit value.
+        /// </summary>
+        /// <param name="source">Source stream.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Completion task.</returns>
+        public static OnityTask ToOnityTask(
+            this IOnityObservable<Unit> source,
+            CancellationToken cancellationToken = default)
+        {
+            return OnityTask.FromTask(source.ToTask(cancellationToken));
+        }
+    }
+
+    /// <summary>
+    /// OnityTask bridge methods for awaitable message channels.
+    /// </summary>
+    public static class OnityAsyncMessagingExtensions
+    {
+        /// <summary>
+        /// Publishes an async message and exposes delivery as an OnityTask.
+        /// </summary>
+        /// <typeparam name="TMessage">Message type.</typeparam>
+        /// <param name="publisher">Async publisher.</param>
+        /// <param name="message">Message value.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Task completed when all async subscribers finish.</returns>
+        public static OnityTask PublishOnityTask<TMessage>(
+            this IAsyncPublisher<TMessage> publisher,
+            TMessage message,
+            CancellationToken cancellationToken = default)
+        {
+            if (publisher == null)
+            {
+                throw new ArgumentNullException(nameof(publisher));
+            }
+
+            return OnityTask.FromTask(
+                PublishAsyncInternal(publisher, message, cancellationToken));
+        }
+
+        /// <summary>
+        /// Subscribes an OnityTask-returning handler to an async message channel.
+        /// </summary>
+        /// <typeparam name="TMessage">Message type.</typeparam>
+        /// <param name="subscriber">Async subscriber.</param>
+        /// <param name="handler">OnityTask-returning handler.</param>
+        /// <returns>Disposable subscription token.</returns>
+        public static IDisposable SubscribeOnityTask<TMessage>(
+            this IAsyncSubscriber<TMessage> subscriber,
+            Func<TMessage, OnityTask> handler)
+        {
+            if (handler == null)
+            {
+                throw new ArgumentNullException(nameof(handler));
+            }
+
+            return SubscribeOnityTask(
+                subscriber,
+                (message, _) => handler(message));
+        }
+
+        /// <summary>
+        /// Subscribes a cancellation-aware OnityTask-returning handler to an async message channel.
+        /// </summary>
+        /// <typeparam name="TMessage">Message type.</typeparam>
+        /// <param name="subscriber">Async subscriber.</param>
+        /// <param name="handler">OnityTask-returning handler.</param>
+        /// <returns>Disposable subscription token.</returns>
+        public static IDisposable SubscribeOnityTask<TMessage>(
+            this IAsyncSubscriber<TMessage> subscriber,
+            Func<TMessage, CancellationToken, OnityTask> handler)
+        {
+            if (subscriber == null)
+            {
+                throw new ArgumentNullException(nameof(subscriber));
+            }
+
+            if (handler == null)
+            {
+                throw new ArgumentNullException(nameof(handler));
+            }
+
+            return subscriber.Subscribe(
+                async (message, cancellationToken) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await handler(message, cancellationToken);
+                });
+        }
+
+        private static async Task PublishAsyncInternal<TMessage>(
+            IAsyncPublisher<TMessage> publisher,
+            TMessage message,
+            CancellationToken cancellationToken)
+        {
+            ValueTask publishTask = publisher.PublishAsync(message, cancellationToken);
+
+            if (publishTask.IsCompletedSuccessfully)
+            {
+                publishTask.GetAwaiter().GetResult();
+                return;
+            }
+
+            await publishTask.AsTask();
+        }
+    }
+}

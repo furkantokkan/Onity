@@ -1,0 +1,14 @@
+{
+  "name": "Onity.TaskBenchmarks",
+  "rootNamespace": "Onity.Benchmarks",
+  "references": ["Onity.Unity", "Onity.Core", "Onity.Reactive", "Onity.Messaging", "UniTask", "Unity.Burst", "Unity.Collections"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": ["ONITY_TASK_BENCHMARKS"],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

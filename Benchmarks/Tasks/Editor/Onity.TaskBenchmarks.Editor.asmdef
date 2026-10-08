@@ -1,0 +1,14 @@
+{
+  "name": "Onity.TaskBenchmarks.Editor",
+  "rootNamespace": "Onity.Editor.Benchmarks",
+  "references": ["Onity.TaskBenchmarks"],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": ["ONITY_TASK_BENCHMARKS"],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

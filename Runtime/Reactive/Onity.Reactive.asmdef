@@ -1,0 +1,16 @@
+{
+  "name": "Onity.Reactive",
+  "rootNamespace": "Onity.Reactive",
+  "references": [
+    "Onity.Core"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true
+}

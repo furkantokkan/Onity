@@ -1,0 +1,17 @@
+{
+  "name": "Onity.Pooling",
+  "rootNamespace": "Onity.Pooling",
+  "references": [
+    "Onity.Core",
+    "Onity.Factory"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
