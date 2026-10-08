@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Onity.Unity.SceneFlow
 {
@@ -32,13 +35,22 @@ namespace Onity.Unity.SceneFlow
     }
 
     /// <summary>
-    /// Stores one pending transition target for loading-scene handoff.
+    /// Stores one pending transition target for loading-scene handoff, the enter data of the scene that loads next,
+    /// and the enter data <see cref="IOnitySceneService" /> keeps per destination scene.
     /// </summary>
     public static class OnitySceneTransitionStore
     {
+        // Enter data per destination scene handle while its scene-service operation runs. Main thread only.
+        private static readonly Dictionary<int, IOnitySceneEnterData> s_sceneEnterData =
+            new Dictionary<int, IOnitySceneEnterData>(4);
+
         private static string s_pendingTargetScene;
         private static IOnitySceneEnterData s_pendingEnterData;
         private static IOnitySceneEnterData s_activeEnterData;
+
+        // The scene-service change the Loading scene with this handle takes over. Main thread only.
+        private static Scene s_handoffScene;
+        private static IOnityLoadingSceneHandoff s_handoff;
 
         /// <summary>
         /// Pending transition scene name.
@@ -146,13 +158,112 @@ namespace Onity.Unity.SceneFlow
         }
 
         /// <summary>
-        /// Clears pending and active transition data.
+        /// Returns the enter data <see cref="IOnitySceneService" /> registered for <paramref name="scene" />. Call it
+        /// with the scene's own handle (<c>gameObject.scene</c>), for example from its installer: the data is set
+        /// before the scene wakes and removed when the operation that loads it ends, so copy what the scene needs
+        /// during its build. Another scene, even one with the same name, never receives it.
+        /// </summary>
+        /// <typeparam name="TEnterData">The expected enter data type.</typeparam>
+        /// <param name="scene">The scene being installed or built.</param>
+        /// <param name="enterData">The enter data, or null when it returns false.</param>
+        /// <returns>True while the scene service loads <paramref name="scene" /> with data of that type.</returns>
+        public static bool TryGetEnterData<TEnterData>(Scene scene, out TEnterData enterData)
+            where TEnterData : class, IOnitySceneEnterData
+        {
+            if (scene.IsValid()
+                && s_sceneEnterData.TryGetValue(scene.handle, out IOnitySceneEnterData data)
+                && data is TEnterData typedData)
+            {
+                enterData = typedData;
+                return true;
+            }
+
+            enterData = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Clears pending and active transition data, the enter data kept per destination scene and an untaken
+        /// Loading-scene handoff.
         /// </summary>
         public static void Clear()
         {
             s_pendingTargetScene = null;
             s_pendingEnterData = null;
             s_activeEnterData = null;
+            ClearServiceRecords();
+        }
+
+        internal static void SetSceneEnterData(Scene scene, IOnitySceneEnterData enterData)
+        {
+            if (scene.IsValid() && enterData != null)
+            {
+                s_sceneEnterData[scene.handle] = enterData;
+            }
+        }
+
+        // Keyed by handle, so the entry of a scene that already unloaded can still be removed.
+        internal static void RemoveSceneEnterData(Scene scene)
+        {
+            if (scene.handle != 0)
+            {
+                s_sceneEnterData.Remove(scene.handle);
+            }
+        }
+
+        // Clears the shared active slot only while it still holds this operation's data.
+        internal static void ClearActiveEnterData(IOnitySceneEnterData enterData)
+        {
+            if (enterData != null && ReferenceEquals(s_activeEnterData, enterData))
+            {
+                s_activeEnterData = null;
+            }
+        }
+
+        internal static void SetLoadingSceneHandoff(Scene loadingScene, IOnityLoadingSceneHandoff handoff)
+        {
+            s_handoffScene = loadingScene;
+            s_handoff = handoff;
+        }
+
+        /// <summary>
+        /// Takes the scene-service change registered for <paramref name="loadingScene" />, once. A Loading scene
+        /// that finds none runs the uncorrelated pending-target flow.
+        /// </summary>
+        /// <param name="loadingScene">The Loading scene asking, by its own handle.</param>
+        /// <param name="handoff">The change, or null when it returns false.</param>
+        /// <returns>True when a change waits for exactly this scene.</returns>
+        internal static bool TryTakeLoadingSceneHandoff(Scene loadingScene, out IOnityLoadingSceneHandoff handoff)
+        {
+            if (s_handoff == null || loadingScene.IsValid() == false || s_handoffScene != loadingScene)
+            {
+                handoff = null;
+                return false;
+            }
+
+            handoff = s_handoff;
+            s_handoff = null;
+            s_handoffScene = default;
+            return true;
+        }
+
+        // Removes an untaken handoff only while it is still this operation's.
+        internal static void ClearLoadingSceneHandoff(IOnityLoadingSceneHandoff handoff)
+        {
+            if (handoff != null && ReferenceEquals(s_handoff, handoff))
+            {
+                s_handoff = null;
+                s_handoffScene = default;
+            }
+        }
+
+        // Clears the scene-service records left from an earlier Play session when domain reload is disabled.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ClearServiceRecords()
+        {
+            s_sceneEnterData.Clear();
+            s_handoff = null;
+            s_handoffScene = default;
         }
     }
 }

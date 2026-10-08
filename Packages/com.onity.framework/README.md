@@ -3,7 +3,7 @@
 Onity (`com.onity.framework`) is a Unity package that puts dependency injection, reactive state, typed
 messaging, async (`OnityTask`) and factories with pooling in one package with one lifetime model: a scope
 owns its services, subscriptions, tasks and pools, and disposes them together. The core is engine-free and
-has no non-Unity third-party runtime dependency. Unity 2022.3 LTS or newer; this is version 0.8.3.
+has no non-Unity third-party runtime dependency. Unity 2022.3 LTS or newer; this is version 0.8.4.
 
 This file describes what is in the installed package. The documentation site is
 [furkantokkan.github.io/Onity](https://furkantokkan.github.io/Onity/), and the same pages ship inside this
@@ -130,29 +130,59 @@ and to the context's Installers list, and place the MonoBehaviours under the con
 
 ## Scene flow
 
-`Onity.Unity.SceneFlow` provides `OnitySceneFlow`, `OnitySceneLoader`, `OnitySceneTransitionStore`,
-`OnitySceneFlowProfile` and `OnitySceneFlowStateMachine`, with bootstrap readiness and the default UI
-Toolkit loading initiators. A profile routes grouped scenes with optional singleton Bootstrap and Loading
-scenes plus as many Menu, Hub and Gameplay scenes as the game needs; `Onity/Tools/Scene Flow Manager`
-creates profiles from 2-, 3- and 4-stage presets or a blank template.
+`Onity.Unity.SceneFlow` changes scenes for the whole game through one `IOnitySceneService`, bound on the
+`ProjectContext`. It runs one operation at a time, behind an optional screen cover, through the profile's
+Loading scene when the profile asks, or from a scene `OnityScenePreloader` keeps prepared, and each call
+completes only when the exact destination's `SceneContext` is ready, the cover has lifted and the replaced
+scenes have unloaded. A busy service, an unknown or ambiguous scene and a readiness timeout are results,
+not exceptions.
 
 ```csharp
-using System.Threading.Tasks;
+using System.Threading;
+using Onity.DI;
+using Onity.Unity.Async;
+using Onity.Unity.Installers;
 using Onity.Unity.SceneFlow;
+using UnityEngine;
 
-public static class BootFlow
+public sealed class SceneFlowInstaller : MonoInstaller   // on the ProjectContext prefab
 {
-    public static Task GoToGameplayAsync(OnitySceneFlowProfile profile)
+    [SerializeField] private OnitySceneFlowProfile m_profile;
+    [SerializeField] private OnityScreenFadeView m_fade;
+
+    public override void InstallBindings(OnityContainer container)
     {
-        return OnitySceneFlow.TransitionAsync(profile, OnitySceneFlowStateId.Gameplay);
+        container.BindSceneService(m_profile, m_fade);
+    }
+}
+
+public sealed class LevelLauncher
+{
+    private readonly IOnitySceneService m_scenes;
+
+    public LevelLauncher(IOnitySceneService scenes)
+    {
+        m_scenes = scenes;
     }
 
-    public static Task GoToBossLevelAsync(OnitySceneFlowProfile profile)
+    public async OnityTask<bool> StartAsync(CancellationToken cancellationToken)
     {
-        return OnitySceneFlow.TransitionAsync(profile, "BossLevelScene");
+        OnitySceneResult result = await m_scenes.LoadAsync(
+            OnitySceneRequest.Single("Gameplay"),
+            cancellationToken);
+        return result.IsSuccess;
     }
 }
 ```
+
+The pieces it composes stay usable on their own: `OnityCoveredSceneTransition` with the
+`OnityScreenFadeView` and `OnityIrisCoverView` covers, `OnityScenePreloader`, and the static
+`OnitySceneFlow` and `OnitySceneLoader` helpers with `OnitySceneTransitionStore`,
+`OnitySceneFlowStateMachine`, bootstrap readiness and the default UI Toolkit loading initiators. A profile
+routes grouped scenes with optional singleton Bootstrap and Loading scenes plus as many Menu, Hub and
+Gameplay scenes as the game needs; `Onity/Tools/Scene Flow Manager` creates profiles from 2-, 3- and
+4-stage presets or a blank template. `Documentation~/guide/lifecycle-and-scopes.md` covers scene
+transitions and the scene service.
 
 ## Diagnostics and validation
 

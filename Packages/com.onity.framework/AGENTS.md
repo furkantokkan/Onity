@@ -13,8 +13,9 @@ Paths below are relative to this folder: `Packages/com.onity.framework` for an e
 1. `Documentation~/AI/Onity-AI-Usage-Guide.md`: the rules, the canonical example, the API index and the
    error table. Always start here.
 2. The guide for the feature you are touching, under `Documentation~/guide/`: `dependency-injection.md`,
-   `lifecycle-and-scopes.md`, `reactive.md`, `events-messaging.md`, `onitytask.md`,
-   `factories-and-pooling.md`, `performance-and-il2cpp.md`, `refactoring-from-existing-architecture.md`.
+   `lifecycle-and-scopes.md` (also scene transitions and the scene service), `reactive.md`,
+   `events-messaging.md`, `onitytask.md`, `factories-and-pooling.md`, `performance-and-il2cpp.md`,
+   `refactoring-from-existing-architecture.md`.
 3. `Documentation~/reference/` for the complete API catalogs, `Documentation~/Migration/` when porting from
    Zenject, VContainer, R3, UniRx or UniTask, and `Documentation~/Getting-Started.md` for the scene the
    usage guide's example comes from.
@@ -67,6 +68,11 @@ disagree, follow the code and tell the user about the mismatch.
   `Onity.Composition`) are engine-free. Keep `UnityEngine` out of them and out of domain logic.
 - Call `ObserveOnMainThread()` before touching Unity objects after `SelectAwait`, `WhereAwait` or the
   thread-pool operators. Publish and subscribe on the main thread only.
+- Change scenes through one `IOnitySceneService` bound on the `ProjectContext` with
+  `container.BindSceneService(...)`, never on a `SceneContext`, whose scene a Single load unloads. Check the
+  awaited `OnitySceneResult`: `Busy`, `InvalidTarget` and readiness failures are results, not exceptions.
+  Unload with the `Scene` a result returned, not a name. The destination reads its enter data with
+  `OnitySceneTransitionStore.TryGetEnterData<T>(gameObject.scene, out T)` while it installs.
 - Release every pooled item exactly once and never touch it afterwards. `PrefabComponentPool<T>` calls
   `IPoolHooks`; `OnityObjectPool<T>` runs only its `actionOnGet` and `actionOnRelease` delegates. The scope
   disposes the pool that `BindPooledFactory(prefab, ...)` created; a pool you build stays yours unless you call

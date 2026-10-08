@@ -8,7 +8,9 @@ using UnityEngine.SceneManagement;
 namespace Onity.Unity.SceneFlow
 {
     /// <summary>
-    /// Consumes one pending scene-flow target and reports its load progress.
+    /// Consumes one pending scene-flow target and reports its load progress. When an
+    /// <see cref="IOnitySceneService" /> routes a change through this Loading scene, it takes that change instead:
+    /// the service loads and activates the target, and this scene shows its progress and minimum visible time.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class OnityLoadingSceneInitiator : OnitySceneInitiator
@@ -29,6 +31,19 @@ namespace Onity.Unity.SceneFlow
         /// <inheritdoc />
         protected override async Task InitializeAsync(CancellationToken cancellationToken)
         {
+            if (OnitySceneTransitionStore.TryTakeLoadingSceneHandoff(
+                    gameObject.scene,
+                    out IOnityLoadingSceneHandoff handoff))
+            {
+                // The scene service owns this change and waits for its target; this scene only presents it.
+                m_view?.SetProgress(0f);
+                await handoff.LoadTargetAsync(
+                    m_view != null ? m_view.SetProgress : null,
+                    WaitForMinimumVisibleDurationAsync(cancellationToken),
+                    cancellationToken);
+                return;
+            }
+
             if (m_profile == null)
             {
                 throw new InvalidOperationException(

@@ -396,6 +396,78 @@ await m_transition.RunAsync(async token =>
 `OnitySceneScopes.TryFind(scene, out SceneContext context)` finds a loaded scene's context; call it once
 per scene change, never per frame.
 
+### The scene service
+
+`IOnitySceneService` is one injectable entry point that composes the pieces above and owns every scene
+change from the request to the ready destination. Bind it once on the `ProjectContext`; scene scopes
+resolve the same instance from their parent. Every argument is optional:
+
+```csharp
+public sealed class SceneFlowInstaller : MonoInstaller
+{
+    [SerializeField] private OnitySceneFlowProfile m_profile;   // routes Single loads through its Loading scene
+    [SerializeField] private OnityScreenFadeView m_fade;        // the default cover
+
+    public override void InstallBindings(OnityContainer container)
+    {
+        OnityScenePreloader preloader = new OnityScenePreloader().AddTo(container);
+        container.BindInstance(preloader);
+        container.BindSceneService(m_profile, m_fade, preloader);
+    }
+}
+
+public sealed class LevelLauncher
+{
+    private readonly IOnitySceneService m_scenes;
+
+    public LevelLauncher(IOnitySceneService scenes)
+    {
+        m_scenes = scenes;
+    }
+
+    public async OnityTask<bool> StartLevelAsync(int level, CancellationToken cancellationToken)
+    {
+        OnitySceneResult result = await m_scenes.LoadAsync(
+            OnitySceneRequest.Single("Gameplay", new LevelEnterData(level)),
+            cancellationToken);
+        return result.IsSuccess;
+    }
+}
+```
+
+- **Completion.** The task completes once the destination scene's `SceneContext` has built (a scene
+  without one is ready at once), its cover has lifted and the scenes it replaced have unloaded. When the
+  profile routes through its Loading scene, that scene's `OnityLoadingSceneInitiator` shows the progress
+  and minimum visible time while the service loads the target behind it, covers the screen before the
+  target activates and keeps waiting for the target.
+- **One operation at a time.** A request while one runs returns `Busy` at once and touches nothing. The
+  caller's token ends only its own wait; an already cancelled token starts nothing. `Dispose` (the scope
+  ends) completes the running operation with `Disposed` and rejects later requests; a scene activation
+  Unity already holds still completes.
+- **Results.** `Succeeded`, `Busy`, `InvalidTarget` (no such scene, a name shared by several Build Settings
+  scenes: request it by path, or options that cannot combine), `NotLoaded`, `Disposed`, `LoadFailed`,
+  `ReadinessFailed` (the build failed, the context was destroyed or the scene unloaded first) and
+  `ReadinessTimedOut` (not ready within `OnitySceneRevealPolicy.MaxWaitSeconds`). The cover lifts after a
+  readiness failure too; only the result tells them apart. `Scene` is the exact destination.
+- **Requests.** `OnitySceneRequest.Single(scene, data)` uses the default cover;
+  `OnitySceneRequest.Additive(scene, data, setActive)` uses none and keeps the active scene unless
+  `setActive` is true. `WithCover(cover)`, `WithoutCover()` and `WithDefaultCover()` change the cover.
+  `WithPreparedScene()` starts the scene the preloader keeps prepared under the same name when it accepts
+  the data as its start data, and loads it normally otherwise; an additive request cannot. `UnloadAsync(scene)`
+  unloads exactly that instance, never another one with the same name.
+- **Enter data.** The destination reads it for its own handle while it installs or builds:
+  `OnitySceneTransitionStore.TryGetEnterData<LevelEnterData>(gameObject.scene, out LevelEnterData data)`.
+  It is removed when the operation ends, so no later scene receives it. Scenes written against
+  `TryConsumeActiveEnterData` receive it too.
+- **Observation.** `State` publishes the step (`Covering`, `Loading`, `Initializing`, `Revealing`,
+  `Unloading`) and progress only when they change, with no allocation per progress update. `Completed`
+  publishes each started operation's result once, after the service is idle: start the next load from
+  there or from the awaited result, not from a `State` callback. `ActiveScene` reads `SceneManager` on
+  every call; loads made around the service are seen but not serialized with its operations.
+
+`OnitySceneFlow.TransitionAsync` keeps its behavior (it completes when the entry scene has loaded), and
+`OnityCoveredSceneTransition` and `OnityScenePreloader` stay usable on their own.
+
 ## See also
 
 - [Dependency Injection](dependency-injection.md): bindings, injection sites and `MonoInstaller`; [Build and async startup](dependency-injection.md#build-and-async-startup).

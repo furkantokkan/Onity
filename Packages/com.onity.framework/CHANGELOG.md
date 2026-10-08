@@ -5,6 +5,29 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.4] - 2026-10-08
+
+### Added
+
+- Scene service: `IOnitySceneService` / `OnitySceneService`, bound once on the `ProjectContext` with
+  `container.BindSceneService(profile, defaultCover, preloader, revealPolicy)`. `LoadAsync(OnitySceneRequest)`
+  and `UnloadAsync(Scene)` return `OnityTask<OnitySceneResult>` and complete only when the exact destination
+  scene's `SceneContext` is ready, its cover has lifted and replaced scenes have unloaded, also when the
+  profile routes a Single load through the Loading scene (its `OnityLoadingSceneInitiator` takes the
+  operation's handoff; without one it keeps the pending-target flow). One operation runs at a time; others
+  get `Busy`. Results tell success from `InvalidTarget` (missing or ambiguous names), `NotLoaded`,
+  `Disposed`, `LoadFailed`, `ReadinessFailed` and `ReadinessTimedOut`. Requests choose the default cover, no
+  cover or their own, can start an `OnityScenePreloader` scene (`WithPreparedScene`), and load additively
+  with an explicit activation choice. `State` publishes the step and progress only on change, `Completed`
+  each result once. Enter data is kept per destination scene
+  (`OnitySceneTransitionStore.TryGetEnterData<T>(Scene, out T)`) and mirrored into the shared slot.
+
+### Documentation
+
+- The Lifecycle and Scopes guide gains a scene service section with an installer and usage example; the AI
+  usage guide, the `onity-use` skill, the package README, `AGENTS.md` and `llms.txt` describe the scene
+  service and its rules.
+
 ## [0.8.3] - 2026-10-07
 
 Fix scope initialization and teardown, reactive subscription ownership, timer

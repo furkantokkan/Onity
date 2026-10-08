@@ -15,7 +15,7 @@ All paths are relative to this file, the package root. `Documentation~/` is gene
 
 - [Guides index](Documentation~/guide/index.md): the guides in reading order.
 - [Dependency injection](Documentation~/guide/dependency-injection.md): `OnityContainer`, bindings and lifetimes, identified and conditional bindings, collection injection, injection sites, build and async startup, the composition helpers.
-- [Lifecycle and scopes](Documentation~/guide/lifecycle-and-scopes.md): the one lifetime model, lifetimes, the scope token, disposal order, the lifecycle interfaces and the Unity contexts.
+- [Lifecycle and scopes](Documentation~/guide/lifecycle-and-scopes.md): the one lifetime model, lifetimes, the scope token, disposal order, the lifecycle interfaces, the Unity contexts, scene transitions and the scene service.
 - [Reactive](Documentation~/guide/reactive.md): `IOnityObservable<T>`, `Subject<T>`, `ReactiveProperty<T>`, operators, Unity frame loops, subscription lifetime and the `OnityTask` bridges.
 - [Events and messaging](Documentation~/guide/events-messaging.md): typed pub/sub with the broker, `OnityEventHub`, `OnityEvent`, keyed and async channels, messages as streams and `OnityTask` receives with backpressure.
 - [Async with OnityTask](Documentation~/guide/onitytask.md): frame waits and PlayerLoop timings, timed waits and timers, composition, triggers and UI events, async streams and channels, scope lifetimes, Unity operations, and the reactive and messaging bridges.

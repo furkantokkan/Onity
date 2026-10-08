@@ -6,7 +6,7 @@ Each guide covers one pillar of Onity and shows how it connects to the others. R
 order the first time; later, open the one you need.
 
 1. [Dependency Injection](dependency-injection.md): the container, bindings, lifetimes, injection sites and build.
-2. [Lifecycle and Scopes](lifecycle-and-scopes.md): the one lifetime model, scope tokens, lifecycle interfaces and Unity contexts.
+2. [Lifecycle and Scopes](lifecycle-and-scopes.md): the one lifetime model, scope tokens, lifecycle interfaces, Unity contexts, scene transitions and the scene service.
 3. [Reactive](reactive.md): observables, reactive properties, operators and the Unity and async bridges.
 4. [Events and Messaging](events-messaging.md): typed messages through the broker, `OnityEvent` and `OnityEventHub`, keyed and async channels.
 5. [Async with OnityTask](onitytask.md): frame waits, timers, cancellation, streams and the DI, reactive and messaging integration.

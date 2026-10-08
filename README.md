@@ -46,6 +46,7 @@ rule. Onity's pillars are designed to work with each other:
 | Messaging | `Onity.Messaging` (engine-free), `Onity.Unity.Messaging` | `IMessageBroker`, `MessageChannel<T>`, `OnityEventHub`, `OnityEvent`, keyed and async channels | [Events and Messaging](docs/guide/events-messaging.md) |
 | Async | `Onity.Unity.Async` | `OnityTask`, `OnityTask<T>`, `OnityTaskVoid`, PlayerLoop timings, triggers, streams, channels | [Async with OnityTask](docs/guide/onitytask.md) |
 | Factories and pooling | `Onity.Pooling`, `Onity.Unity.Installers` | `OnityObjectPool<T>`, `PrefabComponentPool<T>`, `IPool<T>`, `IPoolHooks`, `BindPooledFactory` | [Factories and Pooling](docs/guide/factories-and-pooling.md) |
+| Scene flow | `Onity.Unity.SceneFlow` | `IOnitySceneService` (`BindSceneService`, `OnitySceneRequest`, `OnitySceneResult`), screen covers, `OnityScenePreloader`, `OnitySceneFlowProfile` | [Lifecycle and Scopes](docs/guide/lifecycle-and-scopes.md#the-scene-service) |
 | Composition | `Onity.Composition` (engine-free) | `BindReactiveProperty`, `BindSubject`, `DeclareMessage`, `DeclareAsyncMessage` | [Dependency Injection](docs/guide/dependency-injection.md#shared-reactive-and-messaging-primitives) |
 | DOTS | `Onity.DOTS` (with `com.unity.entities` 1.0+) | Burst `ISystem` groups that drain the broker into Entities, entity pooling helpers | [Architecture](docs/Architecture-Review.md) |
 
@@ -63,7 +64,7 @@ https://github.com/furkantokkan/Onity.git#upm
 The `upm` branch is the package at its repository root and tracks the latest release. To pin a release:
 
 ```text
-https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.3
+https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.4
 ```
 
 Or in `Packages/manifest.json`:
@@ -71,7 +72,7 @@ Or in `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.onity.framework": "https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.3"
+    "com.onity.framework": "https://github.com/furkantokkan/Onity.git?path=/Packages/com.onity.framework#v0.8.4"
   }
 }
 ```

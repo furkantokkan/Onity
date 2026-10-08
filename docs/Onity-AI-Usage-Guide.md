@@ -1055,6 +1055,10 @@ DO:
   release; `OnityObjectPool<T>` for plain C#) instead of `Instantiate` and `Destroy` in gameplay loops.
 - DO use `AsScoped()` for one instance per resolving scope, and `WithId` or `WhenInjectedInto` for a
   second implementation of one contract.
+- DO change scenes through one `IOnitySceneService` bound on the `ProjectContext` with
+  `container.BindSceneService(...)`, and check the awaited `OnitySceneResult`: `Busy`, `InvalidTarget` and
+  `ReadinessTimedOut` are results, not exceptions. The destination reads its enter data with
+  `OnitySceneTransitionStore.TryGetEnterData<T>(gameObject.scene, out T)` while it installs.
 
 DON'T:
 
@@ -1079,6 +1083,10 @@ DON'T:
 - DON'T release a pooled item twice, use it after `Release`, or `Destroy` it; release it exactly once
   (10.5). DON'T assume the container disposes a pool you built; `BindPooledFactory(prefab, ...)` pools are
   scope-owned, pools you pass in are yours until `pool.AddTo(container)` (10.4).
+- DON'T bind the scene service, `OnityCoveredSceneTransition` or `OnityScenePreloader` on a
+  `SceneContext`: the scene that asks is the one a Single load unloads. DON'T unload by scene name when two
+  instances can exist; pass the `Scene` an `OnitySceneResult` returned. DON'T start the next scene load
+  from a `State` callback; start it from `Completed` or after the awaited result.
 - DON'T write `async void`; DON'T await a pooled `OnityTask` twice without `Preserve()`.
 - DON'T use `System.Linq` in package code; write plain loops and avoid allocations in hot paths.
 - DON'T call an API that is not in this guide or the source on the assumption of Zenject, VContainer,
@@ -1253,7 +1261,15 @@ DON'T:
   `OnityIrisCoverView` (circle wipe, `Center`, `OnityIrisCover.uxml`), `IOnitySceneReadiness`,
   `OnityActiveSceneReadiness`, `OnitySceneRevealPolicy`, `OnityScenePreloader` (`PrepareAsync`,
   `TryStartAsync`, static `TryGetPrepareData<T>(Scene, out T)`, `LoadStep`), `IOnityPreparedScene`,
-  `OnitySceneScopes.TryFind(Scene, out SceneContext)`, `OnitySceneVisuals.Hide(Scene)`.
+  `OnitySceneScopes.TryFind(Scene, out SceneContext)`, `OnitySceneVisuals.Hide(Scene)`; the scene service
+  (guide: Lifecycle and Scopes, The scene service): `IOnitySceneService` / `OnitySceneService` (`LoadAsync`,
+  `UnloadAsync(Scene)` returning `OnityTask<OnitySceneResult>`, `ActiveScene`, `IsBusy`, `State`, `Completed`),
+  bound once on the `ProjectContext` with `container.BindSceneService(profile, defaultCover, preloader,
+  revealPolicy)`; `OnitySceneRequest` (`Single`, `Additive(scene, data, setActive)`, `WithCover`,
+  `WithoutCover`, `WithDefaultCover`, `WithPreparedScene`), `OnitySceneCoverMode`, `OnitySceneResult`,
+  `OnitySceneResultStatus`, `OnitySceneOperationState`, `OnitySceneOperationPhase`, and
+  `OnitySceneTransitionStore.TryGetEnterData<T>(Scene, out T)` for the destination's enter data. A busy
+  service returns `Busy` instead of queueing; a readiness timeout is never `Succeeded`.
 - Async (`Onity.Unity.Async`; the full index is 11.7): `OnityTask`, `OnityTask<T>`, `OnityTaskVoid`,
   `OnityPlayerLoopTiming`, `OnityTaskPlayerLoop`, `OnityYieldAwaitable`, `OnityDelayType`,
   `OnityPlayerLoopTimer`, `OnityTimeoutController`, `OnityTaskCompletionSource(<T>)`,
