@@ -8,6 +8,10 @@ using Onity.Unity.Contexts;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+#if !UNITY_6000_3_OR_NEWER
+using SceneHandle = System.Int32;
+#endif
+
 namespace Onity.Unity.SceneFlow
 {
     /// <summary>
@@ -45,8 +49,8 @@ namespace Onity.Unity.SceneFlow
         public delegate Task LoadStep(string sceneName, Action<Scene> onSceneCreated, CancellationToken cancellationToken);
 
         // Prepare data per scene handle for scenes a preloader is preparing or keeps prepared. Main thread only.
-        private static readonly Dictionary<int, IOnitySceneEnterData> s_prepareData =
-            new Dictionary<int, IOnitySceneEnterData>(4);
+        private static readonly Dictionary<SceneHandle, IOnitySceneEnterData> s_prepareData =
+            new Dictionary<SceneHandle, IOnitySceneEnterData>(4);
 
         private readonly LoadStep m_loadStep;
         private readonly CancellationTokenSource m_lifetime = new CancellationTokenSource();
@@ -504,7 +508,7 @@ namespace Onity.Unity.SceneFlow
         // Keyed by handle, so the entry of a scene that already unloaded can still be removed.
         private static void RemovePrepareData(Scene scene)
         {
-            if (scene.handle != 0)
+            if (scene.handle != default(SceneHandle))
             {
                 s_prepareData.Remove(scene.handle);
             }

@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+#if !UNITY_6000_3_OR_NEWER
+using SceneHandle = System.Int32;
+#endif
+
 namespace Onity.Unity.SceneFlow
 {
     /// <summary>
@@ -41,8 +45,8 @@ namespace Onity.Unity.SceneFlow
     public static class OnitySceneTransitionStore
     {
         // Enter data per destination scene handle while its scene-service operation runs. Main thread only.
-        private static readonly Dictionary<int, IOnitySceneEnterData> s_sceneEnterData =
-            new Dictionary<int, IOnitySceneEnterData>(4);
+        private static readonly Dictionary<SceneHandle, IOnitySceneEnterData> s_sceneEnterData =
+            new Dictionary<SceneHandle, IOnitySceneEnterData>(4);
 
         private static string s_pendingTargetScene;
         private static IOnitySceneEnterData s_pendingEnterData;
@@ -205,7 +209,7 @@ namespace Onity.Unity.SceneFlow
         // Keyed by handle, so the entry of a scene that already unloaded can still be removed.
         internal static void RemoveSceneEnterData(Scene scene)
         {
-            if (scene.handle != 0)
+            if (scene.handle != default(SceneHandle))
             {
                 s_sceneEnterData.Remove(scene.handle);
             }

@@ -5,6 +5,12 @@ All notable changes to the Onity framework are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed Unity 6.6 compilation for scene entry and preload data by using Unity's native scene handle type.
+
 ## [0.8.4] - 2026-10-08
 
 ### Added
